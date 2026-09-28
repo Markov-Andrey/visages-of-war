@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "factions": [
+    {
+      "id": "humans",
+      "name": "Люди",
+      "description": "Людские королевства: рабочие, воины и рыцари."
+    }
+  ],
+  "entityFiles": [
+    "entities/humans.json"
+  ],
+  "commandersFile": "commanders.json",
+  "rulesFile": "rules.json"
+}

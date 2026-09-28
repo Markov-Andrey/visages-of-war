@@ -1,0 +1,32 @@
+{
+    "imported":  "2026-09-25",
+    "source":  "Artwork supplied by the project owner",
+    "rights":  "Project artwork; not part of the third-party CC0 asset catalog",
+    "files":  [
+                  {
+                      "original":  "background.png",
+                      "path":  "ui/menu-background.png",
+                      "sha256":  "6E94DC1097AF1DB05B6191B7AB9D31BA6B64CBC2DF1713018EB1D3FA9C69D98B"
+                  },
+                  {
+                      "original":  "name.png",
+                      "path":  "ui/logo.png",
+                      "sha256":  "034425F2DF04EF04CD1DD66619E65A976073FD03FE637038A823485C1AC6C911"
+                  },
+                  {
+                      "original":  "icon.png",
+                      "path":  "ui/project-icon.png",
+                      "sha256":  "8A8C6BC8DFC71B8065F9A60050D2FC2E0305C352C548512BB3D2F25D1050DD8D"
+                  },
+                  {
+                      "original":  "cursor.png",
+                      "path":  "ui/cursors.png",
+                      "sha256":  "06A809F8C413B9CCC9977131C9EF0C84815F41CAD1F9EF10AC2192DF5CFF7D7E"
+                  },
+                  {
+                      "original":  "tile-grass.png",
+                      "path":  "textures/grass-ground.png",
+                      "sha256":  "ADE6589B390DA0B34726894A43A15A105AF96EF800B49AD6677CBC3C69EEDDFB"
+                  }
+              ]
+}

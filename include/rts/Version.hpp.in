@@ -1,0 +1,5 @@
+#pragma once
+#include <string_view>
+namespace rts {
+inline constexpr std::wstring_view projectVersion = L"@PROJECT_VERSION@";
+}

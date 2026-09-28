@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "hero": {
+    "experienceRadius": 8,
+    "experiencePerVictimLevel": 50,
+    "thresholds": [
+      0,
+      100,
+      250,
+      450,
+      700,
+      1000,
+      1400,
+      1900,
+      2500,
+      3200
+    ]
+  }
+}

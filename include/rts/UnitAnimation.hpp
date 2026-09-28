@@ -1,0 +1,29 @@
+#pragma once
+#include "rts/Simulation.hpp"
+#include <array>
+
+namespace rts {
+struct SpriteFrame { int column, row; };
+inline SpriteFrame locomotionFrame(const Unit& unit) {
+    // Animation columns and directional rows come from each entity sprite definition.
+    // Rows run clockwise on screen: S, SE, E, NE, N, NW, W, SW.
+    constexpr std::array<Cell, 8> facings{{{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}}};
+    int row = 0;
+    for (size_t i = 0; i < facings.size(); ++i) if (unit.facing == facings[i]) row = static_cast<int>(i);
+    const bool walking = unit.next < unit.route.size() && unit.blockedTicks == 0;
+    const auto& sprite = unit.definition.sprite;
+    return {walking ? sprite.walk[static_cast<size_t>(unit.walkCycle * sprite.walk.size()) % sprite.walk.size()] : sprite.idle, sprite.rows[row]};
+}
+inline SpriteFrame unitFrame(const Unit& unit) {
+    auto frame = locomotionFrame(unit);
+    const auto& d = unit.definition;
+    const bool windup = unit.attackPhase == AttackPhase::Windup;
+    if (windup || unit.attackPhase == AttackPhase::Recovery) {
+        const auto& frames = windup ? d.sprite.windup : d.sprite.recovery;
+        const int duration = windup ? d.attackWindupTicks : d.attackRecoveryTicks;
+        const auto index = static_cast<size_t>(std::max(0, duration - unit.attackTicks)) * frames.size() / std::max(1, duration);
+        frame.column = frames[std::min(index, frames.size() - 1)];
+    }
+    return frame;
+}
+}

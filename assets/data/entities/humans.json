@@ -1,0 +1,763 @@
+{
+  "version": 1,
+  "entities": [
+    {
+      "id": "human.worker",
+      "factionId": "humans",
+      "name": "Рабочий",
+      "description": "Добывает кристаллы и относит их в ратушу. Строит и восстанавливает работу на стройплощадках.",
+      "cost": {
+        "crystals": 40,
+        "supply": 1
+      },
+      "stats": {
+        "health": 60,
+        "damage": 0,
+        "level": 1,
+        "dayVision": 8,
+        "nightVision": 6
+      },
+      "mobility": {
+        "enabled": true,
+        "type": "walking",
+        "speed": 2.8,
+        "formationPriority": 3
+      },
+      "worker": {
+        "builder": true,
+        "carryCapacity": 10
+      },
+      "construction": {
+        "enabled": false,
+        "ticks": 180,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "production": {
+        "trainingTicks": 90,
+        "trains": []
+      },
+      "depot": false,
+      "hero": null,
+      "visual": "unit",
+      "alternateForms": [],
+      "attack": {
+        "range": 1.5,
+        "windupTicks": 6,
+        "recoveryTicks": 6,
+        "cooldownTicks": 18,
+        "targets": "same_layer",
+        "projectile": null
+      },
+      "sprite": {
+        "image": "sprites/worker.png",
+        "frameSize": [
+          32,
+          32
+        ],
+        "size": [
+          80,
+          80
+        ],
+        "anchor": [
+          0.5,
+          0.7125
+        ],
+        "rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "idle": 0,
+        "walk": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "windup": [
+          4,
+          5
+        ],
+        "recovery": [
+          6,
+          7
+        ],
+        "teamMask": "blue"
+      }
+    },
+    {
+      "id": "human.soldier",
+      "factionId": "humans",
+      "name": "Воин",
+      "description": "Боец ближнего боя. Принимает удар на себя и занимает передние ряды строя.",
+      "cost": {
+        "crystals": 60,
+        "supply": 2
+      },
+      "stats": {
+        "health": 120,
+        "damage": 12,
+        "level": 1,
+        "dayVision": 9,
+        "nightVision": 6
+      },
+      "mobility": {
+        "enabled": true,
+        "type": "walking",
+        "speed": 3.2,
+        "formationPriority": 1
+      },
+      "worker": {
+        "builder": false,
+        "carryCapacity": 0
+      },
+      "construction": {
+        "enabled": false,
+        "ticks": 180,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "production": {
+        "trainingTicks": 150,
+        "trains": []
+      },
+      "depot": false,
+      "hero": null,
+      "visual": "unit",
+      "alternateForms": [],
+      "attack": {
+        "range": 1.5,
+        "windupTicks": 6,
+        "recoveryTicks": 6,
+        "cooldownTicks": 18,
+        "targets": "same_layer",
+        "projectile": null
+      },
+      "sprite": {
+        "image": "sprites/worker.png",
+        "frameSize": [
+          32,
+          32
+        ],
+        "size": [
+          80,
+          80
+        ],
+        "anchor": [
+          0.5,
+          0.7125
+        ],
+        "rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "idle": 0,
+        "walk": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "windup": [
+          4,
+          5
+        ],
+        "recovery": [
+          6,
+          7
+        ],
+        "teamMask": "blue"
+      }
+    },
+    {
+      "id": "human.hero",
+      "factionId": "humans",
+      "name": "Рыцарь",
+      "description": "Герой ближнего боя. Получает опыт за врагов, побеждённых его армией поблизости, и усиливается с каждым уровнем.",
+      "cost": {
+        "crystals": 0,
+        "supply": 5
+      },
+      "stats": {
+        "health": 400,
+        "damage": 24,
+        "level": 1,
+        "dayVision": 10,
+        "nightVision": 8
+      },
+      "mobility": {
+        "enabled": true,
+        "type": "walking",
+        "speed": 3.2,
+        "formationPriority": 1
+      },
+      "worker": {
+        "builder": false,
+        "carryCapacity": 0
+      },
+      "construction": {
+        "enabled": false,
+        "ticks": 180,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "production": {
+        "trainingTicks": 150,
+        "trains": []
+      },
+      "depot": false,
+      "hero": {
+        "healthPerLevel": 40,
+        "damagePerLevel": 4
+      },
+      "visual": "unit",
+      "alternateForms": [],
+      "attack": {
+        "range": 1.5,
+        "windupTicks": 6,
+        "recoveryTicks": 6,
+        "cooldownTicks": 18,
+        "targets": "same_layer",
+        "projectile": null
+      },
+      "sprite": {
+        "image": "sprites/worker.png",
+        "frameSize": [
+          32,
+          32
+        ],
+        "size": [
+          80,
+          80
+        ],
+        "anchor": [
+          0.5,
+          0.7125
+        ],
+        "rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "idle": 0,
+        "walk": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "windup": [
+          4,
+          5
+        ],
+        "recovery": [
+          6,
+          7
+        ],
+        "teamMask": "blue"
+      }
+    },
+    {
+      "id": "human.hall",
+      "factionId": "humans",
+      "name": "Ратуша",
+      "description": "Главное здание поселения. Принимает добытые кристаллы и обучает рабочих.",
+      "cost": {
+        "crystals": 200,
+        "supply": 0
+      },
+      "stats": {
+        "health": 1000,
+        "damage": 0,
+        "level": 1,
+        "dayVision": 11,
+        "nightVision": 8
+      },
+      "mobility": {
+        "enabled": false,
+        "type": "walking",
+        "speed": 0,
+        "formationPriority": 1
+      },
+      "worker": {
+        "builder": false,
+        "carryCapacity": 0
+      },
+      "construction": {
+        "enabled": true,
+        "ticks": 300,
+        "footprint": [
+          2,
+          2
+        ]
+      },
+      "production": {
+        "trainingTicks": 150,
+        "trains": [
+          "human.worker"
+        ]
+      },
+      "depot": true,
+      "hero": null,
+      "visual": "hall",
+      "alternateForms": [],
+      "attack": {
+        "range": 1.5,
+        "windupTicks": 6,
+        "recoveryTicks": 6,
+        "cooldownTicks": 18,
+        "targets": "same_layer",
+        "projectile": null
+      },
+      "sprite": null
+    },
+    {
+      "id": "human.barracks",
+      "factionId": "humans",
+      "name": "Казарма",
+      "description": "Обучает воинов, лучников и катапульты. Точка сбора определяет, куда отправятся новые бойцы.",
+      "cost": {
+        "crystals": 100,
+        "supply": 0
+      },
+      "stats": {
+        "health": 700,
+        "damage": 0,
+        "level": 1,
+        "dayVision": 9,
+        "nightVision": 6
+      },
+      "mobility": {
+        "enabled": false,
+        "type": "walking",
+        "speed": 0,
+        "formationPriority": 1
+      },
+      "worker": {
+        "builder": false,
+        "carryCapacity": 0
+      },
+      "construction": {
+        "enabled": true,
+        "ticks": 180,
+        "footprint": [
+          3,
+          2
+        ]
+      },
+      "production": {
+        "trainingTicks": 150,
+        "trains": [
+          "human.soldier",
+          "human.archer",
+          "human.catapult"
+        ]
+      },
+      "depot": false,
+      "hero": null,
+      "visual": "barracks",
+      "alternateForms": [],
+      "attack": {
+        "range": 1.5,
+        "windupTicks": 6,
+        "recoveryTicks": 6,
+        "cooldownTicks": 18,
+        "targets": "same_layer",
+        "projectile": null
+      },
+      "sprite": null
+    },
+    {
+      "id": "human.watchtower",
+      "factionId": "humans",
+      "name": "Смотровая башня",
+      "description": "Расширяет обзор поселения днём и ночью. Не имеет оружия.",
+      "cost": {
+        "crystals": 75,
+        "supply": 0
+      },
+      "stats": {
+        "health": 400,
+        "damage": 0,
+        "level": 1,
+        "dayVision": 14,
+        "nightVision": 10
+      },
+      "mobility": {
+        "enabled": false,
+        "type": "walking",
+        "speed": 0,
+        "formationPriority": 1
+      },
+      "worker": {
+        "builder": false,
+        "carryCapacity": 0
+      },
+      "construction": {
+        "enabled": true,
+        "ticks": 150,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "production": {
+        "trainingTicks": 150,
+        "trains": []
+      },
+      "depot": false,
+      "hero": null,
+      "visual": "tower",
+      "alternateForms": [],
+      "attack": {
+        "range": 1.5,
+        "windupTicks": 6,
+        "recoveryTicks": 6,
+        "cooldownTicks": 18,
+        "targets": "same_layer",
+        "projectile": null
+      },
+      "sprite": null
+    },
+    {
+      "id": "human.flying_soldier",
+      "factionId": "humans",
+      "name": "Летающий воин",
+      "description": "Летит над препятствиями и видит поверх леса и скал. Занимает место в воздушном строю.",
+      "cost": {
+        "crystals": 80,
+        "supply": 2
+      },
+      "stats": {
+        "health": 120,
+        "damage": 12,
+        "level": 1,
+        "dayVision": 9,
+        "nightVision": 6
+      },
+      "mobility": {
+        "enabled": true,
+        "type": "flying",
+        "speed": 3.2,
+        "formationPriority": 2
+      },
+      "worker": {
+        "builder": false,
+        "carryCapacity": 0
+      },
+      "construction": {
+        "enabled": false,
+        "ticks": 180,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "production": {
+        "trainingTicks": 150,
+        "trains": []
+      },
+      "depot": false,
+      "hero": null,
+      "visual": "unit",
+      "alternateForms": [],
+      "attack": {
+        "range": 1.5,
+        "windupTicks": 6,
+        "recoveryTicks": 6,
+        "cooldownTicks": 18,
+        "targets": "same_layer",
+        "projectile": null
+      },
+      "sprite": {
+        "image": "sprites/worker.png",
+        "frameSize": [
+          32,
+          32
+        ],
+        "size": [
+          80,
+          80
+        ],
+        "anchor": [
+          0.5,
+          0.7125
+        ],
+        "rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "idle": 0,
+        "walk": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "windup": [
+          4,
+          5
+        ],
+        "recovery": [
+          6,
+          7
+        ],
+        "teamMask": "blue"
+      }
+    },
+    {
+      "id": "human.archer",
+      "factionId": "humans",
+      "name": "Лучник",
+      "description": "Стреляет по наземным и воздушным целям. Выпущенная стрела следует за выбранной целью.",
+      "cost": {
+        "crystals": 80,
+        "supply": 2
+      },
+      "stats": {
+        "health": 80,
+        "damage": 14,
+        "level": 1,
+        "dayVision": 10,
+        "nightVision": 7
+      },
+      "mobility": {
+        "enabled": true,
+        "type": "walking",
+        "speed": 3.1,
+        "formationPriority": 2
+      },
+      "worker": {
+        "builder": false,
+        "carryCapacity": 0
+      },
+      "construction": {
+        "enabled": false,
+        "ticks": 180,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "production": {
+        "trainingTicks": 180,
+        "trains": []
+      },
+      "depot": false,
+      "hero": null,
+      "visual": "unit",
+      "alternateForms": [],
+      "attack": {
+        "range": 6,
+        "windupTicks": 12,
+        "recoveryTicks": 8,
+        "cooldownTicks": 20,
+        "targets": "all",
+        "projectile": {
+          "targeting": "unit",
+          "image": "sprites/arrow.png",
+          "source": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "size": [
+            6,
+            38
+          ],
+          "rotationOffset": 90,
+          "speed": 10,
+          "arcHeight": 0.75,
+          "launchHeight": 1.5,
+          "impactHeight": 1.3,
+          "splashRadius": 0,
+          "friendlyFire": false
+        }
+      },
+      "sprite": {
+        "image": "sprites/archer.png",
+        "frameSize": [
+          32,
+          32
+        ],
+        "size": [
+          80,
+          80
+        ],
+        "anchor": [
+          0.5,
+          0.7125
+        ],
+        "rows": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "idle": 0,
+        "walk": [
+          0,
+          2,
+          1,
+          3
+        ],
+        "windup": [
+          8,
+          9
+        ],
+        "recovery": [
+          10,
+          11
+        ],
+        "teamMask": "purple"
+      }
+    },
+    {
+      "id": "human.catapult",
+      "factionId": "humans",
+      "name": "Катапульта",
+      "description": "Бьёт навесом по точке, зафиксированной при выстреле. Поражает наземных врагов в области; движущаяся цель может уклониться.",
+      "cost": {
+        "crystals": 160,
+        "supply": 4
+      },
+      "stats": {
+        "health": 220,
+        "damage": 45,
+        "level": 1,
+        "dayVision": 10,
+        "nightVision": 7
+      },
+      "mobility": {
+        "enabled": true,
+        "type": "walking",
+        "speed": 2.0,
+        "formationPriority": 3
+      },
+      "worker": {
+        "builder": false,
+        "carryCapacity": 0
+      },
+      "construction": {
+        "enabled": false,
+        "ticks": 180,
+        "footprint": [
+          1,
+          1
+        ]
+      },
+      "production": {
+        "trainingTicks": 300,
+        "trains": []
+      },
+      "depot": false,
+      "hero": null,
+      "visual": "unit",
+      "alternateForms": [],
+      "attack": {
+        "range": 8,
+        "windupTicks": 24,
+        "recoveryTicks": 18,
+        "cooldownTicks": 60,
+        "targets": "ground",
+        "projectile": {
+          "targeting": "point",
+          "image": "sprites/catapult.png",
+          "source": [
+            804,
+            4,
+            16,
+            16
+          ],
+          "size": [
+            18,
+            18
+          ],
+          "rotationOffset": 0,
+          "speed": 4,
+          "arcHeight": 6,
+          "launchHeight": 1.6,
+          "impactHeight": 0,
+          "splashRadius": 1.4,
+          "friendlyFire": false
+        }
+      },
+      "sprite": {
+        "image": "sprites/catapult.png",
+        "frameSize": [
+          128,
+          128
+        ],
+        "size": [
+          112,
+          112
+        ],
+        "anchor": [
+          0.5,
+          0.82
+        ],
+        "rows": [
+          5,
+          6,
+          7,
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "idle": 0,
+        "walk": [
+          0
+        ],
+        "windup": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "recovery": [
+          8,
+          9,
+          10,
+          11
+        ],
+        "teamMask": "none"
+      }
+    }
+  ]
+}

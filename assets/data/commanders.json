@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "commanders": [
+    {
+      "id": "human_commander",
+      "name": "Валери, Инквизиция",
+      "description": "Валери — командир Инквизиции.",
+      "factionId": "humans",
+      "startingWorker": "human.worker",
+      "startingHero": "human.hero"
+    }
+  ]
+}

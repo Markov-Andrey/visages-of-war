@@ -1,0 +1,5 @@
+[
+  {"id":"grass", "name":"Трава — подложка", "image":"textures/grass-ground.png", "repeatCells":16, "tint":"ffffff"},
+  {"id":"earth", "name":"Земля (временная)", "image":"textures/grass-ground.png", "repeatCells":12, "tint":"bd7954"},
+  {"id":"dark_grass", "name":"Тёмная трава", "image":"textures/grass-ground.png", "repeatCells":16, "tint":"648968"}
+]

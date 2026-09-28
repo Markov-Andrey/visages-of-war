@@ -1,0 +1,10 @@
+/out/
+/build/
+/.vs/
+/.idea/
+/CMakeUserPresets.json
+/Visages of War.lnk
+/Visages Forge.lnk
+*.user
+*.pdb
+*.ilk

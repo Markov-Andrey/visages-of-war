@@ -1,0 +1,4 @@
+{
+  "materialFiles": ["world/materials.json"],
+  "objectFiles": ["world/objects.json"]
+}

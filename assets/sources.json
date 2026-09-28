@@ -1,0 +1,65 @@
+{
+  "imported": "2026-09-22",
+  "license": "CC0-1.0",
+  "files": [
+    {
+      "destination": "sprites/hall.png",
+      "archive": "buildings.zip",
+      "url": "https://opengameart.org/sites/default/files/building_pack_02_single.zip",
+      "entry": "building_2/64x32_no_shadow/building2_64x32_no_shadow_00.png",
+      "sha256": "1E721DB4826928B9B61A23F1D6546CC37F19FC95AA42A6734837819471A0EC84"
+    },
+    {
+      "destination": "sprites/crystal.png",
+      "archive": "crystals.zip",
+      "url": "https://opengameart.org/sites/default/files/isometric_crystals.zip",
+      "entry": "crystals_render_output/glow/crystal01.png",
+      "sha256": "4BB3D7E9FE9A81B2F29CD410DB404665C4546A18D42BE977821D2A18DAFC8549"
+    },
+    {
+      "destination": "sprites/worker.png",
+      "archive": "characters.zip",
+      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
+      "entry": "Puny-Characters/Soldier-Blue.png",
+      "sha256": "DDCB515BAAF2B5B7A4C569BA23D7490C3E5221BB5E97D760CE67CE9C261A543D"
+    },
+    {
+      "destination": "sprites/tree.png",
+      "archive": "characters.zip",
+      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
+      "entry": "Puny-Characters/Environment/Tree.png",
+      "sha256": "C86FDE88AB3CBD47A2B97DDD4AC54B5D3B2E7C597E392C3DB407731839F800C1"
+    },
+    {
+      "destination": "sprites/archer.png",
+      "archive": "characters.zip",
+      "entry": "Puny-Characters/Archer-Purple.png",
+      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
+      "source": "https://opengameart.org/content/puny-characters",
+      "author": "Shade",
+      "sha256": "788D53DE100ACEB025621AE4FC95A61A6CD08168205185871A6442AB7B131D26",
+      "imported": "2026-09-28",
+      "license": "CC0-1.0"
+    },
+    {
+      "destination": "sprites/catapult.png",
+      "archive": "catapult.zip",
+      "entry": "catapult_shoot.png",
+      "url": "https://opengameart.org/sites/default/files/catapult.zip",
+      "source": "https://opengameart.org/content/catapult",
+      "author": "yd",
+      "sha256": "6B7C3523269376CF455C56AC864C4E1E20FA846FA65B104C2D3382E1E16D2674",
+      "imported": "2026-09-28",
+      "license": "CC0-1.0"
+    },
+    {
+      "destination": "sprites/arrow.png",
+      "url": "https://opengameart.org/sites/default/files/ornamented_arrow.png",
+      "source": "https://opengameart.org/content/simple-ornamented-arrow",
+      "author": "Nallebeorn / Benjamin Larsson",
+      "sha256": "C4DC6AA4022DE3F518C477472A1B46E3150D1FDAEC5856FD65B8983326728DA1",
+      "imported": "2026-09-28",
+      "license": "CC0-1.0"
+    }
+  ]
+}

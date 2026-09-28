@@ -1,0 +1,87 @@
+#pragma once
+#include "rts/Types.hpp"
+#include "rts/Weapons.hpp"
+#include <array>
+#include <cstdint>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <optional>
+#include <vector>
+
+namespace rts {
+using EntityId = std::uint32_t;
+using PlayerId = std::uint8_t;
+inline constexpr PlayerId neutralPlayer = 255;
+enum class TeamColor { Blue, Red, Green, Purple, Orange, Cyan };
+struct TeamPalette { unsigned rgb; std::wstring_view name; };
+inline constexpr std::array<TeamPalette, 6> teamPalettes{{
+    {0x4b9edb, L"Синий"}, {0xe06464, L"Красный"}, {0x73ba67, L"Зелёный"},
+    {0xb184d5, L"Фиолетовый"}, {0xe1a054, L"Оранжевый"}, {0x65c9c3, L"Бирюзовый"}
+}};
+struct PlayerSettings {
+    PlayerId id = 0;
+    std::string commanderId = "human_commander";
+    TeamColor color = TeamColor::Blue;
+};
+inline unsigned teamRgb(TeamColor color) { return teamPalettes.at(static_cast<size_t>(color)).rgb; }
+class ArmySupply {
+public:
+    static constexpr int maximum = 100;
+    int used() const { return used_; }
+    bool canReserve(int cost) const { return cost >= 0 && cost <= maximum - used_; }
+    bool reserve(int cost) {
+        if (!canReserve(cost)) return false;
+        used_ += cost;
+        return true;
+    }
+    void release(int cost) {
+        if (cost < 0 || cost > used_) throw std::invalid_argument("Invalid army supply release");
+        used_ -= cost;
+    }
+private:
+    int used_{};
+};
+struct HeroDefinition { int healthPerLevel = 40; int damagePerLevel = 4; };
+struct ProgressionRules {
+    int experienceRadius = 8;
+    int experiencePerVictimLevel = 50;
+    std::vector<int> thresholds{0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200};
+};
+struct ResourceCost { int crystals{}, supply{}; };
+enum class EntityVisual { Unit, Hall, Barracks, Tower };
+struct EntityDefinition {
+    std::string id = "human.worker";
+    std::string factionId = "humans";
+    std::string factionName = "Люди"; // Resolved from the faction catalog.
+    std::string displayName = "Рабочий";
+    std::string description;
+    ResourceCost cost{40, 1};
+    bool mobile = true;
+    float movementPerSecond = 2.8f;
+    int carryCapacity = 10;
+    int trainingTicks = 90;
+    int dayVision = 8, nightVision = 6;
+    int maximumHealth = 60;
+    bool canBuild = true;
+    MovementType movement = MovementType::Walking;
+    int formationPriority = 1;
+    int attackDamage = 0;
+    float attackRange = 1.5f;
+    int attackWindupTicks = 6, attackRecoveryTicks = 6, attackCooldownTicks = 18;
+    AttackTargets attackTargets = AttackTargets::SameLayer;
+    std::optional<ProjectileDefinition> projectile;
+    UnitSpriteDefinition sprite;
+    int level = 1;
+    std::optional<HeroDefinition> hero;
+    bool isWorker() const { return canBuild || carryCapacity > 0; }
+    // Construction and mobility are independent capabilities, not exclusive kinds.
+    bool constructible{};
+    int width = 1, height = 1;
+    int constructionTicks = 180;
+    bool acceptsCargo{};
+    std::vector<std::string> trainableUnits;
+    EntityVisual visual = EntityVisual::Unit;
+    std::vector<std::string> alternateForms;
+};
+}

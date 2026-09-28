@@ -1,0 +1,180 @@
+#include "TestSupport.hpp"
+
+namespace rts::tests {
+void visionTests(TestSuite& test, const TestContext& context) {
+    (void)context;
+    test("Overlapping observers match a per-cell ray union across movement and terrain changes", [] {
+        rts::Map map(28, 24);
+        std::mt19937 random(92143);
+        std::vector<rts::Visibility> expected(28 * 24, rts::Visibility::Unexplored);
+        rts::FogOfWar fog(28, 24);
+        for (int frame = 0; frame < 12; ++frame) {
+            std::vector<rts::EnvironmentObject> trees;
+            for (int i = 0; i < 30; ++i) {
+                const rts::Cell cell{int(random() % 28), int(random() % 24)};
+                map.at(cell).height = int(random() % 3);
+                trees.push_back(rts::makeEnvironment("TREE", i + 1, cell));
+            }
+            map.rebuildVisionBlockers(trees);
+            std::vector<rts::VisionSource> observers;
+            // Includes fully overlapping sources, different heights and air vision.
+            for (int i = 0; i < 16; ++i)
+                observers.push_back({{int(random() % 28), int(random() % 24)}, 3 + int(random() % 8), i % 4 == 0});
+            const std::vector<rts::VisionSource> duplicates(observers.begin(), observers.begin() + 4);
+            observers.insert(observers.end(), duplicates.begin(), duplicates.end());
+            if (frame == 11) observers.clear();
+            fog.update(map, observers);
+            for (int y = 0; y < 24; ++y) for (int x = 0; x < 28; ++x) {
+                auto& value = expected[y * 28 + x];
+                if (value == rts::Visibility::Visible) value = rts::Visibility::Explored;
+                for (const auto observer : observers)
+                    if (rts::visionReaches(map, observer, {x, y})) value = rts::Visibility::Visible;
+                require(fog.at({x, y}) == value, "Visibility union or exploration changed");
+            }
+            const auto first = fog;
+            std::reverse(observers.begin(), observers.end());
+            fog.update(map, observers);
+            for (int y = 0; y < 24; ++y) for (int x = 0; x < 28; ++x)
+                require(fog.at({x, y}) == first.at({x, y}), "Observer order changes visibility");
+        }
+    });
+    test("Arch opening is passable; destruction removes only its own collision", [] {
+        auto scenario = flatScenario();
+        auto arch = rts::makeEnvironment("ARCH", 1000, {4, 5});
+        auto tree = rts::makeEnvironment("TREE", 1001, {4, 5});
+        scenario.environment = {arch, tree};
+        for (const auto& object : scenario.environment)
+            for (int y = 0; y < object.height; ++y) for (int x = 0; x < object.width; ++x)
+                if (object.blocks(x, y)) scenario.map.occupy(object.origin + rts::Cell{x, y});
+        scenario.map.at({6, 5}).blocked = true; // Terrain must survive object destruction.
+        rts::Simulation game(std::move(scenario));
+        const auto path = rts::findPath(game.map(), {5, 4}, {5, 6});
+        require(path && path->cost == 20, "Arch opening blocked by visual extent");
+        require(!game.map().walkable({4, 5}), "Arch pillar not blocking");
+        require(game.damageEnvironment(1000, 100), "Damage rejected");
+        require(game.environment()[0].hitPoints == 400 && game.map().occupancy({4, 5}) == 2, "Partial damage released collision");
+        require(game.damageEnvironment(1000, 400), "Destruction rejected");
+        require(!game.map().walkable({4, 5}) && game.map().occupancy({4, 5}) == 1, "Destroyed another object's footprint");
+        require(!game.map().walkable({6, 5}), "Destroyed terrain obstacle");
+        require(!game.damageEnvironment(1000, 50), "Destroyed object damaged twice");
+        const auto events = game.takeEvents();
+        require(events.size() == 1 && std::get<rts::ObjectDestroyed>(events[0]).id == 1000, "Missing destruction event");
+        game.damageEnvironment(1001, 100);
+        require(game.map().walkable({4, 5}), "Tree removal did not open path");
+    });
+    test("Forest and rock faces are visible but stop ground sight; air sees over them", [] {
+        rts::Map map(16, 16);
+        std::vector<rts::EnvironmentObject> forest;
+        for (int y = 0; y < 16; ++y) forest.push_back(rts::makeEnvironment("TREE", 1000 + y, {7, y}));
+        map.rebuildVisionBlockers(forest);
+        const rts::VisionSource ground{{3, 8}, 12};
+        require(rts::visionReaches(map, ground, {7, 8}), "The blocking tree itself is hidden");
+        require(!rts::visionReaches(map, ground, {8, 8}) && !rts::visionReaches(map, ground, {11, 12}), "Sight leaked through a solid forest");
+        require(rts::visionReaches(map, {{3, 8}, 12, true}, {11, 12}), "Forest blocked air vision");
+        map.at({7, 8}).height = 3;
+        require(rts::visionReaches(map, {{3, 8}, 12, true}, {11, 8}), "High ground blocked air vision");
+        require(!rts::visionReaches(map, {{3, 8}, 2, true}, {11, 8}), "Air vision ignored its radius");
+        rts::Map corners(10, 10);
+        std::vector<rts::EnvironmentObject> blockers{rts::makeEnvironment("TREE", 1, {4, 3}), rts::makeEnvironment("TREE", 2, {3, 4})};
+        corners.rebuildVisionBlockers(blockers);
+        require(!rts::visionReaches(corners, {{3, 3}, 8}, {5, 5}), "Sight slipped through touching tree corners");
+        require(!rts::visionReaches(corners, {{5, 5}, 8}, {3, 3}), "Corner occlusion depends on ray direction");
+        require(rts::visionReaches(corners, {{3, 3}, 8}, {4, 3}), "Adjacent tree face was hidden");
+        blockers = {rts::makeEnvironment("ROCK", 3, {6, 5})};
+        corners.rebuildVisionBlockers(blockers);
+        require(!corners.blocksVision({7, 6}) && corners.blocksVision({6, 6}), "Rock sight ignored its partial footprint");
+        require(rts::visionReaches(corners, {{8, 6}, 8}, {6, 6}) && !rts::visionReaches(corners, {{8, 6}, 8}, {5, 6}), "Rock face or shadow visibility incorrect");
+        corners.rebuildVisionBlockers({}); corners.occupy({5, 6});
+        require(rts::visionReaches(corners, {{8, 6}, 8}, {3, 6}), "Movement occupancy incorrectly blocks sight");
+    });
+    test("Tree health preserves identity and restores collision and sight without double counting", [] {
+        auto s = flatScenario(); s.worker = {3, 5};
+        s.environment = {rts::makeEnvironment("TREE", 1000, {5, 5}), rts::makeEnvironment("TREE", 1001, {5, 5})};
+        s.map.occupy({5, 5}); s.map.occupy({5, 5});
+        rts::EntityDefinition worker; worker.dayVision = worker.nightVision = 7;
+        auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
+        rts::Simulation game(std::move(s), {}, worker, {depot});
+        require(game.environment()[0].kind == rts::EnvironmentKind::Tree && game.environment()[0].maximumHitPoints == 100, "Tree type or health missing");
+        require(game.fog().visible({5, 5}) && !game.fog().visible({7, 5}), "Tree does not shadow the area behind it");
+        require(game.setEnvironmentHealth(1000, 0) && game.map().occupancy({5, 5}) == 1 && game.map().blocksVision({5, 5}), "Removed another object's blockers");
+        require(game.setEnvironmentHealth(1000, 0) && game.map().occupancy({5, 5}) == 1, "Repeated zero health released collision twice");
+        require(game.setEnvironmentHealth(1001, 0) && game.map().walkable({5, 5}) && game.fog().visible({7, 5}), "Felling did not immediately open path and sight");
+        require(game.environment().size() == 2 && game.environment()[0].id == 1000 && !game.environment()[0].active(), "Dead tree was erased");
+        require(game.setEnvironmentHealth(1000, 50) && game.environment()[0].active() && game.map().occupancy({5, 5}) == 1, "Positive health did not restore tree");
+        require(!game.fog().visible({7, 5}) && game.fog().explored({7, 5}), "Restored tree did not close sight while retaining exploration");
+        require(game.setEnvironmentHealth(1000, 80) && game.map().occupancy({5, 5}) == 1, "Healing duplicated collision");
+        require(!game.setEnvironmentHealth(1000, -1) && !game.setEnvironmentHealth(9999, 50), "Invalid restoration was accepted");
+        const auto events = game.takeEvents();
+        require(events.size() == 3 && std::holds_alternative<rts::ObjectRestored>(events.back()), "Lifecycle events were lost or duplicated");
+    });
+    test("Fog presentation feathers a circular boundary without changing logical visibility", [] {
+        rts::Map map(20, 20); rts::FogOfWar fog(20, 20); rts::FogMask mask;
+        const std::array<rts::VisionSource, 1> sources{{{{8, 8}, 5}}};
+        fog.update(map, sources);
+        require(mask.update(fog, 20, 20) && !mask.update(fog, 20, 20), "Unchanged fog rebuilt its mask");
+        require(mask.lightAt({8.5f, 8.5f}) > .99f && mask.lightAt({.5f, .5f}) == 0, "Fog centre or unexplored field is wrong");
+        const float edge = mask.lightAt({13.5f, 8.5f});
+        require(edge > .1f && edge < .95f && std::abs(edge - mask.lightAt({8.5f, 13.5f})) < .0001f, "Feathered circle is not symmetric");
+        float previous = mask.lightAt({12, 8.5f});
+        for (int i = 1; i <= 90; ++i) {
+            const float next = mask.lightAt({12 + i / 30.0f, 8.5f});
+            require(next <= previous + .0001f && previous - next < .06f, "Fog edge has a hard step or ringing");
+            previous = next;
+        }
+        require(!fog.visible({14, 8}) && mask.lightAt({14, 8.5f}) > 0, "Visual feather changed game visibility");
+        for (auto pixel : mask.pixels()) {
+            const auto alpha = pixel >> 24;
+            require((pixel & 255) <= alpha && ((pixel >> 8) & 255) <= alpha && ((pixel >> 16) & 255) <= alpha, "Fog bitmap is not premultiplied");
+        }
+        fog.update(map, {}); mask.update(fog, 20, 20);
+        require(std::abs(mask.lightAt({8.5f, 8.5f}) - .3f) < .0001f && !fog.visible({8, 8}), "Explored fog did not dim");
+        rts::FogOfWar fresh(20, 20); mask.update(fresh, 20, 20);
+        require(mask.lightAt({8.5f, 8.5f}) == 0 && !mask.covers({8, 8}), "A new match reused old exploration");
+    });
+    test("Day/night transitions, midnight and pause use simulation ticks", [] {
+        rts::WorldClock clock({30, 48, 359, 360, 1080}); // One tick per game minute.
+        const auto dawn = clock.tick();
+        require(dawn && dawn->after == rts::DayPhase::Day && dawn->minute == 360, "Sunrise event");
+        for (int i = 0; i < 719; ++i) require(!clock.tick(), "Unexpected phase event");
+        const auto dusk = clock.tick();
+        require(dusk && dusk->after == rts::DayPhase::Night && dusk->minute == 1080, "Sunset event");
+        rts::WorldClock midnight({30, 48, 1439, 360, 1080});
+        require(!midnight.tick() && midnight.minuteOfDay() == 0, "Midnight wraps incorrectly");
+        rts::Simulation game(flatScenario());
+        const auto before = game.clock().elapsedTicks();
+        game.command({6, 3});
+        require(game.clock().elapsedTicks() == before, "Command advanced time while paused");
+        game.tick();
+        require(game.clock().elapsedTicks() == before + 1, "Simulation clock did not tick");
+        mustThrow([] { rts::WorldClock invalid({30, 0, 0, 360, 1080}); });
+    });
+    test("Fog combines observers, remembers exploration and respects higher ground", [] {
+        rts::Map map(20, 20);
+        for (int y = 0; y < 20; ++y) map.at({8, y}).height = 1;
+        rts::FogOfWar fog(20, 20);
+        const std::array<rts::VisionSource, 2> sources{{{{5, 5}, 7}, {{16, 16}, 2}}};
+        fog.update(map, sources);
+        require(fog.visible({5, 5}) && fog.visible({16, 17}), "Vision sources did not combine");
+        require(!fog.visible({8, 5}) && !fog.visible({10, 5}), "Saw onto or through higher ground");
+        require(!fog.explored({19, 0}), "Unexplored area revealed");
+        fog.update(map, {});
+        require(fog.at({5, 5}) == rts::Visibility::Explored && !fog.visible({5, 5}), "Exploration was lost");
+        const std::array<rts::VisionSource, 1> high{{{{8, 5}, 4}}};
+        fog.update(map, high);
+        require(fog.visible({10, 5}) && fog.visible({6, 5}), "Higher observer cannot see lower terrain");
+    });
+    test("Night reduces actual unit and building sight while retaining exploration", [] {
+        auto s = flatScenario();
+        rts::EntityDefinition type;
+        type.dayVision = 3; type.nightVision = 1;
+        auto depot = testDepot("hall", type.id, 60); depot.dayVision = 3; depot.nightVision = 1; depot.maximumHealth = 300;
+        const std::vector<rts::EntityDefinition> buildings{depot};
+        rts::Simulation game(std::move(s), {}, type, buildings);
+        require(game.fog().visible({4, 6}), "Day radius missing");
+        ticks(game, 6100);
+        require(game.clock().phase() == rts::DayPhase::Night, "Night did not start");
+        require(!game.fog().visible({4, 6}) && game.fog().explored({4, 6}), "Night radius or fog memory incorrect");
+        require(game.fog().visible(game.worker().cell), "Observer cannot see own tile");
+    });
+}
+}
