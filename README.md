@@ -1,239 +1,160 @@
-# Visages of War — RTS
+<p align="center">
+  <a href="arts-concept/ui/name.png">
+    <img src="arts-concept/ui/name.png" alt="Visages of War" width="720">
+  </a>
+</p>
 
-Фэнтезийная RTS на **C++20**, только **Windows 10/11 x64**. Название — **Visages of War**; техническое имя проекта — RTS, файл игры — `Visages of War.exe`. Редактор карт — отдельное приложение **Visages Forge**, файл `Visages Forge.exe`.
-Версия задаётся в `CMakeLists.txt` и автоматически используется меню и свойствами exe.
-Собственный небольшой движок: Win32, Direct2D, DirectWrite и WIC из Windows SDK.
-Земля отображается квадратными клетками; здания и юниты — объёмными 2D-спрайтами с наклонным ракурсом.
-Для JSON используется nlohmann/json 3.12.0 (MIT), исходник включён в `libs/`. Сборка не скачивает зависимости.
+# Visages of War
 
-## Запуск
+A story-driven RTS set in an original dark fantasy universe, featuring a campaign and PvE missions with unique commanders. Inspired by **Warcraft III** and **StarCraft II's co-op mode**.
 
-После сборки с `-Package` в корне проекта создаются два ярлыка:
+**Windows PC · 2D real-time strategy · Early prototype**
 
-- **Visages of War.lnk** — игра: «Сражения» → «Тестовая долина» → командир и цвет → «Начать сражение».
-- **Visages Forge.lnk** — редактор карт; сразу открывает рабочую копию тестовой долины.
+[Concept gallery](#concept-art) · [Technical guide](README_TECHNICAL.md)
 
-Оба exe находятся в **out/package/RTS/** и используют общий каталог `assets` рядом с ними.
-Пункта редактора в игре нет. Переносить нужно всю папку RTS вместе с assets.
-После перемещения репозитория ярлыки можно обновить через `scripts/make-shortcuts.ps1` или повторную упаковку.
-Сохранения партии пока нет.
-Игра запускается на весь экран без рамки, на мониторе с указателем мыши, в его текущем разрешении.
-Alt+Tab переключает на другие приложения; Alt+F4 закрывает игру. На стартовом экране — авторский фон и логотип. Иконка встроена в exe и используется обычными ярлыками на него.
+## The vision
 
-## Что работает
+Build a base, gather crystals, lead an army, and follow the people whose wars shape the world. Visages of War brings together classic RTS battles, hero progression, and missions built around a story.
 
-- **Visages Forge:** подложка, свободная покраска текстурами, декоративные и игровые объекты,
-  размещение своих/вражеских юнитов, высоты, вода и рампы. Сохранение/открытие карт, отмена/повтор,
-  F9 запускает игру с текущей картой, F10 закрывает тест и возвращает в Forge.
-  Несохранённые правки и история отмены остаются в редакторе. [Управление и добавление ассетов](docs/WORLD_EDITOR.md).
-- Карта **64×64** с квадратной экранной сеткой, высотами **−1, 0, 1, 2** и рампами.
-- Два водоёма: мелководье и глубина лежат на одной высоте **−1**, ниже основной суши.
-  Вход и выход — через береговые спуски; через большой водоём проходит брод шириной в две клетки.
-- Береговые спуски имеют ширину две клетки, подъёмы на возвышенности — три.
-- Тип передвижения задаётся в данных: пеший — суша/мелководье, плавающий — мелководье/глубина,
-  амфибия — суша и вода, летающий — отдельный воздушный слой над рельефом и препятствиями.
-- Шесть рабочих, шесть наземных воинов, четыре летуна, четыре лучника, две катапульты, герой-рыцарь, ратуша и 300 стартовых кристаллов. Один слот игрока.
-- Летуны рядом с базой используют тот же временный спрайт, поднятый над землёй.
-  При выделении кольцо находится у юнита, зелёная вертикальная линия показывает его положение на земле.
-  Наземные препятствия и юниты не мешают полёту; другие летуны учитываются при движении.
-- Герой развивается с 1-го до 10-го уровня: опыт, рост здоровья/урона, полоса прогресса.
-  Кнопки слева: F1 — армия без рабочих, F2 — герой и камера на него. После смерти F2 серая и неактивная.
-- Шесть вражеских воинов в юго-восточном углу, около клетки **(53, 56)**.
-  ПКМ по видимому врагу задаёт атаку; стоящие воины сами замечают противников в пределах обзора.
-  Ближний бой: подход к цели, взмах, урон, перезарядка, смерть, освобождение клетки и лимита.
-  Враги скрыты туманом войны, отличаются цветом и красной полосой здоровья.
-- Лучник выпускает стрелу с самонаведением по выбранному юниту, включая воздушных.
-  Катапульта фиксирует точку при выстреле и наносит урон наземным врагам в области при падении.
-  От камня можно уйти; снаряды продолжают полёт после гибели стрелка.
-  Дальность, дуга, скорость, спрайты и три фазы атаки задаются в данных: [оружие](docs/COMBAT.md).
-- Общая модель юнитов и зданий: стабильные ID, типы из данных, владелец, здоровье и приказы.
-- Выделение юнита или здания щелчком, группы рамкой, добавление через Shift.
-- Одиночный ЛКМ проверяет экранную область вокруг спрайта с учётом высоты и масштаба.
-  При перекрытии выбирается передний объект. Подсветка клетки при наведении отключена.
-- Авторский атлас курсоров: указатель, кнопка меню, выбор, перемещение камеры, атака, добыча, строительство, точка сбора и запрет. Размеры и точки клика настраиваются в данных: [замена курсора](docs/ASSETS.md#замена-курсора).
-- Строительство рабочим: выбор площадки, проверка занятости/высоты/видимости, стоимость,
-  перемещение к стройке, прогресс, остановка, возобновление и отмена.
-- Ратуша производит рабочих, казарма — воинов, лучников и катапульты; смотровая башня расширяет обзор.
-- У каждого производящего здания своя очередь до пяти заказов и точка сбора.
-  Готовый юнит выходит к свободному краю здания и идёт к точке сбора.
-- Кристаллы добываются из конечных залежей и зачисляются после доставки в готовую ратушу.
-  Каждая залежь в тестовой карте содержит 1000 единиц — это максимальный запас одного кристалла.
-  Видимый кристалл выбирается ЛКМ как нейтральный объект: жёлтое кольцо и остаток ресурса в нижней панели.
-  Под туманом войны выбрать его нельзя; при потере обзора или истощении выделение снимается.
-- Приказ добычи привязан к выбранному кристаллу. При занятых местах рабочий выбирает известную
-  залежь в радиусе трёх клеток от него; временный затор по пути не меняет цель.
-  После доставки сохраняется та же область добычи. Когда местные залежи истощены, рабочий останавливается.
-- Лимит армии **100**: рабочий занимает 1, воин/лучник — 2, катапульта — 4, герой — 5. Заказы резервируют лимит сразу.
-- A* учитывает тип передвижения, обрывы, рампы, углы и занятые клетки.
-- Общий приказ задаёт плотный строй вокруг точки: по **два юнита в ряд**, 12 юнитов — **6×2 соседние клетки без пропусков**.
-  Направление — от среднего положения группы к цели. Меньший приоритет в данных ставит юнита впереди;
-  внутри приоритета подбираются ближайшие места. У воина приоритет 1, у летуна и лучника — 2, у катапульты и рабочего — 3.
-  На диагонали ряды образуют непрерывную ступеньку по клеткам.
-- На открытом месте готовый строй сохраняет интервалы, скорость группы ограничена самым медленным участником.
-  Возле препятствий строй может растягиваться; юниты обходят препятствия и занимают назначенные места.
-  Ожидание соседа сохраняет приказ. Наземные и воздушные юниты резервируют клетки раздельно.
-- Обзор от юнитов и зданий, чёрная неисследованная область и затемнённая исследованная область.
-  Ночью обзор сокращается; с низины не видно поверх высокого плато.
-  Деревья и скалы перекрывают наземный обзор: первое препятствие видно, объекты за ним скрыты.
-  Летуны видят поверх окружения и высот в пределах своего радиуса. Край тумана смягчён на карте и миникарте.
-- Миникарта, панель выделения, кнопки команд, здоровье, стройка, очередь и ресурсы.
-- Миникарта ориентирована как игровая карта; положение камеры, клики и маркеры согласованы.
-- Ходьба использует кадры шагов, остановка сохраняет направление взгляда.
-- Командиры выбираются из каталога; раса — свойство командира. Пока есть тестовый командир людей.
-- Отдельный слой окружения с частичными масками препятствий: арка имеет проход между опорами.
-  У дерева 100 прочности. При 0 оно перестаёт отображаться и блокировать путь/обзор, при положительной
-  прочности возвращается с прежним ID. Разрушение и восстановление доступны через API симуляции.
-- Игровые часы, день/ночь, события рассвета/заката и освещение.
-- Unicode-пути, ресурсы рядом с exe, независимость от текущей рабочей папки.
-- Базовые PNG из интернета; авторы, источники и CC0: [assets/THIRD_PARTY.md](assets/THIRD_PARTY.md).
+Valeri is at the heart of that story. The Church, the Inquisition, the Dragon Empire, and the Plague are its central powers, each with a distinct identity and a place in the campaign.
 
-Это технический прототип. Бой работает между подвижными юнитами; атаки построек и окружения пока нет.
-Предметов, способностей, возрождения героя и сохранений ещё нет. Башня не стреляет.
-Атака зданий и окружения пока не подключена; разрушение окружения проверяется через API и тесты.
-Обход соседей базовый: плотная встречная толпа в узком проходе может остановиться.
-Рабочие, наземные воины, летуны и герой используют временный общий спрайт; герой отмечен золотым кольцом и уровнем.
-Здания используют временные изображения/фигуры.
-Корабли и амфибии ещё не добавлены в игровой каталог; их передвижение,
-выпуск и точки сбора реализованы и проверяются отдельными сценариями симуляции.
-Тестовые летуны размещены на карте; их обучение в зданиях пока не подключено.
+- **A campaign at the heart of the game.** Authored missions with their own objectives, encounters, and place in the wider narrative.
+- **Commanders with distinct identities.** Each commander is intended to bring a different army, mechanics, and approach to battle.
+- **Heroes within your army.** Experience and levels, with abilities, passive effects, auras, and equipment planned as the project grows.
+- **Terrain that matters.** Elevation, narrow passages, forests, water, and fog of war shape movement and visibility. A day/night cycle provides a foundation for future mechanics.
+- **A world built in Visages Forge.** A dedicated map editor for terrain, texture painting, scenery, and unit placement.
 
-## Управление
+## Concept art
 
-| Действие | Управление |
-|---|---|
-| Выделить юнита или здание | ЛКМ по изображению |
-| Выделить группу юнитов | Зажать ЛКМ на карте и протянуть рамку |
-| Добавить к группе / переключить отдельного юнита | Shift + рамка / Shift + ЛКМ |
-| Переместить выбранных юнитов | ПКМ по земле или миникарте |
-| Выбрать армию, включая героя и поддержку, без рабочих | F1 или кнопка «Армия» слева |
-| Выбрать героя и перевести на него камеру | F2 или портрет героя слева |
-| Атаковать конкретного врага | ПКМ по видимому вражескому юниту |
-| Добывать с доставкой | ПКМ по видимому кристаллу |
-| Отнести груз | ПКМ по готовой ратуше |
-| Построить казарму | Выбрать рабочего → B или кнопка «Казарма» → ЛКМ по зелёной площадке |
-| Построить ратушу / башню | Рабочий → H / O или соответствующая кнопка |
-| Отменить режим размещения | ПКМ или Esc |
-| Возобновить стройку / добавить строителя | Выбрать рабочего → ПКМ по стройплощадке |
-| Остановить выбранных юнитов, сохранив груз | Ctrl+S или «Стоп» |
-| Заказать юнита | Ратуша: Q — рабочий. Казарма: Q — воин, E — лучник, T — катапульта; либо кнопки справа |
-| Задать точку сбора | Выбрать здание → ПКМ по свободной земле/миникарте; либо R → ЛКМ |
-| Отменить последний заказ / незавершённую стройку | Выбрать здание → X или «Отменить» |
-| Камера | WASD, стрелки, перетаскивание средней кнопкой, ЛКМ/перетаскивание по миникарте |
-| Масштаб у курсора | Колесо мыши |
-| Вернуться к базе | Home |
-| Сетка и пути выбранных юнитов | G; включены по умолчанию, состояние показано сверху |
-| Пауза | Пробел |
-| Меню / продолжить матч | Esc |
-| Переключиться на другое приложение | Alt+Tab |
-| Выйти | «Выйти» в главном меню или Alt+F4 |
+A glimpse of Valeri and the central powers of the story. These are concept artworks, not screenshots of the current game. Click an image to view it in full.
 
-Стартовые цены: ратуша 200, казарма 100, башня 75, рабочий 40, воин 60 кристаллов.
-В прототипе отмена возвращает всю стоимость. Новая ратуша принимает груз после завершения.
-Стройка идёт только рядом с рабочим; после остановки можно продолжить другим рабочим.
-Если все выходы из здания заняты, готовый заказ ждёт освобождения и сохраняет резерв лимита.
-Точка сбора пока указывает на свободную клетку, без автоматического приказа добычи.
-Строить обычные здания можно только на суше. Вода обозначена бирюзовым (мелко) и синим (глубоко).
-Граница между мелководьем и глубиной не создаёт перепада высоты. В малый водоём можно спуститься
-с восточной и южной стороны, на брод большого — с западной и восточной. Спуски имеют ширину две клетки.
+<p align="center">
+  <a href="arts-concept/inquisition/valeri.png">
+    <img src="arts-concept/inquisition/valeri.png" alt="Valeri, shown as a novice of the Church and an inquisitor" width="640">
+  </a><br>
+  <strong>Valeri</strong><br>From novice to inquisitor
+</p>
 
-Определения юнитов, героев и зданий используют одну структуру в JSON:
-- `assets/data/catalog.json` — расы и список файлов каталога;
-- `assets/data/entities/humans.json` — имя, описание, раса, стоимость, характеристики и возможности каждой сущности;
-- `assets/data/commanders.json` — командиры и ссылки на стартовые сущности;
-- `assets/data/rules.json` — общие правила опыта героя и пороги уровней.
+### The Church of the Dragon Mother
 
-Подсказки над кнопками строительства/обучения, карточками выбранных юнитов и героя,
-а также панелью здания показывают имя, описание, расу и требования в кристаллах/лимите.
-Нехватка ресурсов выделяется цветом. Подробнее: [как редактировать данные](docs/DATA.md).
-Наборы можно разделять по расам и командирам; внутри всегда одна схема и уникальные ID.
-Данные допускают сочетание строительства и передвижения, а также ссылки на другие формы.
-Выкапывание, посадка и движение многоклеточных зданий пока не реализованы.
+White and gold, sacred fire, and a faith centred on healing and protection.
 
-Урон 0 отключает бой. Дальность задаётся для любого оружия, у ближнего боя дополнительно проверяется доступность по рельефу.
-Скорость задана в клетках в секунду; подготовка, завершение и перезарядка атаки — в тиках (30 тиков = секунда).
-Герой получает **50 × уровень врага** опыта за врага, убитого его армией в радиусе восьми клеток.
-При нескольких героях поблизости награда делится поровну; погибшие и достигшие максимума не участвуют.
-Обычные юниты не получают опыт, их уровень остаётся заданным в данных.
-Новая партия сбрасывает опыт героя; рост характеристик задан в `entities/humans.json`, пороги — в `rules.json`.
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="arts-concept/holy-dragon/paladin.png">
+        <img src="arts-concept/holy-dragon/paladin.png" alt="A paladin in white and gold armour carrying a shield and a burning censer" height="160">
+      </a><br>
+      <strong>Paladin</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="arts-concept/holy-dragon/priestess.png">
+        <img src="arts-concept/holy-dragon/priestess.png" alt="A Dragon Priestess in white robes, with healing and protective magic" height="160">
+      </a><br>
+      <strong>Dragon Priestess</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="arts-concept/holy-dragon/chram-materi-dragon.png">
+        <img src="arts-concept/holy-dragon/chram-materi-dragon.png" alt="The Temple of the Dragon Mother, a mountain sanctuary around a golden dragon and sacred flame" height="160">
+      </a><br>
+      <strong>Temple of the Dragon Mother</strong>
+    </td>
+  </tr>
+</table>
 
-Для проверки боя нажмите F1 и отправьте воинов в правую нижнюю часть карты.
-Когда противник попадёт в обзор, нажмите ПКМ по нему. Обычный приказ движения выполняется
-до конца; автоматический поиск противника работает у стоящих воинов. После гибели цели они ищут следующую.
-Тестовый противник красный; при выборе красного цвета для себя противник будет синим.
+[More Church concepts](arts-concept/holy-dragon/).
 
-«Начать сражение» создаёт новую партию. «Продолжить» возвращает текущую.
-Главное меню приостанавливает симуляцию.
+### The Inquisition
 
-## Сборка
+Crimson robes, iron masks, ash, and the machinery of purification.
 
-Нужны Visual Studio 2022 или Build Tools 2022 с **Desktop development with C++**,
-**Windows SDK** и **C++ CMake tools for Windows**. CMake — 3.25 или новее.
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="arts-concept/inquisition/ash-lady.png">
+        <img src="arts-concept/inquisition/ash-lady.png" alt="A hooded Inquisition figure wielding ash through a censer" height="160">
+      </a><br>
+      <strong>Ash and Purification</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="arts-concept/inquisition/judge.png">
+        <img src="arts-concept/inquisition/judge.png" alt="The Judge, suspended above the ground by three chained seals" height="160">
+      </a><br>
+      <strong>Judge</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="arts-concept/inquisition/purification-wagon.png">
+        <img src="arts-concept/inquisition/purification-wagon.png" alt="An iron-caged Purification Wagon drawn by armoured horses" height="160">
+      </a><br>
+      <strong>Purification Wagon</strong>
+    </td>
+  </tr>
+</table>
 
-Из PowerShell в папке проекта:
+[More Inquisition concepts](arts-concept/inquisition/).
 
-```powershell
-.\scripts\build.ps1 -Configuration Debug -Test -Run
-.\scripts\build.ps1 -Configuration Debug -RunForge
-.\scripts\build.ps1 -Configuration Release -Test -Package
-.\scripts\build.ps1 -Configuration Release -Benchmark
-```
+### The Dragon Empire
 
-Скрипт находит CMake из Visual Studio; можно вызывать по абсолютному пути из другой папки.
-При ограниченной ExecutionPolicy:
+Imperial banners, disciplined soldiers, and the bond between human and dragon forms.
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Configuration Debug -Test -Run
-```
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="arts-concept/dragon/serafina.png">
+        <img src="arts-concept/dragon/serafina.png" alt="Serafina in crimson and gold dragon armour" height="160">
+      </a><br>
+      <strong>Serafina</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="arts-concept/dragon/dragon-slayer.png">
+        <img src="arts-concept/dragon/dragon-slayer.png" alt="An imperial crossbowman with a deployable field crossbow" height="160">
+      </a><br>
+      <strong>Dragon Slayer</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="arts-concept/dragon/drakonid-1.png">
+        <img src="arts-concept/dragon/drakonid-1.png" alt="A warrior in human and winged dragon forms, with transformation studies" height="160">
+      </a><br>
+      <strong>Dragonborn</strong>
+    </td>
+  </tr>
+</table>
 
-При наличии CMake в PATH: cmake --preset windows-x64, cmake --build --preset debug,
-ctest --preset debug. В Visual Studio откройте корневой CMakeLists.txt.
+[More Dragon Empire concepts](arts-concept/dragon/).
 
-Debug exe: `out/build/windows-x64/bin/Debug/Visages of War.exe` и `Visages Forge.exe` в той же папке.
-Release-пакет: out/package/RTS/. MSVC runtime подключён статически, дополнительные игровые DLL не нужны.
-Перед пересборкой закройте запущенную копию: Windows блокирует замену открытого exe.
+### The Plague
 
-## Пути и структура
+Stitched bodies, bound souls, and structures of bone, iron, and cloth.
 
-| Каталог | Содержимое |
-|---|---|
-| include/rts, src/core | Карта, навигация, определения, сущности, приказы, обзор, выбор |
-| src/platform | Короткие точки входа, сервис путей, курсоры и общие средства Windows |
-| src/game | Жизненный цикл игры, команды, ввод и оконные проверки |
-| src/forge | Жизненный цикл Forge, документы, инструменты, запуск тестового боя |
-| src/render | Отдельные модули ресурсов, ландшафта, объектов, HUD, миникарты, меню и снимков |
-| libs | Сторонние библиотеки, их CMake-подключение и лицензии |
-| assets/maps | Сценарии |
-| assets/data | Определения командиров, юнитов и зданий |
-| assets/world | Каталоги материалов и окружения для игры и редактора |
-| assets/sprites, assets/textures | Графика |
-| tests | Девять тематических наборов проверок, переносимость и отдельный замер производительности |
-| scripts | Сборка и повторное скачивание ассетов |
-| out | Сборки и тестовые артефакты, исключён из Git |
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="arts-concept/mor/plague.png">
+        <img src="arts-concept/mor/plague.png" alt="Adrian and the twisted armies of the Plague" height="160">
+      </a><br>
+      <strong>Adrian and His Army</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="arts-concept/mor/mor-kuklovod.png">
+        <img src="arts-concept/mor/mor-kuklovod.png" alt="A skeletal Puppeteer raising fallen bodies with suspended threads" height="160">
+      </a><br>
+      <strong>Puppeteer</strong>
+    </td>
+    <td align="center" width="33%">
+      <a href="arts-concept/mor/mor-buildings.png">
+        <img src="arts-concept/mor/mor-buildings.png" alt="The Heart of the Plague and a collection of bone-and-iron buildings" height="160">
+      </a><br>
+      <strong>Architecture of the Plague</strong>
+    </td>
+  </tr>
+</table>
 
-Ресурсы обоих приложений читаются из <папка exe>/assets. Пользовательские данные:
-<LocalAppData>/RTS, корень определяется через Windows Known Folders.
-При обычном запуске создаётся logs/RTS.log; диалоги редактора предлагают сохранять карты в maps/.
-Временные карты для F9 создаются в forge/previews/ и удаляются после завершения теста.
+[More Plague concepts](arts-concept/mor/).
 
-CLI-проверки:
+## Where the project is today
 
-- `& ".\Visages of War.exe" --verify-assets` — загрузить определения, сценарий и декодировать PNG без окна.
-- `& ".\Visages of War.exe" --snapshot C:\path\preview.png` — снимок начальной сцены без окна.
-- `& ".\Visages of War.exe" --snapshot-grid C:\path\grid.png` — снимок квадратной сетки и площадки строительства.
-- `& ".\Visages of War.exe" --snapshot-menu C:\path\menu.png` — снимок меню.
-- `& ".\Visages of War.exe" --smoke-test` — скрытое окно, проверка выделения, стройки, выпуска, точки сбора и боя.
-- `& ".\Visages Forge.exe" --verify-assets` — проверить ресурсы редактора.
-- `& ".\Visages Forge.exe" --snapshot C:\path\forge.png` — снимок редактора без окна.
-- `& ".\Visages Forge.exe" --smoke-test` — скрытые окна редактора и игры: мазок, отмена/повтор,
-  декор, юнит, сохранение, F9 с несохранёнными правками, F10, сохранность документа и истории.
-  Рядом с тестируемыми exe создаются `forge-editor-preview.png` и `forge-play-preview.png`.
-- `& ".\Visages Forge.exe" --map "C:\Карты\Моя карта.rtsmap"` — открыть карту в редакторе.
-- `& ".\Visages of War.exe" --map "C:\Карты\Моя карта.rtsmap"` — сразу начать бой на карте.
+Visages of War is an early prototype built on a custom C++ engine. The current test battlefield supports crystal gathering, construction and training, group formations, melee and ranged combat, flying units, hero experience, terrain elevation, and fog of war. Visages Forge runs as a separate application and can save maps and launch them in the game.
 
-CTest проверяет ядро, загрузку обоих приложений из другой рабочей папки, снимки, оконные сценарии
-и перенос exe/assets в каталог с кириллицей и пробелами, включая запуск игры из Forge.
-Подробнее: [архитектура](docs/ARCHITECTURE.md), [развитие механик](docs/GAME_SYSTEMS.md), [графика](docs/ASSETS.md).
+The campaign and full commander rosters are still ahead. Much of the in-game artwork is temporary; the concepts above show the intended visual direction.
 
-Замер `-Benchmark` запускается отдельно от CTest, без окна, и сохраняет результаты в
-`out/build/windows-x64/performance-Release.txt`. Он измеряет конкретные нагрузки на обзор
-и поиск пути; это не измерение FPS. [Структура модулей и оптимизации](docs/MAINTENANCE.md).
+For setup, build instructions, controls, architecture, and the exact scope of the prototype, see the **[technical README](README_TECHNICAL.md)** (in Russian).
