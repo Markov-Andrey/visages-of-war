@@ -6,7 +6,7 @@ namespace rts {
 using namespace render;
 
 void Renderer::reloadWorldAssets(const WorldAssets& assets) {
-    worldAssets_=assets; materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); buildingImages_.clear(); paintResources_.clear(); terrainPaint_.reset();
+    worldAssets_=assets; materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); maskedImages_.clear(); paintResources_.clear(); terrainPaint_.reset();
 }
 void Renderer::validateWorldAssets(const WorldAssets& assets) {
     const auto dimensions=[&](const std::filesystem::path& file) {

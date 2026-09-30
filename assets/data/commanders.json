@@ -7,7 +7,22 @@
       "description": "Валери — командир Церкви Святого Пламени.",
       "factionId": "humans",
       "startingWorker": "human.worker",
-      "startingHero": "human.hero"
+      "startingHero": "human.hero",
+      "rallySprite": {
+        "image": "sprites/markers/valeri/rally-point.png",
+        "teamMask": "sprites/markers/valeri/rally-point-team.png",
+        "scale": 0.14,
+        "ticksPerFrame": 8,
+        "light": {"offset": [0, -284.285714], "radius": 1.2, "intensity": 0.7, "color": [255, 196, 120]},
+        "frames": [
+          {"source": [28, 0, 338, 724], "anchor": [136, 630.285714]},
+          {"source": [392, 0, 364, 724], "anchor": [124, 631.285714]},
+          {"source": [756, 0, 356, 724], "anchor": [114, 629.285714]},
+          {"source": [1112, 0, 356, 724], "anchor": [112, 629.285714]},
+          {"source": [1468, 0, 340, 724], "anchor": [110, 629.285714]},
+          {"source": [1808, 0, 344, 724], "anchor": [128, 629.285714]}
+        ]
+      }
     }
   ]
 }

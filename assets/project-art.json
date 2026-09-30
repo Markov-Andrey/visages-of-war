@@ -76,6 +76,58 @@
                       "path": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
                       "imported": "2026-09-30",
                       "sha256": "4215A5974A2DF5EEA4B240AC936E54388B78036E3A57E39969966230B38F760F"
+                  },
+                  {
+                      "original": "graphics-export/ratusha/ratusha-0.png",
+                      "source": "Project owner revision with aligned canvas; imported unchanged",
+                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-0.png",
+                      "imported": "2026-09-30",
+                      "sha256": "AE595C1DC45A3C94DDE14B2F213E6753D021C635C836860E64FDECC3FCB3E00A"
+                  },
+                  {
+                      "original": "graphics-export/ratusha/ratusha-33.png",
+                      "source": "Project owner revision with aligned canvas; imported unchanged",
+                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-33.png",
+                      "imported": "2026-09-30",
+                      "sha256": "54C445E145E0BF69CA6E1278C3CEC379058A050B7F714E88B15AC98AEBB37143"
+                  },
+                  {
+                      "original": "graphics-export/ratusha/ratusha-66.png",
+                      "source": "Project owner revision with aligned canvas; imported unchanged",
+                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-66.png",
+                      "imported": "2026-09-30",
+                      "sha256": "16022014DC59BD7E79FE0EAC3550BE96C0DF28253154185654DF73564D6364C3"
+                  },
+                  {
+                      "original": "graphics-export/ratusha/ratusha-no-fire.png",
+                      "source": "Project owner revision with aligned canvas; imported unchanged",
+                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-no-fire.png",
+                      "imported": "2026-09-30",
+                      "sha256": "E118EAC13F4B66EEB8E70D970CB1C7D4E446F91AB7338E9FFEB89CE534DE11E8"
+                  },
+                  {
+                      "original": "graphics-export/ratusha/ratusha-kupol.png",
+                      "source": "Project owner revision with aligned canvas; imported unchanged",
+                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-kupol.png",
+                      "imported": "2026-09-30",
+                      "sha256": "970BF1D357024784270012A90A5C824777E27FA07DAB8F158A9574E01A026CDA"
+                  },
+                  {
+                      "original": "graphics-export/ratusha/ratusha-full-team-test.png",
+                      "source": "Project owner painted white-on-transparent mask with soft alpha edges; imported unchanged as ratusha-team.png",
+                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-team.png",
+                      "imported": "2026-09-30",
+                      "sha256": "836C0B44FCD42DA8B8364D4D5947B2E359980E12A5D0685D634F55DA894BD5DD"
+                  },
+                  {
+                      "original": "dragon-point-animations.png",
+                      "path": "sprites/markers/valeri/rally-point.png",
+                      "imported": "2026-09-30"
+                  },
+                  {
+                      "original": "dragon-point-animations-teamcolor.png",
+                      "path": "sprites/markers/valeri/rally-point-team.png",
+                      "imported": "2026-09-30"
                   }
               ]
 }

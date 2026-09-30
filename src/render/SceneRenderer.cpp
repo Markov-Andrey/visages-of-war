@@ -18,7 +18,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     const auto& map = game.map();
     target_->PushAxisAlignedClip(rect(layout.world.x, layout.world.y, layout.world.width, layout.world.height), D2D1_ANTIALIAS_MODE_ALIASED);
     const auto onScreen = [&](Vec2 p) { return p.x > -250 && p.x < extent.x + 250 && p.y > -80 && p.y < extent.y; };
-    enum class Kind { Crystal, Environment, Decoration, Building, Corpse, Unit };
+    enum class Kind { Crystal, Environment, Decoration, Building, Corpse, Unit, RallyPoint };
     struct Item { float depth; Kind kind; size_t index; };
     std::vector<Item> items;
     std::vector<const Building*> groundSelections;
@@ -35,6 +35,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         items.push_back({object.origin.y + object.height - .5f, Kind::Environment, i});
     }
     for (size_t i = 0; i < game.buildings().size(); ++i) items.push_back({buildingDepth(game.buildings()[i]), Kind::Building, i});
+    for (size_t i = 0; i < game.buildings().size(); ++i) if (rallyPointVisible(game, game.buildings()[i], ui))
+        items.push_back({game.buildings()[i].rally.y + .5f, Kind::RallyPoint, i});
     for (size_t i = 0; i < game.corpses().size(); ++i) if (game.fog().visible(game.corpses()[i].cell))
         items.push_back({game.corpses()[i].position.y, Kind::Corpse, i});
     for (size_t i = 0; i < game.units().size(); ++i) if (game.fog().visible(game.units()[i].cell) && !airborne(game.units()[i].definition.movement))
@@ -56,6 +58,9 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             const auto item = items[nextItem++];
             worldOpacity_ = 1;
             switch (item.kind) {
+            case Kind::RallyPoint:
+                drawRallyPoint(game, game.buildings()[item.index], view);
+                break;
             case Kind::Decoration: {
                 const auto& object = game.landscape().decorations[item.index];
                 worldOpacity_ = game.fog().visible({int(object.position.x), int(object.position.y)}) ? 1.0f : .3f;
@@ -137,15 +142,12 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             line(previous, next, 0xe5ce92, 1.5f); previous = next;
         }
     }
-    for (const auto& b : game.buildings()) if (ui.selection.contains(b.id) && !b.definition.trainableUnits.empty() && game.fog().explored(b.rally)) {
+    for (const auto& b : game.buildings()) if (rallyPointVisible(game, b, ui)) {
         const auto p = view.project(center(b.rally), map.surfaceHeight(b.rally, center(b.rally)));
         const auto start = view.project({b.origin.x + b.definition.width * .5f, b.origin.y + b.definition.height * .5f}, float(map.at(b.origin).height));
         for (int i = 0; i < 20; i += 2) line(start + (p - start) * (i / 20.0f), start + (p - start) * ((i + 1) / 20.0f), 0xb6d7ba, 1.5f);
-        line(p, p + Vec2{0, -55} * view.zoom, 0xe1ddbb, 2);
-        const std::array<Vec2, 3> flag{{p + Vec2{0, -55} * view.zoom, p + Vec2{31, -44} * view.zoom, p + Vec2{0, -33} * view.zoom}};
-        polygon(flag, teamColor_);
     }
-    drawNightLighting(game, view, extent);
+    drawNightLighting(game, view, extent, ui);
     if (!ui.placement.empty() && hover) {
         const auto& type = game.entityType(ui.placement);
         const unsigned colorPreview = game.canPlace(ui.placement, *hover) ? 0x7cdeb0 : 0xeb7c77;

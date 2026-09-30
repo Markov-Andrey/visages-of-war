@@ -1,5 +1,6 @@
 #pragma once
 #include "rts/Match.hpp"
+#include "rts/RallySprite.hpp"
 #include <filesystem>
 #include <unordered_map>
 
@@ -9,6 +10,7 @@ struct CommanderDefinition {
     std::string id, displayName, description;
     std::string factionId, factionName;
     std::string startingWorker, startingHero;
+    std::optional<RallySpriteDefinition> rallySprite;
 };
 class Definitions {
 public:

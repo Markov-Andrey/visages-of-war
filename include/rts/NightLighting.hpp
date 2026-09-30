@@ -1,6 +1,7 @@
 #pragma once
 #include "rts/Simulation.hpp"
 #include "rts/FogMask.hpp"
+#include <span>
 
 namespace rts {
 struct ProjectedLight {
@@ -16,7 +17,8 @@ std::vector<ProjectedLight> crystalLights(const Simulation& game, const WorldVie
 class NightLightingRaster {
 public:
     static constexpr int pixelStep = 6;
-    void update(const Simulation& game, const WorldView& view, Vec2 extent, const FogMask& fog);
+    void update(const Simulation& game, const WorldView& view, Vec2 extent, const FogMask& fog,
+        std::span<const ProjectedLight> additionalLights = {});
     int width() const { return width_; }
     int height() const { return height_; }
     const std::vector<std::uint32_t>& pixels() const { return pixels_; }

@@ -38,6 +38,11 @@ struct GameplayUi {
     bool rallyMode{};
     Vec2 mouse{-1, -1};
 };
+inline bool rallyPointVisible(const Simulation& game, const Building& building, const GameplayUi& ui) {
+    return building.owner == game.player().id && building.owner != neutralPlayer && building.health > 0 &&
+        building.complete() && ui.selection.contains(building.id) && !building.definition.trainableUnits.empty() &&
+        game.fog().explored(building.rally);
+}
 struct BattleLayout {
     UiRect world, minimap, info, menu, army, hero;
     std::array<UiRect, 6> commands;

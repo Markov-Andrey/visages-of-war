@@ -1,5 +1,7 @@
 /out/
 /graphics-export/
+/grahics-export/
+/grahics-import/
 /build/
 /.vs/
 /.idea/

@@ -97,6 +97,7 @@ void GameApplication::verify() {
 }
 
 void GameApplication::snapshot(const std::filesystem::path& output, bool menu, bool grid, bool title) {
+    renderer_.validateCombatAssets(definitions_);
     renderer_.snapshot(game_, output, menu || title ? &definitions_ : nullptr, grid, nullptr, title ? rts::MenuPage::Main : rts::MenuPage::BattleSetup);
 }
 

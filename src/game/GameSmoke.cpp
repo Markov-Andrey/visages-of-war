@@ -47,6 +47,10 @@ void GameApplication::exerciseInterface() {
         if (!construction.cancelTraining(*id) || construction.building(*id)->training())
             throw std::runtime_error("Smoke: cancelled training left hall effects active");
         renderer_.snapshot(construction, imageRoot / L"ratusha-idle.png", nullptr, false, &ui);
+        if (!construction.setRally(*id, {14, 15})) throw std::runtime_error("Smoke: rally preview placement failed");
+        renderer_.snapshot(construction, imageRoot / L"rally-point-preview.png", nullptr, false, &ui);
+        for (int i = 0; i < 8; ++i) construction.tick();
+        renderer_.snapshot(construction, imageRoot / L"rally-point-next-preview.png", nullptr, false, &ui);
     }
     {
         rts::Scenario forest{rts::Map(28, 28), {8, 11}, {12, 14}, {{{18, 14}, 1000}}};

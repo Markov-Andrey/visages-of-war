@@ -25,6 +25,10 @@ void Renderer::verifyAssets() {
             }
         }
     }
+    for (const auto& commander : definitions.commanders()) if (commander.rallySprite) {
+        images.push_back(imagePath(commander.rallySprite->image));
+        if (!commander.rallySprite->teamMask.empty()) images.push_back(imagePath(commander.rallySprite->teamMask));
+    }
     for (const auto& material : worldAssets_.materials()) images.push_back(material.image);
     for (const auto& object : worldAssets_.objects()) if (!object.image.empty()) images.push_back(object.image);
     for (const auto& name : images) {
@@ -91,6 +95,15 @@ void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>
         }
         check(target_->CreateBitmap(D2D1::SizeU(width, height), pixels.data(), width * 4, properties, bitmap.ReleaseAndGetAddressOf()));
     } else check(target_->CreateBitmapFromWicBitmap(converter.Get(), properties, bitmap.ReleaseAndGetAddressOf()));
+}
+
+ID2D1Bitmap* Renderer::maskedBitmap(const std::string& image, const std::string& teamMask, unsigned color) {
+    const auto path = imagePath(image), mask = imagePath(teamMask);
+    const auto tint = mask.empty() ? 0 : color;
+    auto& bitmap = maskedImages_[{path, mask, tint}];
+    if (!bitmap) loadBitmap(paths_.asset(path), bitmap, tint, SpriteTeamMask::None,
+        mask.empty() ? std::filesystem::path{} : paths_.asset(mask));
+    return bitmap.Get();
 }
 
 void Renderer::loadResources() {

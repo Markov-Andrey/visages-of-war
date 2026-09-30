@@ -329,36 +329,36 @@
         "stages": [
           {
             "from": 0,
-            "image": "sprites/buildings/valeri/ratusha/ratusha-0.png",
-            "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
-            "source": [102, 369, 1128, 704],
-            "anchor": [0.5, 0.68]
+            "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-0.png",
+            "teamMask": null,
+            "source": [0, 0, 1312, 1199],
+            "anchor": [0.5, 0.8]
           },
           {
             "from": 33,
-            "image": "sprites/buildings/valeri/ratusha/ratusha-33.png",
-            "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
-            "source": [124, 232, 1111, 889],
-            "anchor": [0.5, 0.75]
+            "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-33.png",
+            "teamMask": null,
+            "source": [0, 0, 1312, 1199],
+            "anchor": [0.5, 0.8]
           },
           {
             "from": 66,
-            "image": "sprites/buildings/valeri/ratusha/ratusha-66.png",
-            "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
-            "source": [136, 15, 1068, 1147],
+            "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-66.png",
+            "teamMask": null,
+            "source": [0, 0, 1312, 1199],
             "anchor": [0.5, 0.8]
           },
           {
             "from": 100,
-            "image": "sprites/buildings/valeri/ratusha/ratusha-no-fire.png",
-            "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
-            "source": [237, 11, 821, 1163],
+            "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-no-fire.png",
+            "teamMask": "sprites/buildings/valeri/ratusha/aligned/ratusha-team.png",
+            "source": [0, 0, 1312, 1199],
             "anchor": [0.5, 0.8],
             "lights": [
-              {"position": [410.5, 930.4], "radius": 4.2, "intensity": 0.92, "color": [255, 192, 112], "flicker": 0.025},
-              {"position": [433, 350], "radius": 1.7, "intensity": 1.0, "color": [255, 174, 70], "flicker": 0.06},
-              {"position": [454, 960], "radius": 1.25, "intensity": 1.0, "color": [255, 164, 68], "flicker": 0.1, "when": "training"},
-              {"position": [754, 871], "radius": 1.25, "intensity": 1.0, "color": [255, 164, 68], "flicker": 0.1, "when": "training"}
+              {"position": [656, 959.2], "radius": 4.2, "intensity": 0.92, "color": [255, 192, 112], "flicker": 0.025},
+              {"position": [670, 361], "radius": 1.7, "intensity": 1.0, "color": [255, 174, 70], "flicker": 0.06},
+              {"position": [691, 971], "radius": 1.25, "intensity": 1.0, "color": [255, 164, 68], "flicker": 0.1, "when": "training"},
+              {"position": [991, 882], "radius": 1.25, "intensity": 1.0, "color": [255, 164, 68], "flicker": 0.1, "when": "training"}
             ],
             "layers": [
               {
@@ -373,18 +373,18 @@
                   [963, 445, 290, 412],
                   [1405, 445, 290, 412]
                 ],
-                "destination": [337, 199, 192, 242],
+                "destination": [574, 210, 192, 242],
                 "ticksPerFrame": 3,
                 "phase": 0,
                 "when": "always"
               },
               {
-                "image": "sprites/buildings/valeri/ratusha/ratusha-kupol.png",
-                "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+                "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-kupol.png",
+                "teamMask": "sprites/buildings/valeri/ratusha/aligned/ratusha-team.png",
                 "frames": [
-                  [214, 21, 885, 1147]
+                  [0, 0, 1312, 1199]
                 ],
-                "destination": [256, 4, 365, 474]
+                "destination": [0, 0, 1312, 1199]
               },
               {
                 "image": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
@@ -398,7 +398,7 @@
                   [963, 445, 290, 412],
                   [1405, 445, 290, 412]
                 ],
-                "destination": [407, 864, 94, 150],
+                "destination": [644, 875, 94, 150],
                 "ticksPerFrame": 3,
                 "phase": 2,
                 "when": "training"
@@ -415,7 +415,7 @@
                   [963, 445, 290, 412],
                   [1405, 445, 290, 412]
                 ],
-                "destination": [707, 775, 94, 150],
+                "destination": [944, 786, 94, 150],
                 "ticksPerFrame": 3,
                 "phase": 5,
                 "when": "training"

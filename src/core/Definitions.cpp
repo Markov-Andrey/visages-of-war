@@ -157,11 +157,12 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     const auto commanders = read(resolve(root.at("commandersFile"))); fields(commanders, {"version", "commanders"}); version(commanders);
     if (!commanders.at("commanders").is_array()) throw std::runtime_error("Expected commander array");
     for (const auto& j : commanders.at("commanders")) {
-        fields(j, {"id", "name", "description", "factionId", "startingWorker", "startingHero"});
+        fields(j, {"id", "name", "description", "factionId", "startingWorker", "startingHero"}, {"rallySprite"});
         CommanderDefinition c;
         c.id = string(j.at("id")); c.displayName = string(j.at("name")); c.description = string(j.at("description"));
         c.factionId = string(j.at("factionId")); c.factionName = result.faction(c.factionId).displayName;
         c.startingWorker = string(j.at("startingWorker")); c.startingHero = string(j.at("startingHero"), true);
+        if (j.contains("rallySprite") && !j.at("rallySprite").is_null()) c.rallySprite = data::parseRallySprite(j.at("rallySprite"));
         const auto& worker = result.entity(c.startingWorker);
         if (!worker.mobile || !worker.isWorker() || worker.factionId != c.factionId) throw std::runtime_error("Invalid starting worker");
         if (!c.startingHero.empty()) {

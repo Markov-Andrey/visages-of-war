@@ -61,6 +61,7 @@ add_library(rts_render
     src/render/WorldRenderer.cpp
     src/render/UnitSpriteRenderer.cpp
     src/render/BuildingSpriteRenderer.cpp
+    src/render/RallyPointRenderer.cpp
     src/render/LightingRenderer.cpp
     src/render/ProjectileRenderer.cpp
     src/render/EntityRenderer.cpp

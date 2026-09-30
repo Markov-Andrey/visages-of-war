@@ -63,6 +63,35 @@ BuildingSpriteLight buildingLight(const Json& j) {
     return light;
 }
 }
+RallySpriteDefinition parseRallySprite(const Json& sprite) {
+    fields(sprite, {"image", "frames", "scale", "ticksPerFrame"}, {"teamMask", "light"});
+    RallySpriteDefinition result;
+    result.image = imagePath(sprite.at("image"));
+    if (sprite.contains("teamMask") && !sprite.at("teamMask").is_null()) result.teamMask = imagePath(sprite.at("teamMask"));
+    result.scale = real(sprite.at("scale"), .01f, 4);
+    result.ticksPerFrame = number(sprite.at("ticksPerFrame"), 1, 3600);
+    if (sprite.contains("light") && !sprite.at("light").is_null()) {
+        const auto& j = sprite.at("light");
+        fields(j, {"offset", "radius", "intensity", "color"});
+        auto& light = result.light.emplace();
+        light.offset = pair(j.at("offset"), -8192, 8192);
+        light.radius = real(j.at("radius"), .1f, 16);
+        light.intensity = real(j.at("intensity"), 0, 1);
+        const auto& color = j.at("color");
+        if (!color.is_array() || color.size() != 3) throw std::runtime_error("Rally light color requires RGB components");
+        light.color = (number(color[0], 0, 255) << 16) | (number(color[1], 0, 255) << 8) | number(color[2], 0, 255);
+    }
+    const auto& frames = sprite.at("frames");
+    if (!frames.is_array() || frames.empty() || frames.size() > 128) throw std::runtime_error("Rally sprite requires 1..128 frames");
+    for (const auto& j : frames) {
+        fields(j, {"source", "anchor"});
+        RallySpriteFrame frame{sourceRectangle(j.at("source")), pair(j.at("anchor"), 0, 8192)};
+        if (frame.anchor.x > frame.source[2] || frame.anchor.y > frame.source[3])
+            throw std::runtime_error("Rally ground anchor outside frame");
+        result.frames.push_back(frame);
+    }
+    return result;
+}
 void parseBuildingSprite(EntityDefinition& e, const Json& sprite) {
     if (sprite.is_null()) return;
     fields(sprite, {"scale", "stages"});

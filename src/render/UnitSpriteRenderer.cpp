@@ -29,6 +29,17 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
         if (!w || !h || w > 8192 || h > 8192) throw std::runtime_error("Invalid combat sprite dimensions: " + image);
         const Vec2 size{float(w),float(h)}; sizes.emplace(path,size); return size;
     };
+    std::map<std::string,RallySpriteDefinition> rallySprites;
+    for (const auto& commander : definitions.commanders()) if (commander.rallySprite) {
+        const auto& sprite = *commander.rallySprite;
+        const auto size = dimensions(sprite.image);
+        for (const auto& frame : sprite.frames)
+            if (frame.source[0] + frame.source[2] > size.x || frame.source[1] + frame.source[3] > size.y)
+                throw std::runtime_error("Rally frame outside image: " + commander.id);
+        if (!sprite.teamMask.empty() && dimensions(sprite.teamMask) != size)
+            throw std::runtime_error("Rally team mask dimensions must match image: " + commander.id);
+        rallySprites.emplace(commander.id, sprite);
+    }
     for (const auto& e : definitions.entities()) {
         for (const auto& stage : e.buildingSprite.stages) {
             const auto size = dimensions(stage.image);
@@ -59,5 +70,6 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                 throw std::runtime_error("Projectile source outside image: " + e.id);
         }
     }
+    rallySprites_ = std::move(rallySprites);
 }
 }

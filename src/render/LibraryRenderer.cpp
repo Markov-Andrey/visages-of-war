@@ -22,7 +22,7 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     worldOpacity_ = 1;
     // Keep only the current preview tint instead of retaining every full-size color variant.
     const auto color = teamRgb(menu.player.color);
-    std::erase_if(buildingImages_, [color](const auto& entry) {
+    std::erase_if(maskedImages_, [color](const auto& entry) {
         return !std::get<1>(entry.first).empty() && std::get<2>(entry.first) != color;
     });
     std::erase_if(unitSheets_, [color](const auto& entry) {

@@ -3,6 +3,34 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Rally points and links remain private even when a foreign building is selected", [&] {
+        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
+        rts::Scenario scenario{rts::Map(28, 28), {1, 1}, {4, 3}, {}};
+        rts::Simulation game(std::move(scenario), {}, defs.entity("human.worker"), defs.entities());
+        auto building = game.buildings().front();
+        building.rally = game.worker().cell;
+        rts::GameplayUi ui; ui.selection.ids = {building.id};
+        require(rts::rallyPointVisible(game, building, ui), "Selected owner's rally missing");
+        building.owner = 1;
+        require(!rts::rallyPointVisible(game, building, ui), "Visible selected enemy building exposed its rally");
+        building.owner = rts::neutralPlayer;
+        require(!rts::rallyPointVisible(game, building, ui), "Neutral building exposed its rally");
+        building.owner = game.player().id;
+        ui.selection.ids.clear();
+        require(!rts::rallyPointVisible(game, building, ui), "Deselected building kept a rally marker");
+        ui.selection.ids = {building.id};
+        building.constructionProgress = 0;
+        require(!rts::rallyPointVisible(game, building, ui), "Unfinished building exposed its rally");
+        building.constructionProgress = building.definition.constructionTicks;
+        building.health = 0;
+        require(!rts::rallyPointVisible(game, building, ui), "Destroyed building retained its rally");
+        building.health = building.definition.maximumHealth;
+        building.rally = {game.map().width() - 1, game.map().height() - 1};
+        require(!game.fog().explored(building.rally) && !rts::rallyPointVisible(game, building, ui), "Rally leaked into unexplored terrain");
+        building.rally = game.worker().cell;
+        building.definition.trainableUnits.clear();
+        require(!rts::rallyPointVisible(game, building, ui), "Non-producing building retained its rally");
+    });
     test("Authored building stages share drawing and picking bounds through camera changes", [&] {
         const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
         auto scenario = flatScenario();

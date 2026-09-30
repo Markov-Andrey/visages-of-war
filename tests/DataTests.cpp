@@ -117,6 +117,41 @@ void dataTests(TestSuite& test, const TestContext& context) {
         fixture.commanders["commanders"][1]["startingWorker"] = "human.soldier";
         mustThrow([&] { fixture.load(); });
     });
+    test("Commander rally art is optional, validates frames and loops in authored order", [&] {
+        CatalogFixture fixture(assets);
+        auto second = fixture.commanders["commanders"][0];
+        second["id"] = "same-race-other-commander";
+        second.erase("rallySprite");
+        fixture.commanders["commanders"].push_back(second);
+        const auto defs = fixture.load();
+        const auto& art = *defs.commander("human_commander").rallySprite;
+        require(!defs.commander("same-race-other-commander").rallySprite, "Rally art leaked to another commander of the same race");
+        require(art.frames.size() == 6 && !art.teamMask.empty(), "Valeri lost six-frame masked rally art");
+        for (std::uint64_t tick = 0; tick < 96; ++tick)
+            require(&art.frame(tick) == &art.frames[(tick / 8) % 6], "Rally skipped, reordered or failed to loop a frame");
+        require(rts::libraryEntries(defs, "humans").size() == 1, "Rally marker became a library entry");
+        const auto original = fixture.commanders["commanders"][0]["rallySprite"];
+        const auto rejects = [&](const std::function<void(Json&)>& change) {
+            auto invalid = original; change(invalid);
+            fixture.commanders["commanders"][0]["rallySprite"] = invalid;
+            mustThrow([&] { fixture.load(); });
+        };
+        rejects([](Json& a) { a["image"] = "../rally.png"; });
+        rejects([](Json& a) { a["teamMask"] = "C:/rally.png"; });
+        rejects([](Json& a) { a["frames"] = Json::array(); });
+        rejects([](Json& a) { a["frames"][0]["source"][2] = 0; });
+        rejects([](Json& a) { a["frames"][0]["anchor"] = {8192, 0}; });
+        rejects([](Json& a) { a["frames"][0]["anchor"] = {0}; });
+        rejects([](Json& a) { a["ticksPerFrame"] = 0; });
+        rejects([](Json& a) { a["light"]["radius"] = 0; });
+        rejects([](Json& a) { a["light"]["intensity"] = 1.1; });
+        rejects([](Json& a) { a["light"]["color"] = {256, 0, 0}; });
+        rejects([](Json& a) { a["light"]["offset"] = {0}; });
+        rejects([](Json& a) { a["scale"] = -1; });
+        rejects([](Json& a) { a["typo"] = true; });
+        fixture.commanders["commanders"][0]["rallySprite"] = nullptr;
+        require(!fixture.load().commander("human_commander").rallySprite, "Null rally sprite did not select fallback");
+    });
     test("Crystal maximum is enforced in map files and matches", [&] {
         require(rts::Crystal{}.remaining == 1000, "Default deposit is not full");
         const auto file = rts::Paths::executable().parent_path() / L"test-crystal-reserve.rtsmap";

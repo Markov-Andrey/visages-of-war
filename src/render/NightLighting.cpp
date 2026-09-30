@@ -60,7 +60,8 @@ std::uint32_t overlayPixel(float night, float light, unsigned tint) {
         component(0x45, tint & 255);
 }
 }
-void NightLightingRaster::update(const Simulation& game, const WorldView& view, Vec2 extent, const FogMask& fog) {
+void NightLightingRaster::update(const Simulation& game, const WorldView& view, Vec2 extent, const FogMask& fog,
+    std::span<const ProjectedLight> additionalLights) {
     width_ = std::max(1, static_cast<int>(std::ceil(extent.x / pixelStep)));
     height_ = std::max(1, static_cast<int>(std::ceil(extent.y / pixelStep)));
     const float night = nightStrength(game.clock());
@@ -69,6 +70,7 @@ void NightLightingRaster::update(const Simulation& game, const WorldView& view, 
     auto lights = buildingLights(game, view);
     const auto crystals = crystalLights(game, view);
     lights.insert(lights.end(), crystals.begin(), crystals.end());
+    lights.insert(lights.end(), additionalLights.begin(), additionalLights.end());
     std::erase_if(lights, [&](const auto& light) {
         return light.position.x + light.radius < 0 || light.position.y + light.radius < 0 ||
             light.position.x - light.radius > extent.x || light.position.y - light.radius > extent.y;

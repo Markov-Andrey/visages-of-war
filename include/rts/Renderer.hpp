@@ -43,13 +43,15 @@ private:
     void ensureTarget();
     void loadResources();
     void updateFogMask(const Simulation& game);
-    void drawNightLighting(const Simulation& game, const WorldView& view, Vec2 extent);
+    void drawNightLighting(const Simulation& game, const WorldView& view, Vec2 extent, const GameplayUi& ui);
     void drawLibrary(const MenuState& menu, const Definitions& definitions, Vec2 mouse);
     void drawColorSelect(const ColorSelectLayout& layout, const MenuState& menu, Vec2 mouse);
     void discardTarget();
     void loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask = 0,
         SpriteTeamMask palette = SpriteTeamMask::None, const std::filesystem::path& maskPath = {});
     void buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks = 0, bool training = false);
+    ID2D1Bitmap* maskedBitmap(const std::string& image, const std::string& mask, unsigned color);
+    void drawRallyPoint(const Simulation& game, const Building& building, const WorldView& view);
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);
     void unitPortrait(const UnitSpriteDefinition& definition, Vec2 topLeft, Vec2 extent, unsigned color);
@@ -79,7 +81,8 @@ private:
     std::map<std::string,MaterialResource> materialResources_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> worldSprites_;
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
-    std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> buildingImages_;
+    std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;
+    std::map<std::string,RallySpriteDefinition> rallySprites_;
     TerrainPaint terrainPaint_;
     std::map<TerrainPaint::Key,PaintResource> paintResources_;
     HWND window_{};

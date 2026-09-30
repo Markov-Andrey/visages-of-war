@@ -32,4 +32,5 @@ inline std::string string(const Json& value, bool allowEmpty = false) {
 }
 void parseWeapon(EntityDefinition& entity, const Json& attack, const Json& sprite);
 void parseBuildingSprite(EntityDefinition& entity, const Json& sprite);
+RallySpriteDefinition parseRallySprite(const Json& sprite);
 }

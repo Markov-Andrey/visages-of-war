@@ -2,9 +2,20 @@
 
 namespace rts {
 using namespace render;
-void Renderer::drawNightLighting(const Simulation& game, const WorldView& view, Vec2 extent) {
+void Renderer::drawNightLighting(const Simulation& game, const WorldView& view, Vec2 extent, const GameplayUi& ui) {
     if (nightStrength(game.clock()) <= 0 || extent.x <= 0 || extent.y <= 0) return;
-    nightLighting_.update(game, view, extent, fogMask_);
+    std::vector<ProjectedLight> rallyLights;
+    const auto art = rallySprites_.find(game.player().commanderId);
+    if (art != rallySprites_.end() && art->second.light && art->second.light->intensity > 0) {
+        const auto& light = *art->second.light;
+        for (const auto& building : game.buildings()) {
+            if (!rallyPointVisible(game, building, ui) || !game.fog().visible(building.rally)) continue;
+            const auto ground = view.project(center(building.rally), game.map().surfaceHeight(building.rally, center(building.rally)));
+            rallyLights.push_back({ground + light.offset * (art->second.scale * view.zoom),
+                light.radius * WorldView::tileSize * view.zoom, light.intensity, light.color});
+        }
+    }
+    nightLighting_.update(game, view, extent, fogMask_, rallyLights);
     const auto w = static_cast<UINT32>(nightLighting_.width()), h = static_cast<UINT32>(nightLighting_.height());
     const auto previous = nightBitmap_ ? nightBitmap_->GetPixelSize() : D2D1_SIZE_U{};
     if (!nightBitmap_ || previous.width != w || previous.height != h) {
