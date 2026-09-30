@@ -79,6 +79,7 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
                 renderer_.draw(game_, view_, hover, ui_, grid_, paused_);
             } else {
                 accumulator = 0;
+                advanceMenu(elapsed);
                 renderer_.drawMenu(game_, menu_, definitions_, mouse_);
             }
         } else accumulator = 0;
@@ -101,7 +102,8 @@ void GameApplication::snapshot(const std::filesystem::path& output, bool menu, b
 
 rts::Simulation GameApplication::makeMatch() const {
     const auto& commander=definitions_.commanders().at(menu_.commanderIndex);
-    auto scenario=rts::loadScenario(mapFile_,worldAssets_);
+    const auto& depot=definitions_.startingDepot(commander.factionId);
+    auto scenario=rts::loadScenario(mapFile_,worldAssets_,{depot.width,depot.height});
     const auto hero=scenario.heroSpawn?commander.startingHero:std::string{};
     return rts::Simulation(std::move(scenario),menu_.player,definitions_.entity(commander.startingWorker),definitions_.entities(),hero,definitions_.progression());
 }

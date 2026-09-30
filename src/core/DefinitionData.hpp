@@ -6,11 +6,12 @@
 
 namespace rts::data {
 using Json = nlohmann::json;
-inline void fields(const Json& value, std::initializer_list<const char*> names) {
+inline void fields(const Json& value, std::initializer_list<const char*> names, std::initializer_list<const char*> optional = {}) {
     if (!value.is_object()) throw std::runtime_error("Expected an object");
     for (const char* name : names) if (!value.contains(name)) throw std::runtime_error(std::string("Missing field: ") + name);
     for (const auto& item : value.items())
-        if (std::none_of(names.begin(), names.end(), [&](const char* name) { return item.key() == name; }))
+        if (std::none_of(names.begin(), names.end(), [&](const char* name) { return item.key() == name; }) &&
+            std::none_of(optional.begin(), optional.end(), [&](const char* name) { return item.key() == name; }))
             throw std::runtime_error("Unknown field: " + item.key());
 }
 inline int number(const Json& value, int low, int high) {
@@ -30,4 +31,5 @@ inline std::string string(const Json& value, bool allowEmpty = false) {
     return result;
 }
 void parseWeapon(EntityDefinition& entity, const Json& attack, const Json& sprite);
+void parseBuildingSprite(EntityDefinition& entity, const Json& sprite);
 }

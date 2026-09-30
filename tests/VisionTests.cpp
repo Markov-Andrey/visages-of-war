@@ -1,8 +1,92 @@
 #include "TestSupport.hpp"
+#include "rts/NightLighting.hpp"
 
 namespace rts::tests {
 void visionTests(TestSuite& test, const TestContext& context) {
-    (void)context;
+    test("Crystal lights follow visible deposits and disappear on depletion without revealing fog", [] {
+        rts::Scenario site{rts::Map(24, 20), {1, 1}, {9, 9}, {{{10, 9}, 1}, {{22, 18}, 1000}}};
+        for (const auto& crystal : site.crystals) site.map.occupy(crystal.cell);
+        rts::EntityDefinition worker; worker.dayVision = worker.nightVision = 4;
+        auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
+        rts::Simulation game(site, {}, worker, {depot});
+        const rts::WorldView view{{0, 0}, 1};
+        const auto lights = rts::crystalLights(game, view);
+        require(lights.size() == 1, "Hidden crystal emitted light");
+        const auto moved = rts::crystalLights(game, {{17, 23}, .5f});
+        require(moved[0].position == lights[0].position * .5f + rts::Vec2{17, 23} && moved[0].radius == lights[0].radius * .5f,
+            "Crystal light detached from camera");
+        rts::FogMask fog; fog.update(game.fog(), 24, 20);
+        rts::NightLightingRaster raster; raster.update(game, view, {1536, 1280}, fog);
+        const auto sample = [&](rts::Vec2 p) { return raster.pixels().at(size_t(int(p.y / rts::NightLightingRaster::pixelStep)) * raster.width() + int(p.x / rts::NightLightingRaster::pixelStep)); };
+        const auto lit = sample(lights[0].position);
+        const auto dark = sample({1400, 1150});
+        require((lit >> 24) < (dark >> 24) && !game.fog().explored({22, 18}), "Crystal lighting did not weaken night or revealed fog");
+        const auto paused = raster.pixels(); raster.update(game, view, {1536, 1280}, fog);
+        require(paused == raster.pixels(), "Paused crystal light changed");
+        game.command(site.crystals[0].cell);
+        ticks(game, 120);
+        require(game.crystals()[0].remaining == 0 && rts::crystalLights(game, view).empty(), "Exhausted crystal kept its glow");
+        raster.update(game, view, {1536, 1280}, fog);
+        require(sample(lights[0].position) == dark, "Exhausted crystal left a cached glow");
+        rts::Simulation remembered(site, {}, worker, {depot});
+        remembered.command({3, 9}); ticks(remembered, 100);
+        require(remembered.fog().explored({10, 9}) && !remembered.fog().visible({10, 9}) &&
+            rts::crystalLights(remembered, view).empty(), "Remembered crystal exposed live glow");
+    });
+    test("Building light follows construction and training without changing vision", [&] {
+        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
+        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
+        site.startingCrystals = 500;
+        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        const auto hall = game.buildings().front().id;
+        const rts::WorldView view{{0, 0}, 1};
+        const auto lights = rts::buildingLights(game, view);
+        require(lights.size() == 2, "Idle hall needs ground and crown lights");
+        const auto moved = rts::buildingLights(game, {{37, -19}, 2});
+        const auto expected = lights[0].position * 2 + rts::Vec2{37, -19};
+        require(moved.size() == lights.size() && std::abs(moved[0].position.x - expected.x) < .001f && std::abs(moved[0].position.y - expected.y) < .001f &&
+            moved[0].radius == lights[0].radius * 2, "Camera detached light from building");
+        require(game.train(hall) && rts::buildingLights(game, view).size() == 4, "Training did not light braziers");
+        require(game.cancelTraining(hall) && rts::buildingLights(game, view).size() == 2, "Cancelled braziers still cast light");
+        const std::array builders{game.worker().id};
+        const auto building = game.construct(builders, "human.hall", {12, 11});
+        require(building && rts::buildingLights(game, view).size() == 2, "Unfinished hall emitted light");
+        ticks(game, 400);
+        require(game.building(*building)->complete() && rts::buildingLights(game, view).size() == 4, "Finished hall remained dark");
+        auto unlitTypes = definitions.entities();
+        for (auto& type : unlitTypes) for (auto& stage : type.buildingSprite.stages) stage.lights.clear();
+        rts::Simulation lit(site, {}, definitions.entity("human.worker"), definitions.entities());
+        rts::Simulation unlit(site, {}, definitions.entity("human.worker"), unlitTypes);
+        for (int y = 0; y < 28; ++y) for (int x = 0; x < 28; ++x)
+            require(lit.fog().at({x, y}) == unlit.fog().at({x, y}) && lit.map().walkable({x, y}) == unlit.map().walkable({x, y}), "Light changed logical vision or navigation");
+        require(rts::buildingLights(unlit, view).empty(), "Unconfigured building emitted light");
+    });
+    test("Night lighting fades smoothly, respects fog and stays stable while paused", [&] {
+        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
+        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
+        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        const rts::WorldView view{{0, 0}, 1}; const rts::Vec2 extent{1800, 1800};
+        rts::FogMask fog; fog.update(game.fog(), 28, 28);
+        rts::NightLightingRaster raster; raster.update(game, view, extent, fog);
+        const auto sample = [&](rts::Vec2 p) { return raster.pixels().at(size_t(int(p.y / rts::NightLightingRaster::pixelStep)) * raster.width() + int(p.x / rts::NightLightingRaster::pixelStep)); };
+        const auto light = rts::buildingLights(game, view).front();
+        const auto nearby = sample(light.position), edge = sample(light.position + rts::Vec2{light.radius * .65f, 0}), far = sample(light.position + rts::Vec2{light.radius * 1.1f, 0});
+        require((nearby >> 24) < (edge >> 24) && (edge >> 24) < (far >> 24), "Night did not fade away smoothly around the light");
+        require(sample({20, 20}) == far, "Light brightened unexplored ground");
+        const auto paused = raster.pixels(); raster.update(game, view, extent, fog);
+        require(raster.pixels() == paused, "Paused light flickered without simulation ticks");
+        for (const auto pixel : raster.pixels()) {
+            const auto alpha = pixel >> 24;
+            require((pixel & 255) <= alpha && ((pixel >> 8) & 255) <= alpha && ((pixel >> 16) & 255) <= alpha, "Lighting bitmap lost premultiplied alpha");
+        }
+        // Remembered terrain keeps the normal night veil even within a light radius.
+        rts::FogOfWar remembered(28, 28); const std::array source{rts::VisionSource{{9, 12}, 20}};
+        remembered.update(site.map, source); remembered.update(site.map, {});
+        fog.update(remembered, 28, 28); raster.update(game, view, extent, fog);
+        require(sample(light.position) == far, "Lighting removed fog from remembered terrain");
+        require(rts::nightStrength(rts::WorldClock({30, 480, 12 * 60, 360, 1080})) == 0 &&
+            std::abs(rts::nightStrength(rts::WorldClock({30, 480, 6 * 60, 360, 1080})) - .5f) < .001f, "Daylight transition jumped");
+    });
     test("Overlapping observers match a per-cell ray union across movement and terrain changes", [] {
         rts::Map map(28, 24);
         std::mt19937 random(92143);
@@ -141,6 +225,8 @@ void visionTests(TestSuite& test, const TestContext& context) {
         rts::WorldClock midnight({30, 48, 1439, 360, 1080});
         require(!midnight.tick() && midnight.minuteOfDay() == 0, "Midnight wraps incorrectly");
         rts::Simulation game(flatScenario());
+        require(game.clock().phase() == rts::DayPhase::Night && game.clock().minuteOfDay() == 22 * 60,
+            "Default match did not start at 22:00");
         const auto before = game.clock().elapsedTicks();
         game.command({6, 3});
         require(game.clock().elapsedTicks() == before, "Command advanced time while paused");
@@ -170,8 +256,10 @@ void visionTests(TestSuite& test, const TestContext& context) {
         auto depot = testDepot("hall", type.id, 60); depot.dayVision = 3; depot.nightVision = 1; depot.maximumHealth = 300;
         const std::vector<rts::EntityDefinition> buildings{depot};
         rts::Simulation game(std::move(s), {}, type, buildings);
-        require(game.fog().visible({4, 6}), "Day radius missing");
-        ticks(game, 6100);
+        require(game.clock().phase() == rts::DayPhase::Night && !game.fog().visible({4, 6}), "Night radius missing at match start");
+        ticks(game, 4800); // 22:00 -> 06:00 at 10 ticks per game minute.
+        require(game.clock().phase() == rts::DayPhase::Day && game.fog().visible({4, 6}), "Day radius missing after dawn");
+        ticks(game, 7200); // 06:00 -> 18:00.
         require(game.clock().phase() == rts::DayPhase::Night, "Night did not start");
         require(!game.fog().visible({4, 6}) && game.fog().explored({4, 6}), "Night radius or fog memory incorrect");
         require(game.fog().visible(game.worker().cell), "Observer cannot see own tile");

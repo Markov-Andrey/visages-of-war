@@ -3,7 +3,7 @@
 namespace rts::tests {
 void combatTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
-    const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets); };
+    const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Melee windup, simultaneous deaths, supply, events, corpses and empty army", [] {
         auto scenario = flatScenario();
         rts::EntityDefinition soldier;

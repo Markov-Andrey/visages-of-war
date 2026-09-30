@@ -3,7 +3,7 @@
 namespace rts {
 using namespace render;
 void Renderer::snapshot(const Simulation& game, const std::filesystem::path& output, const Definitions* menuDefinitions, bool grid,
-    const GameplayUi* interfaceState, MenuPage menuPage) {
+    const GameplayUi* interfaceState, MenuPage menuPage, double previewSeconds, const MenuState* menuState) {
     discardTarget();
     offscreenSize_ = {1440, 900};
     ComPtr<IWICBitmap> bitmap;
@@ -13,8 +13,11 @@ void Renderer::snapshot(const Simulation& game, const std::filesystem::path& out
     check(factory_->CreateWicBitmapRenderTarget(bitmap.Get(), properties, target_.GetAddressOf()));
     loadResources();
     if (menuDefinitions) {
-        MenuState menu;
-        menu.page = menuPage;
+        MenuState menu = menuState ? *menuState : MenuState{};
+        if (!menuState) {
+            menu.page = menuPage;
+            menu.librarySeconds = previewSeconds;
+        }
         drawMenu(game, menu, *menuDefinitions, {-1, -1});
     } else {
         WorldView view{{0, 0}, .85f};

@@ -60,7 +60,8 @@ void ForgeApplication::editorAction(size_t action) {
         if(action==2 && confirmEditorChanges()) {
             const auto file=chooseMap(false);
             if(!file.empty()) {
-                auto loaded=rts::loadScenario(file,worldAssets_);
+                const auto& depot=editor_->startingDepot();
+                auto loaded=rts::loadScenario(file,worldAssets_,{depot.width,depot.height});
                 rts::WorldEditor check(loaded,worldAssets_,definitions_); check.validateForPlay();
                 editor_->replace(std::move(loaded)); editor_->file=file; resetCamera();
             }

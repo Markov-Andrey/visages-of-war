@@ -30,6 +30,21 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
         const Vec2 size{float(w),float(h)}; sizes.emplace(path,size); return size;
     };
     for (const auto& e : definitions.entities()) {
+        for (const auto& stage : e.buildingSprite.stages) {
+            const auto size = dimensions(stage.image);
+            if (stage.source[0] + stage.source[2] > size.x || stage.source[1] + stage.source[3] > size.y)
+                throw std::runtime_error("Building source outside image: " + e.id);
+            if (!stage.teamMask.empty() && dimensions(stage.teamMask) != size)
+                throw std::runtime_error("Building team mask dimensions must match image: " + e.id);
+            for (const auto& layer : stage.layers) {
+                const auto layerSize = dimensions(layer.image);
+                for (const auto& source : layer.frames)
+                    if (source[0] + source[2] > layerSize.x || source[1] + source[3] > layerSize.y)
+                        throw std::runtime_error("Building layer frame outside image: " + e.id);
+                if (!layer.teamMask.empty() && dimensions(layer.teamMask) != layerSize)
+                    throw std::runtime_error("Building layer team mask dimensions must match image: " + e.id);
+            }
+        }
         if (e.mobile) {
             const auto& s = e.sprite; const auto size = dimensions(s.image);
             int column = s.idle;

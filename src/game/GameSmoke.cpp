@@ -1,4 +1,5 @@
 #include "GameApplication.hpp"
+#include "rts/Library.hpp"
 #include "platform/WindowsSupport.hpp"
 #include <windowsx.h>
 #include <algorithm>
@@ -9,8 +10,46 @@ namespace rts::game {
 void GameApplication::exerciseInterface() {
     cursor_.snapshot(rts::Paths::executable().parent_path() / L"cursors-preview.png");
     {
+        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
+        rts::Simulation lit(site, {}, definitions_.entity("human.worker"), definitions_.entities());
+        auto unlitTypes = definitions_.entities();
+        for (auto& type : unlitTypes) for (auto& stage : type.buildingSprite.stages) stage.lights.clear();
+        rts::Simulation unlit(site, {}, definitions_.entity("human.worker"), unlitTypes);
+        renderer_.snapshot(unlit, rts::Paths::executable().parent_path() / L"ratusha-light-off.png");
+        renderer_.snapshot(lit, rts::Paths::executable().parent_path() / L"ratusha-light-on.png");
+    }
+    {
+        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
+        site.startingCrystals = 500;
+        rts::PlayerSettings player; player.color = rts::TeamColor::Red;
+        rts::Simulation construction(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities());
+        if (construction.clock().phase() != rts::DayPhase::Night || construction.clock().minuteOfDay() != 22 * 60)
+            throw std::runtime_error("Smoke: match did not start at night");
+        const std::array builders{construction.worker().id};
+        const auto id = construction.construct(builders, "human.hall", {12, 11});
+        if (!id) throw std::runtime_error("Smoke: hall construction failed");
+        rts::GameplayUi ui; ui.selection.ids = {*id};
+        for (int percent : {0, 33, 66, 100}) {
+            int attempts = 0;
+            while (construction.building(*id)->constructionProgress * 100 < percent * construction.building(*id)->definition.constructionTicks && attempts++ < 1000)
+                construction.tick();
+            const auto* building = construction.building(*id);
+            const auto* stage = building->definition.buildingSprite.stage(building->constructionProgress, building->definition.constructionTicks);
+            if (!stage || stage->from != percent) throw std::runtime_error("Smoke: hall construction stage failed");
+            renderer_.snapshot(construction, rts::Paths::executable().parent_path() / (L"ratusha-stage-" + std::to_wstring(percent) + L".png"), nullptr, false, &ui);
+        }
+        if (!construction.train(*id) || !construction.building(*id)->training())
+            throw std::runtime_error("Smoke: hall training effects did not activate");
+        const auto imageRoot = rts::Paths::executable().parent_path();
+        renderer_.snapshot(construction, imageRoot / L"ratusha-training.png", nullptr, false, &ui);
+        for (int i = 0; i < 3; ++i) construction.tick();
+        renderer_.snapshot(construction, imageRoot / L"ratusha-training-next.png", nullptr, false, &ui);
+        if (!construction.cancelTraining(*id) || construction.building(*id)->training())
+            throw std::runtime_error("Smoke: cancelled training left hall effects active");
+        renderer_.snapshot(construction, imageRoot / L"ratusha-idle.png", nullptr, false, &ui);
+    }
+    {
         rts::Scenario forest{rts::Map(28, 28), {8, 11}, {12, 14}, {{{18, 14}, 1000}}};
-        for (int y = 11; y < 13; ++y) for (int x = 8; x < 10; ++x) forest.map.occupy({x, y});
         forest.map.occupy({18, 14});
         std::vector<rts::EntityId> clearing;
         for (int y = 5; y <= 23; ++y) for (int x : {15, 16}) {
@@ -59,7 +98,103 @@ void GameApplication::exerciseInterface() {
     onMessage(WM_DISPLAYCHANGE, 32, 0);
     checkFullscreen();
     // Exercise the same Win32 handlers used by mouse and keyboard, in a hidden window.
-    startBattle();
+    {
+        const rts::MenuLayout layout(renderer_.size());
+        mouse_ = {layout.battles.x + 20, layout.battles.y + 20};
+        menuClick();
+        const rts::ColorSelectLayout colors(layout.color, renderer_.size().y);
+        for (size_t i = 0; i < rts::teamPalettes.size(); ++i) {
+            mouse_ = {layout.color.x + 20, layout.color.y + 20};
+            if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Smoke: color select cursor failed");
+            menuClick();
+            if (!menu_.colorDropdown) throw std::runtime_error("Smoke: color select did not open");
+            const auto option = colors.option(i);
+            mouse_ = {option.x + option.width * .5f, option.y + option.height * .5f};
+            menuClick();
+            if (menu_.colorDropdown || static_cast<size_t>(menu_.player.color) != i)
+                throw std::runtime_error("Smoke: palette mouse selection failed");
+        }
+        mouse_ = {layout.color.x + 20, layout.color.y + 20};
+        menuClick();
+        const auto black = colors.option(static_cast<size_t>(rts::TeamColor::Black));
+        mouse_ = {black.x + 10, black.y + 10};
+        menuClick();
+        mouse_ = {layout.color.x + 20, layout.color.y + 20};
+        menuClick();
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"colors-setup-preview.png", &definitions_, false, nullptr, rts::MenuPage::BattleSetup, 0, &menu_);
+        onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
+        if (menu_.colorDropdown || menu_.page != rts::MenuPage::BattleSetup)
+            throw std::runtime_error("Smoke: palette Escape left setup");
+        mouse_ = {layout.start.x + 20, layout.start.y + 20};
+        menuClick();
+        if (menu_.page != rts::MenuPage::Playing || game_.player().color != rts::TeamColor::Black)
+            throw std::runtime_error("Smoke: battle lost selected palette color");
+    }
+    {
+        const auto ticks = game_.clock().elapsedTicks();
+        const auto balance = game_.storedCrystals();
+        const auto selection = ui_.selection.ids;
+        onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
+        const rts::MenuLayout menuLayout(renderer_.size(), true);
+        mouse_ = {menuLayout.library.x + 20, menuLayout.library.y + 20};
+        if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Smoke: library menu cursor failed");
+        menuClick();
+        if (menu_.page != rts::MenuPage::Library) throw std::runtime_error("Smoke: library did not open");
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"library-preview.png", &definitions_, false, nullptr, rts::MenuPage::Library);
+        advanceMenu(.4f);
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"library-next-preview.png", &definitions_, false, nullptr, rts::MenuPage::Library, menu_.librarySeconds);
+        if (menu_.librarySeconds < .39 || game_.clock().elapsedTicks() != ticks || game_.storedCrystals() != balance || ui_.selection.ids != selection)
+            throw std::runtime_error("Smoke: library preview advanced match state");
+        const rts::LibraryLayout book(renderer_.size());
+        const auto row = book.entryRow(0);
+        mouse_ = book.origin + rts::Vec2{row.x + 10, row.y + 10} * book.scale;
+        if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Smoke: library entry cursor failed");
+        menuClick();
+        if (menu_.librarySeconds != 0) throw std::runtime_error("Smoke: library entry did not select");
+        const auto matchColor = game_.player().color;
+        const auto openColors = [&] {
+            mouse_ = book.origin + rts::Vec2{book.color.x + 10, book.color.y + 10} * book.scale;
+            menuClick();
+            if (!menu_.colorDropdown) throw std::runtime_error("Smoke: library palette did not open");
+        };
+        openColors();
+        onMessage(WM_KEYDOWN, VK_HOME, 0);
+        onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
+        if (menu_.colorDropdown || menu_.page != rts::MenuPage::Library || menu_.player.color != matchColor)
+            throw std::runtime_error("Smoke: palette cancellation changed color or page");
+        openColors();
+        onMessage(WM_KEYDOWN, VK_HOME, 0);
+        for (int i = 0; i < 5; ++i) onMessage(WM_KEYDOWN, VK_RIGHT, 0);
+        onMessage(WM_KEYDOWN, VK_UP, 0); // Fifth row has no cell in this column.
+        if (menu_.colorFocus != 23) throw std::runtime_error("Smoke: palette vertical wrap lost its column");
+        onMessage(WM_KEYDOWN, VK_DOWN, 0);
+        if (menu_.colorFocus != 5) throw std::runtime_error("Smoke: palette focused an empty swatch");
+        onMessage(WM_KEYDOWN, VK_END, 0);
+        onMessage(WM_KEYDOWN, VK_RIGHT, 0); // Wrap from the last swatch to the first.
+        onMessage(WM_KEYDOWN, VK_DOWN, 0);
+        onMessage(WM_KEYDOWN, VK_RETURN, 0);
+        if (menu_.colorDropdown || menu_.player.color != rts::TeamColor::Gold || game_.player().color != matchColor ||
+            game_.clock().elapsedTicks() != ticks || game_.storedCrystals() != balance || ui_.selection.ids != selection)
+            throw std::runtime_error("Smoke: library palette changed live match or ignored keyboard");
+        openColors();
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"colors-library-preview.png", &definitions_, false, nullptr, rts::MenuPage::Library, 0, &menu_);
+        mouse_ = book.origin + rts::Vec2{book.back.x + 10, book.back.y + 10} * book.scale;
+        menuClick();
+        if (menu_.colorDropdown || menu_.page != rts::MenuPage::Library)
+            throw std::runtime_error("Smoke: palette dismissal clicked through to Back");
+        for (const auto color : {rts::TeamColor::White, rts::TeamColor::Black}) {
+            menu_.player.color = color;
+            const auto file = color == rts::TeamColor::White ? L"library-white-preview.png" : L"library-black-preview.png";
+            renderer_.snapshot(game_, rts::Paths::executable().parent_path() / file, &definitions_, false, nullptr, rts::MenuPage::Library, 0, &menu_);
+        }
+        mouse_ = book.origin + rts::Vec2{book.back.x + 10, book.back.y + 10} * book.scale;
+        menuClick();
+        if (menu_.page != rts::MenuPage::Main) throw std::runtime_error("Smoke: library back failed");
+        menu_.player.color = matchColor;
+        onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
+        if (menu_.page != rts::MenuPage::Playing || ui_.selection.ids != selection) throw std::runtime_error("Smoke: library lost resumed match");
+        mouse_ = {-1, -1};
+    }
     ui_.selection.ids = {game_.worker().id};
     ui_.placement = "human.barracks";
     mouse_ = view_.project(rts::center({17, 17}), 0);

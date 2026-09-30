@@ -3,8 +3,8 @@
   "commanders": [
     {
       "id": "human_commander",
-      "name": "Валери, Инквизиция",
-      "description": "Валери — командир Инквизиции.",
+      "name": "Валери",
+      "description": "Валери — командир Церкви Святого Пламени.",
       "factionId": "humans",
       "startingWorker": "human.worker",
       "startingHero": "human.hero"

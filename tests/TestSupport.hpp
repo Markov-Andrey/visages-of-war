@@ -37,14 +37,12 @@ template<class F> void mustThrow(F action) {
 }
 inline rts::Scenario flatScenario(int amount = 23) {
     rts::Scenario s{rts::Map(10, 10), {1, 1}, {4, 3}, {{{7, 7}, amount}}};
-    for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.at({x, y}).blocked = true;
     s.map.occupy({7, 7});
     return s;
 }
 inline rts::Scenario gatheringScenario(bool neighbors = true) {
     rts::Scenario s{rts::Map(24, 16), {1, 1}, {4, 8}, {{{15, 8}, 1000}, {{6, 5}, 1000}}};
     if (neighbors) s.crystals.push_back({{17, 8}, 1000});
-    for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.occupy({x, y});
     for (const auto& crystal : s.crystals) s.map.occupy(crystal.cell);
     return s;
 }
@@ -54,7 +52,6 @@ inline rts::EntityDefinition gatheringWorker() {
 }
 inline rts::Scenario shoreScenario() {
     rts::Scenario s{rts::Map(32, 24), {1, 1}, {4, 10}, {}};
-    for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.occupy({x, y});
     for (int y = 0; y < 24; ++y) for (int x = 12; x <= 19; ++x) {
         auto& tile = s.map.at({x, y});
         tile.height = -1;
@@ -92,7 +89,7 @@ struct CatalogFixture {
 inline rts::EntityDefinition testDepot(const std::string& id, const std::string& produced, int ticks = 1) {
     rts::EntityDefinition depot;
     depot.id = id; depot.displayName = id; depot.constructible = true; depot.mobile = false;
-    depot.canBuild = false; depot.carryCapacity = 0; depot.width = depot.height = 2;
+    depot.canBuild = false; depot.carryCapacity = 0; depot.width = 3; depot.height = 2;
     depot.cost = {100, 0}; depot.constructionTicks = ticks; depot.maximumHealth = 200;
     depot.acceptsCargo = true; depot.trainableUnits = {produced}; depot.visual = rts::EntityVisual::Hall;
     return depot;
@@ -133,9 +130,14 @@ struct TestContext {
     std::filesystem::path assets;
     rts::Paths worldPaths;
     rts::WorldAssets worldAssets;
+    rts::Cell hallFootprint;
     explicit TestContext(const std::filesystem::path& assetRoot) : assets(assetRoot),
         worldPaths(assets, rts::Paths::executable().parent_path() / L"world-tests"),
-        worldAssets(rts::WorldAssets::load(worldPaths)) {}
+        worldAssets(rts::WorldAssets::load(worldPaths)) {
+        const auto definitions = rts::Definitions::load(assets / "data/catalog.json");
+        const auto& depot = definitions.startingDepot(definitions.commanders().front().factionId);
+        hallFootprint = {depot.width, depot.height};
+    }
 };
 void navigationTests(TestSuite& test, const TestContext& context);
 void economyTests(TestSuite& test, const TestContext& context);

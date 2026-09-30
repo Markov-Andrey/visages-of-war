@@ -1,6 +1,7 @@
 #pragma once
 #include "rts/Types.hpp"
 #include "rts/Weapons.hpp"
+#include "rts/BuildingSprite.hpp"
 #include <array>
 #include <cstdint>
 #include <stdexcept>
@@ -13,11 +14,24 @@ namespace rts {
 using EntityId = std::uint32_t;
 using PlayerId = std::uint8_t;
 inline constexpr PlayerId neutralPlayer = 255;
-enum class TeamColor { Blue, Red, Green, Purple, Orange, Cyan };
+enum class TeamColor {
+    Blue, Red, Green, Purple, Orange, Cyan,
+    Gold, Yellow, Lime, Emerald, Mint, Teal,
+    Sky, Cobalt, Indigo, Violet, Magenta, Pink,
+    Vermilion, Crimson, Fuchsia, Chartreuse, Spring, NeonGreen, White, Black, Burgundy, Count
+};
 struct TeamPalette { unsigned rgb; std::wstring_view name; };
-inline constexpr std::array<TeamPalette, 6> teamPalettes{{
-    {0x4b9edb, L"Синий"}, {0xe06464, L"Красный"}, {0x73ba67, L"Зелёный"},
-    {0xb184d5, L"Фиолетовый"}, {0xe1a054, L"Оранжевый"}, {0x65c9c3, L"Бирюзовый"}
+inline constexpr std::array<TeamPalette, static_cast<size_t>(TeamColor::Count)> teamPalettes{{
+    // 24 vivid hues, followed by white, black and wine red.
+    {0x0000ff, L"Синий"}, {0xff0000, L"Красный"}, {0x00ff00, L"Зелёный"},
+    {0x8000ff, L"Фиолетовый"}, {0xff8000, L"Оранжевый"}, {0x00ffff, L"Ледяной"},
+    {0xffbf00, L"Золотой"}, {0xffff00, L"Жёлтый"}, {0x80ff00, L"Весенняя листва"},
+    {0x00ff80, L"Изумрудный"}, {0x00ffbf, L"Мятный"}, {0x00bfff, L"Бирюзовый"},
+    {0x0080ff, L"Лазурный"}, {0x0040ff, L"Королевский синий"}, {0x4000ff, L"Черничный"},
+    {0xbf00ff, L"Пурпурный"}, {0xff00ff, L"Орхидейный"}, {0xff0080, L"Розовый"},
+    {0xff4000, L"Киноварь"}, {0xff0040, L"Малиновый"}, {0xff00bf, L"Вересковый"},
+    {0xbfff00, L"Лимонный"}, {0x40ff00, L"Молодая листва"}, {0x00ff40, L"Нефритовый"},
+    {0xffffff, L"Белый"}, {0x000000, L"Чёрный"}, {0x800020, L"Винный"}
 }};
 struct PlayerSettings {
     PlayerId id = 0;
@@ -56,6 +70,7 @@ struct EntityDefinition {
     std::string factionName = "Люди"; // Resolved from the faction catalog.
     std::string displayName = "Рабочий";
     std::string description;
+    bool libraryVisible{};
     ResourceCost cost{40, 1};
     bool mobile = true;
     float movementPerSecond = 2.8f;
@@ -72,6 +87,7 @@ struct EntityDefinition {
     AttackTargets attackTargets = AttackTargets::SameLayer;
     std::optional<ProjectileDefinition> projectile;
     UnitSpriteDefinition sprite;
+    BuildingSpriteDefinition buildingSprite;
     int level = 1;
     std::optional<HeroDefinition> hero;
     bool isWorker() const { return canBuild || carryCapacity > 0; }

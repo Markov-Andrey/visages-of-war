@@ -5,7 +5,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
     const auto& worldPaths=context.worldPaths;
     const auto& worldAssets=context.worldAssets;
-    const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets); };
+    const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Authored map round trips all landscape layers and preserves files on invalid save", [&] {
         rts::Scenario s{rts::Map(24,24),{1,1},{4,3},{}}; s.name="Поляна — тест"; s.heroSpawn=rts::Cell{5,3}; s.startingCrystals=300;
         for(int y=0;y<24;++y) for(int x=16;x<24;++x) s.map.at({x,y}).height=1;
@@ -18,7 +18,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
         s.landscape.baseMaterial="dark_grass";
         s.landscape.paint={{"earth",{8.137f,8.927f},1.8f,.7f,.3f,false},{"dark_grass",{8.82f,9.12f},.8f,.4f,.6f,false},{"grass",{8.33f,8.55f},.25f,.8f,.2f,true}};
         s.landscape.decorations={{1700,"small_bush",{8.137f,8.927f},.7f,35}};
-        rts::rebuildScenario(s);
+        rts::rebuildScenario(s, context.hallFootprint);
         const auto file=worldPaths.writable(L"карты с пробелами/Лесная поляна.rtsmap");
         rts::saveScenario(s,file); const auto loaded=loadScenario(file);
         require(loaded.name==s.name && loaded.landscape.baseMaterial=="dark_grass" && loaded.landscape.paint==s.landscape.paint,"Terrain paint changed after saving");
@@ -32,6 +32,30 @@ void editorTests(TestSuite& test, const TestContext& context) {
         rts::saveScenario(loaded,file); std::ifstream after(file); require(nlohmann::json::parse(after)==document,"Map serialization is not stable"); after.close();
         auto invalid=s; invalid.hall={23,23}; mustThrow([&]{rts::saveScenario(invalid,file);});
         require(loadScenario(file).name==s.name,"Rejected save damaged original map");
+    });
+    test("Editor reserves catalog depot dimensions across moves undo reload and serialization", [&] {
+        CatalogFixture fixture(assets);
+        fixture.entities["entities"][3]["construction"]["footprint"] = {4, 3};
+        const auto definitions = fixture.load();
+        rts::WorldEditor editor({rts::Map(20, 20), {1, 1}, {7, 6}, {}}, worldAssets, definitions);
+        require(editor.scenario().map.occupancy({4, 3}) == 1 && editor.scenario().map.walkable({5, 3}), "Editor ignored custom footprint");
+        editor.setTool(rts::EditorTool::Start); editor.choice = 0;
+        require(!editor.apply({17.5f, 10.5f}), "Editor accepted footprint beyond map edge"); editor.endStroke();
+        require(!editor.apply({4.5f, 4.5f}), "Editor placed a hall over a worker in its last column"); editor.endStroke();
+        require(editor.apply({10.5f, 10.5f}), "Editor rejected valid larger depot"); editor.endStroke();
+        require(editor.scenario().map.walkable({4, 3}) && editor.scenario().map.occupancy({13, 12}) == 1, "Moving depot retained old occupancy");
+        require(editor.undo() && editor.scenario().map.occupancy({4, 3}) == 1 && editor.scenario().map.walkable({13, 12}), "Undo lost depot footprint");
+        require(editor.redo(), "Redo failed");
+        const auto file = worldPaths.writable(L"catalog-footprint.rtsmap");
+        rts::saveScenario(editor.scenario(), file);
+        const auto loaded = rts::loadScenario(file, worldAssets, {4, 3});
+        require(loaded.hallFootprint == rts::Cell{4, 3} && loaded.map.occupancy({13, 12}) == 1, "Map reload lost catalog footprint");
+        std::ifstream input(file); const auto document = Json::parse(input);
+        require(document.at("start").size() == 4 && !document.contains("hallFootprint"), "Derived depot dimensions leaked into the authored map");
+        fixture.entities["entities"][3]["construction"]["footprint"] = {3, 2};
+        const auto smaller = fixture.load(); editor.reloadDefinitions(worldAssets, smaller);
+        require(editor.scenario().map.walkable({13, 12}) && editor.scenario().map.occupancy({12, 11}) == 1, "Catalog reload retained larger collision");
+        editor.validateForPlay();
     });
     test("Editor brush interpolates free strokes and undo restores the entire operation", [&] {
         const auto defs=rts::Definitions::load(assets/"data/catalog.json");

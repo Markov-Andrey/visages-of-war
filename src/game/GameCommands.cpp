@@ -13,6 +13,7 @@ void GameApplication::startBattle() {
     menu_.page = rts::MenuPage::Playing;
     menu_.canResume = true;
     menu_.commanderDropdown = false;
+    menu_.colorDropdown = false;
     paused_ = false;
     ui_ = {};
     ui_.selection.army(game_);
@@ -30,13 +31,16 @@ void GameApplication::selectHero() {
 }
 
 void GameApplication::menuClick() {
+    if (menu_.page == rts::MenuPage::Library) { libraryClick(); return; }
     const rts::MenuLayout layout(renderer_.size(), menu_.canResume);
     if (menu_.page == rts::MenuPage::Main) {
         if (menu_.canResume && layout.resume.contains(mouse_)) menu_.page = rts::MenuPage::Playing;
-        if (layout.battles.contains(mouse_)) menu_.page = rts::MenuPage::BattleSetup;
+        if (layout.battles.contains(mouse_)) { menu_.page = rts::MenuPage::BattleSetup; menu_.colorDropdown = false; }
+        if (layout.library.contains(mouse_)) { menu_.page = rts::MenuPage::Library; menu_.librarySeconds = 0; menu_.colorDropdown = false; }
         if (layout.exit.contains(mouse_)) SendMessageW(window_, WM_CLOSE, 0, 0);
         return;
     }
+    if (colorSelectClick(rts::ColorSelectLayout(layout.color, renderer_.size().y), mouse_)) return;
     if (menu_.commanderDropdown) {
         const size_t count = std::min(size_t{5}, definitions_.commanders().size() - menu_.commanderScroll);
         for (size_t i = 0; i < count; ++i) {
@@ -52,9 +56,52 @@ void GameApplication::menuClick() {
     }
     if (layout.back.contains(mouse_)) menu_.page = rts::MenuPage::Main;
     if (layout.commander.contains(mouse_)) menu_.commanderDropdown = true;
-    for (size_t i = 0; i < layout.colors.size(); ++i)
-        if (layout.colors[i].contains(mouse_)) menu_.player.color = static_cast<rts::TeamColor>(i);
     if (layout.start.contains(mouse_) && menu_.mapSelected) startBattle();
+}
+
+bool GameApplication::colorSelectClick(const rts::ColorSelectLayout& layout, rts::Vec2 mouse) {
+    if (menu_.colorDropdown) {
+        if (const auto choice = layout.pick(mouse)) {
+            menu_.colorFocus = *choice;
+            menu_.player.color = static_cast<rts::TeamColor>(*choice);
+        }
+        menu_.colorDropdown = false;
+        return true; // Closing a popup must not activate the control underneath.
+    }
+    if (!menu_.commanderDropdown && layout.field.contains(mouse)) {
+        menu_.colorDropdown = true;
+        menu_.colorFocus = static_cast<size_t>(menu_.player.color);
+        return true;
+    }
+    return false;
+}
+
+bool GameApplication::colorSelectKey(WPARAM key) {
+    if (!menu_.colorDropdown) return false;
+    const int count = static_cast<int>(rts::teamPalettes.size());
+    int offset = 0;
+    switch (key) {
+    case VK_ESCAPE: menu_.colorDropdown = false; return true;
+    case VK_RETURN:
+        menu_.player.color = static_cast<rts::TeamColor>(menu_.colorFocus);
+        menu_.colorDropdown = false; return true;
+    case VK_HOME: menu_.colorFocus = 0; return true;
+    case VK_END: menu_.colorFocus = rts::teamPalettes.size() - 1; return true;
+    case VK_LEFT: offset = -1; break;
+    case VK_RIGHT: offset = 1; break;
+    case VK_UP:
+    case VK_DOWN: {
+        const int columns = static_cast<int>(rts::ColorSelectLayout::columns);
+        const int column = static_cast<int>(menu_.colorFocus) % columns;
+        const int rows = (count - 1 - column) / columns + 1;
+        const int row = (static_cast<int>(menu_.colorFocus) / columns + (key == VK_UP ? -1 : 1) + rows) % rows;
+        menu_.colorFocus = static_cast<size_t>(row * columns + column);
+        return true;
+    }
+    default: return false;
+    }
+    menu_.colorFocus = static_cast<size_t>((static_cast<int>(menu_.colorFocus) + offset + count) % count);
+    return true;
 }
 
 const rts::Building* GameApplication::selectedBuilding() const {

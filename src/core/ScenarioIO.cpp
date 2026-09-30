@@ -1,5 +1,6 @@
 #include "rts/Map.hpp"
 #include "rts/WorldAssets.hpp"
+#include "rts/Definitions.hpp"
 #include <nlohmann/json.hpp>
 #include <windows.h>
 #include <fstream>
@@ -16,8 +17,35 @@ Json xy(Cell c) { return Json::array({c.x, c.y}); }
 Json xy(Vec2 p) { return Json::array({p.x, p.y}); }
 bool inside(const Map& m, Vec2 p) { return std::isfinite(p.x) && std::isfinite(p.y) && p.x >= 0 && p.y >= 0 && p.x < m.width() && p.y < m.height(); }
 bool range(float v, float a, float b) { return std::isfinite(v) && v >= a && v <= b; }
+void occupyFlat(Map& m, Cell origin, int width, int height, const std::vector<bool>& mask) {
+    if (width < 1 || height < 1 || width > m.width() || height > m.height() || !m.contains(origin))
+        throw std::runtime_error("Invalid object footprint");
+    const int level = m.at(origin).height;
+    for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+        const Cell c = origin + Cell{x,y};
+        if (!m.contains(c) || m.at(c).height != level || m.at(c).surface != Surface::Land || m.at(c).ramp != Cell{} || m.at(c).blocked)
+            throw std::runtime_error("Object footprint requires flat land");
+        if (mask[static_cast<size_t>(y)*width+x]) {
+            if (m.occupancy(c)) throw std::runtime_error("Overlapping map objects");
+            m.occupy(c);
+        }
+    }
 }
-void rebuildScenario(Scenario& s) {
+void occupyHall(Map& m, Cell origin, Cell footprint) {
+    if (footprint.x < 1 || footprint.y < 1 || footprint.x > m.width() || footprint.y > m.height())
+        throw std::runtime_error("Invalid starting depot footprint");
+    occupyFlat(m, origin, footprint.x, footprint.y, std::vector<bool>(footprint.x * footprint.y, true));
+}
+}
+void reserveScenarioHall(Scenario& s, Cell footprint) {
+    auto map = s.map;
+    for (int y = 0; y < s.hallFootprint.y; ++y) for (int x = 0; x < s.hallFootprint.x; ++x)
+        map.release(s.hall + Cell{x,y});
+    occupyHall(map, s.hall, footprint);
+    s.map = std::move(map); s.hallFootprint = footprint;
+}
+void rebuildScenario(Scenario& s, Cell hallFootprint) {
+    if (hallFootprint != Cell{}) s.hallFootprint = hallFootprint;
     auto& m = s.map;
     m.clearOccupancy();
     if (s.playerSlots != 1 || s.startingCrystals < 0 || s.startingCrystals > 1000000) throw std::runtime_error("Invalid map player settings");
@@ -28,31 +56,18 @@ void rebuildScenario(Scenario& s) {
             t.surface != Surface::Land || t.blocked || m.at(c+t.ramp).surface != Surface::Land ||
             m.at(c+t.ramp).blocked || m.at(c+t.ramp).height != t.height+1)) throw std::runtime_error("Invalid ramp: expected a lower land tile pointing uphill");
     }
-    const auto occupyFlat = [&](Cell origin, int width, int height, const std::vector<bool>& mask) {
-        if (!m.contains(origin)) throw std::runtime_error("Object outside map");
-        const int level = m.at(origin).height;
-        for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
-            const Cell c = origin + Cell{x,y};
-            if (!m.contains(c) || m.at(c).height != level || m.at(c).surface != Surface::Land || m.at(c).ramp != Cell{} || m.at(c).blocked)
-                throw std::runtime_error("Object footprint requires flat land");
-            if (mask[static_cast<size_t>(y)*width+x]) {
-                if (m.occupancy(c)) throw std::runtime_error("Overlapping map objects");
-                m.occupy(c);
-            }
-        }
-    };
-    occupyFlat(s.hall, 2, 2, {true,true,true,true});
+    occupyHall(m, s.hall, s.hallFootprint);
     std::set<EntityId> ids;
     for (const auto& o : s.environment) {
         if (o.id == 0 || o.id >= 100000000 || !ids.insert(o.id).second || o.hitPoints < 0 || o.hitPoints > o.maximumHitPoints)
             throw std::runtime_error("Invalid environment identity or health");
         // Inactive objects keep their placement and ID, without reserving the footprint.
-        if (o.active()) occupyFlat(o.origin, o.width, o.height, o.collision);
+        if (o.active()) occupyFlat(m, o.origin, o.width, o.height, o.collision);
         else if (!m.contains(o.origin) || !m.contains(o.origin + Cell{o.width-1,o.height-1})) throw std::runtime_error("Object outside map");
     }
     for (const auto& c : s.crystals) {
         if (c.remaining < 1 || c.remaining > Crystal::maximum) throw std::runtime_error("Invalid crystal reserve");
-        occupyFlat(c.cell, 1, 1, {true});
+        occupyFlat(m, c.cell, 1, 1, {true});
     }
     std::set<std::pair<int,int>> workers;
     for (const auto c : [&] { auto cells=s.extraWorkers; cells.push_back(s.worker); return cells; }())
@@ -67,8 +82,13 @@ void rebuildScenario(Scenario& s) {
         if (!inside(m,p.position) || !range(p.radius,.1f,16) || !range(p.opacity,.01f,1) || !range(p.hardness,0,1)) throw std::runtime_error("Invalid paint brush data");
     m.rebuildVisionBlockers(s.environment);
 }
-Scenario loadScenario(const std::filesystem::path& path) { return loadScenario(path, WorldAssets::load(Paths::discover())); }
-Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& assets) {
+Scenario loadScenario(const std::filesystem::path& path) {
+    const auto paths = Paths::discover();
+    const auto definitions = Definitions::load(paths.asset(L"data/catalog.json"));
+    const auto& depot = definitions.startingDepot(definitions.commanders().front().factionId);
+    return loadScenario(path, WorldAssets::load(paths), {depot.width, depot.height});
+}
+Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& assets, Cell hallFootprint) {
     if (std::filesystem::file_size(path) > 64*1024*1024) throw std::runtime_error("Map file is too large");
     std::ifstream input(path); if (!input) throw std::runtime_error("Cannot open map");
     const auto j = Json::parse(input);
@@ -118,7 +138,7 @@ Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& asse
         const int owner=u.at("owner").get<int>(); if (owner<0 || owner>=neutralPlayer) throw std::runtime_error("Invalid unit owner");
         s.units.push_back({u.at("asset").get<std::string>(),static_cast<PlayerId>(owner),cell(u.at("cell"))});
     }
-    rebuildScenario(s); return s;
+    rebuildScenario(s, hallFootprint); return s;
 }
 void saveScenario(const Scenario& s, const std::filesystem::path& path) {
     auto checked=s; rebuildScenario(checked);

@@ -31,8 +31,9 @@ void Renderer::ensureTarget() {
 }
 
 void Renderer::discardTarget() {
-    materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); paintResources_.clear();
+    materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); buildingImages_.clear(); paintResources_.clear();
     fogBrush_.Reset(); fogBitmap_.Reset();
+    nightBitmap_.Reset();
     groundBrush_.Reset();
     menuBackground_.Reset(); logo_.Reset(); buttonFrame_.Reset();
     minimap_.Reset(); tree_.Reset(); enemy_.Reset(); worker_.Reset(); crystal_.Reset(); hall_.Reset(); brush_.Reset(); target_.Reset(); windowTarget_.Reset();

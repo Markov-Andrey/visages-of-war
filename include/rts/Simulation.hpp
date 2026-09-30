@@ -67,6 +67,7 @@ struct Building {
     Cell rally;
     std::deque<ProductionJob> production;
     bool complete() const { return constructionProgress >= definition.constructionTicks; }
+    bool training() const { return complete() && !production.empty() && production.front().remainingTicks > 0; }
     bool contains(Cell c) const {
         return c.x >= origin.x && c.y >= origin.y && c.x < origin.x + definition.width && c.y < origin.y + definition.height;
     }

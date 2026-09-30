@@ -3,7 +3,29 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
-    (void)context;
+    test("Authored building stages share drawing and picking bounds through camera changes", [&] {
+        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
+        auto scenario = flatScenario();
+        for (int y = 0; y < context.hallFootprint.y; ++y) for (int x = 0; x < context.hallFootprint.x; ++x)
+            scenario.map.at(scenario.hall + rts::Cell{x, y}).height = 2;
+        rts::Simulation game(std::move(scenario), {}, definitions.entity("human.worker"), definitions.entities());
+        auto building = game.buildings().front();
+        const auto& art = building.definition.buildingSprite;
+        for (float zoom : {.4f, 1.0f, 1.8f}) {
+            const rts::WorldView view{{400, 450}, zoom};
+            const auto ground = view.project({building.origin.x + building.definition.width * .5f, building.origin.y + building.definition.height * .5f}, 2);
+            for (int progress : {0, 99, 198, 300}) {
+                building.constructionProgress = progress;
+                const auto* stage = art.stage(progress, building.definition.constructionTicks);
+                const auto bounds = rts::buildingBounds(game, building, view);
+                require(std::abs(bounds.width - stage->source[2] * art.scale * zoom) < .001f, "Picking width ignored sprite crop");
+                require(std::abs(bounds.x + bounds.width * stage->anchor.x - ground.x) < .001f &&
+                    std::abs(bounds.y + bounds.height * stage->anchor.y - ground.y) < .001f, "Stage anchor drifted from logical ground");
+            }
+            const auto bounds = rts::buildingBounds(game, game.buildings().front(), view);
+            require(rts::pickEntity(game, view, {bounds.x + bounds.width * .5f, bounds.y + 12 * zoom}) == building.id, "New hall roof cannot be selected");
+        }
+    });
     test("Minimap cache refreshes fog terrain and replacement maps but skips unchanged frames", [] {
         rts::Map map(16, 12);
         rts::FogOfWar fog(16, 12);
@@ -190,7 +212,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(map.pick(view.project({3.5f, 4.5f}, 0), view) == rts::Cell{3, 4}, "Ground below cliff became unselectable");
     });
     test("Square-view entity picking respects north-south sprite overlap", [] {
-        auto s = flatScenario(); s.worker = {3, 1}; s.extraWorkers = {{3, 3}};
+        auto s = flatScenario(); s.worker = {3, 0}; s.extraWorkers = {{3, 3}};
         rts::Simulation game(std::move(s));
         const rts::WorldView view{{300, 200}, 1};
         const auto back = view.project(game.units()[0].position, 0) + rts::Vec2{0, -25};

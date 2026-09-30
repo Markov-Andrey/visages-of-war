@@ -14,6 +14,7 @@ std::wstring decimal(float value) { std::wostringstream s; s<<std::fixed<<std::s
 void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 mouse,bool grid) {
     ensureTarget();
     const auto& s=editor.scenario(); const auto& map=s.map;
+    const auto& depot=editor.startingDepot();
     prepareLandscape(s.landscape,map);
     const auto extent=size(); const EditorLayout layout(extent);
     target_->BeginDraw(); target_->Clear(D2D1::ColorF(0x081119)); worldOpacity_=1;
@@ -23,7 +24,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     for(size_t i=0;i<s.environment.size();++i) items.push_back({s.environment[i].origin.y+s.environment[i].height-.5f,0,i});
     for(size_t i=0;i<s.landscape.decorations.size();++i) items.push_back({s.landscape.decorations[i].position.y,1,i});
     for(size_t i=0;i<s.crystals.size();++i) items.push_back({s.crystals[i].cell.y+.5f,2,i});
-    items.push_back({s.hall.y+1.5f,3,0});
+    items.push_back({s.hall.y+depot.height-.5f,3,0});
     std::vector<UnitSpawn> units=s.units;
     const auto& commander=editor.definitions().commanders().front();
     units.push_back({commander.startingWorker,0,s.worker});
@@ -49,7 +50,12 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
             if(item.kind==0) environmentObject(s.environment[item.index],map,view);
             if(item.kind==1) decoration(s.landscape.decorations[item.index],map,view);
             if(item.kind==2) { const auto c=s.crystals[item.index].cell; const auto p=view.project(center(c),float(map.at(c).height)); sprite(crystal_.Get(),rect(0,0,128,128),p+Vec2{-48,-76}*view.zoom,Vec2{96,96}*view.zoom); }
-            if(item.kind==3) { const auto p=view.project({s.hall.x+1.0f,s.hall.y+1.0f},float(map.at(s.hall).height)); sprite(hall_.Get(),rect(96,104,312,344),p+Vec2{-96,-145}*view.zoom,Vec2{192,212}*view.zoom); }
+            if(item.kind==3) {
+                const auto p=view.project({s.hall.x+depot.width*.5f,s.hall.y+depot.height*.5f},float(map.at(s.hall).height));
+                const auto* stage=depot.buildingSprite.stage(depot.constructionTicks,depot.constructionTicks);
+                if(stage) buildingImage(*stage,buildingStageBounds(*stage,depot.buildingSprite.scale,p,view.zoom),teamColor_);
+                else sprite(hall_.Get(),rect(96,104,312,344),p+Vec2{-96,-145}*view.zoom,Vec2{192,212}*view.zoom);
+            }
             if(item.kind==4) drawUnit(units[item.index]);
         }
     }
@@ -61,7 +67,10 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
         brush_->SetColor(D2D1::ColorF(0xace8d0,.9f));
         if(editor.tool==EditorTool::Paint||editor.tool==EditorTool::ErasePaint||editor.tool==EditorTool::Height||editor.tool==EditorTool::Surface)
             target_->DrawEllipse(D2D1::Ellipse(point(p),editor.radius*64*view.zoom,editor.radius*64*view.zoom),brush_.Get(),1.5f);
-        else if(editor.tool!=EditorTool::Base) polygon(map.surfaceCorners(c,view),0xace8d0,.7f,false);
+        else if(editor.tool==EditorTool::Start && editor.selected()=="hall") {
+            for(int y=0;y<depot.height;++y) for(int x=0;x<depot.width;++x)
+                if(map.contains(c+Cell{x,y})) polygon(map.surfaceCorners(c+Cell{x,y},view),0xace8d0,.7f,false);
+        } else if(editor.tool!=EditorTool::Base) polygon(map.surfaceCorners(c,view),0xace8d0,.7f,false);
         if(editor.tool==EditorTool::Unit&&!editor.selected().empty()) {
             worldOpacity_=.55f; drawUnit({editor.selected(),static_cast<PlayerId>(editor.owner),c}); worldOpacity_=1;
         }

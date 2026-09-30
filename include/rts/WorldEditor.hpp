@@ -21,8 +21,9 @@ public:
     const Scenario& scenario() const { return scenario_; }
     const WorldAssets& assets() const { return *assets_; }
     const Definitions& definitions() const { return *definitions_; }
+    const EntityDefinition& startingDepot() const { return definitions_->startingDepot(definitions_->commanders().front().factionId); }
     void replace(Scenario scenario);
-    void reloadDefinitions(const WorldAssets& assets);
+    void reloadDefinitions(const WorldAssets& assets, const Definitions& definitions);
     void beginStroke();
     bool apply(Vec2 position);
     void endStroke();
@@ -40,6 +41,7 @@ public:
     std::wstring message = L"Кисть: ЛКМ и движение. Камера: WASD / средняя кнопка. Колесо: масштаб.";
     std::filesystem::path file;
 private:
+    void rebuild(Scenario& scenario) const;
     bool applyOne(Vec2 point);
     EntityId nextId() const;
     Scenario scenario_;

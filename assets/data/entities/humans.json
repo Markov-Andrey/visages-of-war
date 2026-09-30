@@ -282,6 +282,7 @@
     },
     {
       "id": "human.hall",
+      "library": true,
       "factionId": "humans",
       "name": "Ратуша",
       "description": "Главное здание поселения. Принимает добытые кристаллы и обучает рабочих.",
@@ -310,7 +311,7 @@
         "enabled": true,
         "ticks": 300,
         "footprint": [
-          2,
+          3,
           2
         ]
       },
@@ -323,6 +324,106 @@
       "depot": true,
       "hero": null,
       "visual": "hall",
+      "buildingSprite": {
+        "scale": 0.24,
+        "stages": [
+          {
+            "from": 0,
+            "image": "sprites/buildings/valeri/ratusha/ratusha-0.png",
+            "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+            "source": [102, 369, 1128, 704],
+            "anchor": [0.5, 0.68]
+          },
+          {
+            "from": 33,
+            "image": "sprites/buildings/valeri/ratusha/ratusha-33.png",
+            "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+            "source": [124, 232, 1111, 889],
+            "anchor": [0.5, 0.75]
+          },
+          {
+            "from": 66,
+            "image": "sprites/buildings/valeri/ratusha/ratusha-66.png",
+            "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+            "source": [136, 15, 1068, 1147],
+            "anchor": [0.5, 0.8]
+          },
+          {
+            "from": 100,
+            "image": "sprites/buildings/valeri/ratusha/ratusha-no-fire.png",
+            "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+            "source": [237, 11, 821, 1163],
+            "anchor": [0.5, 0.8],
+            "lights": [
+              {"position": [410.5, 930.4], "radius": 4.2, "intensity": 0.92, "color": [255, 192, 112], "flicker": 0.025},
+              {"position": [433, 350], "radius": 1.7, "intensity": 1.0, "color": [255, 174, 70], "flicker": 0.06},
+              {"position": [454, 960], "radius": 1.25, "intensity": 1.0, "color": [255, 164, 68], "flicker": 0.1, "when": "training"},
+              {"position": [754, 871], "radius": 1.25, "intensity": 1.0, "color": [255, 164, 68], "flicker": 0.1, "when": "training"}
+            ],
+            "layers": [
+              {
+                "image": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
+                "frames": [
+                  [100, 0, 290, 435],
+                  [527, 0, 290, 435],
+                  [963, 0, 290, 435],
+                  [1405, 0, 290, 435],
+                  [100, 445, 290, 412],
+                  [527, 445, 290, 412],
+                  [963, 445, 290, 412],
+                  [1405, 445, 290, 412]
+                ],
+                "destination": [337, 199, 192, 242],
+                "ticksPerFrame": 3,
+                "phase": 0,
+                "when": "always"
+              },
+              {
+                "image": "sprites/buildings/valeri/ratusha/ratusha-kupol.png",
+                "teamMask": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+                "frames": [
+                  [214, 21, 885, 1147]
+                ],
+                "destination": [256, 4, 365, 474]
+              },
+              {
+                "image": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
+                "frames": [
+                  [100, 0, 290, 435],
+                  [527, 0, 290, 435],
+                  [963, 0, 290, 435],
+                  [1405, 0, 290, 435],
+                  [100, 445, 290, 412],
+                  [527, 445, 290, 412],
+                  [963, 445, 290, 412],
+                  [1405, 445, 290, 412]
+                ],
+                "destination": [407, 864, 94, 150],
+                "ticksPerFrame": 3,
+                "phase": 2,
+                "when": "training"
+              },
+              {
+                "image": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
+                "frames": [
+                  [100, 0, 290, 435],
+                  [527, 0, 290, 435],
+                  [963, 0, 290, 435],
+                  [1405, 0, 290, 435],
+                  [100, 445, 290, 412],
+                  [527, 445, 290, 412],
+                  [963, 445, 290, 412],
+                  [1405, 445, 290, 412]
+                ],
+                "destination": [707, 775, 94, 150],
+                "ticksPerFrame": 3,
+                "phase": 5,
+                "when": "training"
+              }
+            ]
+          }
+        ]
+      },
       "alternateForms": [],
       "attack": {
         "range": 1.5,

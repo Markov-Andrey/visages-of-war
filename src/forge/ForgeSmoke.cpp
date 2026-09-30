@@ -25,14 +25,14 @@ void ForgeApplication::exerciseInterface() {
     if(editor_->scenario().landscape.decorations.size()!=1||editor_->scenario().units.size()!=23) throw std::runtime_error("Forge smoke: object or unit placement failed");
     editor_->file=rts::Paths::executable().parent_path()/L"Forge — проверка сохранения.rtsmap";
     uiClick(layout.actions[3]); if(editor_->dirty) throw std::runtime_error("Forge smoke: save failed");
-    const auto loaded=rts::loadScenario(editor_->file,worldAssets_);
+    const auto loaded=rts::loadScenario(editor_->file,worldAssets_,editor_->scenario().hallFootprint);
     if(loaded.landscape.paint.size()!=strokes||loaded.units.size()!=23) throw std::runtime_error("Forge smoke: save did not round trip");
     uiClick(layout.tools[0]); uiClick(layout.choices[2]); click(view_.project({17.3f,18.3f},0));
     if(!editor_->dirty) throw std::runtime_error("Forge smoke: unsaved test fixture missing");
     renderer_.snapshotEditor(*editor_,rts::Paths::executable().parent_path()/L"forge-editor-preview.png");
     onMessage(WM_KEYDOWN,VK_F9,0);
     if(!gameProcess_) throw std::runtime_error("Forge smoke: F9 did not launch game");
-    const auto preview=rts::loadScenario(testFile_,worldAssets_);
+    const auto preview=rts::loadScenario(testFile_,worldAssets_,editor_->scenario().hallFootprint);
     if(preview.landscape.paint!=editor_->scenario().landscape.paint) throw std::runtime_error("Forge smoke: test ignored unsaved edits");
 }
 }

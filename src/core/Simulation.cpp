@@ -18,15 +18,15 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
         EntityDefinition depot;
         depot.id = "human.hall"; depot.displayName = "Ратуша"; depot.factionId = workerType_.factionId;
         depot.mobile = false; depot.movementPerSecond = 0; depot.canBuild = false; depot.carryCapacity = 0;
-        depot.constructible = true; depot.width = depot.height = 2; depot.cost = {200, 0};
+        depot.constructible = true; depot.width = 3; depot.height = 2; depot.cost = {200, 0};
         depot.constructionTicks = 300; depot.dayVision = 11; depot.nightVision = 8; depot.maximumHealth = 1000;
         depot.acceptsCargo = true; depot.trainableUnits = {workerType_.id}; depot.visual = EntityVisual::Hall;
         entityTypes_.push_back(std::move(depot));
     }
     for (const auto& type : entityTypes_) if (type.constructible && type.factionId == workerType_.factionId) buildable_.push_back(&type);
     const auto initial = std::find_if(buildable_.begin(), buildable_.end(), [](const auto* type) { return type->acceptsCargo; });
-    if (initial == buildable_.end() || (*initial)->width != 2 || (*initial)->height != 2)
-        throw std::invalid_argument("Initial scenario requires a 2x2 resource depot");
+    if (initial == buildable_.end()) throw std::invalid_argument("Initial scenario requires a resource depot");
+    reserveScenarioHall(scenario_, {(*initial)->width, (*initial)->height});
     if (!supply_.reserve((*initial)->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
     buildings_.push_back({nextId_++, player_.id, **initial, hall(), (*initial)->maximumHealth, (*initial)->constructionTicks, scenario_.worker, {}});
     spawn(workerType_, scenario_.worker, false);

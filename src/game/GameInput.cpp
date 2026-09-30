@@ -14,17 +14,20 @@ void GameApplication::focus(rts::Vec2 world) {
 
 rts::CursorKind GameApplication::cursorKind() const {
     using rts::CursorKind;
+    if (menu_.page == rts::MenuPage::Library) return libraryLinkAt(mouse_) ? CursorKind::Hand : CursorKind::Default;
     if (menu_.page != rts::MenuPage::Playing) {
         const rts::MenuLayout layout(renderer_.size(), menu_.canResume);
         if (menu_.page == rts::MenuPage::Main) {
-            if (layout.battles.contains(mouse_) || layout.exit.contains(mouse_) || (menu_.canResume && layout.resume.contains(mouse_))) return CursorKind::Hand;
+            if (layout.battles.contains(mouse_) || layout.library.contains(mouse_) || layout.exit.contains(mouse_) || (menu_.canResume && layout.resume.contains(mouse_))) return CursorKind::Hand;
         } else {
+            const rts::ColorSelectLayout colors(layout.color, renderer_.size().y);
+            if (menu_.colorDropdown) return colors.field.contains(mouse_) || colors.pick(mouse_).has_value() ? CursorKind::Hand : CursorKind::Default;
             if (menu_.commanderDropdown) {
                 const auto count = std::min(size_t{5}, definitions_.commanders().size() - menu_.commanderScroll);
                 if (rts::UiRect{layout.commanderOption.x, layout.commanderOption.y, layout.commanderOption.width, count * 44.0f}.contains(mouse_)) return CursorKind::Hand;
             }
             if (layout.back.contains(mouse_) || layout.commander.contains(mouse_) || (menu_.mapSelected && layout.start.contains(mouse_))) return CursorKind::Hand;
-            for (const auto& color : layout.colors) if (color.contains(mouse_)) return CursorKind::Hand;
+            if (!menu_.commanderDropdown && layout.color.contains(mouse_)) return CursorKind::Hand;
         }
         return CursorKind::Default;
     }
@@ -202,6 +205,14 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         return 0;
     }
     case WM_MOUSEWHEEL: {
+        if (menu_.page == rts::MenuPage::Library) {
+            POINT p{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            ScreenToClient(window_, &p);
+            const float dpi = 96.0f / GetDpiForWindow(window_);
+            mouse_ = {p.x * dpi, p.y * dpi};
+            libraryScroll(GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? -1 : 1);
+            return 0;
+        }
         if (menu_.page != rts::MenuPage::Playing) {
             if (menu_.commanderDropdown) {
                 const int offset = GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? -1 : 1;
@@ -226,6 +237,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     case WM_KEYDOWN:
         if (lParam & (1LL << 30)) return 0;
         if (wParam == VK_F10 && forgeTest_) { testExitRequested_=true; DestroyWindow(window_); return 0; }
+        if ((menu_.page == rts::MenuPage::Library || menu_.page == rts::MenuPage::BattleSetup) && colorSelectKey(wParam)) return 0;
         if (wParam == VK_ESCAPE) {
             if (menu_.page == rts::MenuPage::Playing) {
                 if (!ui_.placement.empty() || ui_.rallyMode) { ui_.placement.clear(); ui_.rallyMode = false; }

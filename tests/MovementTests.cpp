@@ -2,7 +2,7 @@
 
 namespace rts::tests {
 void movementTests(TestSuite& test, const TestContext& context) {
-    const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets); };
+    const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Mid-step replacement orders and stop do not teleport", [] {
         rts::Simulation game(flatScenario());
         game.command({8, 3});
@@ -120,8 +120,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         using M = rts::MovementType; using S = rts::Surface;
         for (const M movement : {M::Walking, M::Swimming, M::Amphibious, M::Flying}) {
             rts::Scenario s{rts::Map(16, 12), {1, 1}, {4, 5}, {}};
-            for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.occupy({x, y});
-            for (int y = 0; y < 12; ++y) for (int x = 3; x < 14; ++x)
+            for (int y = 0; y < 12; ++y) for (int x = 4; x < 14; ++x)
                 s.map.at({x, y}).surface = (x >= 7 && x <= 9) ? S::DeepWater : S::ShallowWater;
             rts::EntityDefinition type; type.movement = movement;
             rts::Simulation game(std::move(s), {}, type);
@@ -133,20 +132,19 @@ void movementTests(TestSuite& test, const TestContext& context) {
             else require(game.worker().cell == rts::Cell{12, 5}, "Non-walker did not cross deep water");
             if (movement == M::Flying) require(game.unitHeight(game.worker()) == 5, "Flight altitude follows cliffs");
         }
-        auto s = flatScenario(); s.startingCrystals = 100;
-        for (int y = 0; y < 10; ++y) s.map.at({3, y}).surface = S::ShallowWater;
+        auto s = flatScenario(); s.startingCrystals = 100; s.worker = {5, 3};
+        for (int y = 0; y < 10; ++y) s.map.at({4, y}).surface = S::ShallowWater;
         rts::EntityDefinition ship; ship.id = "test.ship"; ship.movement = M::Swimming; ship.canBuild = false; ship.trainingTicks = 1;
         auto dock = testDepot("dock", ship.id);
         rts::Simulation game(std::move(s), {}, {}, {dock, rts::EntityDefinition{}, ship});
-        require(game.setRally(game.buildings()[0].id, {3, 6}), "Ship rally rejected");
-        require(!game.setRally(game.buildings()[0].id, {4, 6}), "Ship rally accepted land");
+        require(game.setRally(game.buildings()[0].id, {4, 6}), "Ship rally rejected");
+        require(!game.setRally(game.buildings()[0].id, {5, 6}), "Ship rally accepted land");
         require(game.train(game.buildings()[0].id), "Ship training failed");
         ticks(game, 300);
-        require(game.units().size() == 2 && game.units()[1].cell == rts::Cell{3, 6}, "Ship did not spawn in water and reach rally");
+        require(game.units().size() == 2 && game.units()[1].cell == rts::Cell{4, 6}, "Ship did not spawn in water and reach rally");
     });
     test("Flying formation crosses terrain and ground troops while reserving adjacent air slots", [] {
         rts::Scenario s{rts::Map(36, 24), {1, 1}, {24, 10}, {}};
-        for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.occupy({x, y});
         for (int y = 0; y < 24; ++y) { s.map.at({18, y}).height = 3; s.map.occupy({18, y}); }
         rts::EntityDefinition flyer; flyer.id = "test.flyer"; flyer.movement = rts::MovementType::Flying;
         flyer.canBuild = false; flyer.carryCapacity = 0; flyer.movementPerSecond = 3.2f;

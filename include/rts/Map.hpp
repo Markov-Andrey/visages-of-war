@@ -70,11 +70,14 @@ struct Scenario {
     std::optional<Cell> heroSpawn; // Uses the selected commander's hero definition.
     Landscape landscape;
     std::string name = "Новая карта";
+    Cell hallFootprint{}; // Derived reservation from the entity catalog; never serialized.
 };
 class WorldAssets;
 Scenario loadScenario(const std::filesystem::path& path);
-Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& assets);
+Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& assets, Cell hallFootprint);
 void saveScenario(const Scenario& scenario, const std::filesystem::path& path);
 // Rebuild derived occupancy after loading/editing; no state from a running match is serialized.
-void rebuildScenario(Scenario& scenario);
+void rebuildScenario(Scenario& scenario, Cell hallFootprint = {});
+// Reserve/rebind only the starting depot, keeping all other map occupancy intact.
+void reserveScenarioHall(Scenario& scenario, Cell footprint);
 }

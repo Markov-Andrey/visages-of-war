@@ -31,7 +31,10 @@ void Renderer::drawMenu(const Simulation& game, const MenuState& menu, const Def
         sprite(logo_.Get(), rect(0, 0, logoSize.width, logoSize.height), {layout.logo.x, layout.logo.y}, {layout.logo.width, layout.logo.height});
         if (menu.canResume) button(layout.resume, L"Продолжить", true);
         button(layout.battles, L"Сражения", true);
+        button(layout.library, L"Либрарий");
         button(layout.exit, L"Выйти");
+    } else if (menu.page == MenuPage::Library) {
+        drawLibrary(menu, definitions, mouse);
     } else {
         prepareLandscape(game.landscape(), game.map());
         text(L"VISAGES OF WAR", rect(34, 22, 380, 45), 0xe5d2a7, true);
@@ -56,18 +59,10 @@ void Renderer::drawMenu(const Simulation& game, const MenuState& menu, const Def
         panel(layout.commander, 0x1d3339);
         text(wide(commander.displayName) + L"  ▾", rect(layout.commander.x + 15, layout.commander.y + 12, 370, 26), 0xe0e5d8);
         text(L"Раса: " + wide(commander.factionName), rect(layout.commander.x, layout.commander.y + 52, 380, 24), 0xa6b6b1);
-        text(L"Цвет команды", rect(layout.commander.x, layout.colors[0].y - 29, 380, 24), 0x91aba5);
-        for (size_t i = 0; i < layout.colors.size(); ++i) {
-            const auto area = layout.colors[i];
-            panel(area, teamPalettes[i].rgb);
-            if (static_cast<size_t>(menu.player.color) == i) {
-                brush_->SetColor(D2D1::ColorF(0xf0e8c9));
-                target_->DrawRoundedRectangle(D2D1::RoundedRect(rect(area.x - 4, area.y - 4, area.width + 8, area.height + 8), 6, 6), brush_.Get(), 2);
-            }
-        }
-        text(std::wstring(teamPalettes[static_cast<size_t>(menu.player.color)].name), rect(layout.commander.x, layout.colors[0].y + 58, 380, 26), 0xadbdb6);
+        text(L"Цвет команды · " + std::to_wstring(teamPalettes.size()) + L" цветов", rect(layout.color.x, layout.color.y - 29, 380, 24), 0x91aba5);
         button(layout.back, L"Назад");
         button(layout.start, L"Начать сражение", true);
+        drawColorSelect(ColorSelectLayout(layout.color, extent.y), menu, mouse);
         if (menu.commanderDropdown) {
             const size_t count = std::min(size_t{5}, definitions.commanders().size() - menu.commanderScroll);
             for (size_t i = 0; i < count; ++i) {
@@ -77,7 +72,8 @@ void Renderer::drawMenu(const Simulation& game, const MenuState& menu, const Def
             }
         }
     }
-    text(L"Visages of War  •  " + std::wstring(projectVersion), rect(34, extent.y - 34, extent.x - 68, 24), 0xd0c4aa);
+    if (menu.page != MenuPage::Library)
+        text(L"Visages of War  •  " + std::wstring(projectVersion), rect(34, extent.y - 34, extent.x - 68, 24), 0xd0c4aa);
     const auto hr = target_->EndDraw();
     if (hr == D2DERR_RECREATE_TARGET) discardTarget();
     else check(hr);

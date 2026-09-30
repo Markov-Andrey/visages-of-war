@@ -19,6 +19,12 @@ private:
     void selectArmy();
     void selectHero();
     void menuClick();
+    bool colorSelectClick(const rts::ColorSelectLayout& layout, rts::Vec2 mouse);
+    bool colorSelectKey(WPARAM key);
+    void libraryClick();
+    void libraryScroll(int direction);
+    bool libraryLinkAt(rts::Vec2 mouse) const;
+    void advanceMenu(float elapsed);
     const rts::Building* selectedBuilding() const;
     const rts::Crystal* selectedCrystal() const;
     void focus(rts::Vec2 world);

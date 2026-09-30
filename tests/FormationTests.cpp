@@ -70,7 +70,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
     test("Dense group moves in eight directions without initial backtracking or overlap", [] {
         for (rts::Cell direction : {rts::Cell{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}}) {
             rts::Scenario s{rts::Map(32, 32), {28, 28}, {10, 10}, {}};
-            for (int y = 28; y < 30; ++y) for (int x = 28; x < 30; ++x) s.map.occupy({x, y});
+
             s.extraWorkers = {{11, 10}, {12, 10}, {10, 11}, {11, 11}, {12, 11}};
             rts::Simulation game(std::move(s));
             std::vector<rts::EntityId> ids;
@@ -103,7 +103,6 @@ void formationTests(TestSuite& test, const TestContext& context) {
     });
     test("Twelve-unit column has six ranks of two and preserves travel lanes", [] {
         rts::Scenario s{rts::Map(64, 64), {1, 1}, {12, 20}, {}};
-        for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.occupy({x, y});
         std::vector<rts::FormationMember> input;
         for (int i = 0; i < 12; ++i) input.push_back({rts::EntityId(i + 1), {6 + i % 2, 10 + i / 2}});
         const auto initial = rts::planFormation(s.map, input, {20, 20}, {});
@@ -132,7 +131,6 @@ void formationTests(TestSuite& test, const TestContext& context) {
     test("Column preserves spacing while travelling and reforms after a narrow gate", [] {
         for (bool gate : {false, true}) {
             rts::Scenario s{rts::Map(64, 48), {1, 1}, {10, 19}, {}};
-            for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.occupy({x, y});
             for (int row = 0; row < 6; ++row) for (int column = 0; column < 2; ++column) {
                 rts::Cell c{10 + row, 19 + column};
                 if (c != s.worker) s.extraWorkers.push_back(c);
@@ -190,7 +188,6 @@ void formationTests(TestSuite& test, const TestContext& context) {
     test("Twelve-unit groups reach oriented slots in all eight directions", [] {
         for (rts::Cell direction : {rts::Cell{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}}) {
             rts::Scenario s{rts::Map(64, 64), {1, 1}, {30, 30}, {}};
-            for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.occupy({x, y});
             for (int i = 1; i < 12; ++i) s.extraWorkers.push_back({30 + i % 4, 30 + i / 4});
             rts::Simulation game(std::move(s));
             std::vector<rts::EntityId> ids; std::vector<rts::FormationMember> members;
@@ -247,7 +244,6 @@ void formationTests(TestSuite& test, const TestContext& context) {
     test("Dense followers preserve separation when the leading unit stops or reverses", [] {
         for (bool reverse : {false, true}) {
             rts::Scenario s{rts::Map(40, 20), {1, 1}, {10, 10}, {}};
-            for (int y = 1; y < 3; ++y) for (int x = 1; x < 3; ++x) s.map.occupy({x, y});
             s.extraWorkers = {{11, 10}, {12, 10}, {10, 11}, {11, 11}, {12, 11}};
             rts::Simulation game(std::move(s));
             std::vector<rts::EntityId> ids;

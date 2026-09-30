@@ -14,9 +14,11 @@ class Definitions {
 public:
     static Definitions load(const std::filesystem::path& catalog);
     const std::vector<CommanderDefinition>& commanders() const { return commanders_; }
+    const std::vector<FactionDefinition>& factions() const { return factions_; }
     const CommanderDefinition& commander(const std::string& id) const;
     const FactionDefinition& faction(const std::string& id) const;
     const EntityDefinition& entity(const std::string& id) const;
+    const EntityDefinition& startingDepot(const std::string& factionId) const;
     const std::vector<EntityDefinition>& entities() const { return entities_; }
     const ProgressionRules& progression() const { return progression_; }
 private:

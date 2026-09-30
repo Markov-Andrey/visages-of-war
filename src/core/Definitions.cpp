@@ -28,10 +28,11 @@ Json read(const std::filesystem::path& file) {
 }
 void version(const Json& root) { if (number(root.at("version"), 1, 1) != 1) throw std::runtime_error("Unsupported catalog version"); }
 EntityDefinition parseEntity(const Json& j) {
-    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "visual", "alternateForms", "attack", "sprite"});
+    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "visual", "alternateForms", "attack", "sprite"}, {"buildingSprite", "library"});
     EntityDefinition e;
     e.id = string(j.at("id")); e.factionId = string(j.at("factionId"));
     e.displayName = string(j.at("name")); e.description = string(j.at("description"));
+    if (j.contains("library")) e.libraryVisible = j.at("library").get<bool>();
     const auto& cost = j.at("cost"); fields(cost, {"crystals", "supply"});
     e.cost = {number(cost.at("crystals"), 0, 1000000), number(cost.at("supply"), 0, ArmySupply::maximum)};
     const auto& stats = j.at("stats"); fields(stats, {"health", "damage", "level", "dayVision", "nightVision"});
@@ -83,8 +84,16 @@ EntityDefinition parseEntity(const Json& j) {
     else if (visual == "tower") e.visual = EntityVisual::Tower;
     else throw std::runtime_error("Unknown visual: " + visual);
     e.alternateForms = j.at("alternateForms").get<std::vector<std::string>>();
+    if (j.contains("buildingSprite")) data::parseBuildingSprite(e, j.at("buildingSprite"));
     return e;
 }
+}
+const EntityDefinition& Definitions::startingDepot(const std::string& factionId) const {
+    const auto found = std::find_if(entities_.begin(), entities_.end(), [&](const auto& type) {
+        return type.constructible && type.acceptsCargo && type.factionId == factionId;
+    });
+    if (found == entities_.end()) throw std::runtime_error("Faction requires a starting resource depot: " + factionId);
+    return *found;
 }
 Definitions Definitions::load(const std::filesystem::path& catalog) {
     Definitions result;

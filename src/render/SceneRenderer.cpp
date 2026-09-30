@@ -8,9 +8,9 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     updateFogMask(game);
     prepareLandscape(game.landscape(), game.map());
     const auto color = teamRgb(game.player().color);
-    if (teamColor_ != color) { teamColor_ = color; loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_); }
+    if (teamColor_ != color) { teamColor_ = color; loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_, SpriteTeamMask::Blue); }
     const auto enemyColor = teamRgb(game.player().color == TeamColor::Red ? TeamColor::Blue : TeamColor::Red);
-    if (enemyColor_ != enemyColor) { enemyColor_ = enemyColor; loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_); }
+    if (enemyColor_ != enemyColor) { enemyColor_ = enemyColor; loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_, SpriteTeamMask::Blue); }
     target_->BeginDraw();
     target_->Clear(D2D1::ColorF(0x081119));
     const auto extent = size();
@@ -21,6 +21,9 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     enum class Kind { Crystal, Environment, Decoration, Building, Corpse, Unit };
     struct Item { float depth; Kind kind; size_t index; };
     std::vector<Item> items;
+    std::vector<const Building*> groundSelections;
+    for (const auto& b : game.buildings()) if ((ui.selection.contains(b.id) || !b.complete()) &&
+        onScreen(view.project(center(b.origin), float(map.at(b.origin).height)))) groundSelections.push_back(&b);
     for (size_t i = 0; i < game.landscape().decorations.size(); ++i) {
         const auto p = game.landscape().decorations[i].position;
         if (game.fog().explored({int(p.x), int(p.y)})) items.push_back({p.y, Kind::Decoration, i});
@@ -47,6 +50,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             worldOpacity_ = 1.0f;
             tile(map, c, view, grid, true);
         }
+        worldOpacity_ = 1;
+        for (const auto* building : groundSelections) buildingGroundSelection(game, *building, view, y);
         while (nextItem < items.size() && items[nextItem].depth < y + 1) {
             const auto item = items[nextItem++];
             worldOpacity_ = 1;
@@ -63,7 +68,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                 if (!onScreen(p)) break;
                 worldOpacity_ = game.fog().visible(crystal.cell) ? 1.0f : .3f;
                 if (ui.selection.contains(crystal.id) && game.fog().visible(crystal.cell)) {
-                    brush_->SetColor(D2D1::ColorF(0xffd34d));
+                    brush_->SetColor(D2D1::ColorF(selectionColor(crystal.owner, game.player().id)));
                     target_->DrawEllipse(D2D1::Ellipse(point(p + Vec2{0, -5} * view.zoom), 34 * view.zoom, 16 * view.zoom), brush_.Get(), 2);
                 }
                 sprite(crystal_.Get(), rect(0, 0, 128, 128), p + Vec2{-48, -76} * view.zoom, Vec2{96, 96} * view.zoom);
@@ -140,12 +145,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         const std::array<Vec2, 3> flag{{p + Vec2{0, -55} * view.zoom, p + Vec2{31, -44} * view.zoom, p + Vec2{0, -33} * view.zoom}};
         polygon(flag, teamColor_);
     }
-    const float minute = static_cast<float>(game.clock().minuteOfDay());
-    float night = game.clock().phase() == DayPhase::Night ? 1.0f : 0.0f;
-    if (minute >= 300 && minute < 420) night = 1 - (minute - 300) / 120;
-    if (minute >= 1020 && minute < 1140) night = (minute - 1020) / 120;
-    brush_->SetColor(D2D1::ColorF(0x101d45, night * .42f));
-    target_->FillRectangle(rect(0, 0, extent.x, extent.y), brush_.Get());
+    drawNightLighting(game, view, extent);
     if (!ui.placement.empty() && hover) {
         const auto& type = game.entityType(ui.placement);
         const unsigned colorPreview = game.canPlace(ui.placement, *hover) ? 0x7cdeb0 : 0xeb7c77;

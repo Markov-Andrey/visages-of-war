@@ -18,11 +18,15 @@ EditorLayout::EditorLayout(Vec2 size) {
     valueMinus={panel.x+12,636,32,28}; valuePlus={panel.x+242,636,32,28};
 }
 WorldEditor::WorldEditor(Scenario scenario,const WorldAssets& assets,const Definitions& definitions)
-    : scenario_(std::move(scenario)),assets_(&assets),definitions_(&definitions) { rebuildScenario(scenario_); }
-void WorldEditor::replace(Scenario scenario) {
-    rebuildScenario(scenario); scenario_=std::move(scenario); undo_.clear(); redo_.clear(); before_.reset(); last_.reset(); dirty=false;
+    : scenario_(std::move(scenario)),assets_(&assets),definitions_(&definitions) { rebuild(scenario_); }
+void WorldEditor::rebuild(Scenario& scenario) const {
+    const auto& depot = startingDepot();
+    rebuildScenario(scenario, {depot.width, depot.height});
 }
-void WorldEditor::reloadDefinitions(const WorldAssets& assets) {
+void WorldEditor::replace(Scenario scenario) {
+    rebuild(scenario); scenario_=std::move(scenario); undo_.clear(); redo_.clear(); before_.reset(); last_.reset(); dirty=false;
+}
+void WorldEditor::reloadDefinitions(const WorldAssets& assets, const Definitions& definitions) {
     auto candidate=scenario_;
     assets.material(candidate.landscape.baseMaterial);
     for(const auto& p:candidate.landscape.paint) assets.material(p.material);
@@ -30,7 +34,9 @@ void WorldEditor::reloadDefinitions(const WorldAssets& assets) {
     for(auto& o:candidate.environment) {
         const int hp=o.hitPoints; o=assets.instantiate(o.definitionId,o.id,o.origin); o.hitPoints=std::min(hp,o.maximumHitPoints);
     }
-    rebuildScenario(candidate); scenario_=std::move(candidate); assets_=&assets;
+    const auto& depot=definitions.startingDepot(definitions.commanders().front().factionId);
+    rebuildScenario(candidate,{depot.width,depot.height});
+    scenario_=std::move(candidate); assets_=&assets; definitions_=&definitions;
     undo_.clear(); redo_.clear(); before_.reset(); last_.reset(); choice=0;
 }
 std::vector<EditorChoice> WorldEditor::choices() const {
@@ -142,7 +148,7 @@ bool WorldEditor::applyOne(Vec2 p) {
             }
         }
         if(!changed) return false;
-        rebuildScenario(s);
+        rebuild(s);
         // Simulation is the authority for spawn movement layers, duplicate slots and supply.
         if(tool!=EditorTool::Paint&&tool!=EditorTool::ErasePaint&&tool!=EditorTool::Decoration&&tool!=EditorTool::Base) {
             const auto& commander=definitions_->commanders().front();
@@ -152,7 +158,7 @@ bool WorldEditor::applyOne(Vec2 p) {
     } catch(const std::exception&) { message=L"Нельзя разместить здесь: проверьте поверхность, занятые места и лимит армии. Для рампы нужны 3 полосы у перепада +1."; return false; }
 }
 void WorldEditor::validateForPlay() const {
-    auto s=scenario_; rebuildScenario(s);
+    auto s=scenario_; rebuild(s);
     const auto& commander=definitions_->commanders().front();
     Simulation check(s,{},definitions_->entity(commander.startingWorker),definitions_->entities(),s.heroSpawn?commander.startingHero:std::string{},definitions_->progression());
 }

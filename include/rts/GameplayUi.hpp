@@ -4,7 +4,20 @@
 #include "rts/Minimap.hpp"
 
 namespace rts {
+inline unsigned selectionColor(PlayerId owner, PlayerId player) {
+    if (owner == neutralPlayer) return 0xffd34d;
+    return owner == player ? 0x75dc91 : 0xe86464;
+}
+inline UiRect buildingStageBounds(const BuildingSpriteStage& stage, float scale, Vec2 ground, float zoom) {
+    const Vec2 extent = Vec2{float(stage.source[2]), float(stage.source[3])} * (scale * zoom);
+    return {ground.x - extent.x * stage.anchor.x, ground.y - extent.y * stage.anchor.y, extent.x, extent.y};
+}
 UiRect unitBounds(const Simulation& game, const Unit& unit, const WorldView& view);
+inline UiRect buildingLayerBounds(const BuildingSpriteStage& stage, const BuildingSpriteLayer& layer, UiRect bounds) {
+    const float sx = bounds.width / stage.source[2], sy = bounds.height / stage.source[3];
+    const auto& d = layer.destination;
+    return {bounds.x + d[0] * sx, bounds.y + d[1] * sy, d[2] * sx, d[3] * sy};
+}
 UiRect buildingBounds(const Simulation& game, const Building& building, const WorldView& view);
 UiRect crystalBounds(const Simulation& game, const Crystal& crystal, const WorldView& view);
 inline float buildingDepth(const Building& building) { return building.origin.y + building.definition.height - .15f; }

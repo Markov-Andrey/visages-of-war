@@ -116,8 +116,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.crystals()[1].remaining == 1000 && game.crystals()[2].remaining < 1000, "Deferred gather selected wrong field");
     });
     test("Unreachable deposit preserves carried resources", [] {
-        auto scenario = flatScenario(4);
-        for (int y = 0; y < 10; ++y) scenario.map.at({3, y}).blocked = true;
+        auto scenario = flatScenario(4); scenario.worker = {5, 3};
+        for (int y = 0; y < 10; ++y) scenario.map.at({4, y}).blocked = true;
         rts::Simulation game(std::move(scenario));
         game.command({7, 7});
         ticks(game, 1200);
@@ -177,22 +177,27 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.setRally(hall, {3, 7}) && game.setRally(*barracks, {8, 5}), "Rally rejected");
         require(game.building(hall)->rally != game.building(*barracks)->rally, "Rally not independent");
         require(game.train(*barracks) && game.train(*barracks), "Cannot queue two soldiers");
+        require(game.building(*barracks)->training(), "Queued production did not activate training effects");
         require(game.armySupply().used() == 5 && game.storedCrystals() == 280, "Queue did not reserve cost and supply");
         require(game.cancelTraining(*barracks), "Queue cancellation failed");
+        require(game.building(*barracks)->training(), "Cancelling one of two jobs stopped training effects");
         require(game.armySupply().used() == 3 && game.storedCrystals() == 340, "Queue refund incorrect");
         ticks(game, 600);
         require(game.units().size() == 2 && game.armySupply().used() == 3, "Spawn charged supply twice");
+        require(!game.building(*barracks)->training(), "Finished production left training effects active");
+        require(game.train(*barracks) && game.cancelTraining(*barracks) && !game.building(*barracks)->training(), "Cancelled last job left training effects active");
         require(game.units().back().definitionId == "human.soldier" && game.units().back().cell == rts::Cell{8, 5}, "Produced unit missed rally");
         require(!game.setRally(*barracks, {7, 7}), "Rally accepted blocked crystal");
     });
     test("Completed production waits for a blocked exit and can still be cancelled", [] {
         auto s = flatScenario(); s.startingCrystals = 300; s.worker = {1, 0};
-        for (rts::Cell c : rts::perimeter(s.map, s.hall, 2, 2)) if (c != s.worker) s.map.at(c).blocked = true;
+        for (rts::Cell c : rts::perimeter(s.map, s.hall, 3, 2)) if (c != s.worker) s.map.at(c).blocked = true;
         rts::Simulation game(std::move(s));
         const auto hall = game.buildings()[0].id;
         require(game.train(hall), "Could not train");
         ticks(game, 150);
         require(game.units().size() == 1 && game.building(hall)->production.front().remainingTicks == 0, "Spawn overlapped blocked exit");
+        require(!game.building(hall)->training(), "Finished job blocked at exit still counted as training");
         require(game.cancelTraining(hall) && game.armySupply().used() == 1 && game.storedCrystals() == 300, "Blocked job not refundable");
         require(game.train(hall), "Could not retrain");
         game.command({0, 0}); ticks(game, 150);

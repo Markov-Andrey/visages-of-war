@@ -30,6 +30,7 @@ add_library(rts_core
     src/render/TerrainPaint.cpp
     src/core/FogOfWar.cpp
     src/render/FogMask.cpp
+    src/render/NightLighting.cpp
     src/render/MinimapRaster.cpp
     src/core/Navigation.cpp
     src/core/Formation.cpp
@@ -59,12 +60,16 @@ add_library(rts_render
     src/render/TerrainRenderer.cpp
     src/render/WorldRenderer.cpp
     src/render/UnitSpriteRenderer.cpp
+    src/render/BuildingSpriteRenderer.cpp
+    src/render/LightingRenderer.cpp
     src/render/ProjectileRenderer.cpp
     src/render/EntityRenderer.cpp
     src/render/SceneRenderer.cpp
     src/render/HudRenderer.cpp
     src/render/MinimapRenderer.cpp
     src/render/MenuRenderer.cpp
+    src/render/ColorSelectRenderer.cpp
+    src/render/LibraryRenderer.cpp
     src/platform/GameCursor.cpp
 )
 target_link_libraries(rts_render PUBLIC rts_core d2d1 dwrite windowscodecs ole32 shell32 user32 gdi32)
@@ -93,6 +98,7 @@ add_visages_app(RTS "Visages of War" "Visages.Game"
     src/platform/Main.cpp
     src/game/GameApplication.cpp
     src/game/GameCommands.cpp
+    src/game/GameLibrary.cpp
     src/game/GameInput.cpp
     src/game/GameSmoke.cpp
     src/game/RangedSmoke.cpp

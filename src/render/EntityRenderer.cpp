@@ -41,9 +41,29 @@ void Renderer::environmentObject(const EnvironmentObject& object, const Map& map
     }
 }
 
+void Renderer::buildingGroundSelection(const Simulation& game, const Building& b, const WorldView& view, int row) {
+    if (row < b.origin.y || row >= b.origin.y + b.definition.height) return;
+    const float height = float(game.map().at(b.origin).height);
+    const auto a = view.project({float(b.origin.x), float(row)}, height);
+    const auto c = view.project({float(b.origin.x + b.definition.width), float(row + 1)}, height);
+    const auto color = selectionColor(b.owner, game.player().id);
+    // Paint with the terrain row, before its objects. Only the outer footprint has a border.
+    const auto antialias = target_->GetAntialiasMode();
+    target_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+    brush_->SetColor(D2D1::ColorF(color, .16f));
+    target_->FillRectangle(rect(a.x, a.y, c.x - a.x, c.y - a.y), brush_.Get());
+    target_->SetAntialiasMode(antialias);
+    line(a, {a.x, c.y}, color, 2);
+    line({c.x, a.y}, c, color, 2);
+    if (row == b.origin.y) line(a, {c.x, a.y}, color, 2);
+    if (row + 1 == b.origin.y + b.definition.height) line({a.x, c.y}, c, color, 2);
+}
+
 void Renderer::buildingSprite(const Simulation& game, const Building& b, const WorldView& view, bool selected) {
     const auto bounds = buildingBounds(game, b, view);
     const auto& type = b.definition;
+    const auto* stage = type.buildingSprite.stage(b.constructionProgress, type.constructionTicks);
+    const auto color = b.owner == game.player().id ? teamColor_ : enemyColor_;
     const float z = view.zoom;
     const float h = float(game.map().at(b.origin).height);
     const auto p = view.project({b.origin.x + type.width * .5f, b.origin.y + type.height * .5f}, h);
@@ -51,8 +71,9 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
         view.project({float(b.origin.x + type.width), float(b.origin.y)}, h),
         view.project({float(b.origin.x + type.width), float(b.origin.y + type.height)}, h),
         view.project({float(b.origin.x), float(b.origin.y + type.height)}, h)}};
-    if (selected || !b.complete()) { polygon(footprint, teamColor_, .16f); polygon(footprint, teamColor_, 1, false); }
-    if (!b.complete()) {
+    if (stage) {
+        buildingImage(*stage, bounds, color, game.clock().elapsedTicks(), b.training());
+    } else if (!b.complete()) {
         const std::array<Vec2, 4> foundation{{p + Vec2{-50, -22} * z, p + Vec2{50, -22} * z, p + Vec2{65, 12} * z, p + Vec2{-65, 12} * z}};
         polygon(foundation, 0x928169);
         for (const auto base : footprint) {
@@ -71,19 +92,25 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
         polygon(tower, 0x8a9185);
         for (int i = 0; i < 5; ++i) line(p + Vec2{-23, -i * 18.0f} * z, p + Vec2{23, -i * 18.0f} * z, 0x555e59, 2 * z);
         const std::array<Vec2, 3> roof{{p + Vec2{-45, -80} * z, p + Vec2{0, -125} * z, p + Vec2{45, -80} * z}};
-        polygon(roof, teamColor_);
+        polygon(roof, color);
     }
-    if (b.complete()) {
+    if (b.complete() && !stage) {
         line(p + Vec2{28, -105} * z, p + Vec2{28, -205} * z, 0xd9d0b2, 2);
         const std::array<Vec2, 3> flag{{p + Vec2{28, -205} * z, p + Vec2{66, -193} * z, p + Vec2{28, -180} * z}};
-        polygon(flag, teamColor_);
+        polygon(flag, color);
+    } else if (stage && stage->teamMask.empty()) {
+        // Ownership marker until the artist supplies a cloth mask for this stage.
+        const Vec2 base{bounds.x + bounds.width - 12 * z, p.y + 12 * z};
+        line(base, base + Vec2{0, -42} * z, 0xd9d0b2, 2 * z);
+        const std::array<Vec2, 3> flag{{base + Vec2{0, -42} * z, base + Vec2{22, -35} * z, base + Vec2{0, -27} * z}};
+        polygon(flag, color);
     }
     if (selected || !b.complete()) {
-        const float y = b.complete() ? bounds.y - 12 : p.y - 100 * z;
+        const float y = (stage || b.complete()) ? bounds.y - 12 : p.y - 100 * z;
         brush_->SetColor(D2D1::ColorF(0x10232b));
         target_->FillRectangle(rect(p.x - 48, y, 96, 6), brush_.Get());
         const float progress = b.complete() ? float(b.health) / type.maximumHealth : float(b.constructionProgress) / type.constructionTicks;
-        brush_->SetColor(D2D1::ColorF(b.complete() ? 0x75c8a6 : 0xe3be79));
+        brush_->SetColor(D2D1::ColorF(b.complete() ? selectionColor(b.owner, game.player().id) : 0xe3be79));
         target_->FillRectangle(rect(p.x - 48, y, 96 * progress, 6), brush_.Get());
     }
 }
@@ -100,12 +127,13 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
         text(L"" + std::to_wstring(u.level()), rect(p.x + 27 * view.zoom, p.y - 57 * view.zoom, 38, 24), 0xe0c276);
     }
     if (selected) {
+        const auto color = selectionColor(u.owner, game.player().id);
         if (airborne(u.definition.movement)) {
-            line(p, shadow, 0x76d99b, 1.5f);
-            brush_->SetColor(D2D1::ColorF(0x76d99b));
+            line(p, shadow, color, 1.5f);
+            brush_->SetColor(D2D1::ColorF(color));
             target_->FillEllipse(D2D1::Ellipse(point(shadow), 2.5f * view.zoom, 2.5f * view.zoom), brush_.Get());
         }
-        brush_->SetColor(D2D1::ColorF(0x91e4bb));
+        brush_->SetColor(D2D1::ColorF(color));
         target_->DrawEllipse(D2D1::Ellipse(point(p), 23 * view.zoom, 11 * view.zoom), brush_.Get(), 2);
     }
     const auto frame = unitFrame(u);
@@ -117,7 +145,7 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
     if (selected || u.hero || u.owner != game.player().id || u.health < u.maximumHealth()) {
         line(p + Vec2{-21, -59} * view.zoom, p + Vec2{21, -59} * view.zoom, 0x1b342e, 4);
         line(p + Vec2{-21 + 42.0f * u.health / u.maximumHealth(), -59} * view.zoom, p + Vec2{-21, -59} * view.zoom,
-            u.owner == game.player().id ? 0x83cfaa : 0xe06464, 3);
+            selectionColor(u.owner, game.player().id), 3);
     }
 }
 }

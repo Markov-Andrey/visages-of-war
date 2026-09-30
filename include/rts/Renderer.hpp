@@ -5,6 +5,7 @@
 #include "rts/Menu.hpp"
 #include "rts/GameplayUi.hpp"
 #include "rts/FogMask.hpp"
+#include "rts/NightLighting.hpp"
 #include "rts/MinimapRaster.hpp"
 #include "rts/WorldAssets.hpp"
 #include "rts/TerrainPaint.hpp"
@@ -28,7 +29,8 @@ public:
               const GameplayUi& ui, bool grid, bool paused);
     void verifyAssets();
     void snapshot(const Simulation& game, const std::filesystem::path& output, const Definitions* menuDefinitions = nullptr, bool grid = false,
-        const GameplayUi* interfaceState = nullptr, MenuPage menuPage = MenuPage::BattleSetup);
+        const GameplayUi* interfaceState = nullptr, MenuPage menuPage = MenuPage::BattleSetup, double previewSeconds = 0,
+        const MenuState* menuState = nullptr);
     void drawMenu(const Simulation& game, const MenuState& menu, const Definitions& definitions, Vec2 mouse);
     void drawEditor(const WorldEditor& editor, const WorldView& view, Vec2 mouse, bool grid);
     void reloadWorldAssets(const WorldAssets& assets);
@@ -41,8 +43,13 @@ private:
     void ensureTarget();
     void loadResources();
     void updateFogMask(const Simulation& game);
+    void drawNightLighting(const Simulation& game, const WorldView& view, Vec2 extent);
+    void drawLibrary(const MenuState& menu, const Definitions& definitions, Vec2 mouse);
+    void drawColorSelect(const ColorSelectLayout& layout, const MenuState& menu, Vec2 mouse);
     void discardTarget();
-    void loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask = 0, SpriteTeamMask palette = SpriteTeamMask::Blue);
+    void loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask = 0,
+        SpriteTeamMask palette = SpriteTeamMask::None, const std::filesystem::path& maskPath = {});
+    void buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks = 0, bool training = false);
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);
     void unitPortrait(const UnitSpriteDefinition& definition, Vec2 topLeft, Vec2 extent, unsigned color);
@@ -57,6 +64,7 @@ private:
     void hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
     void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected);
+    void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row);
     void unitSprite(const Simulation& game, const Unit& unit, const WorldView& view, bool selected);
     void prepareLandscape(const Landscape& landscape, const Map& map);
     void paintedTile(Cell cell);
@@ -71,6 +79,7 @@ private:
     std::map<std::string,MaterialResource> materialResources_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> worldSprites_;
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
+    std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> buildingImages_;
     TerrainPaint terrainPaint_;
     std::map<TerrainPaint::Key,PaintResource> paintResources_;
     HWND window_{};
@@ -84,6 +93,8 @@ private:
     ComPtr<ID2D1SolidColorBrush> brush_;
     ComPtr<ID2D1BitmapBrush> groundBrush_;
     FogMask fogMask_;
+    NightLightingRaster nightLighting_;
+    ComPtr<ID2D1Bitmap> nightBitmap_;
     MinimapRaster minimapRaster_;
     ComPtr<ID2D1Bitmap> fogBitmap_;
     ComPtr<ID2D1BitmapBrush> fogBrush_;

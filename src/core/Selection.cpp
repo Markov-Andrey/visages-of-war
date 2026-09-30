@@ -19,6 +19,8 @@ UiRect unitBounds(const Simulation& game, const Unit& unit, const WorldView& vie
 UiRect buildingBounds(const Simulation& game, const Building& building, const WorldView& view) {
     const auto& type = building.definition;
     const auto p = view.project({building.origin.x + type.width * 0.5f, building.origin.y + type.height * 0.5f}, float(game.map().at(building.origin).height));
+    if (const auto* stage = type.buildingSprite.stage(building.constructionProgress, type.constructionTicks))
+        return buildingStageBounds(*stage, type.buildingSprite.scale, p, view.zoom);
     const float w = type.visual == EntityVisual::Tower ? 90.0f : type.visual == EntityVisual::Barracks ? 250.0f : 210.0f;
     const float h = type.visual == EntityVisual::Tower ? 165.0f : 232.0f;
     return {p.x - w * .5f * view.zoom, p.y - (h - 55) * view.zoom, w * view.zoom, h * view.zoom};

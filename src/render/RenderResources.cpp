@@ -1,4 +1,5 @@
 #include "RenderSupport.hpp"
+#include "rts/TeamColor.hpp"
 
 namespace { constexpr auto buttonFrameAsset = L"ui/button-frame.png"; }
 
@@ -15,6 +16,14 @@ void Renderer::verifyAssets() {
     for (const auto& e : definitions.entities()) {
         if (e.mobile) images.push_back(imagePath(e.sprite.image));
         if (e.projectile) images.push_back(imagePath(e.projectile->image));
+        for (const auto& stage : e.buildingSprite.stages) {
+            images.push_back(imagePath(stage.image));
+            if (!stage.teamMask.empty()) images.push_back(imagePath(stage.teamMask));
+            for (const auto& layer : stage.layers) {
+                images.push_back(imagePath(layer.image));
+                if (!layer.teamMask.empty()) images.push_back(imagePath(layer.teamMask));
+            }
+        }
     }
     for (const auto& material : worldAssets_.materials()) images.push_back(material.image);
     for (const auto& object : worldAssets_.objects()) if (!object.image.empty()) images.push_back(object.image);
@@ -35,7 +44,8 @@ void Renderer::verifyAssets() {
     }
 }
 
-void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask, SpriteTeamMask palette) {
+void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask,
+    SpriteTeamMask palette, const std::filesystem::path& maskPath) {
     ComPtr<IWICBitmapDecoder> decoder;
     check(wic_->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf()));
     ComPtr<IWICBitmapFrameDecode> frame;
@@ -44,20 +54,39 @@ void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>
     check(wic_->CreateFormatConverter(converter.GetAddressOf()));
     check(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom));
     const auto properties = D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), 96, 96);
-    if (teamMask) {
+    if (palette != SpriteTeamMask::None || !maskPath.empty()) {
         UINT width{}, height{};
         check(converter->GetSize(&width, &height));
+        if (!width || !height || width > 8192 || height > 8192) throw std::runtime_error("Invalid sprite dimensions");
         std::vector<BYTE> pixels(static_cast<size_t>(width) * height * 4);
         check(converter->CopyPixels(nullptr, width * 4, static_cast<UINT>(pixels.size()), pixels.data()));
-        for (size_t i = 0; i < pixels.size(); i += 4) {
+        if (!maskPath.empty()) {
+            ComPtr<IWICBitmapDecoder> maskDecoder; ComPtr<IWICBitmapFrameDecode> maskFrame; ComPtr<IWICFormatConverter> maskConverter;
+            check(wic_->CreateDecoderFromFilename(maskPath.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, maskDecoder.GetAddressOf()));
+            check(maskDecoder->GetFrame(0, maskFrame.GetAddressOf()));
+            UINT maskWidth{}, maskHeight{}; check(maskFrame->GetSize(&maskWidth, &maskHeight));
+            if (maskWidth != width || maskHeight != height) throw std::runtime_error("Team mask dimensions must match the original PNG");
+            check(wic_->CreateFormatConverter(maskConverter.GetAddressOf()));
+            check(maskConverter->Initialize(maskFrame.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom));
+            std::vector<BYTE> mask(pixels.size());
+            check(maskConverter->CopyPixels(nullptr, width * 4, static_cast<UINT>(mask.size()), mask.data()));
+            applyTeamColorMask(pixels, mask, teamMask);
+        } else for (size_t i = 0; i < pixels.size(); i += 4) {
             const int blue = pixels[i], green = pixels[i + 1], red = pixels[i + 2];
             // Palette accents in the placeholder sheet, preserving skin and neutral armour.
             if ((palette == SpriteTeamMask::Blue && blue > red + 10 && green >= red && blue >= green - 10) ||
                 (palette == SpriteTeamMask::Purple && red > green + 15 && blue > green + 15)) {
-                const int intensity = std::max(red, blue);
-                pixels[i] = static_cast<BYTE>((teamMask & 255) * intensity / 255);
-                pixels[i + 1] = static_cast<BYTE>(((teamMask >> 8) & 255) * intensity / 255);
-                pixels[i + 2] = static_cast<BYTE>(((teamMask >> 16) & 255) * intensity / 255);
+                if (teamMask == 0 || teamMask == 0xffffff) {
+                    const unsigned alpha = pixels[i + 3];
+                    const double luminosity = alpha ? std::clamp((.11 * blue + .59 * green + .30 * red) / alpha, 0.0, 1.0) : 0;
+                    const auto shade = static_cast<BYTE>(std::lround(neutralTeamLuminosity(luminosity, teamMask == 0xffffff) * alpha));
+                    pixels[i] = pixels[i + 1] = pixels[i + 2] = shade;
+                } else {
+                    const int intensity = std::max(red, blue);
+                    pixels[i] = static_cast<BYTE>((teamMask & 255) * intensity / 255);
+                    pixels[i + 1] = static_cast<BYTE>(((teamMask >> 8) & 255) * intensity / 255);
+                    pixels[i + 2] = static_cast<BYTE>(((teamMask >> 16) & 255) * intensity / 255);
+                }
             }
         }
         check(target_->CreateBitmap(D2D1::SizeU(width, height), pixels.data(), width * 4, properties, bitmap.ReleaseAndGetAddressOf()));
@@ -69,8 +98,8 @@ void Renderer::loadResources() {
     groundBrush_ = materialResource(worldAssets_.materials().front().id).brush;
     loadBitmap(paths_.asset(L"sprites/hall.png"), hall_);
     loadBitmap(paths_.asset(L"sprites/crystal.png"), crystal_);
-    loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_);
-    loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_);
+    loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_, SpriteTeamMask::Blue);
+    loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_, SpriteTeamMask::Blue);
     loadBitmap(paths_.asset(L"sprites/tree.png"), tree_);
     loadBitmap(paths_.asset(L"ui/menu-background.png"), menuBackground_);
     loadBitmap(paths_.asset(L"ui/logo.png"), logo_);

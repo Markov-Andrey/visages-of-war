@@ -85,11 +85,10 @@ void ForgeApplication::editorKey(WPARAM key) {
     if(key==VK_F5) try {
         auto assets=rts::WorldAssets::load(paths_);
         auto definitions=rts::platform::loadDefinitions(paths_);
-        auto check=*editor_; check.reloadDefinitions(assets);
-        rts::WorldEditor validated(check.scenario(),assets,definitions); validated.validateForPlay();
+        auto check=*editor_; check.reloadDefinitions(assets,definitions); check.validateForPlay();
         renderer_.validateWorldAssets(assets); renderer_.validateCombatAssets(definitions);
         worldAssets_=std::move(assets); definitions_=std::move(definitions);
-        editor_->reloadDefinitions(worldAssets_); renderer_.reloadWorldAssets(worldAssets_);
+        editor_->reloadDefinitions(worldAssets_,definitions_); renderer_.reloadWorldAssets(worldAssets_);
         editor_->message=L"Каталоги и изображения перечитаны. История отмены очищена.";
     } catch(const std::exception& e) {editorError(e);}
 }

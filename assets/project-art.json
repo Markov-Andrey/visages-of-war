@@ -27,6 +27,55 @@
                       "original":  "tile-grass.png",
                       "path":  "textures/grass-ground.png",
                       "sha256":  "ADE6589B390DA0B34726894A43A15A105AF96EF800B49AD6677CBC3C69EEDDFB"
+                  },
+                  {
+                      "original": "ratusha-0.png",
+                      "path": "sprites/buildings/valeri/ratusha/ratusha-0.png",
+                      "imported": "2026-09-29",
+                      "sha256": "06FE2E219A9B10DB4D92C8E48BC22A49B80A6FE97CB1BC6077A8D193DBAE8A01"
+                  },
+                  {
+                      "original": "ratusha-33.png",
+                      "path": "sprites/buildings/valeri/ratusha/ratusha-33.png",
+                      "imported": "2026-09-29",
+                      "sha256": "F52922D1A5298D02B43AFBBF9E4E76B2E03583026CDA8413ADA475B68496D331"
+                  },
+                  {
+                      "original": "ratusha-66.png",
+                      "path": "sprites/buildings/valeri/ratusha/ratusha-66.png",
+                      "imported": "2026-09-29",
+                      "sha256": "A624B6AD053F28770B65EFE628960C7E6DF8EBE8F64C223E736E8F77DFB9B5FD"
+                  },
+                  {
+                      "original": "ratusha.png",
+                      "path": "sprites/buildings/valeri/ratusha/ratusha.png",
+                      "imported": "2026-09-29",
+                      "sha256": "51A6A8C237DA82B474564A20CC0A17DF1D38B45DF487C8F1AB3FBB672E2B4E8E"
+                  },
+                  {
+                      "original": "ratusha-no-fire.png",
+                      "path": "sprites/buildings/valeri/ratusha/ratusha-no-fire.png",
+                      "imported": "2026-09-30",
+                      "sha256": "F58E87D796F1A5C4794E1AA469F5396E4838EC17FF1B7D14E61240FCAC0AD15C"
+                  },
+                  {
+                      "original": "ratusha-kupol.png",
+                      "path": "sprites/buildings/valeri/ratusha/ratusha-kupol.png",
+                      "imported": "2026-09-30",
+                      "sha256": "1EB18D04D93587347F11F1A491B7062B9324E4FB34E697D6FAFDC649CAEF5BC2"
+                  },
+                  {
+                      "original": "fire-ratusha.png",
+                      "path": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
+                      "imported": "2026-09-30",
+                      "sha256": "02AD30B7AD341538B44163FBB54054A18B07681012E9E5C5CB0C33B490C7C5B8"
+                  },
+                  {
+                      "original": "Generated solid-white coverage mask",
+                      "source": "Procedural 1312x1199 white RGB test pattern; contains no artwork pixels",
+                      "path": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+                      "imported": "2026-09-30",
+                      "sha256": "4215A5974A2DF5EEA4B240AC936E54388B78036E3A57E39969966230B38F760F"
                   }
               ]
 }
