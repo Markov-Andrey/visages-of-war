@@ -47,6 +47,9 @@ private:
     void resetCamera(bool immediate = true);
     rts::Vec2 mousePosition(LPARAM lParam) const;
     void moveCamera(float dt);
+    void constrainCamera();
+    bool cameraInputAllowed() const;
+    rts::Vec2 cameraEdgeDirection() const;
     LRESULT onMessage(UINT message, WPARAM wParam, LPARAM lParam);
     rts::Paths paths_;
     rts::Definitions definitions_;

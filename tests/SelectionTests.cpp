@@ -3,6 +3,121 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Active groups start with the hero, cycle by type and preserve the full selection", [&] {
+        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
+        rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
+        scene.heroSpawn = rts::Cell{9, 9};
+        scene.units = {{"human.archer", 0, {11, 10}}, {"human.soldier", 0, {10, 10}},
+            {"human.soldier", 0, {10, 12}}, {"human.catapult", 0, {11, 11}}};
+        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), "human.hero");
+        rts::Selection selection;
+        for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
+        std::reverse(selection.ids.begin(), selection.ids.end());
+        const auto original = selection.ids;
+        const std::array<std::string, 5> expected{"human.hero", "human.soldier", "human.archer", "human.catapult", "human.worker"};
+        const auto groups = selection.groups(game);
+        require(groups.size() == expected.size() && groups[1].ids.size() == 2, "Types were not grouped together");
+        for (const auto& type : expected) {
+            require(selection.activeGroup(game).type == type, "Wrong Tab order or initial hero group");
+            require(selection.cycleGroup(game), "Multiple groups did not cycle");
+            require(selection.ids == original, "Tab changed command recipients or selection order");
+        }
+        require(selection.activeUnit(game)->hero.has_value(), "Tab did not wrap to hero");
+        require(selection.cycleGroup(game, true) && selection.activeGroup(game).type == "human.worker", "Reverse Tab failed");
+        const auto soldier = groups[1].ids.front();
+        require(selection.activateGroup(game, soldier), "Portrait did not activate its type");
+        selection.ids.erase(std::find(selection.ids.begin(), selection.ids.end(), soldier));
+        selection.prune(game);
+        require(selection.activeGroup(game).type == "human.soldier" && selection.activeGroup(game).ids.size() == 1,
+            "Removing one soldier discarded the surviving active group");
+        selection.army(game);
+        require(selection.activeUnit(game)->hero.has_value(), "New army selection did not reset to hero");
+        selection.ids = {game.buildings().front().id}; selection.prune(game);
+        require(selection.groups(game).empty() && !selection.cycleGroup(game) && !selection.activeUnit(game), "Building entered unit groups");
+        selection.ids.clear(); selection.prune(game);
+        require(!selection.cycleGroup(game), "Empty selection cycled");
+    });
+    test("Active type controls visible commands while general orders retain every selected unit", [&] {
+        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
+        auto types = defs.entities();
+        auto secondWorker = defs.entity("human.worker"); secondWorker.id = "other.worker"; types.push_back(secondWorker);
+        auto secondSiege = defs.entity("human.catapult"); secondSiege.id = "other.siege"; types.push_back(secondSiege);
+        rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
+        scene.units = {{"human.soldier", 0, {10, 10}}, {"human.catapult", 0, {11, 11}},
+            {secondWorker.id, 0, {8, 9}}, {secondSiege.id, 0, {12, 11}}, {"human.soldier", 1, {25, 25}}};
+        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), types);
+        rts::GameplayUi ui;
+        for (const auto& unit : game.units()) if (unit.owner == game.player().id) ui.selection.ids.push_back(unit.id);
+        const auto soldier = game.units()[1].id, siege = game.units()[2].id;
+        const auto slot = [](rts::UnitCommand kind) {
+            for (const auto& command : rts::unitCommands) if (command.command == kind) return command.slot;
+            throw std::runtime_error("Missing command");
+        };
+        require(ui.selection.activeGroup(game).type == "human.soldier", "Soldier did not lead the non-hero selection");
+        for (auto kind : {rts::UnitCommand::Move, rts::UnitCommand::Stop, rts::UnitCommand::Attack, rts::UnitCommand::Hold, rts::UnitCommand::Patrol})
+            require(rts::unitCommandVisible(game, ui, slot(kind)), "Common soldier command hidden");
+        for (auto kind : {rts::UnitCommand::Gather, rts::UnitCommand::Build, rts::UnitCommand::AttackGround})
+            require(!rts::unitCommandVisible(game, ui, slot(kind)), "Another type leaked its command into the panel");
+        for (auto kind : {rts::OrderKind::Move, rts::OrderKind::Stop, rts::OrderKind::AttackMove, rts::OrderKind::Hold, rts::OrderKind::Patrol})
+            require(rts::commandRecipients(game, ui, kind) == ui.selection.ids, "Common order narrowed to active type");
+        ui.selection.activateGroup(game, game.worker().id);
+        require(rts::unitCommandVisible(game, ui, slot(rts::UnitCommand::Gather)) && rts::unitCommandVisible(game, ui, slot(rts::UnitCommand::Build)), "Worker commands missing");
+        require(rts::commandRecipients(game, ui, rts::OrderKind::Gather) == std::vector{game.worker().id} &&
+            rts::commandRecipients(game, ui, rts::OrderKind::Build) == std::vector{game.worker().id}, "Worker order reached another capable type");
+        ui.buildMenu = true;
+        require(rts::unitCommandVisible(game, ui, rts::backCommandSlot) && !rts::unitCommandVisible(game, ui, 8), "Back command did not use the last grid slot");
+        ui.buildMenu = false;
+        ui.selection.activateGroup(game, siege);
+        require(rts::unitCommandVisible(game, ui, slot(rts::UnitCommand::AttackGround)) &&
+            rts::commandRecipients(game, ui, rts::OrderKind::AttackGround) == std::vector{siege}, "Ground fire reached another siege type");
+        require(!ui.selection.activateGroup(game, game.units().back().id), "Foreign unit became active");
+        ui.selection.ids = {soldier}; ui.selection.prune(game);
+        for (size_t i : {size_t{8}, size_t{9}, size_t{10}, size_t{12}, size_t{100}})
+            require(!rts::unitCommandVisible(game, ui, i), "Empty or out-of-range slot exposed a command");
+    });
+    test("A dead active group falls back safely without transferring its pending special order", [] {
+        rts::EntityDefinition worker; worker.maximumHealth = 1;
+        auto other = worker; other.id = "other.worker";
+        auto killer = worker; killer.id = "killer"; killer.canBuild = false; killer.carryCapacity = 0;
+        killer.attackDamage = 100; killer.attackWindupTicks = 1;
+        rts::Scenario scene{rts::Map(40, 32), {3, 3}, {22, 20}, {}};
+        scene.units = {{other.id, 0, {7, 9}}, {killer.id, 1, {23, 20}}};
+        rts::Simulation game(std::move(scene), {}, worker, {worker, other, killer});
+        const auto victim = game.worker().id, survivor = game.units()[1].id;
+        rts::GameplayUi ui; ui.selection.ids = {victim, survivor};
+        ui.commandGroup = ui.selection.activeGroup(game).type; ui.orderMode = rts::OrderKind::Gather;
+        ticks(game, 20); ui.selection.prune(game);
+        require(!game.unit(victim) && ui.selection.ids == std::vector{survivor}, "Dead selected unit survived pruning");
+        require(ui.selection.activeUnit(game)->id == survivor, "No fallback after the active type died");
+        require(rts::commandRecipients(game, ui, rts::OrderKind::Gather).empty(), "Pending gather transferred to a different worker type");
+    });
+    test("Large selections keep the active portraits visible within the resized command HUD", [] {
+        rts::EntityDefinition worker;
+        auto last = worker; last.id = "last.worker";
+        rts::Scenario scene{rts::Map(64, 64), {1, 1}, {4, 3}, {}};
+        for (int i = 0; i < 39; ++i) scene.extraWorkers.push_back({20 + i % 8, 20 + i / 8});
+        scene.units = {{last.id, 0, {10, 10}}};
+        rts::Simulation game(std::move(scene), {}, worker, {worker, last});
+        rts::Selection selection;
+        for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
+        for (rts::Vec2 extent : {rts::Vec2{800, 600}, rts::Vec2{1440, 900}, rts::Vec2{1920, 1080}}) {
+            const rts::BattleLayout layout(extent);
+            require(layout.commands.size() == 12 && layout.commands[3].y == layout.commands[0].y &&
+                layout.commands[4].y > layout.commands[3].y && layout.commands[11].y > layout.commands[7].y, "Command grid is not four by three");
+            require(layout.info.x + layout.info.width < layout.commands.front().x, "Command grid overlaps selection info");
+            selection.activateGroup(game, game.units().back().id);
+            const rts::SelectionCards cards(game, selection, layout.info);
+            require(cards.total == 41 && (cards.cards.size() == cards.total || cards.first > 0), "Large selection did not page to its active type");
+            bool visible = false;
+            for (const auto& card : cards.cards) {
+                visible |= card.active && card.id == game.units().back().id;
+                require(card.bounds.width == (card.active ? 40 : 32), "Active portrait size did not differ");
+                require(layout.info.contains({card.bounds.x, card.bounds.y}) &&
+                    layout.info.contains({card.bounds.x + card.bounds.width - 1, card.bounds.y + card.bounds.height - 1}), "Portrait escaped its panel");
+            }
+            require(visible, "Active portrait remained off-screen");
+        }
+    });
     test("Idle worker cycling uses live free workers and skips holds, pending orders and other owners", [] {
         auto scene = flatScenario(); scene.extraWorkers = {{5, 3}, {6, 3}};
         rts::EntityDefinition worker;

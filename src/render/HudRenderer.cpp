@@ -7,7 +7,7 @@ using namespace render;
 void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid) {
     const auto extent = size();
     const Building* building = ui.selection.ids.size() == 1 ? game.building(ui.selection.ids.front()) : nullptr;
-    const BattleLayout layout(extent, building != nullptr);
+    const BattleLayout layout(extent);
     const auto panel = [&](UiRect area, unsigned color) {
         brush_->SetColor(D2D1::ColorF(color));
         target_->FillRoundedRectangle(D2D1::RoundedRect(rect(area.x, area.y, area.width, area.height), 6, 6), brush_.Get());
@@ -68,18 +68,18 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     text(hint, rect(24, extent.y - 233, extent.x - 48, 25), 0xb8cbc5);
     drawMinimap(game, layout, view);
     const auto info = layout.info;
-    const Unit* unit = ui.selection.ids.empty() ? nullptr : game.unit(ui.selection.ids.front());
+    const Unit* unit = ui.selection.activeUnit(game);
     const Crystal* resource = ui.selection.ids.size() == 1 ? game.crystal(ui.selection.ids.front()) : nullptr;
     if (resource && (!game.fog().visible(resource->cell) || resource->remaining <= 0)) resource = nullptr;
     const EntityDefinition* tooltip = hero && heroArea.contains(ui.mouse) ? &hero->definition : nullptr;
     std::wstring actionTitle, actionDescription;
     wchar_t tooltipKey{};
-    std::array<const EntityDefinition*, 9> commandTypes{};
+    std::array<const EntityDefinition*, commandSlots> commandTypes{};
     if (building && info.contains(ui.mouse)) tooltip = &building->definition;
-    std::array<std::wstring, 9> labels{}, details{};
-    std::array<bool, 9> enabled{}, active{};
-    std::array<const char*, 9> icons{};
-    std::array<wchar_t, 9> buttonKeys{};
+    std::array<std::wstring, commandSlots> labels{}, details{};
+    std::array<bool, commandSlots> enabled{}, active{};
+    std::array<const char*, commandSlots> icons{};
+    std::array<wchar_t, commandSlots> buttonKeys{};
     if (resource) {
         const int remaining = resource->remaining;
         text(L"Кристаллы", rect(info.x, info.y, info.width, 34), 0xe0eade, true);
@@ -127,30 +127,23 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 text(L"Освободите выход из здания", rect(info.x, info.y + 145, info.width, 23), 0xe4c388);
         } else text(L"Расширяет обзор днём и ночью", rect(info.x, info.y + 76, info.width, 30), 0x9eb6b7);
     } else if (unit) {
-        text(ui.selection.ids.size() == 1 ? wide(unit->definition.displayName) : L"Группа  /  " + std::to_wstring(ui.selection.ids.size()),
-            rect(info.x, info.y, info.width, 34), 0xe0eade, true);
-        const bool single = ui.selection.ids.size() == 1;
-        if (single)
-            text(L"Ур. " + std::to_wstring(unit->level()) + L"   Здоровье " + std::to_wstring(unit->health) + L" / " + std::to_wstring(unit->maximumHealth()) +
-                (unit->definition.isWorker() ? L"   Груз " + std::to_wstring(unit->cargo) : L"   Урон " + std::to_wstring(unit->attackDamage())),
-                rect(info.x, info.y + 39, info.width, 24), 0x9dc1b6);
-        else text(L"ПКМ — общий приказ   •   Shift — добавить", rect(info.x, info.y + 39, info.width, 24), 0x9dc1b6);
-        const size_t maxCards = std::max(size_t{1}, static_cast<size_t>(info.width / 45));
-        for (size_t i = 0; i < std::min(maxCards, ui.selection.ids.size()); ++i) {
-            const auto* member = game.unit(ui.selection.ids[i]);
-            if (member && UiRect{info.x + i * 45.0f, info.y + 81, 42, 42}.contains(ui.mouse)) tooltip = &member->definition;
-            panel({info.x + i * 45.0f, info.y + 81, 42, 42}, member && member->hero ? 0x6c603d : 0x244039);
-            if (member) unitPortrait(member->definition.sprite, {info.x + i * 45.0f - 5, info.y + 78}, {48,48}, teamColor_);
-            buttonFrame({info.x + i * 45.0f, info.y + 81, 42, 42});
+        const SelectionCards portraits(game, ui.selection, info);
+        const auto group = ui.selection.activeGroup(game);
+        for (const auto& card : portraits.cards) {
+            const auto* member = game.unit(card.id);
+            const auto b = card.bounds;
+            if (b.contains(ui.mouse)) tooltip = &member->definition;
+            panel(b, card.active ? 0x465541 : member->hero ? 0x55492f : 0x244039);
+            target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
+            unitPortrait(member->definition.sprite, {b.x, b.y}, {b.width, b.height}, teamColor_);
+            target_->PopAxisAlignedClip();
+            buttonFrame(b);
+            if (card.active) {
+                brush_->SetColor(D2D1::ColorF(0xe5cd83));
+                target_->DrawRectangle(rect(b.x + 1, b.y + 1, b.width - 2, b.height - 2), brush_.Get(), 2);
+            }
         }
-        if (single && unit->hero) {
-            const auto experience = unit->atMaxLevel() ? L"Максимальный уровень" :
-                L"Опыт  " + std::to_wstring(unit->experienceInLevel()) + L" / " + std::to_wstring(unit->experienceToLevel());
-            text(experience, rect(info.x + 58, info.y + 77, info.width - 58, 26), 0xc8b9f2);
-            panel({info.x + 58, info.y + 110, info.width - 70, 8}, 0x26313e);
-            panel({info.x + 58, info.y + 110, (info.width - 70) * unit->experienceFraction(), 8}, 0xaca0ec);
-        }
-        const bool builder = std::any_of(ui.selection.ids.begin(), ui.selection.ids.end(), [&](EntityId id) { const auto* u = game.unit(id); return u && u->definition.canBuild; });
+        const bool builder = commandEnabled(game, ui, UnitCommand::Build);
         if (builder && ui.buildMenu) {
             const size_t count = std::min(size_t{3}, game.buildingTypes().size());
             constexpr std::array keys{L'H', L'B', L'O'};
@@ -161,19 +154,19 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             }
         }
         const auto current = unitOrder(*unit);
-        const bool sameOrder = std::all_of(ui.selection.ids.begin(), ui.selection.ids.end(), [&](EntityId id) {
+        const bool sameOrder = std::all_of(group.ids.begin(), group.ids.end(), [&](EntityId id) {
             const auto* member = game.unit(id); return member && unitOrder(*member) == current;
         });
-        text(sameOrder ? L"Приказ: " + std::wstring(orderName(current)) : L"Приказ: разные приказы",
-            rect(info.x, info.y + 143, info.width, 23), 0xdac999);
         if (ui.buildMenu) {
-            labels[8] = L"Назад"; details[8] = L"Вернуться к приказам юнита.";
-            icons[8] = "back"; buttonKeys[8] = L'X';
-        } else for (size_t i = 0; i < unitCommands.size(); ++i) {
-            const auto& command = unitCommands[i];
-            if (command.command == UnitCommand::Back && !ui.orderMode && ui.placement.empty()) continue;
+            labels[backCommandSlot] = L"Назад"; details[backCommandSlot] = L"Вернуться к приказам юнита.";
+            icons[backCommandSlot] = "back"; buttonKeys[backCommandSlot] = L'X';
+        } else for (const auto& command : unitCommands) {
+            const size_t i = command.slot;
+            if (!unitCommandVisible(game, ui, i)) continue;
             labels[i] = command.label; details[i] = command.description; buttonKeys[i] = command.key; icons[i] = command.icon;
-            enabled[i] = command.command == UnitCommand::Back || commandEnabled(game, ui, command.command);
+            if (command.command != UnitCommand::Back) details[i] += command.scope == CommandScope::ActiveGroup ?
+                L"\nДля активной группы." : L"\nДля всего выделения.";
+            enabled[i] = true;
             const auto shown = ui.orderMode.value_or(current);
             active[i] = command.command != UnitCommand::Back && (ui.orderMode || sameOrder) &&
                 (shown == command.order || (shown == OrderKind::Attack && command.command == UnitCommand::Attack));

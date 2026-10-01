@@ -199,6 +199,29 @@ void GameApplication::exerciseInterface() {
         if (menu_.page != rts::MenuPage::Playing || ui_.selection.ids != selection) throw std::runtime_error("Smoke: library lost resumed match");
         mouse_ = {-1, -1};
     }
+    const auto cursorExtent = renderer_.size();
+    using rts::CursorKind;
+    const std::array<std::pair<rts::Vec2, CursorKind>, 8> edgeCursors{{
+        {{cursorExtent.x - 1, cursorExtent.y * .5f}, CursorKind::ScrollEast},
+        {{cursorExtent.x - 1, cursorExtent.y - 1}, CursorKind::ScrollSouthEast},
+        {{cursorExtent.x * .5f, cursorExtent.y - 1}, CursorKind::ScrollSouth},
+        {{0, cursorExtent.y - 1}, CursorKind::ScrollSouthWest},
+        {{0, cursorExtent.y * .5f}, CursorKind::ScrollWest},
+        {{0, 0}, CursorKind::ScrollNorthWest},
+        {{cursorExtent.x * .5f, 0}, CursorKind::ScrollNorth},
+        {{cursorExtent.x - 1, 0}, CursorKind::ScrollNorthEast}
+    }};
+    for (const auto& [point, expected] : edgeCursors) {
+        mouse_ = point;
+        if (cursorKind() != expected) throw std::runtime_error("Smoke: edge cursor points in the wrong direction");
+    }
+    dragging_ = true;
+    if (cameraEdgeDirection() != rts::Vec2{}) throw std::runtime_error("Smoke: selection drag retained edge cursor");
+    dragging_ = false; minimapDragging_ = true;
+    if (cameraEdgeDirection() != rts::Vec2{}) throw std::runtime_error("Smoke: minimap drag retained edge cursor");
+    minimapDragging_ = false; panning_ = true;
+    if (cursorKind() != CursorKind::Move) throw std::runtime_error("Smoke: edge cursor replaced middle drag cursor");
+    panning_ = false;
     ui_.selection.ids = {game_.worker().id};
     ui_.placement = "human.barracks";
     mouse_ = view_.project(rts::center({17, 17}), 0);
@@ -318,8 +341,7 @@ void GameApplication::exerciseInterface() {
     const auto focused = layout.minimapCell(mouse_, game_.map());
     const rts::Vec2 screenCenter{layout.world.width * .5f, layout.world.y + layout.world.height * .5f};
     for (int frame = 0; frame < 90; ++frame) camera_.update(view_, screenCenter, {}, 1.0f / 60);
-    const auto cameraCenter = view_.unproject({layout.world.width * .5f, layout.world.y + layout.world.height * .5f});
-    if (!focused || std::hypot(cameraCenter.x - focused->x - .5f, cameraCenter.y - focused->y - .5f) > .01f)
+    if (!focused || !layout.world.contains(view_.project(rts::center(*focused))))
         throw std::runtime_error("Smoke: minimap camera projection failed");
     const auto zoomAnchor = view_.unproject(screenCenter);
     const float beforeZoom = view_.zoom, dpiScale = GetDpiForWindow(window_) / 96.0f;
@@ -336,6 +358,16 @@ void GameApplication::exerciseInterface() {
     for (int frame = 0; frame < 60; ++frame) camera_.update(view_, screenCenter, {}, 1.0f / 60);
     if (view_.origin != inactiveView.origin || view_.zoom != inactiveView.zoom)
         throw std::runtime_error("Smoke: camera retained motion after focus loss");
+    onMessage(WM_MBUTTONDOWN, 0, at(screenCenter));
+    for (const auto point : {rts::Vec2{-4000, -4000}, rts::Vec2{4000, 4000}}) {
+        onMessage(WM_MOUSEMOVE, MK_MBUTTON, at(point));
+        const auto top = view_.project({}), bottom = view_.project({float(game_.map().width()), float(game_.map().height())});
+        const float margin = cameraTuning.borderMargin + .02f;
+        if ((bottom.x - top.x >= layout.world.width && (top.x > layout.world.x + margin || bottom.x < layout.world.x + layout.world.width - margin)) ||
+            (bottom.y - top.y >= layout.world.height && (top.y > layout.world.y + margin || bottom.y < layout.world.y + layout.world.height - margin)))
+            throw std::runtime_error("Smoke: middle dragging escaped camera bounds");
+    }
+    onMessage(WM_MBUTTONUP, 0, at(screenCenter));
     auto arena = rts::loadScenario(paths_.asset(L"maps/demo.rtsmap"));
     arena.units = {{"human.soldier", 0, {15, 18}}, {"human.soldier", 1, {17, 19}}};
     game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("human.worker"), definitions_.entities());

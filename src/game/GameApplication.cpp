@@ -77,6 +77,7 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
                 const auto hover = !ui_.placement.empty() && mouseInWorld() ? game_.map().pick(mouse_, view_) : std::nullopt;
                 ui_.mouse = mouse_;
                 ui_.selection.prune(game_);
+                if (!ui_.commandGroup.empty() && ui_.commandGroup != ui_.selection.activeGroup(game_).type) clearCommandMode();
                 renderer_.draw(game_, view_, hover, ui_, grid_, paused_);
             } else {
                 accumulator = 0;

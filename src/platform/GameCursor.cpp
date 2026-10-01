@@ -1,5 +1,6 @@
 #include "rts/GameCursor.hpp"
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <stdexcept>
@@ -16,8 +17,56 @@ struct Bitmap {
     ~Bitmap() { if (value) DeleteObject(value); }
 };
 constexpr std::array<std::string_view, static_cast<size_t>(CursorKind::Count)> names{
-    "default", "select", "move", "attack", "gather", "blocked", "rally", "build", "hand"
+    "default", "select", "move", "attack", "gather", "blocked", "rally", "build", "hand", "target",
+    "scroll-east", "scroll-south-east", "scroll-south", "scroll-south-west",
+    "scroll-west", "scroll-north-west", "scroll-north", "scroll-north-east"
 };
+constexpr size_t scrollIndex = static_cast<size_t>(CursorKind::ScrollEast);
+constexpr size_t sourceCount = scrollIndex + 1;
+struct CursorGeometry {
+    int sourceWidth{}, sourceHeight{}, width{}, height{}, hotX{}, hotY{};
+    float cosine{}, sine{};
+};
+CursorGeometry geometry(int size, const WICRect& source, int hotX, int hotY, unsigned rotation, UINT dpi) {
+    constexpr float diagonal = .70710678118f;
+    constexpr std::array<Vec2, 8> turns{{{1, 0}, {diagonal, diagonal}, {0, 1}, {-diagonal, diagonal},
+        {-1, 0}, {-diagonal, -diagonal}, {0, -1}, {diagonal, -diagonal}}};
+    const auto turn = turns.at(rotation);
+    CursorGeometry result;
+    result.sourceWidth = std::clamp(MulDiv(size, dpi, 96), 1, 512);
+    result.sourceHeight = std::clamp(MulDiv(result.sourceWidth, source.Height, source.Width), 1, 512);
+    result.cosine = turn.x; result.sine = turn.y;
+    result.width = int(std::ceil(std::abs(turn.x) * result.sourceWidth + std::abs(turn.y) * result.sourceHeight));
+    result.height = int(std::ceil(std::abs(turn.y) * result.sourceWidth + std::abs(turn.x) * result.sourceHeight));
+    const float hx = std::min(result.sourceWidth - 1, MulDiv(hotX, result.sourceWidth, source.Width)) - (result.sourceWidth - 1) * .5f;
+    const float hy = std::min(result.sourceHeight - 1, MulDiv(hotY, result.sourceHeight, source.Height)) - (result.sourceHeight - 1) * .5f;
+    result.hotX = std::clamp(int(std::lround(hx * turn.x - hy * turn.y + (result.width - 1) * .5f)), 0, result.width - 1);
+    result.hotY = std::clamp(int(std::lround(hx * turn.y + hy * turn.x + (result.height - 1) * .5f)), 0, result.height - 1);
+    return result;
+}
+void rotatePixels(const std::vector<uint32_t>& source, uint32_t* target, const CursorGeometry& shape) {
+    for (int y = 0; y < shape.height; ++y) for (int x = 0; x < shape.width; ++x) {
+        const float dx = x - (shape.width - 1) * .5f, dy = y - (shape.height - 1) * .5f;
+        const float sx = dx * shape.cosine + dy * shape.sine + (shape.sourceWidth - 1) * .5f;
+        const float sy = -dx * shape.sine + dy * shape.cosine + (shape.sourceHeight - 1) * .5f;
+        const int left = int(std::floor(sx)), top = int(std::floor(sy));
+        const float fx = sx - left, fy = sy - top;
+        std::array<float, 4> channels{};
+        // Bilinear filtering in premultiplied BGRA keeps the translucent outline free of dark fringes.
+        for (int iy = 0; iy < 2; ++iy) for (int ix = 0; ix < 2; ++ix) {
+            const int px = left + ix, py = top + iy;
+            if (px < 0 || py < 0 || px >= shape.sourceWidth || py >= shape.sourceHeight) continue;
+            const auto pixel = source[static_cast<size_t>(py) * shape.sourceWidth + px];
+            const float weight = (ix ? fx : 1 - fx) * (iy ? fy : 1 - fy);
+            for (unsigned channel = 0; channel < channels.size(); ++channel)
+                channels[channel] += ((pixel >> (channel * 8)) & 255) * weight;
+        }
+        uint32_t pixel{};
+        for (unsigned channel = 0; channel < channels.size(); ++channel)
+            pixel |= uint32_t(std::clamp(std::lround(channels[channel]), 0l, 255l)) << (channel * 8);
+        target[static_cast<size_t>(y) * shape.width + x] = pixel;
+    }
+}
 }
 GameCursor::GameCursor(const Paths& paths) {
     std::ifstream input(paths.asset(L"ui/cursor.rtsdata"));
@@ -40,16 +89,17 @@ GameCursor::GameCursor(const Paths& paths) {
     check(factory_->CreateFormatConverter(converter.GetAddressOf()));
     check(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom));
     check(factory_->CreateBitmapFromSource(converter.Get(), WICBitmapCacheOnLoad, atlas_.GetAddressOf()));
-    std::array<bool, names.size()> seen{};
+    std::array<bool, sourceCount> seen{};
     while (input >> token) {
         std::string name;
         Frame entry;
         auto& r = entry.bounds;
         if (token != "CURSOR" || !(input >> name >> r.X >> r.Y >> r.Width >> r.Height >> entry.size >> entry.hotX >> entry.hotY))
             throw std::runtime_error("Invalid cursor frame record");
-        const auto found = std::find(names.begin(), names.end(), name);
-        if (found == names.end()) throw std::runtime_error("Unknown cursor state: " + name);
-        const size_t index = static_cast<size_t>(found - names.begin());
+        const auto sourceEnd = names.begin() + scrollIndex;
+        const auto found = std::find(names.begin(), sourceEnd, name);
+        if (found == sourceEnd && name != "scroll") throw std::runtime_error("Unknown cursor state: " + name);
+        const size_t index = name == "scroll" ? scrollIndex : static_cast<size_t>(found - names.begin());
         if (seen[index] || r.X < 0 || r.Y < 0 || r.Width <= 0 || r.Height <= 0 ||
             r.Width > int(width) || r.Height > int(height) || r.X > int(width) - r.Width || r.Y > int(height) - r.Height ||
             entry.size < 16 || entry.size > 128 || entry.hotX < 0 || entry.hotY < 0 || entry.hotX >= r.Width || entry.hotY >= r.Height)
@@ -57,7 +107,8 @@ GameCursor::GameCursor(const Paths& paths) {
         seen[index] = true; frames_[index] = entry;
     }
     if (!input.eof() || std::find(seen.begin(), seen.end(), false) != seen.end()) throw std::runtime_error("Incomplete cursor atlas definition");
-    for (auto& entry : frames_) {
+    for (size_t i = 0; i < sourceCount; ++i) {
+        auto& entry = frames_[i];
         const auto& r = entry.bounds;
         ComPtr<IWICBitmapClipper> clipper;
         check(factory_->CreateBitmapClipper(clipper.GetAddressOf()));
@@ -95,6 +146,10 @@ GameCursor::GameCursor(const Paths& paths) {
             reinterpret_cast<uint32_t*>(data + y * stride)[x] = visited[p] ? pixels[p] : 0;
         }
     }
+    for (unsigned rotation = 1; rotation < 8; ++rotation) {
+        frames_[scrollIndex + rotation] = frames_[scrollIndex];
+        frames_[scrollIndex + rotation].rotation = rotation;
+    }
     atlas_.Reset();
 }
 GameCursor::~GameCursor() {
@@ -109,13 +164,13 @@ HCURSOR GameCursor::handle(UINT dpi, CursorKind kind) {
     if (const auto found = cursors_.find(key); found != cursors_.end()) return found->second;
     const auto& entry = frames_.at(static_cast<size_t>(kind));
     const auto& r = entry.bounds;
-    const int width = std::clamp(MulDiv(entry.size, dpi, 96), 1, 512);
-    const int height = std::clamp(MulDiv(width, r.Height, r.Width), 1, 512);
+    const auto shape = geometry(entry.size, r, entry.hotX, entry.hotY, entry.rotation, dpi);
+    const int width = shape.width, height = shape.height;
     using Microsoft::WRL::ComPtr;
     ComPtr<IWICBitmapScaler> scaler;
     check(factory_->CreateBitmapScaler(scaler.GetAddressOf()));
     // Area filtering keeps the large painted source readable at native cursor sizes.
-    check(scaler->Initialize(entry.image.Get(), width, height, WICBitmapInterpolationModeFant));
+    check(scaler->Initialize(entry.image.Get(), shape.sourceWidth, shape.sourceHeight, WICBitmapInterpolationModeFant));
     BITMAPINFO info{};
     info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     info.bmiHeader.biWidth = width; info.bmiHeader.biHeight = -height;
@@ -123,14 +178,19 @@ HCURSOR GameCursor::handle(UINT dpi, CursorKind kind) {
     void* raw{};
     Bitmap color{CreateDIBSection(nullptr, &info, DIB_RGB_COLORS, &raw, nullptr, 0)};
     if (!color.value) throw std::runtime_error("Cannot allocate cursor bitmap");
-    check(scaler->CopyPixels(nullptr, width * 4, width * height * 4, static_cast<BYTE*>(raw)));
+    if (entry.rotation == 0) check(scaler->CopyPixels(nullptr, width * 4, width * height * 4, static_cast<BYTE*>(raw)));
+    else {
+        std::vector<uint32_t> pixels(static_cast<size_t>(shape.sourceWidth) * shape.sourceHeight);
+        check(scaler->CopyPixels(nullptr, shape.sourceWidth * 4, static_cast<UINT>(pixels.size() * 4), reinterpret_cast<BYTE*>(pixels.data())));
+        rotatePixels(pixels, static_cast<uint32_t*>(raw), shape);
+    }
     const std::vector<BYTE> maskPixels(static_cast<size_t>((width + 15) / 16) * 2 * height, 0);
     Bitmap mask{CreateBitmap(width, height, 1, 1, maskPixels.data())};
     if (!mask.value) throw std::runtime_error("Cannot allocate cursor mask");
     ICONINFO cursorInfo{};
     cursorInfo.fIcon = FALSE;
-    cursorInfo.xHotspot = std::min(width - 1, MulDiv(entry.hotX, width, r.Width));
-    cursorInfo.yHotspot = std::min(height - 1, MulDiv(entry.hotY, height, r.Height));
+    cursorInfo.xHotspot = shape.hotX;
+    cursorInfo.yHotspot = shape.hotY;
     cursorInfo.hbmColor = color.value; cursorInfo.hbmMask = mask.value;
     const auto cursor = static_cast<HCURSOR>(CreateIconIndirect(&cursorInfo));
     if (!cursor) throw std::runtime_error("Cannot create game cursor");
@@ -147,16 +207,15 @@ void GameCursor::verify() {
         if (!GetIconInfo(cursor, &info) || cursor != handle(dpi, kind)) throw std::runtime_error("Cannot inspect cached game cursor");
         Bitmap color{info.hbmColor}, mask{info.hbmMask};
         BITMAP bitmap{};
-        const int width = MulDiv(entry.size, dpi, 96);
-        const int height = std::max(1, MulDiv(width, entry.bounds.Height, entry.bounds.Width));
-        if (!GetObjectW(color.value, sizeof(bitmap), &bitmap) || info.fIcon || bitmap.bmWidth != width || bitmap.bmHeight != height ||
-            info.xHotspot != UINT(std::min(width - 1, MulDiv(entry.hotX, width, entry.bounds.Width))) ||
-            info.yHotspot != UINT(std::min(height - 1, MulDiv(entry.hotY, height, entry.bounds.Height))))
+        const auto shape = geometry(entry.size, entry.bounds, entry.hotX, entry.hotY, entry.rotation, dpi);
+        if (!GetObjectW(color.value, sizeof(bitmap), &bitmap) || info.fIcon || bitmap.bmWidth != shape.width || bitmap.bmHeight != shape.height ||
+            info.xHotspot != UINT(shape.hotX) || info.yHotspot != UINT(shape.hotY))
             throw std::runtime_error("Cursor DPI size or hotspot is incorrect");
     }
 }
 void GameCursor::snapshot(const std::filesystem::path& output) {
-    constexpr int width = 630, height = 420;
+    constexpr int columns = 3, cellWidth = 660, cellHeight = 440;
+    constexpr int width = columns * cellWidth, height = ((int(names.size()) + columns - 1) / columns) * cellHeight;
     BITMAPINFO info{};
     info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     info.bmiHeader.biWidth = width; info.bmiHeader.biHeight = -height;
@@ -176,10 +235,10 @@ void GameCursor::snapshot(const std::filesystem::path& output) {
     SetBkMode(context.dc, TRANSPARENT);
     SetTextColor(context.dc, RGB(230, 220, 200));
     for (size_t i = 0; i < names.size(); ++i) {
-        const int x = int(i % 3) * 210, y = int(i / 3) * 140;
+        const int x = int(i % columns) * cellWidth, y = int(i / columns) * cellHeight;
         TextOutA(context.dc, x + 12, y + 8, names[i].data(), static_cast<int>(names[i].size()));
         if (!DrawIconEx(context.dc, x + 18, y + 32, handle(96, static_cast<CursorKind>(i)), 0, 0, 0, nullptr, DI_NORMAL) ||
-            !DrawIconEx(context.dc, x + 96, y + 25, handle(192, static_cast<CursorKind>(i)), 0, 0, 0, nullptr, DI_NORMAL))
+            !DrawIconEx(context.dc, x + 235, y + 25, handle(192, static_cast<CursorKind>(i)), 0, 0, 0, nullptr, DI_NORMAL))
             throw std::runtime_error("Cannot draw native cursor preview");
     }
     GdiFlush();

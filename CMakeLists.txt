@@ -46,6 +46,7 @@ add_library(rts_core
     src/core/TacticalOrders.cpp
     src/core/CommandUi.cpp
     src/core/Selection.cpp
+    src/core/SelectionGroups.cpp
     src/platform/Paths.cpp
 )
 target_include_directories(rts_core PUBLIC include)

@@ -2,12 +2,13 @@
 
 namespace rts {
 void Selection::army(const Simulation& game) {
+    activeType_.clear();
     ids.clear();
     // Support units belong to the army even when they do not have a weapon.
     for (const auto& u : game.units()) if (u.owner == game.player().id && u.health > 0 && !u.definition.isWorker()) ids.push_back(u.id);
 }
 bool Selection::hero(const Simulation& game) {
-    if (const auto* u = game.hero()) { ids = {u->id}; return true; }
+    if (const auto* u = game.hero()) { ids = {u->id}; activeType_.clear(); return true; }
     return false;
 }
 UiRect unitBounds(const Simulation& game, const Unit& unit, const WorldView& view) {
@@ -49,6 +50,7 @@ std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view
     return result;
 }
 void Selection::click(const Simulation& game, const WorldView& view, Vec2 point, bool additive) {
+    activeType_.clear();
     const auto id = pickEntity(game, view, point);
     if (!additive) ids.clear();
     if (!id) return;
@@ -61,6 +63,7 @@ void Selection::click(const Simulation& game, const WorldView& view, Vec2 point,
     }
 }
 void Selection::box(const Simulation& game, const WorldView& view, UiRect bounds, bool additive) {
+    activeType_.clear();
     if (!additive || (!ids.empty() && !game.unit(ids.front()))) ids.clear();
     for (const auto& u : game.units()) {
         const auto p = view.project(u.position, game.unitHeight(u)) + Vec2{0, -20 * view.zoom};
@@ -73,6 +76,7 @@ void Selection::prune(const Simulation& game) {
         const auto* node = game.crystal(id);
         return !node || node->remaining <= 0 || !game.fog().visible(node->cell);
     });
+    if (!activeType_.empty()) activeType_ = activeGroup(game).type;
 }
 bool Selection::idleWorker(const Simulation& game, EntityId after) {
     EntityId first{}, next{};
@@ -83,6 +87,7 @@ bool Selection::idleWorker(const Simulation& game, EntityId after) {
     if (!next) next = first;
     if (!next) return false;
     ids = {next};
+    activeType_.clear();
     return true;
 }
 }

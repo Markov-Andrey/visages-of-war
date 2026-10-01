@@ -6,25 +6,34 @@
 
 namespace rts {
 enum class UnitCommand { Move, Stop, Attack, Hold, Patrol, Gather, AttackGround, Build, Back };
+enum class CommandScope { Selection, ActiveGroup };
+inline constexpr size_t commandColumns = 4, commandRows = 3, commandSlots = commandColumns * commandRows;
+inline constexpr size_t backCommandSlot = commandSlots - 1;
 struct UnitCommandInfo {
     UnitCommand command;
+    size_t slot;
     const char* icon;
     wchar_t key;
     const wchar_t* label;
     const wchar_t* description;
     OrderKind order;
+    CommandScope scope = CommandScope::Selection;
 };
 inline constexpr std::array<UnitCommandInfo, 9> unitCommands{{
-    {UnitCommand::Move, "move", L'M', L"Идти", L"Идти к точке, не отвлекаясь на врагов.", OrderKind::Move},
-    {UnitCommand::Stop, "stop", L'S', L"Стоять", L"Отменить приказ. Юнит может сам вступить в бой с замеченным врагом.", OrderKind::Stop},
-    {UnitCommand::Attack, "attack", L'A', L"Атаковать", L"Выбрать врага или идти к точке, атакуя встреченных врагов.", OrderKind::AttackMove},
-    {UnitCommand::Hold, "hold", L'H', L"Позиция", L"Удерживать позицию: атаковать в пределах дальности без преследования.", OrderKind::Hold},
-    {UnitCommand::Patrol, "patrol", L'P', L"Патруль", L"Ходить между текущей позицией и точкой. После боя продолжать патруль.", OrderKind::Patrol},
-    {UnitCommand::Gather, "gather", L'G', L"Добывать", L"Выбрать видимую залежь кристаллов для добычи и доставки.", OrderKind::Gather},
-    {UnitCommand::AttackGround, "attack-ground", L'T', L"Обстрел", L"Обстреливать выбранную точку осадным оружием до нового приказа.", OrderKind::AttackGround},
-    {UnitCommand::Build, "build", L'B', L"Строить", L"Открыть список доступных построек.", OrderKind::Build},
-    {UnitCommand::Back, "back", L'X', L"Назад", L"Отменить выбор команды или вернуться к приказам.", OrderKind::Stop}
+    {UnitCommand::Move, 0, "move", L'M', L"Идти", L"Идти к точке, не отвлекаясь на врагов.", OrderKind::Move},
+    {UnitCommand::Stop, 1, "stop", L'S', L"Стоять", L"Отменить приказ. Юнит может сам вступить в бой с замеченным врагом.", OrderKind::Stop},
+    {UnitCommand::Attack, 2, "attack", L'A', L"Атаковать", L"Выбрать врага или идти к точке, атакуя встреченных врагов.", OrderKind::AttackMove},
+    {UnitCommand::Hold, 3, "hold", L'H', L"Позиция", L"Удерживать позицию: атаковать в пределах дальности без преследования.", OrderKind::Hold},
+    {UnitCommand::Patrol, 4, "patrol", L'P', L"Патруль", L"Ходить между текущей позицией и точкой. После боя продолжать патруль.", OrderKind::Patrol},
+    {UnitCommand::Gather, 5, "gather", L'G', L"Добывать", L"Выбрать видимую залежь кристаллов для добычи и доставки.", OrderKind::Gather, CommandScope::ActiveGroup},
+    {UnitCommand::AttackGround, 6, "attack-ground", L'T', L"Обстрел", L"Обстреливать выбранную точку осадным оружием до нового приказа.", OrderKind::AttackGround, CommandScope::ActiveGroup},
+    {UnitCommand::Build, 7, "build", L'B', L"Строить", L"Открыть список доступных построек.", OrderKind::Build, CommandScope::ActiveGroup},
+    {UnitCommand::Back, backCommandSlot, "back", L'X', L"Назад", L"Отменить выбор команды или вернуться к приказам.", OrderKind::Stop}
 }};
+inline const UnitCommandInfo* unitCommandAt(size_t slot) {
+    for (const auto& command : unitCommands) if (command.slot == slot) return &command;
+    return nullptr;
+}
 inline OrderKind unitOrder(const Unit& unit) {
     if (unit.pendingOrder) return unit.pendingOrder->kind;
     const auto kind = unit.currentOrder.kind;

@@ -26,7 +26,8 @@ rts::CursorKind GameApplication::cursorKind() const {
         return CursorKind::Default;
     }
     if (panning_) return CursorKind::Move;
-    const rts::BattleLayout layout(renderer_.size(), selectedBuilding() != nullptr);
+    if (const auto edge = cameraEdgeDirection(); edge != rts::Vec2{}) return rts::scrollCursor(edge);
+    const rts::BattleLayout layout(renderer_.size());
     const auto* building = selectedBuilding();
     const auto selected = [&](auto predicate) {
         return std::any_of(ui_.selection.ids.begin(), ui_.selection.ids.end(), [&](rts::EntityId id) {
@@ -40,14 +41,14 @@ rts::CursorKind GameApplication::cursorKind() const {
         [&](const auto& unit) { return rts::idleWorker(game_, unit); }) ? CursorKind::Hand : CursorKind::Blocked;
     const bool minimap = layout.minimap.contains(mouse_);
     if (!mouseInWorld() && !minimap) {
+        for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards)
+            if (card.bounds.contains(mouse_)) return CursorKind::Hand;
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) {
             bool active = false;
             if (building) active = (building->complete() && ((i == 1 && !building->definition.trainableUnits.empty()) ||
                 ((i == 0 || i == 2 || i == 4) && i / 2 < building->definition.trainableUnits.size()))) ||
                 (i == 5 && (!building->complete() || !building->production.empty()));
-            else if (ui_.buildMenu) active = i == 8 || (i < 3 && i < game_.buildingTypes().size() && rts::commandEnabled(game_, ui_, rts::UnitCommand::Build));
-            else active = rts::commandEnabled(game_, ui_, rts::unitCommands[i].command) ||
-                (i == 8 && (ui_.orderMode || !ui_.placement.empty()));
+            else active = rts::unitCommandVisible(game_, ui_, i);
             return active ? CursorKind::Hand : CursorKind::Default;
         }
         return CursorKind::Default;
@@ -61,7 +62,7 @@ rts::CursorKind GameApplication::cursorKind() const {
     if (ui_.orderMode) {
         if (!target) return CursorKind::Blocked;
         switch (*ui_.orderMode) {
-        case rts::OrderKind::AttackMove: case rts::OrderKind::AttackGround: return CursorKind::Attack;
+        case rts::OrderKind::AttackMove: case rts::OrderKind::AttackGround: return CursorKind::Target;
         case rts::OrderKind::Gather:
             return game_.fog().visible(*target) && std::any_of(game_.crystals().begin(), game_.crystals().end(),
                 [&](const auto& crystal) { return crystal.cell == *target && crystal.remaining > 0; }) ? CursorKind::Gather : CursorKind::Blocked;
@@ -120,7 +121,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         break;
     case WM_ERASEBKGND: return 1;
     case WM_PAINT: { PAINTSTRUCT paint{}; BeginPaint(window_, &paint); EndPaint(window_, &paint); return 0; }
-    case WM_SIZE: camera_.stop(view_); renderer_.resize(LOWORD(lParam), HIWORD(lParam)); return 0;
+    case WM_SIZE: camera_.stop(view_); renderer_.resize(LOWORD(lParam), HIWORD(lParam)); constrainCamera(); return 0;
     case WM_DPICHANGED: {
         const auto* area = reinterpret_cast<RECT*>(lParam);
         fitToMonitor(MonitorFromRect(area, MONITOR_DEFAULTTONEAREST));
@@ -137,7 +138,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     }
     case WM_MOUSEMOVE: {
         mouse_ = mousePosition(lParam);
-        if (panning_) { view_.origin = view_.origin + mouse_ - panStart_; panStart_ = mouse_; }
+        if (panning_) { view_.origin = view_.origin + mouse_ - panStart_; panStart_ = mouse_; constrainCamera(); }
         if (minimapDragging_) if (const auto c = rts::BattleLayout(renderer_.size()).minimapCell(mouse_, game_.map())) focus(rts::center(*c));
         if (dragging_ && (std::abs(mouse_.x - dragStart_.x) > 5 || std::abs(mouse_.y - dragStart_.y) > 5))
             ui_.drag = rts::UiRect{std::min(mouse_.x, dragStart_.x), std::min(mouse_.y, dragStart_.y),
@@ -156,7 +157,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     case WM_LBUTTONDOWN: {
         mouse_ = mousePosition(lParam);
         if (menu_.page != rts::MenuPage::Playing) { menuClick(); return 0; }
-        const rts::BattleLayout layout(renderer_.size(), selectedBuilding() != nullptr);
+        const rts::BattleLayout layout(renderer_.size());
         if (layout.menu.contains(mouse_)) { menu_.page = rts::MenuPage::Main; return 0; }
         if (layout.army.contains(mouse_)) { selectArmy(); return 0; }
         if (layout.hero.contains(mouse_)) { selectHero(); return 0; }
@@ -170,6 +171,10 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) { action(i); return 0; }
+        for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards) if (card.bounds.contains(mouse_)) {
+            if (ui_.selection.activateGroup(game_, card.id)) clearCommandMode();
+            return 0;
+        }
         if (!mouseInWorld()) return 0;
         if (ui_.orderMode) {
             if (const auto target = pickCommandTarget()) executeTarget(*target);
@@ -177,7 +182,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         }
         if (!ui_.placement.empty()) {
             if (const auto c = game_.map().pick(mouse_, view_))
-                if (game_.construct(ui_.selection.ids, ui_.placement, *c)) ui_.placement.clear();
+                if (game_.construct(rts::commandRecipients(game_, ui_, rts::OrderKind::Build), ui_.placement, *c)) clearCommandMode();
             return 0;
         }
         if (ui_.rallyMode) {
@@ -256,6 +261,10 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         if (wParam == VK_F1) selectArmy();
         if (wParam == VK_F2) selectHero();
         if (wParam == VK_F8) selectIdleWorker();
+        if (wParam == VK_TAB) {
+            if (ui_.selection.cycleGroup(game_, (GetKeyState(VK_SHIFT) & 0x8000) != 0)) clearCommandMode();
+            return 0;
+        }
         if (unitHotkey(static_cast<unsigned>(wParam))) return 0;
         if (wParam == 'Q' && selectedBuilding()) action(0);
         if (wParam == 'R' && selectedBuilding()) action(1);
