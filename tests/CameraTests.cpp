@@ -11,6 +11,74 @@ void advance(game::CameraController& camera, WorldView& view, int frames, float 
 }
 void cameraTests(TestSuite& test) {
     using game::CameraController;
+    test("Camera map borders stop scrolling without accumulated pressure or blocked tangential motion", [] {
+        const Vec2 origin{0, 58}, size{1440, 638}, map{64, 48}, middle = origin + size * .5f;
+        const float margin = game::cameraTuning.borderMargin;
+        for (float zoom : {.6f, .85f, 2.0f}) for (Vec2 direction : {Vec2{-1, 0}, Vec2{1, 0}, Vec2{0, -1}, Vec2{0, 1},
+            Vec2{-1, -1}, Vec2{1, -1}, Vec2{-1, 1}, Vec2{1, 1}}) {
+            WorldView view{{}, zoom}; CameraController camera; camera.stop(view);
+            camera.setBounds(view, origin, size, map); camera.focus(view, map * .5f, middle, true);
+            for (int i = 0; i < 1000; ++i) camera.update(view, middle, direction, 1.0f / 60);
+            const auto top = view.project({}), bottom = view.project(map);
+            if (direction.x < 0) require(std::abs(top.x - origin.x - margin) < .02f, "Left reserve is not screen-sized");
+            if (direction.x > 0) require(std::abs(bottom.x - origin.x - size.x + margin) < .02f, "Right reserve is not screen-sized");
+            if (direction.y < 0) require(std::abs(top.y - origin.y - margin) < .02f, "Top limit included the HUD");
+            if (direction.y > 0) require(std::abs(bottom.y - origin.y - size.y + margin) < .02f, "Bottom limit included the HUD");
+            const auto stopped = view.origin;
+            for (int i = 0; i < 60; ++i) camera.update(view, middle, direction, 1.0f / 60);
+            require(distance(stopped, view.origin) < .01f, "Camera drifted beyond the border");
+            camera.update(view, middle, direction * -1, 1.0f / 60);
+            if (direction.x) require((view.origin.x - stopped.x) * direction.x > 0, "Horizontal reverse retained outward pressure");
+            if (direction.y) require((view.origin.y - stopped.y) * direction.y > 0, "Vertical reverse retained outward pressure");
+        }
+        WorldView view{{}, .85f}; CameraController camera; camera.stop(view);
+        camera.setBounds(view, origin, size, map); camera.focus(view, {0, 12}, middle, true);
+        const auto before = view.origin;
+        for (int i = 0; i < 60; ++i) camera.update(view, middle, {-1, 1}, 1.0f / 60);
+        require(view.origin.x == before.x && view.origin.y < before.y - 100, "Hitting one border stopped scrolling along it");
+    });
+    test("Camera flights zoom resize and direct dragging share bounds and centre maps that fit", [] {
+        const Vec2 origin{0, 58}, size{1440, 638}, map{64, 48}, middle = origin + size * .5f;
+        const auto inBounds = [&](const WorldView& view, Vec2 viewportSize) {
+            const auto start = view.project({}), end = view.project(map);
+            const float margin = game::cameraTuning.borderMargin;
+            if (end.x - start.x <= viewportSize.x)
+                require(std::abs((start.x + end.x) * .5f - origin.x - viewportSize.x * .5f) < .02f, "Small map is not centred horizontally");
+            else require(start.x <= origin.x + margin + .02f && end.x >= origin.x + viewportSize.x - margin - .02f, "Horizontal overscroll");
+            if (end.y - start.y <= viewportSize.y)
+                require(std::abs((start.y + end.y) * .5f - origin.y - viewportSize.y * .5f) < .02f, "Small map is not centred vertically");
+            else require(start.y <= origin.y + margin + .02f && end.y >= origin.y + viewportSize.y - margin - .02f, "Vertical overscroll");
+        };
+        WorldView view{{}, .85f}; CameraController camera; camera.stop(view);
+        camera.setBounds(view, origin, size, map); camera.focus(view, map * .5f, middle, true);
+        const auto before = view.origin;
+        camera.focus(view, {-20, -20}, middle);
+        require(view.origin == before, "Clamped focus teleported immediately");
+        const Vec2 corner = origin + Vec2{game::cameraTuning.borderMargin, game::cameraTuning.borderMargin};
+        float previous = distance(view.origin, corner);
+        for (int i = 0; i < 120; ++i) {
+            camera.update(view, middle, {}, 1.0f / 60); inBounds(view, size);
+            const float remaining = distance(view.origin, corner);
+            require(remaining <= previous + .02f, "Clamped flight bounced at the border"); previous = remaining;
+        }
+        require(distance(view.origin, corner) < .02f, "Edge focus did not settle at the closest legal position");
+        for (const Vec2 anchor : {origin, origin + size}) for (float zoom : {.35f, 2.0f, .35f}) {
+            camera.zoomTo(view, anchor, zoom);
+            for (int i = 0; i < 120; ++i) { camera.update(view, middle, {}, 1.0f / 60); inBounds(view, size); }
+        }
+        const Vec2 large{2560, 1400}, largeMiddle = origin + large * .5f;
+        camera.setBounds(view, origin, large, map); inBounds(view, large);
+        const auto centred = view.origin;
+        camera.focus(view, {}, largeMiddle);
+        for (int i = 0; i < 120; ++i) camera.update(view, largeMiddle, {1, 1}, 1.0f / 60);
+        require(distance(view.origin, centred) < .02f, "A map fitting the viewport could be dragged into empty space");
+        camera.zoomTo(view, largeMiddle, 2);
+        for (int i = 0; i < 120; ++i) { camera.update(view, largeMiddle, {}, 1.0f / 60); inBounds(view, large); }
+        for (Vec2 dragged : {Vec2{10000, 10000}, Vec2{-10000, -10000}}) {
+            view.origin = dragged;
+            camera.setBounds(view, origin, size, map); inBounds(view, size);
+        }
+    });
     test("Camera scrolling uses all client edges and ignores points outside the window", [] {
         const Vec2 extent{1440, 900};
         require(CameraController::edgeDirection({0, 450}, extent) == Vec2{-1, 0}, "Left edge failed");

@@ -22,6 +22,32 @@ Vec2 CameraController::edgeDirection(Vec2 mouse, Vec2 extent) {
     };
     return {axis(mouse.x, extent.x), axis(mouse.y, extent.y)};
 }
+void CameraController::setBounds(WorldView& view, Vec2 viewportOrigin, Vec2 viewportSize, Vec2 mapSize) {
+    if (viewportSize.x <= 0 || viewportSize.y <= 0 || mapSize.x <= 0 || mapSize.y <= 0) return;
+    bounds_ = Bounds{viewportOrigin, viewportSize, mapSize};
+    constrain(view);
+}
+Vec2 CameraController::boundedOrigin(const WorldView& view, Vec2 origin) const {
+    if (!bounds_) return origin;
+    const auto axis = [&](float value, float start, float size, float cells) {
+        const float mapPixels = cells * WorldView::tileSize * view.zoom;
+        // Shrink the reserve continuously as the whole map starts fitting the viewport.
+        if (mapPixels <= size) return start + (size - mapPixels) * .5f;
+        const float margin = std::min({cameraTuning.borderMargin, size * .2f, (mapPixels - size) * .5f});
+        const float minimum = start + size - margin - mapPixels;
+        const float maximum = start + margin;
+        return std::clamp(value, minimum, maximum);
+    };
+    return {axis(origin.x, bounds_->origin.x, bounds_->size.x, bounds_->mapSize.x),
+        axis(origin.y, bounds_->origin.y, bounds_->size.y, bounds_->mapSize.y)};
+}
+void CameraController::constrain(WorldView& view) {
+    const auto bounded = boundedOrigin(view, view.origin);
+    // Drop pressure against a border so reversing direction responds immediately.
+    if (bounded.x != view.origin.x) { panVelocity_.x = 0; focusVelocity_.x = 0; }
+    if (bounded.y != view.origin.y) { panVelocity_.y = 0; focusVelocity_.y = 0; }
+    view.origin = bounded;
+}
 void CameraController::stop(const WorldView& view) {
     panVelocity_ = {}; focusVelocity_ = {}; focusWorld_.reset();
     zoomTarget_ = view.zoom; zoomVelocity_ = 0;
@@ -33,6 +59,7 @@ void CameraController::focus(WorldView& view, Vec2 world, Vec2 screenCenter, boo
     if (immediate) {
         stop(view);
         view.origin = view.origin + screenCenter - view.project(world, 0);
+        constrain(view);
     } else focusWorld_ = world;
 }
 void CameraController::zoomTo(WorldView& view, Vec2 anchor, float zoom) {
@@ -65,13 +92,14 @@ void CameraController::update(WorldView& view, Vec2 screenCenter, Vec2 direction
     }
 
     if (focusWorld_) {
-        const Vec2 target = view.origin + screenCenter - view.project(*focusWorld_, 0);
+        const Vec2 target = boundedOrigin(view, view.origin + screenCenter - view.project(*focusWorld_, 0));
         approach(view.origin.x, focusVelocity_.x, target.x, cameraTuning.focusTime, elapsed);
         approach(view.origin.y, focusVelocity_.y, target.y, cameraTuning.focusTime, elapsed);
         if (std::hypot(view.origin.x - target.x, view.origin.y - target.y) < .05f &&
             std::hypot(focusVelocity_.x, focusVelocity_.y) < .05f) {
             view.origin = target; focusVelocity_ = {}; focusWorld_.reset();
         }
+        constrain(view);
         return;
     }
     const Vec2 desired = direction * cameraTuning.panSpeed;
@@ -82,5 +110,6 @@ void CameraController::update(WorldView& view, Vec2 screenCenter, Vec2 direction
     view.origin = view.origin - (desired * elapsed + difference * (time * (1 - decay)));
     panVelocity_ = desired + difference * decay;
     if (!moving && std::hypot(panVelocity_.x, panVelocity_.y) < .05f) panVelocity_ = {};
+    constrain(view);
 }
 }
