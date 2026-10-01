@@ -52,6 +52,8 @@ void Simulation::issue(Unit& u, Order order) {
     else applyOrder(u, order);
 }
 void Simulation::applyOrder(Unit& u, Order order) {
+    u.currentOrder = order;
+    if (order.kind == OrderKind::Patrol) u.patrolOrigin = u.cell;
     u.moveGroup = order.moveGroup;
     u.targetUnit = 0; cancelAttack(u); u.chaseTicks = 0;
     u.repeatGather = false; u.targetCrystal = -1; u.gatherOriginCrystal = -1; u.targetBuilding = 0; u.harvestTicks = 0;
@@ -63,7 +65,8 @@ void Simulation::applyOrder(Unit& u, Order order) {
         } else { u.route.clear(); u.next = 0; u.state = UnitState::Idle; }
         return;
     }
-    if (order.kind == OrderKind::Stop) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
+    if (order.kind == OrderKind::Stop || order.kind == OrderKind::Hold) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
+    if (order.kind == OrderKind::AttackGround) { chaseGround(u); return; }
     if (order.kind == OrderKind::Build) {
         const auto* b = building(order.target);
         if (!b || b->complete() || !u.definition.canBuild) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
@@ -98,15 +101,25 @@ bool Simulation::command(std::span<const EntityId> ids, Cell c) {
     for (const auto& target : units_) if (target.owner != player_.id && target.cell == c && fog_.visible(c)) return attack(ids, target.id);
     auto kind = buildingAt(c) ? OrderKind::Interact : OrderKind::Move;
     if (fog_.visible(c)) for (const auto& node : crystals()) if (node.cell == c && node.remaining > 0) kind = OrderKind::Gather;
+    return order(ids, kind, c);
+}
+bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
+    if (!map().contains(c)) return false;
+    if (kind == OrderKind::Attack || kind == OrderKind::Build) return false;
+    if (kind == OrderKind::Gather && (!fog_.visible(c) || std::none_of(crystals().begin(), crystals().end(),
+        [&](const Crystal& crystal) { return crystal.cell == c && crystal.remaining > 0; }))) return false;
     std::vector<FormationMember> members;
     for (EntityId id : ids) {
         auto* u = mutableUnit(id);
         if (!u || u->owner != player_.id || std::any_of(members.begin(), members.end(), [&](const auto& m) { return m.id == id; })) continue;
+        if (kind == OrderKind::Gather && u->definition.carryCapacity <= 0) continue;
+        if (kind == OrderKind::AttackGround && (u->attackDamage() <= 0 || !u->definition.projectile ||
+            u->definition.projectile->targeting != ProjectileTargeting::Point || u->definition.projectile->splashRadius <= 0)) continue;
         members.push_back({id, u->progress > 0 ? u->route[u->next] : u->cell,
             u->definition.movement, u->definition.formationPriority, u->formationForward});
     }
     bool any = false;
-    if (kind != OrderKind::Move) {
+    if (kind != OrderKind::Move && kind != OrderKind::AttackMove && kind != OrderKind::Patrol) {
         for (const auto& member : members) { issue(*mutableUnit(member.id), {kind, c}); any = true; }
     } else {
         std::vector<FormationObstacle> held;
@@ -125,7 +138,10 @@ bool Simulation::command(std::span<const EntityId> ids, Cell c) {
             u->moveGroup = group; u->formationForward = destination.forward; u->groupSpeed = speed;
         }
         for (const auto& destination : destinations) {
-            issue(*mutableUnit(destination.id), {OrderKind::Move, destination.cell, 0, group});
+            auto* u = mutableUnit(destination.id);
+            const Cell start = u->progress > 0 ? u->route[u->next] : u->cell;
+            if (kind == OrderKind::Patrol && destination.cell == start) continue;
+            issue(*u, {kind, destination.cell, 0, group});
             any = true;
         }
     }
@@ -155,10 +171,19 @@ void Simulation::arrived(Unit& u) {
         if (u.repeatGather) seekCrystal(u);
         break;
     }
-    default: u.state = UnitState::Idle; break;
+    default:
+        u.state = UnitState::Idle;
+        if (u.currentOrder.kind == OrderKind::Patrol && u.currentOrder.cell != u.patrolOrigin) {
+            std::swap(u.currentOrder.cell, u.patrolOrigin);
+            resumeOrder(u);
+        } else if (u.currentOrder.kind == OrderKind::AttackMove) u.currentOrder = {OrderKind::Stop};
+        break;
     }
 }
 void Simulation::tickUnit(Unit& u) {
+    if (u.state == UnitState::Idle && !u.targetUnit && !u.pendingOrder &&
+        (u.currentOrder.kind == OrderKind::Patrol || u.currentOrder.kind == OrderKind::AttackMove) && ++u.blockedTicks >= 15)
+        resumeOrder(u);
     if (u.state == UnitState::WaitingForCrystal) {
         if (++u.blockedTicks >= ticksPerSecond) seekCrystal(u);
         return;

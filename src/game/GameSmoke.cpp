@@ -232,7 +232,7 @@ void GameApplication::exerciseInterface() {
         if (!selectedCrystal() || selectedCrystal()->id != node.id || selectedCrystal()->remaining != rts::Crystal::maximum || cursorKind() != rts::CursorKind::Select)
             throw std::runtime_error("Smoke: neutral crystal selection failed");
         const auto message = game_.message();
-        onMessage(WM_RBUTTONDOWN, 0, at(p)); action(3);
+        onMessage(WM_RBUTTONDOWN, 0, at(p)); action(1);
         if (game_.message() != message) throw std::runtime_error("Smoke: neutral crystal accepted a player command");
         renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"crystal-preview.png", nullptr, false, &ui_);
         ui_.selection.ids = {game_.worker().id};
@@ -264,9 +264,9 @@ void GameApplication::exerciseInterface() {
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"tooltip-preview.png", nullptr, false, &tooltipUi);
     resetCamera();
     if (!grid_) throw std::runtime_error("Smoke: grid must be enabled by default");
-    onMessage(WM_KEYDOWN, 'G', 0);
+    onMessage(WM_KEYDOWN, VK_F3, 0);
     if (grid_) throw std::runtime_error("Smoke: G did not hide grid");
-    onMessage(WM_KEYDOWN, 'G', 0);
+    onMessage(WM_KEYDOWN, VK_F3, 0);
     if (!grid_) throw std::runtime_error("Smoke: G did not restore grid");
     auto bounds = rts::buildingBounds(game_, game_.buildings().front(), view_);
     click({bounds.x + bounds.width * .5f, bounds.y + bounds.height * .45f});
@@ -287,6 +287,7 @@ void GameApplication::exerciseInterface() {
     }
     onMessage(WM_LBUTTONDOWN, 0, at(a)); onMessage(WM_MOUSEMOVE, MK_LBUTTON, at(b)); onMessage(WM_LBUTTONUP, 0, at(b));
     if (ui_.selection.ids.size() != 6) throw std::runtime_error("Smoke: drag selection failed");
+    onMessage(WM_KEYDOWN, 'B', 0);
     onMessage(WM_KEYDOWN, 'B', 0);
     click(view_.project(rts::center({17, 17}), 0));
     if (game_.buildings().size() != 2) throw std::runtime_error("Smoke: construction placement failed");
@@ -353,5 +354,6 @@ void GameApplication::exerciseInterface() {
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-dead-preview.png");
     game_.takeEvents();
     exerciseRangedCombat();
+    exerciseUnitCommands();
 }
 }

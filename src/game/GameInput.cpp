@@ -32,7 +32,7 @@ rts::CursorKind GameApplication::cursorKind() const {
         return CursorKind::Default;
     }
     if (panning_) return CursorKind::Move;
-    const rts::BattleLayout layout(renderer_.size());
+    const rts::BattleLayout layout(renderer_.size(), selectedBuilding() != nullptr);
     const auto* building = selectedBuilding();
     const auto selected = [&](auto predicate) {
         return std::any_of(ui_.selection.ids.begin(), ui_.selection.ids.end(), [&](rts::EntityId id) {
@@ -42,15 +42,18 @@ rts::CursorKind GameApplication::cursorKind() const {
     };
     if (layout.menu.contains(mouse_) || layout.army.contains(mouse_)) return CursorKind::Hand;
     if (layout.hero.contains(mouse_)) return game_.hero() ? CursorKind::Hand : CursorKind::Blocked;
+    if (layout.idleWorker.contains(mouse_)) return std::any_of(game_.units().begin(), game_.units().end(),
+        [&](const auto& unit) { return rts::idleWorker(game_, unit); }) ? CursorKind::Hand : CursorKind::Blocked;
     const bool minimap = layout.minimap.contains(mouse_);
     if (!mouseInWorld() && !minimap) {
-        for (size_t i = 0; i < layout.commands.size(); ++i) if (layout.commands[i].contains(mouse_)) {
+        for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) {
             bool active = false;
             if (building) active = (building->complete() && ((i == 1 && !building->definition.trainableUnits.empty()) ||
                 ((i == 0 || i == 2 || i == 4) && i / 2 < building->definition.trainableUnits.size()))) ||
                 (i == 5 && (!building->complete() || !building->production.empty()));
-            else active = (i == 3 && selected([](const rts::Unit&) { return true; })) ||
-                (i < 3 && i < game_.buildingTypes().size() && selected([](const rts::Unit& u) { return u.definition.canBuild; }));
+            else if (ui_.buildMenu) active = i == 8 || (i < 3 && i < game_.buildingTypes().size() && rts::commandEnabled(game_, ui_, rts::UnitCommand::Build));
+            else active = rts::commandEnabled(game_, ui_, rts::unitCommands[i].command) ||
+                (i == 8 && (ui_.orderMode || !ui_.placement.empty()));
             return active ? CursorKind::Hand : CursorKind::Default;
         }
         return CursorKind::Default;
@@ -60,6 +63,16 @@ rts::CursorKind GameApplication::cursorKind() const {
     if (!ui_.placement.empty() && !minimap) {
         const auto& type = game_.entityType(ui_.placement);
         return target && game_.canPlace(type.id, *target) && game_.storedCrystals() >= type.cost.crystals && game_.armySupply().canReserve(type.cost.supply) ? CursorKind::Build : CursorKind::Blocked;
+    }
+    if (ui_.orderMode) {
+        if (!target) return CursorKind::Blocked;
+        switch (*ui_.orderMode) {
+        case rts::OrderKind::AttackMove: case rts::OrderKind::AttackGround: return CursorKind::Attack;
+        case rts::OrderKind::Gather:
+            return game_.fog().visible(*target) && std::any_of(game_.crystals().begin(), game_.crystals().end(),
+                [&](const auto& crystal) { return crystal.cell == *target && crystal.remaining > 0; }) ? CursorKind::Gather : CursorKind::Blocked;
+        default: return CursorKind::Move;
+        }
     }
     if (building && (ui_.rallyMode || !building->definition.trainableUnits.empty())) {
         if (building->definition.trainableUnits.empty()) return CursorKind::Default;
@@ -96,7 +109,7 @@ void GameApplication::refreshCursor() {
 
 bool GameApplication::mouseInWorld() const {
     const rts::BattleLayout layout(renderer_.size());
-    return layout.world.contains(mouse_) && !layout.army.contains(mouse_) && !layout.hero.contains(mouse_);
+    return layout.world.contains(mouse_) && !layout.army.contains(mouse_) && !layout.hero.contains(mouse_) && !layout.idleWorker.contains(mouse_);
 }
 
 void GameApplication::resetCamera() {
@@ -113,10 +126,10 @@ void GameApplication::moveCamera(float dt) {
     if (GetForegroundWindow() != window_ || (GetAsyncKeyState(VK_CONTROL) & 0x8000)) return;
     const auto down = [](int key) { return (GetAsyncKeyState(key) & 0x8000) != 0; };
     const float speed = 580.0f * dt;
-    if (down('A') || down(VK_LEFT)) view_.origin.x += speed;
-    if (down('D') || down(VK_RIGHT)) view_.origin.x -= speed;
-    if (down('W') || down(VK_UP)) view_.origin.y += speed;
-    if (down('S') || down(VK_DOWN)) view_.origin.y -= speed;
+    if (down(VK_LEFT)) view_.origin.x += speed;
+    if (down(VK_RIGHT)) view_.origin.x -= speed;
+    if (down(VK_UP)) view_.origin.y += speed;
+    if (down(VK_DOWN)) view_.origin.y -= speed;
 }
 
 LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
@@ -161,19 +174,25 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     case WM_LBUTTONDOWN: {
         mouse_ = mousePosition(lParam);
         if (menu_.page != rts::MenuPage::Playing) { menuClick(); return 0; }
-        const rts::BattleLayout layout(renderer_.size());
+        const rts::BattleLayout layout(renderer_.size(), selectedBuilding() != nullptr);
         if (layout.menu.contains(mouse_)) { menu_.page = rts::MenuPage::Main; return 0; }
         if (layout.army.contains(mouse_)) { selectArmy(); return 0; }
         if (layout.hero.contains(mouse_)) { selectHero(); return 0; }
+        if (layout.idleWorker.contains(mouse_)) { selectIdleWorker(); return 0; }
         if (layout.minimap.contains(mouse_)) {
             const auto c = layout.minimapCell(mouse_, game_.map());
             if (!c) return 0;
-            if (ui_.rallyMode && selectedBuilding()) { if (game_.setRally(selectedBuilding()->id, *c)) ui_.rallyMode = false; }
+            if (ui_.orderMode) executeTarget(*c);
+            else if (ui_.rallyMode && selectedBuilding()) { if (game_.setRally(selectedBuilding()->id, *c)) ui_.rallyMode = false; }
             else { focus(rts::center(*c)); minimapDragging_ = true; SetCapture(window_); }
             return 0;
         }
-        for (size_t i = 0; i < layout.commands.size(); ++i) if (layout.commands[i].contains(mouse_)) { action(i); return 0; }
+        for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) { action(i); return 0; }
         if (!mouseInWorld()) return 0;
+        if (ui_.orderMode) {
+            if (const auto target = pickCommandTarget()) executeTarget(*target);
+            return 0;
+        }
         if (!ui_.placement.empty()) {
             if (const auto c = game_.map().pick(mouse_, view_))
                 if (game_.construct(ui_.selection.ids, ui_.placement, *c)) ui_.placement.clear();
@@ -192,6 +211,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         if (dragging_) {
             if (ui_.drag) ui_.selection.box(game_, view_, *ui_.drag, adding_);
             else ui_.selection.click(game_, view_, mouse_, adding_);
+            clearCommandMode();
         }
         dragging_ = false; minimapDragging_ = false; ui_.drag.reset(); ReleaseCapture();
         return 0;
@@ -240,7 +260,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         if ((menu_.page == rts::MenuPage::Library || menu_.page == rts::MenuPage::BattleSetup) && colorSelectKey(wParam)) return 0;
         if (wParam == VK_ESCAPE) {
             if (menu_.page == rts::MenuPage::Playing) {
-                if (!ui_.placement.empty() || ui_.rallyMode) { ui_.placement.clear(); ui_.rallyMode = false; }
+                if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu) clearCommandMode();
                 else menu_.page = rts::MenuPage::Main;
             }
             else if (menu_.commanderDropdown) menu_.commanderDropdown = false;
@@ -250,19 +270,17 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         }
         if (menu_.page != rts::MenuPage::Playing) return 0;
         if (wParam == VK_SPACE) paused_ = !paused_;
-        if (wParam == 'G') grid_ = !grid_;
+        if (wParam == VK_F3) grid_ = !grid_;
         if (wParam == VK_HOME) resetCamera();
         if (wParam == VK_F1) selectArmy();
         if (wParam == VK_F2) selectHero();
-        if (wParam == 'S' && (GetKeyState(VK_CONTROL) & 0x8000)) action(3);
+        if (wParam == VK_F8) selectIdleWorker();
+        if (unitHotkey(static_cast<unsigned>(wParam))) return 0;
         if (wParam == 'Q' && selectedBuilding()) action(0);
         if (wParam == 'R' && selectedBuilding()) action(1);
         if (wParam == 'E' && selectedBuilding()) action(2);
         if (wParam == 'T' && selectedBuilding()) action(4);
-        if (wParam == 'H' && !selectedBuilding()) action(0);
-        if (wParam == 'B' && !selectedBuilding()) action(1);
-        if (wParam == 'O' && !selectedBuilding()) action(2);
-        if (wParam == 'X') action(5);
+        if (wParam == 'X' && selectedBuilding()) action(5);
         return 0;
     }
     return DefWindowProcW(window_, message, wParam, lParam);

@@ -25,8 +25,7 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
         for (auto& u : units_) {
             if (u.pendingOrder && u.pendingOrder->kind == OrderKind::Attack && !unit(u.pendingOrder->target)) u.pendingOrder.reset();
             if (u.targetUnit && !unit(u.targetUnit)) {
-                u.targetUnit = 0; cancelAttack(u);
-                if (!u.pendingOrder) issue(u, {OrderKind::Stop});
+                resumeOrder(u);
             }
         }
         updateVision();

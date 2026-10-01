@@ -2,6 +2,7 @@
 #include "rts/Menu.hpp"
 #include "rts/Simulation.hpp"
 #include "rts/Minimap.hpp"
+#include "rts/CommandUi.hpp"
 
 namespace rts {
 inline unsigned selectionColor(PlayerId owner, PlayerId player) {
@@ -30,14 +31,24 @@ struct Selection {
     void prune(const Simulation& game);
     void army(const Simulation& game);
     bool hero(const Simulation& game);
+    bool idleWorker(const Simulation& game, EntityId after = 0);
 };
 struct GameplayUi {
     Selection selection;
     std::optional<UiRect> drag;
     std::string placement;
     bool rallyMode{};
+    bool buildMenu{};
+    std::optional<OrderKind> orderMode;
+    EntityId idleWorkerCursor{};
     Vec2 mouse{-1, -1};
 };
+inline bool commandEnabled(const Simulation& game, const GameplayUi& ui, UnitCommand command) {
+    return std::any_of(ui.selection.ids.begin(), ui.selection.ids.end(), [&](EntityId id) {
+        const auto* unit = game.unit(id);
+        return unit && unit->owner == game.player().id && unit->health > 0 && commandCapable(*unit, command);
+    });
+}
 inline bool rallyPointVisible(const Simulation& game, const Building& building, const GameplayUi& ui) {
     return building.owner == game.player().id && building.owner != neutralPlayer && building.health > 0 &&
         building.complete() && ui.selection.contains(building.id) && !building.definition.trainableUnits.empty() &&
@@ -47,17 +58,19 @@ inline bool rallyPointLightVisible(const Simulation& game, const Building& build
     return rallyPointVisible(game, building, ui) && game.fog().visible(building.rally);
 }
 struct BattleLayout {
-    UiRect world, minimap, info, menu, army, hero;
-    std::array<UiRect, 6> commands;
-    explicit BattleLayout(Vec2 size) {
+    UiRect world, minimap, info, menu, army, hero, idleWorker;
+    std::array<UiRect, 9> commands{};
+    size_t commandCount;
+    explicit BattleLayout(Vec2 size, bool buildingCommands = false) : commandCount(buildingCommands ? 6 : 9) {
         world = {0, 58, size.x, std::max(1.0f, size.y - 262)};
         minimap = {18, size.y - 186, 164, 164};
-        info = {204, size.y - 186, size.x - 594, 164};
+        info = {204, size.y - 186, size.x - 490, 164};
         menu = {18, 12, 100, 34};
         army = {18, 72, 164, 40};
         hero = {18, 120, 164, 86};
-        for (size_t i = 0; i < commands.size(); ++i)
-            commands[i] = {size.x - 304 + (i % 3) * 98.0f, size.y - 190 + (i / 3) * 94.0f, 88, 88};
+        idleWorker = {18, size.y - 302, 56, 56};
+        for (size_t i = 0; i < commandCount; ++i)
+            commands[i] = {size.x - 200 + (i % 3) * 62.0f, size.y - 190 + (i / 3) * 62.0f, 56, 56};
     }
     std::optional<Cell> minimapCell(Vec2 p, const Map& map) const { return MinimapProjection(minimap, map).pick(p); }
 };

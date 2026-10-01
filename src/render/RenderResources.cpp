@@ -13,6 +13,7 @@ void Renderer::verifyAssets() {
     std::vector<std::filesystem::path> images{L"sprites/hall.png", L"sprites/crystal.png", L"sprites/worker.png", L"sprites/tree.png",
         L"ui/menu-background.png", L"ui/logo.png", L"ui/project-icon.png"};
     if (std::filesystem::exists(paths_.assetRoot() / buttonFrameAsset)) images.emplace_back(buttonFrameAsset);
+    for (const auto& [id, path] : loadCommandIcons(paths_)) images.push_back(std::filesystem::relative(path, paths_.assetRoot()));
     for (const auto& e : definitions.entities()) {
         if (e.mobile) images.push_back(imagePath(e.sprite.image));
         if (e.projectile) images.push_back(imagePath(e.projectile->image));
@@ -107,6 +108,8 @@ ID2D1Bitmap* Renderer::maskedBitmap(const std::string& image, const std::string&
 }
 
 void Renderer::loadResources() {
+    commandIcons_.clear();
+    for (const auto& [id, path] : loadCommandIcons(paths_)) loadBitmap(path, commandIcons_[id]);
     check(target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), brush_.GetAddressOf()));
     groundBrush_ = materialResource(worldAssets_.materials().front().id).brush;
     loadBitmap(paths_.asset(L"sprites/hall.png"), hall_);

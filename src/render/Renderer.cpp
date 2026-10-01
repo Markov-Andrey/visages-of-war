@@ -31,6 +31,7 @@ void Renderer::ensureTarget() {
 }
 
 void Renderer::discardTarget() {
+    commandIcons_.clear();
     materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); maskedImages_.clear(); paintResources_.clear();
     fogBrush_.Reset(); fogBitmap_.Reset();
     nightBitmap_.Reset();

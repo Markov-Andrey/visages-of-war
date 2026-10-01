@@ -21,12 +21,12 @@ void GameApplication::startBattle() {
 }
 
 void GameApplication::selectArmy() {
-    ui_.selection.army(game_); ui_.placement.clear(); ui_.rallyMode = false;
+    ui_.selection.army(game_); clearCommandMode();
 }
 
 void GameApplication::selectHero() {
     if (!ui_.selection.hero(game_)) return;
-    ui_.placement.clear(); ui_.rallyMode = false;
+    clearCommandMode();
     focus(game_.hero()->position);
 }
 
@@ -125,16 +125,11 @@ void GameApplication::action(size_t index) {
         ui_.selection.prune(game_);
         return;
     }
-    if (index == 3) { game_.stop(ui_.selection.ids); ui_.placement.clear(); return; }
-    if (index >= 3 || index >= game_.buildingTypes().size()) return;
-    const bool canBuild = std::any_of(ui_.selection.ids.begin(), ui_.selection.ids.end(), [&](rts::EntityId id) {
-        const auto* u = game_.unit(id); return u && u->definition.canBuild;
-    });
-    if (canBuild) { ui_.placement = game_.buildingTypes()[index]->id; ui_.rallyMode = false; }
+    unitAction(index);
 }
 
 void GameApplication::rightClick(std::optional<rts::Cell> target) {
-    if (!ui_.placement.empty() || ui_.rallyMode) { ui_.placement.clear(); ui_.rallyMode = false; return; }
+    if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu) { clearCommandMode(); return; }
     if (!target || selectedCrystal()) return;
     if (const auto* b = selectedBuilding()) game_.setRally(b->id, *target);
     else game_.command(ui_.selection.ids, *target);

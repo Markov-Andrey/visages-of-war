@@ -74,4 +74,15 @@ void Selection::prune(const Simulation& game) {
         return !node || node->remaining <= 0 || !game.fog().visible(node->cell);
     });
 }
+bool Selection::idleWorker(const Simulation& game, EntityId after) {
+    EntityId first{}, next{};
+    for (const auto& unit : game.units()) if (rts::idleWorker(game, unit)) {
+        if (!first || unit.id < first) first = unit.id;
+        if (unit.id > after && (!next || unit.id < next)) next = unit.id;
+    }
+    if (!next) next = first;
+    if (!next) return false;
+    ids = {next};
+    return true;
+}
 }

@@ -4,6 +4,11 @@
 
 namespace rts::tests {
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Every command has a replaceable icon resolved from the asset catalog", [&] {
+        const auto icons = rts::loadCommandIcons(context.worldPaths);
+        for (const auto& command : rts::unitCommands) require(icons.contains(command.icon) && std::filesystem::is_regular_file(icons.at(command.icon)), "Missing command image");
+        require(icons.contains("idle-worker"), "Missing worker selector image");
+    });
     const auto& assets=context.assets;
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Library publishes selected catalog entries grouped by faction", [&] {

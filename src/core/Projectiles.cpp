@@ -5,14 +5,22 @@
 namespace rts {
 void Simulation::releaseAttack(Unit& u, const Unit& target, std::vector<Hit>& hits) {
     if (!u.definition.projectile) { hits.push_back({target.id, u.attackDamage(), u.owner}); return; }
+    const bool homing = u.definition.projectile->targeting == ProjectileTargeting::Unit;
+    const Cell cell{int(std::floor(target.position.x)), int(std::floor(target.position.y))};
+    releaseProjectile(u, target.position, homing ? unitHeight(target) : map().surfaceHeight(cell, target.position), homing ? target.id : 0);
+}
+void Simulation::releaseGroundAttack(Unit& u) {
+    const auto aim = center(u.currentOrder.cell);
+    releaseProjectile(u, aim, map().surfaceHeight(u.currentOrder.cell, aim), 0);
+}
+void Simulation::releaseProjectile(Unit& u, Vec2 aim, float aimHeight, EntityId target) {
     Projectile p;
     p.definition = *u.definition.projectile;
     p.targets = u.definition.attackTargets; p.owner = u.owner; p.sourceAir = airborne(u.definition.movement);
-    p.target = p.definition.targeting == ProjectileTargeting::Unit ? target.id : 0;
-    p.damage = u.attackDamage(); p.start = p.position = p.previousPosition = u.position; p.aim = target.position;
+    p.target = target;
+    p.damage = u.attackDamage(); p.start = p.position = p.previousPosition = u.position; p.aim = aim;
     p.startHeight = p.height = p.previousHeight = unitHeight(u) + p.definition.launchHeight;
-    const Cell aimCell{int(std::floor(p.aim.x)), int(std::floor(p.aim.y))};
-    p.aimHeight = (p.target ? unitHeight(target) : map().surfaceHeight(aimCell, p.aim)) + p.definition.impactHeight;
+    p.aimHeight = aimHeight + p.definition.impactHeight;
     const Vec2 distance = p.aim - p.start;
     p.flightTicks = std::max(1, static_cast<int>(std::ceil(std::hypot(distance.x, distance.y) / p.definition.speed * ticksPerSecond)));
     projectiles_.push_back(std::move(p));

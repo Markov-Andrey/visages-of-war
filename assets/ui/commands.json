@@ -1,0 +1,16 @@
+{
+  "icons": {
+    "move": "ui/commands/move.png",
+    "stop": "ui/commands/stop.png",
+    "attack": "ui/commands/attack.png",
+    "hold": "ui/commands/hold.png",
+    "patrol": "ui/commands/patrol.png",
+    "gather": "ui/commands/gather.png",
+    "attack-ground": "ui/commands/attack-ground.png",
+    "build": "ui/commands/build.png",
+    "back": "ui/commands/back.png",
+    "idle-worker": "ui/commands/idle-worker.png",
+    "rally": "ui/commands/rally.png",
+    "cancel": "ui/commands/cancel.png"
+  }
+}

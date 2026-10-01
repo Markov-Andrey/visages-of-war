@@ -28,32 +28,37 @@ void Simulation::tickCombat() {
             }
         }
         if (u.attackDamage() <= 0) continue;
-        if (!u.targetUnit && u.state == UnitState::Idle && !u.pendingOrder) {
+        const bool ground = u.currentOrder.kind == OrderKind::AttackGround;
+        if (!u.targetUnit && !ground && u.state == UnitState::Attacking && !u.pendingOrder) resumeOrder(u);
+        const bool scanning = u.state == UnitState::Idle || u.currentOrder.kind == OrderKind::AttackMove ||
+            u.currentOrder.kind == OrderKind::Patrol;
+        if (!u.targetUnit && !ground && scanning && u.progress == 0 && !u.pendingOrder) {
             const Unit* best = nullptr;
             int bestDistance = std::numeric_limits<int>::max();
             const int vision = clock_.phase() == DayPhase::Day ? u.definition.dayVision : u.definition.nightVision;
             for (const auto& candidate : units_) {
                 if (!canAttack(u, candidate)) continue;
+                if (u.currentOrder.kind == OrderKind::Hold && !attackReach(u, candidate)) continue;
                 const Cell d = candidate.cell - u.cell;
                 const int distance = d.x * d.x + d.y * d.y;
                 if (distance < bestDistance && visionReaches(map(), {u.cell, vision, airborne(u.definition.movement)}, candidate.cell)) {
                     best = &candidate; bestDistance = distance;
                 }
             }
-            if (best) applyOrder(u, {OrderKind::Attack, {}, best->id});
+            if (best) { u.targetUnit = best->id; chase(u, *best); }
         }
-        if (!u.targetUnit) continue;
+        if (!u.targetUnit && !ground) continue;
         const auto* target = unit(u.targetUnit);
-        if (!target || !canAttack(u, *target) || !targetVisible(u, *target)) {
-            u.targetUnit = 0;
-            if (!u.pendingOrder) issue(u, {OrderKind::Stop});
-            else cancelAttack(u);
+        if (!ground && (!target || !canAttack(u, *target) || !targetVisible(u, *target) ||
+            (u.currentOrder.kind == OrderKind::Hold && !attackReach(u, *target)))) {
+            resumeOrder(u);
             continue;
         }
-        const bool inReach = u.progress == 0 && attackReach(u, *target);
+        const bool inReach = u.progress == 0 && (ground ? groundAttackReach(u, u.currentOrder.cell) : attackReach(u, *target));
+        const auto release = [&] { if (ground) releaseGroundAttack(u); else releaseAttack(u, *target, hits); };
         if (u.attackPhase == AttackPhase::Windup) {
             if (--u.attackTicks <= 0) {
-                if (inReach) releaseAttack(u, *target, hits);
+                if (inReach) release();
                 combat::recover(u);
             }
             continue;
@@ -61,13 +66,15 @@ void Simulation::tickCombat() {
         if (u.attackPhase == AttackPhase::Recovery) continue;
         if (inReach) {
             u.route.clear(); u.next = 0; u.state = UnitState::Attacking;
-            const auto delta = target->position - u.position;
+            const auto delta = (ground ? center(u.currentOrder.cell) : target->position) - u.position;
             u.facing = {delta.x > .2f ? 1 : delta.x < -.2f ? -1 : 0, delta.y > .2f ? 1 : delta.y < -.2f ? -1 : 0};
             if (u.attackPhase == AttackPhase::Ready) {
                 u.attackPhase = AttackPhase::Windup; u.attackTicks = u.definition.attackWindupTicks;
-                if (u.attackTicks == 0) { releaseAttack(u, *target, hits); combat::recover(u); }
+                if (u.attackTicks == 0) { release(); combat::recover(u); }
             }
-        } else if (u.progress == 0 && u.chaseTicks == 0) chase(u, *target);
+        } else if (u.progress == 0 && u.chaseTicks == 0 && !u.pendingOrder) {
+            if (ground) chaseGround(u); else chase(u, *target);
+        }
     }
     resolveHits(hits);
 }

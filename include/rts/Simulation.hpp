@@ -11,7 +11,7 @@
 namespace rts {
 enum class EntityKind { Unit, Building };
 enum class UnitState { Idle, Moving, ToCrystal, Harvesting, ToHall, ToBuild, Building, WaitingForCrystal, ToAttack, Attacking };
-enum class OrderKind { Move, Interact, Stop, Build, Gather, Attack };
+enum class OrderKind { Move, Interact, Stop, Build, Gather, Attack, AttackMove, Hold, Patrol, AttackGround };
 struct Order { OrderKind kind; Cell cell{}; EntityId target{}; uint64_t moveGroup{}; };
 struct HeroProgression {
     int level = 1; int experience{};
@@ -41,6 +41,8 @@ struct Unit {
     EntityId targetBuilding{};
     bool repeatGather{};
     std::optional<Order> pendingOrder;
+    Order currentOrder{OrderKind::Stop};
+    Cell patrolOrigin{};
     EntityId targetUnit{};
     AttackPhase attackPhase = AttackPhase::Ready;
     int attackTicks{}, chaseTicks{};
@@ -127,6 +129,7 @@ public:
     float workerHeight() const { return unitHeight(worker()); }
     bool command(Cell c);
     bool command(std::span<const EntityId> ids, Cell c);
+    bool order(std::span<const EntityId> ids, OrderKind kind, Cell target = {});
     bool attack(std::span<const EntityId> ids, EntityId target);
     bool canAttack(const Unit& attacker, const Unit& target) const;
     void stop();
@@ -158,8 +161,13 @@ private:
     bool targetVisible(const Unit& observer, const Unit& target) const;
     bool attackReach(const Unit& attacker, const Unit& target, std::optional<Cell> from = {}) const;
     void cancelAttack(Unit& unit);
+    void resumeOrder(Unit& unit);
+    bool groundAttackReach(const Unit& unit, Cell target, std::optional<Cell> from = {}) const;
+    void chaseGround(Unit& unit);
     struct Hit { EntityId target; int damage; PlayerId owner; };
     void releaseAttack(Unit& attacker, const Unit& target, std::vector<Hit>& hits);
+    void releaseGroundAttack(Unit& attacker);
+    void releaseProjectile(Unit& attacker, Vec2 aim, float aimHeight, EntityId target);
     void tickProjectiles(std::vector<Hit>& hits);
     void resolveHits(const std::vector<Hit>& hits);
     void rewardKill(const Unit& victim, PlayerId killer);

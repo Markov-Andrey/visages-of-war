@@ -83,6 +83,7 @@ private:
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;
     std::map<std::string,RallySpriteDefinition> rallySprites_;
+    std::map<std::string,ComPtr<ID2D1Bitmap>> commandIcons_;
     TerrainPaint terrainPaint_;
     std::map<TerrainPaint::Key,PaintResource> paintResources_;
     HWND window_{};

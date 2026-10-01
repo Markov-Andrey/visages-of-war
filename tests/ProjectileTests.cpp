@@ -21,6 +21,39 @@ Simulation stationary(EntityDefinition gun) {
 }
 }
 void projectileTests(TestSuite& test, const TestContext& context) {
+    test("Manual siege fire approaches and repeatedly attacks a fixed empty point until stopped", [] {
+        auto gun = weapon(ProjectileTargeting::Point); gun.attackCooldownTicks = 8;
+        gun.dayVision = gun.nightVision = 2;
+        rts::Simulation game(range(), {}, gun, {gun});
+        const rts::Cell target{20, 14}; const auto id = game.worker().id;
+        require(!game.fog().explored(target) && game.order(std::array{id}, rts::OrderKind::AttackGround, target), "Point fire required a visible unit target");
+        int shots = 0;
+        for (int tick = 0; tick < 280; ++tick) {
+            game.tick();
+            for (const auto& shot : game.projectiles()) {
+                require(shot.target == 0 && shot.aim == rts::center(target), "Manual point fire followed a unit or changed its aim");
+                if (shot.elapsedTicks == 0) ++shots;
+            }
+        }
+        require(shots > 2 && game.worker().cell != rts::Cell{4, 6}, "Siege did not approach or repeat its order");
+        game.stop(std::array{id}); ticks(game, 180);
+        require(game.projectiles().empty() && rts::unitOrder(game.worker()) == rts::OrderKind::Stop, "Stopped point fire kept releasing shots");
+        auto archer = weapon(); rts::Simulation bow(range(), {}, archer, {archer});
+        require(!bow.order(std::array{bow.worker().id}, rts::OrderKind::AttackGround, {10, 6}), "Non-siege unit accepted point fire");
+    });
+    test("Manual point fire uses splash masks and preserves friendly fire settings", [] {
+        for (const bool friendly : {false, true}) {
+            auto gun = weapon(ProjectileTargeting::Point); gun.projectile->friendlyFire = friendly;
+            auto air = dummy(); air.id = "air"; air.movement = MovementType::Flying;
+            auto scene = range(); scene.units = {{"dummy", 1, {10, 6}}, {"dummy", 0, {10, 7}}, {"air", 1, {10, 6}}};
+            Simulation game(scene, {}, gun, {gun, dummy(), air});
+            const auto enemy = game.units()[1].id, ally = game.units()[2].id, flyer = game.units()[3].id;
+            require(game.order(std::array{game.worker().id}, OrderKind::AttackGround, {10, 6}), "Manual siege order rejected");
+            ticks(game, 34);
+            require(game.unit(enemy)->health == 80 && game.unit(ally)->health == (friendly ? 80 : 100) && game.unit(flyer)->health == 100,
+                "Manual siege splash bypassed weapon target or friendly-fire rules");
+        }
+    });
     test("Ranged windup releases once; damage waits for impact, arc supports straight fire", [] {
         for (float arc : {0.0f,3.0f}) {
             auto gun = weapon(); gun.projectile->arcHeight = arc;

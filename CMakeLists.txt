@@ -43,6 +43,8 @@ add_library(rts_core
     src/core/HeroProgression.cpp
     src/core/Projectiles.cpp
     src/core/UnitOrders.cpp
+    src/core/TacticalOrders.cpp
+    src/core/CommandUi.cpp
     src/core/Selection.cpp
     src/platform/Paths.cpp
 )
@@ -99,10 +101,12 @@ add_visages_app(RTS "Visages of War" "Visages.Game"
     src/platform/Main.cpp
     src/game/GameApplication.cpp
     src/game/GameCommands.cpp
+    src/game/GameUnitCommands.cpp
     src/game/GameLibrary.cpp
     src/game/GameInput.cpp
     src/game/GameSmoke.cpp
     src/game/RangedSmoke.cpp
+    src/game/UnitCommandSmoke.cpp
 )
 add_visages_app(VisagesForge "Visages Forge" "Visages.Forge"
     src/platform/ForgeMain.cpp

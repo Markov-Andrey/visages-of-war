@@ -3,6 +3,25 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Idle worker cycling uses live free workers and skips holds, pending orders and other owners", [] {
+        auto scene = flatScenario(); scene.extraWorkers = {{5, 3}, {6, 3}};
+        rts::EntityDefinition worker;
+        auto soldier = worker; soldier.id = "soldier"; soldier.canBuild = false; soldier.carryCapacity = 0;
+        scene.units = {{worker.id, 1, {8, 8}}, {soldier.id, 0, {5, 5}}};
+        rts::Simulation game(std::move(scene), {}, worker, {worker, soldier});
+        const auto a = game.units()[0].id, b = game.units()[1].id, c = game.units()[2].id;
+        rts::Selection selection;
+        require(selection.idleWorker(game) && selection.ids == std::vector{a}, "First idle worker wrong");
+        require(selection.idleWorker(game, a) && selection.ids == std::vector{b}, "Second idle worker wrong");
+        game.order(std::array{b}, rts::OrderKind::Hold);
+        require(selection.idleWorker(game, a) && selection.ids == std::vector{c}, "Held worker entered idle pool");
+        require(selection.idleWorker(game, c) && selection.ids == std::vector{a}, "Idle cycle did not wrap");
+        game.order(std::array{a, c}, rts::OrderKind::Move, {8, 5}); game.tick();
+        game.stop(std::array{a, c});
+        require(!selection.idleWorker(game, a), "Moving workers with pending stop entered idle pool");
+        ticks(game, 30);
+        require(selection.idleWorker(game, b) && selection.ids == std::vector{c}, "Stopped worker did not return to the pool");
+    });
     test("Rally points and links remain private even when a foreign building is selected", [&] {
         const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario scenario{rts::Map(28, 28), {1, 1}, {4, 3}, {}};

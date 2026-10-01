@@ -2,6 +2,66 @@
 
 namespace rts::tests {
 void combatTests(TestSuite& test, const TestContext& context) {
+    test("Attack move fights en route and resumes its destination while move ignores enemies", [] {
+        for (const auto kind : {rts::OrderKind::Move, rts::OrderKind::AttackMove}) {
+            rts::Scenario site{rts::Map(32, 18), {1, 1}, {4, 8}, {}};
+            rts::EntityDefinition fighter; fighter.canBuild = false; fighter.carryCapacity = 0; fighter.attackDamage = 30;
+            fighter.movementPerSecond = 4; fighter.dayVision = fighter.nightVision = 5;
+            auto enemy = fighter; enemy.id = "enemy"; enemy.attackDamage = 0; enemy.maximumHealth = 30;
+            site.units = {{enemy.id, 1, {10, 8}}};
+            rts::Simulation game(std::move(site), {}, fighter, {fighter, enemy});
+            const auto target = game.units().back().id;
+            require(game.order(std::array{game.worker().id}, kind, {23, 8}), "Travel order rejected");
+            ticks(game, 600);
+            require(game.worker().cell == rts::Cell{23, 8} && rts::unitOrder(game.worker()) == rts::OrderKind::Stop, "Travel destination was lost after combat");
+            require((game.unit(target) != nullptr) == (kind == rts::OrderKind::Move), "Move and attack move used the same acquisition behavior");
+        }
+    });
+    test("Hold position attacks only within range and never chases", [] {
+        for (const rts::Cell target : {rts::Cell{5, 8}, rts::Cell{9, 8}}) {
+            rts::Scenario site{rts::Map(24, 18), {1, 1}, {4, 8}, {}};
+            rts::EntityDefinition fighter; fighter.attackDamage = 30; fighter.canBuild = false; fighter.carryCapacity = 0;
+            auto enemy = fighter; enemy.id = "enemy"; enemy.attackDamage = 0; enemy.maximumHealth = 30;
+            site.units = {{enemy.id, 1, target}};
+            rts::Simulation game(std::move(site), {}, fighter, {fighter, enemy});
+            const auto victim = game.units().back().id;
+            require(game.order(std::array{game.worker().id}, rts::OrderKind::Hold), "Hold rejected");
+            ticks(game, 180);
+            require(game.worker().cell == rts::Cell{4, 8} && game.worker().position == rts::center({4, 8}) &&
+                rts::unitOrder(game.worker()) == rts::OrderKind::Hold, "Hold chased a target or lost its stance");
+            require((game.unit(victim) != nullptr) == (target.x == 9), "Hold did not respect attack reach");
+        }
+    });
+    test("Patrol returns to both endpoints after combat and stop cancels the route", [] {
+        rts::Scenario site{rts::Map(32, 18), {1, 1}, {4, 8}, {}};
+        rts::EntityDefinition fighter; fighter.attackDamage = 30; fighter.movementPerSecond = 4;
+        fighter.dayVision = fighter.nightVision = 4; fighter.canBuild = false; fighter.carryCapacity = 0;
+        auto enemy = fighter; enemy.id = "enemy"; enemy.attackDamage = 0; enemy.maximumHealth = 30;
+        site.units = {{enemy.id, 1, {10, 8}}};
+        rts::Simulation game(std::move(site), {}, fighter, {fighter, enemy});
+        const auto id = game.worker().id, victim = game.units().back().id;
+        require(game.order(std::array{id}, rts::OrderKind::Patrol, {20, 8}), "Patrol rejected");
+        int turns = 0; bool outward = true;
+        for (int tick = 0; tick < 900; ++tick) {
+            game.tick();
+            if (game.worker().cell == (outward ? rts::Cell{20, 8} : rts::Cell{4, 8})) { ++turns; outward = !outward; }
+        }
+        require(!game.unit(victim) && turns >= 4 && rts::unitOrder(game.worker()) == rts::OrderKind::Patrol, "Combat ended patrol or patrol did not return");
+        game.stop(std::array{id}); ticks(game, 15);
+        const auto stopped = game.worker().position;
+        ticks(game, 150);
+        require(game.worker().position == stopped && rts::unitOrder(game.worker()) == rts::OrderKind::Stop, "Patrol resumed after stop");
+        require(!game.order(std::array{id}, rts::OrderKind::Patrol, game.worker().cell), "Zero-length patrol was accepted");
+    });
+    test("Hold issued during movement finishes the reserved step without teleporting", [] {
+        rts::Simulation game(flatScenario()); const auto id = game.worker().id;
+        require(game.order(std::array{id}, rts::OrderKind::Move, {8, 3}), "Move rejected");
+        game.tick(); const auto position = game.worker().position;
+        require(game.order(std::array{id}, rts::OrderKind::Hold), "Moving hold rejected");
+        require(game.worker().position == position && game.worker().pendingOrder.has_value(), "Hold teleported a moving unit");
+        ticks(game, 30);
+        require(game.worker().cell == rts::Cell{5, 3} && rts::unitOrder(game.worker()) == rts::OrderKind::Hold, "Hold lost the reserved step");
+    });
     const auto& assets=context.assets;
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Melee windup, simultaneous deaths, supply, events, corpses and empty army", [] {

@@ -29,6 +29,12 @@ private:
     const rts::Crystal* selectedCrystal() const;
     void focus(rts::Vec2 world);
     void action(size_t index);
+    void unitAction(size_t index);
+    bool unitHotkey(unsigned key);
+    bool executeTarget(rts::Cell target);
+    void clearCommandMode();
+    void selectIdleWorker();
+    void exerciseUnitCommands();
     std::optional<rts::Cell> pickCommandTarget() const;
     void rightClick(std::optional<rts::Cell> target);
     rts::CursorKind cursorKind() const;
