@@ -146,6 +146,7 @@ void projectileTests(TestSuite& test, const TestContext& context);
 void dataTests(TestSuite& test, const TestContext& context);
 void visionTests(TestSuite& test, const TestContext& context);
 void selectionTests(TestSuite& test, const TestContext& context);
+void cameraTests(TestSuite& test);
 void formationTests(TestSuite& test, const TestContext& context);
 void movementTests(TestSuite& test, const TestContext& context);
 void editorTests(TestSuite& test, const TestContext& context);

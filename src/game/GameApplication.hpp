@@ -1,6 +1,7 @@
 #pragma once
 #include "rts/Renderer.hpp"
 #include "rts/GameCursor.hpp"
+#include "CameraController.hpp"
 #include <exception>
 #include <memory>
 
@@ -27,7 +28,7 @@ private:
     void advanceMenu(float elapsed);
     const rts::Building* selectedBuilding() const;
     const rts::Crystal* selectedCrystal() const;
-    void focus(rts::Vec2 world);
+    void focus(rts::Vec2 world, bool immediate = false);
     void action(size_t index);
     void unitAction(size_t index);
     bool unitHotkey(unsigned key);
@@ -43,7 +44,7 @@ private:
     void exerciseRangedCombat();
     static LRESULT CALLBACK windowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) noexcept;
     bool mouseInWorld() const;
-    void resetCamera();
+    void resetCamera(bool immediate = true);
     rts::Vec2 mousePosition(LPARAM lParam) const;
     void moveCamera(float dt);
     LRESULT onMessage(UINT message, WPARAM wParam, LPARAM lParam);
@@ -58,6 +59,7 @@ private:
     rts::GameCursor cursor_;
     HWND window_{};
     rts::WorldView view_;
+    CameraController camera_;
     rts::Vec2 mouse_{-1, -1};
     rts::GameplayUi ui_;
     rts::Vec2 dragStart_{}, panStart_{};

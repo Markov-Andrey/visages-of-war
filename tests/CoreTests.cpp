@@ -11,6 +11,7 @@ int wmain(int argc, wchar_t** argv) {
     rts::tests::dataTests(suite, context);
     rts::tests::visionTests(suite, context);
     rts::tests::selectionTests(suite, context);
+    rts::tests::cameraTests(suite);
     rts::tests::formationTests(suite, context);
     rts::tests::movementTests(suite, context);
     rts::tests::editorTests(suite, context);

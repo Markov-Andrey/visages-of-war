@@ -21,10 +21,12 @@ void GameApplication::exerciseUnitCommands() {
     if (ui_.selection.ids != std::vector{first}) throw std::runtime_error("Commands: F8 did not select first free worker");
     const rts::BattleLayout layout(renderer_.size());
     click({layout.idleWorker.x + 10, layout.idleWorker.y + 10});
+    for (int frame = 0; frame < 90; ++frame) camera_.update(view_,
+        {layout.world.width * .5f, layout.world.y + layout.world.height * .5f}, {}, 1.0f / 60);
     const auto middle = view_.unproject({layout.world.width * .5f, layout.world.y + layout.world.height * .5f});
     if (ui_.selection.ids != std::vector{second} || std::hypot(middle.x - game_.unit(second)->position.x, middle.y - game_.unit(second)->position.y) > .01f)
         throw std::runtime_error("Commands: idle worker button did not cycle and focus");
-    ui_.selection.ids = {soldier}; focus({13, 11});
+    ui_.selection.ids = {soldier}; focus({13, 11}, true);
     onMessage(WM_KEYDOWN, 'M', 0); click(view_.project(rts::center({17, 10}), 0));
     if (ui_.orderMode || rts::unitOrder(*game_.unit(soldier)) != rts::OrderKind::Move) throw std::runtime_error("Commands: M target failed");
     onMessage(WM_KEYDOWN, 'S', 0);

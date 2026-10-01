@@ -181,7 +181,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     } else {
         text(L"Нет выделения", rect(info.x, info.y, info.width, 34), 0xe0eade, true);
         text(L"Выберите здание или выделите юнитов рамкой.", rect(info.x, info.y + 47, info.width, 45), 0x9eb6b7);
-        text(L"Стрелки / средняя кнопка — камера\nF3 — сетка   •   Пробел — пауза", rect(info.x, info.y + 104, info.width, 55), 0x6e9395);
+        text(L"Края экрана / стрелки / средняя кнопка — камера\nF3 — сетка   •   Пробел — пауза", rect(info.x, info.y + 104, info.width, 55), 0x6e9395);
     }
     for (size_t i = 0; i < layout.commandCount; ++i) {
         const auto b = layout.commands[i];

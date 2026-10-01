@@ -272,7 +272,7 @@ void GameApplication::exerciseInterface() {
     click({bounds.x + bounds.width * .5f, bounds.y + bounds.height * .45f});
     if (!selectedBuilding()) throw std::runtime_error("Smoke: building selection failed");
     const rts::Cell rally{15, 22};
-    focus(rts::center(rally));
+    focus(rts::center(rally), true);
     onMessage(WM_RBUTTONDOWN, 0, at(view_.project(rts::center(rally), 0)));
     if (game_.buildings().front().rally != rally) throw std::runtime_error("Smoke: rally command failed");
     resetCamera();
@@ -299,7 +299,7 @@ void GameApplication::exerciseInterface() {
         throw std::runtime_error("Smoke: barracks selection failed");
     onMessage(WM_KEYDOWN, 'Q', 0);
     const rts::Cell armyRally{21, 26};
-    focus(rts::center(armyRally));
+    focus(rts::center(armyRally), true);
     onMessage(WM_RBUTTONDOWN, 0, at(view_.project(rts::center(armyRally), 0)));
     for (int tick = 0; tick < 750; ++tick) game_.tick();
     if (game_.units().size() != initialUnitCount + 2 || game_.units().back().cell != armyRally)
@@ -312,11 +312,30 @@ void GameApplication::exerciseInterface() {
     const auto picked = layout.minimapCell(mouse_, game_.map());
     if (!picked || !selectedBuilding() || selectedBuilding()->rally != *picked)
         throw std::runtime_error("Smoke: minimap rally projection failed");
+    const auto beforeMinimap = view_.origin;
     click(mini.project(rts::center({14, 15})));
+    if (view_.origin != beforeMinimap) throw std::runtime_error("Smoke: minimap camera jumped immediately");
     const auto focused = layout.minimapCell(mouse_, game_.map());
+    const rts::Vec2 screenCenter{layout.world.width * .5f, layout.world.y + layout.world.height * .5f};
+    for (int frame = 0; frame < 90; ++frame) camera_.update(view_, screenCenter, {}, 1.0f / 60);
     const auto cameraCenter = view_.unproject({layout.world.width * .5f, layout.world.y + layout.world.height * .5f});
     if (!focused || std::hypot(cameraCenter.x - focused->x - .5f, cameraCenter.y - focused->y - .5f) > .01f)
         throw std::runtime_error("Smoke: minimap camera projection failed");
+    const auto zoomAnchor = view_.unproject(screenCenter);
+    const float beforeZoom = view_.zoom, dpiScale = GetDpiForWindow(window_) / 96.0f;
+    POINT wheelPoint{LONG(std::lround(screenCenter.x * dpiScale)), LONG(std::lround(screenCenter.y * dpiScale))};
+    if (!ClientToScreen(window_, &wheelPoint)) throw std::runtime_error("Smoke: wheel coordinates failed");
+    onMessage(WM_MOUSEWHEEL, MAKEWPARAM(0, WHEEL_DELTA), MAKELPARAM(wheelPoint.x, wheelPoint.y));
+    if (view_.zoom != beforeZoom) throw std::runtime_error("Smoke: mouse wheel zoom jumped immediately");
+    for (int frame = 0; frame < 20; ++frame) camera_.update(view_, screenCenter, {}, 1.0f / 60);
+    const auto projectedAnchor = view_.project(zoomAnchor);
+    if (view_.zoom <= beforeZoom || std::hypot(projectedAnchor.x - screenCenter.x, projectedAnchor.y - screenCenter.y) > .05f)
+        throw std::runtime_error("Smoke: smooth wheel zoom lost its cursor anchor");
+    onMessage(WM_ACTIVATEAPP, FALSE, 0);
+    const auto inactiveView = view_;
+    for (int frame = 0; frame < 60; ++frame) camera_.update(view_, screenCenter, {}, 1.0f / 60);
+    if (view_.origin != inactiveView.origin || view_.zoom != inactiveView.zoom)
+        throw std::runtime_error("Smoke: camera retained motion after focus loss");
     auto arena = rts::loadScenario(paths_.asset(L"maps/demo.rtsmap"));
     arena.units = {{"human.soldier", 0, {15, 18}}, {"human.soldier", 1, {17, 19}}};
     game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("human.worker"), definitions_.entities());

@@ -61,8 +61,9 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
         const float elapsed = std::min(0.25f, std::chrono::duration<float>(now - previous).count());
         previous = now;
         if (!IsIconic(window_)) {
-            refreshCursor();
             if (menu_.page == rts::MenuPage::Playing) moveCamera(elapsed);
+            else camera_.stop(view_);
+            refreshCursor();
             if (!paused_ && menu_.page == rts::MenuPage::Playing) {
                 accumulator += elapsed;
                 while (accumulator >= 1.0 / rts::Simulation::ticksPerSecond) {
@@ -82,7 +83,7 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
                 advanceMenu(elapsed);
                 renderer_.drawMenu(game_, menu_, definitions_, mouse_);
             }
-        } else accumulator = 0;
+        } else { accumulator = 0; camera_.stop(view_); }
         if (smoke && now - began > std::chrono::seconds(2)) DestroyWindow(window_);
         MsgWaitForMultipleObjectsEx(0, nullptr, 8, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
     }

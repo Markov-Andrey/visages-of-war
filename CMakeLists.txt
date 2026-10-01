@@ -100,6 +100,8 @@ endfunction()
 add_visages_app(RTS "Visages of War" "Visages.Game"
     src/platform/Main.cpp
     src/game/GameApplication.cpp
+    src/game/GameCamera.cpp
+    src/game/CameraController.cpp
     src/game/GameCommands.cpp
     src/game/GameUnitCommands.cpp
     src/game/GameLibrary.cpp
@@ -142,11 +144,14 @@ if(BUILD_TESTING)
         tests/DataTests.cpp
         tests/VisionTests.cpp
         tests/SelectionTests.cpp
+        tests/CameraTests.cpp
+        src/game/CameraController.cpp
         tests/FormationTests.cpp
         tests/MovementTests.cpp
         tests/EditorTests.cpp
     )
     target_link_libraries(rts_tests PRIVATE rts_editor_core nlohmann_json::nlohmann_json)
+    target_include_directories(rts_tests PRIVATE src)
     add_test(NAME rts_core COMMAND rts_tests "${CMAKE_CURRENT_SOURCE_DIR}/assets")
     # Deliberately use a working directory unrelated to the executable/assets.
     add_test(NAME rts_assets_from_other_cwd COMMAND RTS --verify-assets)

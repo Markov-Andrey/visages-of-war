@@ -6,12 +6,6 @@
 #include <stdexcept>
 
 namespace rts::game {
-void GameApplication::focus(rts::Vec2 world) {
-    const auto area = rts::BattleLayout(renderer_.size()).world;
-    const rts::Vec2 middle{area.width * .5f, area.y + area.height * .5f};
-    view_.origin = view_.origin + middle - view_.project(world, 0);
-}
-
 rts::CursorKind GameApplication::cursorKind() const {
     using rts::CursorKind;
     if (menu_.page == rts::MenuPage::Library) return libraryLinkAt(mouse_) ? CursorKind::Hand : CursorKind::Default;
@@ -112,24 +106,9 @@ bool GameApplication::mouseInWorld() const {
     return layout.world.contains(mouse_) && !layout.army.contains(mouse_) && !layout.hero.contains(mouse_) && !layout.idleWorker.contains(mouse_);
 }
 
-void GameApplication::resetCamera() {
-    view_.zoom = .85f;
-    focus(rts::center(game_.hall()) + rts::Vec2{1, 2});
-}
-
 rts::Vec2 GameApplication::mousePosition(LPARAM lParam) const {
     const float scale = 96.0f / GetDpiForWindow(window_);
     return {GET_X_LPARAM(lParam) * scale, GET_Y_LPARAM(lParam) * scale};
-}
-
-void GameApplication::moveCamera(float dt) {
-    if (GetForegroundWindow() != window_ || (GetAsyncKeyState(VK_CONTROL) & 0x8000)) return;
-    const auto down = [](int key) { return (GetAsyncKeyState(key) & 0x8000) != 0; };
-    const float speed = 580.0f * dt;
-    if (down(VK_LEFT)) view_.origin.x += speed;
-    if (down(VK_RIGHT)) view_.origin.x -= speed;
-    if (down(VK_UP)) view_.origin.y += speed;
-    if (down(VK_DOWN)) view_.origin.y -= speed;
 }
 
 LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
@@ -141,7 +120,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         break;
     case WM_ERASEBKGND: return 1;
     case WM_PAINT: { PAINTSTRUCT paint{}; BeginPaint(window_, &paint); EndPaint(window_, &paint); return 0; }
-    case WM_SIZE: renderer_.resize(LOWORD(lParam), HIWORD(lParam)); return 0;
+    case WM_SIZE: camera_.stop(view_); renderer_.resize(LOWORD(lParam), HIWORD(lParam)); return 0;
     case WM_DPICHANGED: {
         const auto* area = reinterpret_cast<RECT*>(lParam);
         fitToMonitor(MonitorFromRect(area, MONITOR_DEFAULTTONEAREST));
@@ -152,6 +131,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         return 0;
     case WM_ACTIVATEAPP: {
         if (wParam && !IsIconic(window_)) fitToMonitor(MonitorFromWindow(window_, MONITOR_DEFAULTTONEAREST));
+        if (!wParam) camera_.stop(view_);
         if (!wParam && GetCapture() == window_) ReleaseCapture();
         return 0;
     }
@@ -168,7 +148,9 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     case WM_CAPTURECHANGED:
         dragging_ = false; panning_ = false; minimapDragging_ = false; ui_.drag.reset(); return 0;
     case WM_MBUTTONDOWN:
-        if (menu_.page == rts::MenuPage::Playing) { panning_ = true; panStart_ = mousePosition(lParam); SetCapture(window_); }
+        if (menu_.page == rts::MenuPage::Playing) {
+            camera_.stop(view_); panning_ = true; panStart_ = mousePosition(lParam); SetCapture(window_);
+        }
         return 0;
     case WM_MBUTTONUP: panning_ = false; ReleaseCapture(); return 0;
     case WM_LBUTTONDOWN: {
@@ -203,6 +185,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
                 if (game_.setRally(b->id, *c)) ui_.rallyMode = false;
             return 0;
         }
+        camera_.stop(view_);
         dragging_ = true; adding_ = (wParam & MK_SHIFT) != 0; dragStart_ = mouse_; SetCapture(window_);
         return 0;
     }
@@ -246,9 +229,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         const float dpi = 96.0f / GetDpiForWindow(window_);
         mouse_ = {p.x * dpi, p.y * dpi};
         if (!mouseInWorld()) return 0;
-        const float oldZoom = view_.zoom;
-        view_.zoom = std::clamp(oldZoom * std::pow(1.15f, GET_WHEEL_DELTA_WPARAM(wParam) / 120.0f), 0.35f, 2.0f);
-        view_.origin = mouse_ - (mouse_ - view_.origin) * (view_.zoom / oldZoom);
+        camera_.zoom(view_, mouse_, GET_WHEEL_DELTA_WPARAM(wParam) / 120.0f);
         return 0;
     }
     case WM_SYSKEYDOWN:
@@ -271,7 +252,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         if (menu_.page != rts::MenuPage::Playing) return 0;
         if (wParam == VK_SPACE) paused_ = !paused_;
         if (wParam == VK_F3) grid_ = !grid_;
-        if (wParam == VK_HOME) resetCamera();
+        if (wParam == VK_HOME) resetCamera(false);
         if (wParam == VK_F1) selectArmy();
         if (wParam == VK_F2) selectHero();
         if (wParam == VK_F8) selectIdleWorker();
