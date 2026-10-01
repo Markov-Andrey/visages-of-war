@@ -9,7 +9,7 @@ void Renderer::drawNightLighting(const Simulation& game, const WorldView& view, 
     if (art != rallySprites_.end() && art->second.light && art->second.light->intensity > 0) {
         const auto& light = *art->second.light;
         for (const auto& building : game.buildings()) {
-            if (!rallyPointVisible(game, building, ui) || !game.fog().visible(building.rally)) continue;
+            if (!rallyPointLightVisible(game, building, ui)) continue;
             const auto ground = view.project(center(building.rally), game.map().surfaceHeight(building.rally, center(building.rally)));
             rallyLights.push_back({ground + light.offset * (art->second.scale * view.zoom),
                 light.radius * WorldView::tileSize * view.zoom, light.intensity, light.color});

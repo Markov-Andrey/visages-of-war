@@ -137,6 +137,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition ship; ship.id = "test.ship"; ship.movement = M::Swimming; ship.canBuild = false; ship.trainingTicks = 1;
         auto dock = testDepot("dock", ship.id);
         rts::Simulation game(std::move(s), {}, {}, {dock, rts::EntityDefinition{}, ship});
+        require(game.buildings()[0].rally == rts::Cell{4, 2}, "Default ship rally ignored water or perimeter order");
         require(game.setRally(game.buildings()[0].id, {4, 6}), "Ship rally rejected");
         require(!game.setRally(game.buildings()[0].id, {5, 6}), "Ship rally accepted land");
         require(game.train(game.buildings()[0].id), "Ship training failed");

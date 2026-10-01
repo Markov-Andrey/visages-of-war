@@ -41,7 +41,10 @@ struct GameplayUi {
 inline bool rallyPointVisible(const Simulation& game, const Building& building, const GameplayUi& ui) {
     return building.owner == game.player().id && building.owner != neutralPlayer && building.health > 0 &&
         building.complete() && ui.selection.contains(building.id) && !building.definition.trainableUnits.empty() &&
-        game.fog().explored(building.rally);
+        game.map().contains(building.rally);
+}
+inline bool rallyPointLightVisible(const Simulation& game, const Building& building, const GameplayUi& ui) {
+    return rallyPointVisible(game, building, ui) && game.fog().visible(building.rally);
 }
 struct BattleLayout {
     UiRect world, minimap, info, menu, army, hero;

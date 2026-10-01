@@ -142,6 +142,8 @@ private:
     Unit* mutableUnit(EntityId id);
     Building* mutableBuilding(EntityId id);
     EntityId spawn(const EntityDefinition& definition, Cell cell, bool reserved, PlayerId owner = 0);
+    std::vector<Cell> productionExits(const EntityDefinition& building, Cell origin, MovementType movement) const;
+    Cell defaultRally(const EntityDefinition& building, Cell origin) const;
     std::vector<Cell> occupied(const Unit& unit, bool claimDestinations = false, bool ignoreGroup = false) const;
     bool dynamicStep(const Unit& unit, Cell to) const;
     bool setRoute(Unit& unit, std::span<const Cell> goals, UnitState state, bool waitForTraffic = true);

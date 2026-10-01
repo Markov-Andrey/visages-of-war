@@ -165,6 +165,118 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.map().walkable({3, 5}) && game.armySupply().used() == 1 && game.storedCrystals() == 500, "Cancellation did not restore footprint and both costs");
         require(!game.cancelConstruction(*tower) && game.storedCrystals() == 500, "Cancellation refunded twice");
     });
+    test("Initial production exits below the left corner for every footprint and rally destination", [] {
+        for (const rts::Cell size : {rts::Cell{3, 2}, rts::Cell{1, 1}, rts::Cell{2, 4}}) for (const bool moveRally : {false, true}) {
+            rts::Scenario s{rts::Map(16, 12), {2, 2}, {10, 8}, {}}; s.startingCrystals = 100;
+            rts::EntityDefinition worker; worker.trainingTicks = 1;
+            auto depot = testDepot("test.depot", worker.id); depot.width = size.x; depot.height = size.y;
+            rts::Simulation game(std::move(s), {}, worker, {depot});
+            const auto hall = game.buildings().front().id;
+            const rts::Cell exit{2, 2 + size.y};
+            require(game.building(hall)->rally == exit, "Initial rally is not below the leftmost footprint cell");
+            const rts::Cell destination = moveRally ? rts::Cell{11, 8} : exit;
+            if (moveRally) require(game.setRally(hall, destination), "Could not move rally");
+            require(game.train(hall), "Could not train at initial depot");
+            game.tick();
+            require(game.units().size() == 2 && game.units().back().cell == exit, "Rally or footprint changed the preferred exit");
+            ticks(game, 300);
+            require(game.units().back().cell == destination && game.units().back().state == rts::UnitState::Idle, "Produced unit missed its rally");
+        }
+    });
+    test("Constructed producers share the initial depot's exit and default rally rule", [] {
+        auto s = flatScenario(); s.startingCrystals = 300;
+        rts::EntityDefinition worker; worker.trainingTicks = 1;
+        auto producer = testDepot("test.producer", worker.id);
+        producer.acceptsCargo = false; producer.width = 2; producer.height = 3;
+        rts::Simulation game(std::move(s), {}, worker, {producer});
+        const std::array<rts::EntityId, 1> builders{game.worker().id};
+        const auto id = game.construct(builders, producer.id, {5, 3});
+        require(id.has_value(), "Could not construct producer");
+        require(game.building(*id)->rally == rts::Cell{5, 6}, "New building rally ignored its footprint");
+        ticks(game, 30);
+        require(game.building(*id)->complete() && game.train(*id), "New producer did not complete or train");
+        game.tick();
+        require(game.units().size() == 2 && game.units().back().cell == rts::Cell{5, 6}, "New producer used a different exit rule");
+    });
+    test("Unavailable lower-left exits retain a valid fallback for rally and production", [] {
+        for (const bool mapEdge : {false, true}) {
+            auto s = flatScenario(); s.startingCrystals = 100;
+            if (mapEdge) s.hall = {1, 8};
+            else s.map.at({1, 3}).blocked = true;
+            rts::EntityDefinition worker; worker.trainingTicks = 1;
+            rts::Simulation game(std::move(s), {}, worker);
+            const auto& hall = game.buildings().front();
+            const rts::Cell expected = mapEdge ? rts::Cell{4, 9} : rts::Cell{2, 3};
+            require(hall.rally == expected && game.map().walkable(hall.rally), "Default rally selected an unavailable exit");
+            require(game.train(hall.id), "Could not train with blocked preferred exit");
+            game.tick();
+            require(game.units().size() == 2 && game.units().back().cell == expected, "Production did not use a valid fallback");
+        }
+    });
+    test("Successive production fills the perimeter counterclockwise and waits until a slot opens", [] {
+        struct Case { rts::Cell size; std::vector<rts::Cell> exits; };
+        const std::array<Case, 3> cases{{
+            {{3, 2}, {{2, 4}, {3, 4}, {4, 4}, {5, 3}, {5, 2}, {4, 1}, {3, 1}, {2, 1}, {1, 2}, {1, 3}}},
+            {{1, 1}, {{2, 3}, {3, 2}, {2, 1}, {1, 2}}},
+            {{2, 3}, {{2, 5}, {3, 5}, {4, 4}, {4, 3}, {4, 2}, {3, 1}, {2, 1}, {1, 2}, {1, 3}, {1, 4}}}
+        }};
+        for (const auto& setup : cases) {
+            rts::Scenario s{rts::Map(16, 12), {2, 2}, {10, 8}, {}}; s.startingCrystals = 1000;
+            rts::EntityDefinition worker; worker.trainingTicks = 1;
+            auto depot = testDepot("test.depot", worker.id); depot.width = setup.size.x; depot.height = setup.size.y;
+            rts::Simulation game(std::move(s), {}, worker, {depot});
+            const auto hall = game.buildings().front().id;
+            rts::EntityId first{};
+            for (const auto exit : setup.exits) {
+                const auto count = game.units().size();
+                require(game.train(hall), "Could not train next unit");
+                game.tick();
+                require(game.units().size() == count + 1 && game.units().back().cell == exit, "Successive exit skipped counterclockwise order");
+                const auto id = game.units().back().id;
+                if (!first) first = id;
+                game.stop(std::array<rts::EntityId, 1>{id});
+            }
+            const auto count = game.units().size();
+            require(game.train(hall), "Could not queue blocked production");
+            const auto supply = game.armySupply().used();
+            ticks(game, 10);
+            require(game.units().size() == count && game.building(hall)->production.size() == 1 &&
+                game.building(hall)->production.front().remainingTicks == 0, "Full perimeter did not hold the completed job");
+            require(game.armySupply().used() == supply, "Blocked production lost reserved supply");
+            for (size_t a = 0; a < count; ++a) for (size_t b = a + 1; b < count; ++b)
+                require(game.units()[a].cell != game.units()[b].cell, "Production overlapped units");
+            require(game.command(std::array<rts::EntityId, 1>{first}, {2, 7}), "Could not clear the first exit");
+            ticks(game, 60);
+            require(game.units().size() == count + 1 && game.building(hall)->production.empty(), "Production did not resume after clearing an exit");
+            require(game.units().back().cell == setup.exits.front() && game.armySupply().used() == supply, "Resumed production used the wrong exit or charged supply twice");
+        }
+    });
+    test("Production skips cliffs, ramps, obstacles and incompatible water in perimeter order", [] {
+        auto s = flatScenario(); s.startingCrystals = 100;
+        s.map.at({1, 3}).height = -1;
+        s.map.at({2, 3}).ramp = {0, 1};
+        s.map.at({3, 3}).height = 1;
+        s.map.at({4, 2}).blocked = true;
+        s.map.at({4, 1}).surface = rts::Surface::DeepWater;
+        rts::EntityDefinition worker; worker.trainingTicks = 1;
+        rts::Simulation game(std::move(s), {}, worker);
+        const auto hall = game.buildings().front().id;
+        require(game.building(hall)->rally == rts::Cell{3, 0}, "Default rally selected forbidden terrain or skipped perimeter order");
+        require(game.train(hall), "Could not train near terrain obstacles");
+        game.tick();
+        require(game.units().size() == 2 && game.units().back().cell == rts::Cell{3, 0}, "Production selected forbidden terrain or skipped perimeter order");
+    });
+    test("Production skips an exit reserved by a moving unit", [] {
+        auto s = flatScenario(); s.startingCrystals = 100; s.worker = {1, 4};
+        rts::EntityDefinition worker; worker.trainingTicks = 1;
+        rts::Simulation game(std::move(s), {}, worker);
+        require(game.command({1, 3}), "Could not move worker into preferred exit");
+        game.tick();
+        require(game.worker().progress > 0 && game.worker().cell == rts::Cell{1, 4}, "Worker did not reserve its next step");
+        require(game.train(game.buildings().front().id), "Could not train near moving worker");
+        game.tick();
+        require(game.units().size() == 2 && game.units().back().cell == rts::Cell{2, 3}, "Production ignored movement reservation or skipped lower edge");
+    });
     test("Production reserves supply, refunds cancellation and follows per-building rally", [&] {
         auto definitions = rts::Definitions::load(assets / "data/catalog.json");
 

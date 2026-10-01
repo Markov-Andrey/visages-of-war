@@ -28,7 +28,7 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
     if (initial == buildable_.end()) throw std::invalid_argument("Initial scenario requires a resource depot");
     reserveScenarioHall(scenario_, {(*initial)->width, (*initial)->height});
     if (!supply_.reserve((*initial)->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
-    buildings_.push_back({nextId_++, player_.id, **initial, hall(), (*initial)->maximumHealth, (*initial)->constructionTicks, scenario_.worker, {}});
+    buildings_.push_back({nextId_++, player_.id, **initial, hall(), (*initial)->maximumHealth, (*initial)->constructionTicks, defaultRally(**initial, hall()), {}});
     spawn(workerType_, scenario_.worker, false);
     for (Cell cell : scenario_.extraWorkers) spawn(workerType_, cell, false);
     for (const auto& initialUnit : scenario_.units) spawn(entityType(initialUnit.definitionId), initialUnit.cell, false, initialUnit.owner);

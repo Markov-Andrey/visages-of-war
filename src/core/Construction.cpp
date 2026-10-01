@@ -3,6 +3,24 @@
 #include <array>
 
 namespace rts {
+std::vector<Cell> Simulation::productionExits(const EntityDefinition& building, Cell origin, MovementType movement) const {
+    auto exits = perimeter(map(), origin, building.width, building.height, movement);
+    // Counterclockwise: bottom left to right, right bottom to top, top right to left, then left top to bottom.
+    const auto index = [&](Cell cell) {
+        const Cell local = cell - origin;
+        if (local.y == building.height) return local.x;
+        if (local.x == building.width) return building.width + building.height - 1 - local.y;
+        if (local.y == -1) return 2 * building.width + building.height - 1 - local.x;
+        return 2 * building.width + building.height + local.y;
+    };
+    std::sort(exits.begin(), exits.end(), [&](Cell a, Cell b) { return index(a) < index(b); });
+    return exits;
+}
+Cell Simulation::defaultRally(const EntityDefinition& building, Cell origin) const {
+    const auto movement = building.trainableUnits.empty() ? MovementType::Walking : entityType(building.trainableUnits.front()).movement;
+    const auto exits = productionExits(building, origin, movement);
+    return exits.empty() ? origin : exits.front();
+}
 bool Simulation::canPlace(const std::string& typeId, Cell origin) const {
     const auto& type = entityType(typeId);
     if (!type.constructible || type.factionId != workerType_.factionId) return false;
@@ -33,8 +51,7 @@ std::optional<EntityId> Simulation::construct(std::span<const EntityId> builders
     if (!supply_.reserve(type.cost.supply)) { message_ = L"Достигнут лимит армии: 100."; return std::nullopt; }
     scenario_.map = std::move(preview);
     const EntityId id = nextId_++;
-    const auto exits = perimeter(map(), origin, type.width, type.height);
-    buildings_.push_back({id, player_.id, type, origin, 1, 0, exits.empty() ? origin : exits.front(), {}});
+    buildings_.push_back({id, player_.id, type, origin, 1, 0, defaultRally(type, origin), {}});
     stored_ -= type.cost.crystals;
     issue(*builder, {OrderKind::Build, {}, id});
     message_ = L"Стройплощадка размещена.";
@@ -96,7 +113,7 @@ void Simulation::tickProduction() {
         if (job.remainingTicks > 0) --job.remainingTicks;
         if (job.remainingTicks != 0) continue;
         const auto& type = entityType(job.definitionId);
-        const auto exits = perimeter(map(), b.origin, b.definition.width, b.definition.height, type.movement);
+        const auto exits = productionExits(b.definition, b.origin, type.movement);
         std::optional<Cell> spawnCell;
         for (Cell c : exits) {
             bool held = false;

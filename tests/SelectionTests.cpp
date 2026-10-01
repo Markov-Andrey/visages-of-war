@@ -26,7 +26,10 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(!rts::rallyPointVisible(game, building, ui), "Destroyed building retained its rally");
         building.health = building.definition.maximumHealth;
         building.rally = {game.map().width() - 1, game.map().height() - 1};
-        require(!game.fog().explored(building.rally) && !rts::rallyPointVisible(game, building, ui), "Rally leaked into unexplored terrain");
+        require(!game.fog().explored(building.rally) && rts::rallyPointVisible(game, building, ui), "Own rally disappeared in unexplored terrain");
+        require(!rts::rallyPointLightVisible(game, building, ui), "Unexplored rally emitted light");
+        building.rally = {-1, -1};
+        require(!rts::rallyPointVisible(game, building, ui), "Rally outside the map became visible");
         building.rally = game.worker().cell;
         building.definition.trainableUnits.clear();
         require(!rts::rallyPointVisible(game, building, ui), "Non-producing building retained its rally");

@@ -3,6 +3,36 @@
 
 namespace rts::tests {
 void visionTests(TestSuite& test, const TestContext& context) {
+    test("Unexplored rally stays visible to its owner without revealing fog or emitting light", [] {
+        rts::Scenario site{rts::Map(32, 24), {1, 1}, {4, 3}, {}}; site.startingCrystals = 100;
+        rts::EntityDefinition worker; worker.trainingTicks = 1; worker.dayVision = worker.nightVision = 3;
+        auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 3;
+        rts::Simulation game(std::move(site), {}, worker, {depot});
+        const auto hall = game.buildings().front().id;
+        rts::GameplayUi ui; ui.selection.ids = {hall};
+        const rts::Cell target{22, 18};
+        const auto before = game.fog();
+        require(rts::rallyPointLightVisible(game, *game.building(hall), ui), "Visible starting rally lost its light");
+        require(!game.fog().explored(target) && game.setRally(hall, target), "Unexplored rally placement failed");
+        require(game.building(hall)->rally == target && rts::rallyPointVisible(game, *game.building(hall), ui), "Placed rally has no owner marker");
+        require(!rts::rallyPointLightVisible(game, *game.building(hall), ui), "Unexplored rally emitted light");
+        ticks(game, 30);
+        for (int y = 0; y < game.map().height(); ++y) for (int x = 0; x < game.map().width(); ++x)
+            require(game.fog().at({x, y}) == before.at({x, y}), "Rally placement changed logical visibility");
+        require(game.train(hall), "Could not train for an unexplored rally");
+        game.tick();
+        require(game.units().size() == 2 && game.units().back().cell == rts::Cell{1, 3} && !game.fog().explored(target),
+            "Unexplored rally changed the exit or revealed its destination before arrival");
+        ticks(game, 800);
+        const auto trained = game.units().back().id;
+        require(game.unit(trained)->cell == target && game.fog().visible(target), "Produced unit failed to reach and reveal its rally");
+        require(rts::rallyPointLightVisible(game, *game.building(hall), ui), "Observed rally did not regain its light");
+        require(game.command(std::array<rts::EntityId, 1>{trained}, {4, 6}), "Could not move the rally observer away");
+        ticks(game, 800);
+        require(game.fog().at(target) == rts::Visibility::Explored && rts::rallyPointVisible(game, *game.building(hall), ui),
+            "Remembered rally kept vision or lost its marker");
+        require(!rts::rallyPointLightVisible(game, *game.building(hall), ui), "Rally kept glowing after its observer left");
+    });
     test("Crystal lights follow visible deposits and disappear on depletion without revealing fog", [] {
         rts::Scenario site{rts::Map(24, 20), {1, 1}, {9, 9}, {{{10, 9}, 1}, {{22, 18}, 1000}}};
         for (const auto& crystal : site.crystals) site.map.occupy(crystal.cell);
