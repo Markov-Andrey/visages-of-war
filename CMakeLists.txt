@@ -66,6 +66,7 @@ add_library(rts_render
     src/render/BuildingSpriteRenderer.cpp
     src/render/RallyPointRenderer.cpp
     src/render/LightingRenderer.cpp
+    src/render/SpriteLighting.cpp
     src/render/ProjectileRenderer.cpp
     src/render/EntityRenderer.cpp
     src/render/SceneRenderer.cpp
@@ -144,6 +145,7 @@ if(BUILD_TESTING)
         tests/ProjectileTests.cpp
         tests/DataTests.cpp
         tests/VisionTests.cpp
+        tests/LightingTests.cpp
         tests/SelectionTests.cpp
         tests/CameraTests.cpp
         src/game/CameraController.cpp
@@ -151,7 +153,7 @@ if(BUILD_TESTING)
         tests/MovementTests.cpp
         tests/EditorTests.cpp
     )
-    target_link_libraries(rts_tests PRIVATE rts_editor_core nlohmann_json::nlohmann_json)
+    target_link_libraries(rts_tests PRIVATE rts_editor_core rts_render nlohmann_json::nlohmann_json)
     target_include_directories(rts_tests PRIVATE src)
     add_test(NAME rts_core COMMAND rts_tests "${CMAKE_CURRENT_SOURCE_DIR}/assets")
     # Deliberately use a working directory unrelated to the executable/assets.
@@ -162,7 +164,8 @@ if(BUILD_TESTING)
     add_test(NAME rts_menu_snapshot COMMAND RTS --snapshot-menu "${CMAKE_BINARY_DIR}/menu-preview.png")
     add_test(NAME rts_title_snapshot COMMAND RTS --snapshot-title "${CMAKE_BINARY_DIR}/title-preview.png")
     add_test(NAME rts_native_gameplay_ui COMMAND RTS --smoke-test)
-    set_tests_properties(rts_native_gameplay_ui PROPERTIES TIMEOUT 30 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    # Includes 35 software snapshots with cold sprite/lighting caches; this is not a performance gate.
+    set_tests_properties(rts_native_gameplay_ui PROPERTIES TIMEOUT 60 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME forge_assets_from_other_cwd COMMAND VisagesForge --verify-assets)
     set_tests_properties(forge_assets_from_other_cwd PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME forge_render_snapshot COMMAND VisagesForge --snapshot "${CMAKE_BINARY_DIR}/forge-preview.png")

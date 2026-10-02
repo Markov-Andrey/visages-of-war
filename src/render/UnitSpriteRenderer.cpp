@@ -7,13 +7,13 @@ ID2D1Bitmap* Renderer::unitBitmap(const UnitSpriteDefinition& d, unsigned color)
     const auto path = imagePath(d.image);
     if (d.teamMask == SpriteTeamMask::None) color = 0;
     auto& bitmap = unitSheets_[{path, color, d.teamMask}];
-    if (!bitmap) loadBitmap(paths_.asset(path), bitmap, color, d.teamMask);
+    if (!bitmap) loadBitmap(paths_.asset(path), bitmap, color, d.teamMask, {}, true);
     return bitmap.Get();
 }
 void Renderer::unitImage(const UnitSpriteDefinition& d, int column, int row, Vec2 ground, float zoom, unsigned color) {
     const auto extent = d.size * zoom;
     sprite(unitBitmap(d, color), rect(float(column * d.frameWidth), float(row * d.frameHeight), float(d.frameWidth), float(d.frameHeight)),
-        ground - Vec2{extent.x * d.anchor.x, extent.y * d.anchor.y}, extent, true);
+        ground - Vec2{extent.x * d.anchor.x, extent.y * d.anchor.y}, extent, true, .5f);
 }
 void Renderer::unitPortrait(const UnitSpriteDefinition& d, Vec2 topLeft, Vec2 extent, unsigned color) {
     sprite(unitBitmap(d, color), rect(float(d.idle * d.frameWidth), float(d.rows[0] * d.frameHeight), float(d.frameWidth), float(d.frameHeight)), topLeft, extent, true);
@@ -47,6 +47,8 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                 throw std::runtime_error("Building source outside image: " + e.id);
             if (!stage.teamMask.empty() && dimensions(stage.teamMask) != size)
                 throw std::runtime_error("Building team mask dimensions must match image: " + e.id);
+            if (!stage.emissionMask.empty() && dimensions(stage.emissionMask) != size)
+                throw std::runtime_error("Building emission mask dimensions must match image: " + e.id);
             for (const auto& layer : stage.layers) {
                 const auto layerSize = dimensions(layer.image);
                 for (const auto& source : layer.frames)
@@ -54,6 +56,8 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                         throw std::runtime_error("Building layer frame outside image: " + e.id);
                 if (!layer.teamMask.empty() && dimensions(layer.teamMask) != layerSize)
                     throw std::runtime_error("Building layer team mask dimensions must match image: " + e.id);
+                if (!layer.emissionMask.empty() && dimensions(layer.emissionMask) != layerSize)
+                    throw std::runtime_error("Building layer emission mask dimensions must match image: " + e.id);
             }
         }
         if (e.mobile) {

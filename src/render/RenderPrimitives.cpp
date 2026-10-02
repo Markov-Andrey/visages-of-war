@@ -35,7 +35,11 @@ void Renderer::text(const std::wstring& value, D2D1_RECT_F bounds, unsigned colo
                       bounds, brush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
 }
 
-void Renderer::sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel) {
+void Renderer::sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel, float lighting, ID2D1Bitmap* emission) {
+    if (nightActive_ && lighting > 0 && spriteLights_.contains(bitmap)) {
+        litSprite(bitmap, source, topLeft, extent, pixel, lighting, emission);
+        return;
+    }
     target_->DrawBitmap(bitmap, rect(topLeft.x, topLeft.y, extent.x, extent.y), worldOpacity_,
         pixel ? D2D1_BITMAP_INTERPOLATION_MODE_NEAREST_NEIGHBOR : D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, source);
 }

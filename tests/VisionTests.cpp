@@ -3,6 +3,47 @@
 
 namespace rts::tests {
 void visionTests(TestSuite& test, const TestContext& context) {
+    test("Emission masks retain authored alpha and crystal highlights exclude dark stone", [] {
+        require(rts::emissionCoverage(0xffffffff) == 255 && rts::emissionCoverage(0) == 0 &&
+            rts::emissionCoverage(0x80808080) == 128 && rts::emissionCoverage(0xff000000) == 0,
+            "White emission mask lost transparency or applied alpha twice");
+        require(rts::highlightEmission(0xff202020) == 0 && rts::highlightEmission(0xffdd99ff) == 255 &&
+            rts::highlightEmission(0x806e4c80) == 255 && rts::highlightEmission(0) == 0,
+            "Crystal highlight mask changed with sprite opacity or included dark stone");
+    });
+    test("Local light has a compact core and smooth bounded falloff", [] {
+        float previous = 1;
+        for (int i = 0; i <= 200; ++i) {
+            const float distance = i / 100.0f;
+            const auto value = rts::lightFalloff(distance * distance, 1);
+            require(value >= 0 && value <= previous, "Light falloff has a ring or overshoot");
+            previous = value;
+        }
+        require(rts::lightFalloff(0, 1) == 1 && rts::lightFalloff(1, 1) == 0 &&
+            rts::lightFalloff(.04f, 1) > rts::lightFalloff(.25f, 1) && rts::lightFalloff(0, 0) == 0,
+            "Light lost its core or radius boundary");
+        for (int start : {300, 1020}) {
+            float previousNight = rts::nightStrength(rts::WorldClock({30, 480, start, 360, 1080}));
+            for (int minute = start + 1; minute <= start + 120; ++minute) {
+                const float value = rts::nightStrength(rts::WorldClock({30, 480, minute, 360, 1080}));
+                require(value >= 0 && value <= 1 && std::abs(value - previousNight) < .013f &&
+                    (start == 300 ? value <= previousNight : value >= previousNight), "Dawn or dusk lighting jumps");
+                previousNight = value;
+            }
+        }
+    });
+    test("Flame light follows its animation frame and freezes with simulation", [&] {
+        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
+        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
+        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        const auto first = rts::buildingLights(game, {{0, 0}, 1})[1].intensity;
+        ticks(game, 2);
+        require(rts::buildingLights(game, {{0, 0}, 1})[1].intensity == first, "Light flickered inside a held flame frame");
+        game.tick();
+        require(rts::buildingLights(game, {{0, 0}, 1})[1].intensity != first, "Flame advanced but its light did not");
+        ticks(game, 21);
+        require(rts::buildingLights(game, {{0, 0}, 1})[1].intensity == first, "Looping flame did not repeat light intensity");
+    });
     test("Unexplored rally stays visible to its owner without revealing fog or emitting light", [] {
         rts::Scenario site{rts::Map(32, 24), {1, 1}, {4, 3}, {}}; site.startingCrystals = 100;
         rts::EntityDefinition worker; worker.trainingTicks = 1; worker.dayVision = worker.nightVision = 3;
@@ -114,6 +155,8 @@ void visionTests(TestSuite& test, const TestContext& context) {
         remembered.update(site.map, source); remembered.update(site.map, {});
         fog.update(remembered, 28, 28); raster.update(game, view, extent, fog);
         require(sample(light.position) == far, "Lighting removed fog from remembered terrain");
+        require(std::all_of(raster.visibilityPixels().begin(), raster.visibilityPixels().end(), [](auto pixel) { return pixel == 0; }),
+            "Glow mask illuminated remembered or unexplored terrain");
         require(rts::nightStrength(rts::WorldClock({30, 480, 12 * 60, 360, 1080})) == 0 &&
             std::abs(rts::nightStrength(rts::WorldClock({30, 480, 6 * 60, 360, 1080})) - .5f) < .001f, "Daylight transition jumped");
     });

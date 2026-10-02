@@ -18,7 +18,7 @@ void Renderer::drawProjectiles(const Simulation& game, const WorldView& view) {
         D2D1_MATRIX_3X2_F previous; target_->GetTransform(&previous);
         target_->SetTransform(D2D1::Matrix3x2F::Rotation(rotation,point(position)) * previous);
         const auto extent = d.size * view.zoom;
-        sprite(bitmap.Get(),source,position - extent * .5f,extent);
+        sprite(bitmap.Get(),source,position - extent * .5f,extent,false,0);
         target_->SetTransform(previous);
     }
     for (const auto& hit : game.projectileImpacts()) {

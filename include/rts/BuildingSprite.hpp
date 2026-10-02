@@ -12,11 +12,13 @@ struct BuildingSpriteLight {
     float radius = 3; // Logical cells; scaled by camera zoom, independently of PNG resolution.
     float intensity = .85f, flicker = .04f;
     unsigned color = 0xffbc70;
+    int animationLayer = -1; // Optional flame layer driving flicker, in the stage's layer array.
     BuildingLayerWhen when = BuildingLayerWhen::Always;
     bool visible(bool training) const { return when == BuildingLayerWhen::Always || training; }
 };
 struct BuildingSpriteLayer {
-    std::string image, teamMask;
+    std::string image, teamMask, emissionMask;
+    bool emissive = false;
     std::vector<std::array<int, 4>> frames;
     // Rectangle relative to the stage's cropped source, in source pixels.
     std::array<float, 4> destination{};
@@ -29,7 +31,8 @@ struct BuildingSpriteLayer {
 };
 struct BuildingSpriteStage {
     int from{}; // Inclusive construction percentage; 100 is the finished building.
-    std::string image, teamMask;
+    std::string image, teamMask, emissionMask;
+    bool emissive = false;
     std::array<int, 4> source{};
     Vec2 anchor{.5f, .8f}; // Ground point within the source rectangle.
     std::vector<BuildingSpriteLayer> layers; // Drawn over the base, in authored order.

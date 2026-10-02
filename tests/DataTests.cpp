@@ -243,6 +243,13 @@ void dataTests(TestSuite& test, const TestContext& context) {
         rejects([](Json& a) { a["stages"][0]["image"] = "../outside.png"; });
         rejects([](Json& a) { a["stages"][0]["teamMask"] = "C:/mask.png"; });
         rejects([](Json& a) { a["stages"][0]["teamMask"] = "../mask.png"; });
+        rejects([](Json& a) { a["stages"][0]["emissionMask"] = "../mask.png"; });
+        rejects([](Json& a) { a["stages"][0]["emissive"] = "true"; });
+        rejects([](Json& a) { a["stages"][0]["emissive"] = true; a["stages"][0]["emissionMask"] = "mask.png"; });
+        rejects([](Json& a) { a["stages"][3]["layers"][0]["emissionMask"] = "C:/mask.png"; });
+        rejects([](Json& a) { a["stages"][3]["lights"][1]["animationLayer"] = 30; });
+        rejects([](Json& a) { a["stages"][3]["lights"][1]["animationLayer"] = 1; });
+        rejects([](Json& a) { a["stages"][3]["lights"][1]["animationLayer"] = 2; });
         rejects([](Json& a) { a["stages"][0]["source"][2] = 0; });
         rejects([](Json& a) { a["stages"][0]["anchor"][0] = 2; });
         rejects([](Json& a) { a["scale"] = 0; });
@@ -265,6 +272,9 @@ void dataTests(TestSuite& test, const TestContext& context) {
         fixture.entities["entities"][3]["buildingSprite"] = original;
         fixture.entities["entities"][3]["buildingSprite"]["stages"][3]["teamMask"] = "sprites/buildings/valeri/ratusha/ratusha-team.png";
         require(!fixture.load().entity("human.hall").buildingSprite.stages.back().teamMask.empty(), "Explicit mask path lost");
+        fixture.entities["entities"][3]["buildingSprite"]["stages"][3]["emissionMask"] = "sprites/window-emission.png";
+        const auto masked = fixture.load().entity("human.hall").buildingSprite.stages.back();
+        require(masked.emissionMask == "sprites/window-emission.png" && !masked.teamMask.empty(), "Emission mask replaced the team mask");
     });
     test("Building layers loop on simulation ticks and keep training effects separate", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");

@@ -3,7 +3,7 @@
 namespace rts {
 using namespace render;
 void Renderer::snapshot(const Simulation& game, const std::filesystem::path& output, const Definitions* menuDefinitions, bool grid,
-    const GameplayUi* interfaceState, MenuPage menuPage, double previewSeconds, const MenuState* menuState) {
+    const GameplayUi* interfaceState, MenuPage menuPage, double previewSeconds, const MenuState* menuState, const WorldView* snapshotView) {
     discardTarget();
     offscreenSize_ = {1440, 900};
     ComPtr<IWICBitmap> bitmap;
@@ -22,6 +22,7 @@ void Renderer::snapshot(const Simulation& game, const std::filesystem::path& out
     } else {
         WorldView view{{0, 0}, .85f};
         view.origin = Vec2{720, 350} - view.project(center(game.hall()) + Vec2{1, 2}, 0);
+        if (snapshotView) view = *snapshotView;
         GameplayUi ui;
         ui.selection.ids = {game.buildings().front().id};
         if (!grid && game.hero()) ui.selection.hero(game);

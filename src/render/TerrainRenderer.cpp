@@ -37,6 +37,7 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
         const std::array<Vec2, 4> face{{top[edge], top[next], bottomAt(next), bottomAt(edge)}};
         polygon(face, edge == 1 ? 0x454538 : 0x303c32);
         line(face[2], face[3], 0x242f29);
+        lightSurface(face);
     }
     worldOpacity_ = previousOpacity;
     if (tile.surface == Surface::Land) {
@@ -83,6 +84,8 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
             line(view.project(a, map.surfaceHeight(c, a)), view.project(b, map.surfaceHeight(c, b)), 0xaaa079);
         }
     }
+    // Grade the surface before fog so blue ambient light cannot tint unexplored black.
+    lightSurface(top);
     if (fog) {
         D2D1_MATRIX_3X2_F previous;
         target_->GetTransform(&previous);

@@ -30,7 +30,7 @@ public:
     void verifyAssets();
     void snapshot(const Simulation& game, const std::filesystem::path& output, const Definitions* menuDefinitions = nullptr, bool grid = false,
         const GameplayUi* interfaceState = nullptr, MenuPage menuPage = MenuPage::BattleSetup, double previewSeconds = 0,
-        const MenuState* menuState = nullptr);
+        const MenuState* menuState = nullptr, const WorldView* snapshotView = nullptr);
     void drawMenu(const Simulation& game, const MenuState& menu, const Definitions& definitions, Vec2 mouse);
     void drawEditor(const WorldEditor& editor, const WorldView& view, Vec2 mouse, bool grid);
     void reloadWorldAssets(const WorldAssets& assets);
@@ -39,17 +39,23 @@ public:
     void snapshotEditor(const WorldEditor& editor, const std::filesystem::path& output);
     Vec2 size() const;
 private:
+    friend struct RendererLightingTest;
     template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
     void ensureTarget();
     void loadResources();
     void updateFogMask(const Simulation& game);
-    void drawNightLighting(const Simulation& game, const WorldView& view, Vec2 extent, const GameplayUi& ui);
+    void prepareNightLighting(const Simulation& game, const WorldView& view, Vec2 extent, const GameplayUi& ui);
+    void lightSurface(std::span<const Vec2> points);
+    void drawLightGlow(Vec2 position, float radius, unsigned color, float intensity);
+    void prepareSpriteLighting(ID2D1Bitmap* bitmap, std::span<const BYTE> pixels, UINT width, UINT height, bool highlights);
+    void litSprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel, float response, ID2D1Bitmap* emission);
+    ID2D1Bitmap* emissionBitmap(const std::string& image);
     void drawLibrary(const MenuState& menu, const Definitions& definitions, Vec2 mouse);
     void drawColorSelect(const ColorSelectLayout& layout, const MenuState& menu, Vec2 mouse);
     void discardTarget();
     void loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask = 0,
-        SpriteTeamMask palette = SpriteTeamMask::None, const std::filesystem::path& maskPath = {});
-    void buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks = 0, bool training = false);
+        SpriteTeamMask palette = SpriteTeamMask::None, const std::filesystem::path& maskPath = {}, bool lighting = false, bool highlights = false);
+    void buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks = 0, bool training = false, bool visible = true);
     ID2D1Bitmap* maskedBitmap(const std::string& image, const std::string& mask, unsigned color);
     void drawRallyPoint(const Simulation& game, const Building& building, const WorldView& view);
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
@@ -59,7 +65,7 @@ private:
     void polygon(std::span<const Vec2> points, unsigned color, float opacity = 1.0f, bool fill = true);
     void line(Vec2 a, Vec2 b, unsigned color, float width = 1.0f);
     void text(const std::wstring& value, D2D1_RECT_F rect, unsigned color, bool heading = false);
-    void sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel = false);
+    void sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel = false, float lighting = 1, ID2D1Bitmap* emission = nullptr);
     void buttonFrame(UiRect area);
     void tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog = false);
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
@@ -99,6 +105,19 @@ private:
     FogMask fogMask_;
     NightLightingRaster nightLighting_;
     ComPtr<ID2D1Bitmap> nightBitmap_;
+    ComPtr<ID2D1BitmapBrush> nightBrush_;
+    ComPtr<ID2D1Bitmap> glowVisibility_;
+    ComPtr<ID2D1BitmapBrush> glowVisibilityBrush_;
+    std::map<unsigned, ComPtr<ID2D1RadialGradientBrush>> glowBrushes_;
+    float nightAmount_{};
+    ComPtr<ID2D1Layer> spriteLightLayer_;
+    struct SpriteLightResource {
+        ComPtr<ID2D1Bitmap> opaque, highlights;
+        ComPtr<ID2D1BitmapBrush> alphaBrush, colorBrush;
+    };
+    std::map<ID2D1Bitmap*, SpriteLightResource> spriteLights_;
+    std::map<std::string, ComPtr<ID2D1Bitmap>> emissionMasks_;
+    bool nightActive_ = false;
     MinimapRaster minimapRaster_;
     ComPtr<ID2D1Bitmap> fogBitmap_;
     ComPtr<ID2D1BitmapBrush> fogBrush_;

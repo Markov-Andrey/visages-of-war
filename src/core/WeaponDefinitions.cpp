@@ -26,10 +26,13 @@ std::array<int, 4> sourceRectangle(const Json& j) {
     return result;
 }
 BuildingSpriteLayer buildingLayer(const Json& j) {
-    fields(j, {"image", "frames", "destination"}, {"teamMask", "ticksPerFrame", "phase", "when"});
+    fields(j, {"image", "frames", "destination"}, {"teamMask", "emissionMask", "emissive", "ticksPerFrame", "phase", "when"});
     BuildingSpriteLayer layer;
     layer.image = imagePath(j.at("image"));
     if (j.contains("teamMask") && !j.at("teamMask").is_null()) layer.teamMask = imagePath(j.at("teamMask"));
+    if (j.contains("emissionMask") && !j.at("emissionMask").is_null()) layer.emissionMask = imagePath(j.at("emissionMask"));
+    if (j.contains("emissive")) layer.emissive = j.at("emissive").get<bool>();
+    if (layer.emissive && !layer.emissionMask.empty()) throw std::runtime_error("Choose emissive or emissionMask, not both");
     const auto& frames = j.at("frames");
     if (!frames.is_array() || frames.empty() || frames.size() > 128) throw std::runtime_error("Building layer requires 1..128 frames");
     for (const auto& source : frames) layer.frames.push_back(sourceRectangle(source));
@@ -46,7 +49,7 @@ BuildingSpriteLayer buildingLayer(const Json& j) {
     return layer;
 }
 BuildingSpriteLight buildingLight(const Json& j) {
-    fields(j, {"position", "radius", "intensity", "color"}, {"flicker", "when"});
+    fields(j, {"position", "radius", "intensity", "color"}, {"flicker", "when", "animationLayer"});
     BuildingSpriteLight light;
     light.position = pair(j.at("position"), -8192, 8192);
     light.radius = real(j.at("radius"), .1f, 16);
@@ -55,6 +58,7 @@ BuildingSpriteLight buildingLight(const Json& j) {
     if (!color.is_array() || color.size() != 3) throw std::runtime_error("Light color requires RGB components");
     light.color = (number(color[0], 0, 255) << 16) | (number(color[1], 0, 255) << 8) | number(color[2], 0, 255);
     if (j.contains("flicker")) light.flicker = real(j.at("flicker"), 0, .25f);
+    if (j.contains("animationLayer")) light.animationLayer = number(j.at("animationLayer"), 0, 31);
     if (j.contains("when")) {
         const auto when = string(j.at("when"));
         if (when == "training") light.when = BuildingLayerWhen::Training;
@@ -102,13 +106,16 @@ void parseBuildingSprite(EntityDefinition& e, const Json& sprite) {
         throw std::runtime_error("Building sprite requires construction and complete stages");
     int previous = -1;
     for (const auto& j : stages) {
-        fields(j, {"from", "image", "teamMask", "source", "anchor"}, {"layers", "lights"});
+        fields(j, {"from", "image", "teamMask", "source", "anchor"}, {"layers", "lights", "emissionMask", "emissive"});
         BuildingSpriteStage stage;
         stage.from = number(j.at("from"), 0, 100);
         if (stage.from <= previous) throw std::runtime_error("Building stages must have increasing percentages");
         previous = stage.from;
         stage.image = imagePath(j.at("image"));
         if (!j.at("teamMask").is_null()) stage.teamMask = imagePath(j.at("teamMask"));
+        if (j.contains("emissionMask") && !j.at("emissionMask").is_null()) stage.emissionMask = imagePath(j.at("emissionMask"));
+        if (j.contains("emissive")) stage.emissive = j.at("emissive").get<bool>();
+        if (stage.emissive && !stage.emissionMask.empty()) throw std::runtime_error("Choose emissive or emissionMask, not both");
         stage.source = sourceRectangle(j.at("source"));
         stage.anchor = pair(j.at("anchor"), 0, 1);
         if (j.contains("layers")) {
@@ -120,6 +127,11 @@ void parseBuildingSprite(EntityDefinition& e, const Json& sprite) {
             const auto& lights = j.at("lights");
             if (!lights.is_array() || lights.size() > 16) throw std::runtime_error("Building stage supports up to 16 lights");
             for (const auto& light : lights) stage.lights.push_back(buildingLight(light));
+            for (const auto& light : stage.lights) if (light.animationLayer >= 0) {
+                if (static_cast<size_t>(light.animationLayer) >= stage.layers.size() ||
+                    !stage.layers[light.animationLayer].emissive || stage.layers[light.animationLayer].when != light.when)
+                    throw std::runtime_error("Light animationLayer must reference an emissive layer with matching condition");
+            }
         }
         s.stages.push_back(std::move(stage));
     }

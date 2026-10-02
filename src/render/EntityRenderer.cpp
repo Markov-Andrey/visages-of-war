@@ -25,6 +25,7 @@ void Renderer::environmentObject(const EnvironmentObject& object, const Map& map
         polygon(face, 0x454f4e);
         const std::array<Vec2, 3> light{{rock[0], rock[1], rock[2]}};
         polygon(light, 0x93958a);
+        lightSurface(rock);
     } else {
         const auto b = view.project(center(object.origin + Cell{2, 0}), float(map.at(object.origin).height));
         const float z = view.zoom;
@@ -33,11 +34,13 @@ void Renderer::environmentObject(const EnvironmentObject& object, const Map& map
                 base + Vec2{14, -89} * z, base + Vec2{14, 5} * z}};
             polygon(pillar, 0x929688);
             for (int i = 1; i < 5; ++i) line(base + Vec2{-13, -i * 18.0f} * z, base + Vec2{13, -i * 18.0f} * z, 0x606e66);
+            lightSurface(pillar);
         }
         const std::array<Vec2, 4> beam{{p + Vec2{-16, -103} * z, b + Vec2{16, -103} * z,
             b + Vec2{16, -79} * z, p + Vec2{-16, -79} * z}};
         polygon(beam, 0xa4a794);
         polygon(beam, 0x5b6b63, 1, false);
+        lightSurface(beam);
     }
 }
 
@@ -72,10 +75,14 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
         view.project({float(b.origin.x + type.width), float(b.origin.y + type.height)}, h),
         view.project({float(b.origin.x), float(b.origin.y + type.height)}, h)}};
     if (stage) {
-        buildingImage(*stage, bounds, color, game.clock().elapsedTicks(), b.training());
+        bool visible = false;
+        for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x)
+            visible |= game.fog().visible(b.origin + Cell{x, y});
+        buildingImage(*stage, bounds, color, game.clock().elapsedTicks(), b.training(), visible);
     } else if (!b.complete()) {
         const std::array<Vec2, 4> foundation{{p + Vec2{-50, -22} * z, p + Vec2{50, -22} * z, p + Vec2{65, 12} * z, p + Vec2{-65, 12} * z}};
         polygon(foundation, 0x928169);
+        lightSurface(foundation);
         for (const auto base : footprint) {
             line(base, base + Vec2{0, -65} * z, 0xcbad7c, 4 * z);
             line(base + Vec2{-12, -40} * z, base + Vec2{12, -40} * z, 0x887155, 3 * z);
@@ -91,8 +98,10 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
         const std::array<Vec2, 4> tower{{p + Vec2{-24, 18} * z, p + Vec2{-24, -83} * z, p + Vec2{24, -83} * z, p + Vec2{24, 18} * z}};
         polygon(tower, 0x8a9185);
         for (int i = 0; i < 5; ++i) line(p + Vec2{-23, -i * 18.0f} * z, p + Vec2{23, -i * 18.0f} * z, 0x555e59, 2 * z);
+        lightSurface(tower);
         const std::array<Vec2, 3> roof{{p + Vec2{-45, -80} * z, p + Vec2{0, -125} * z, p + Vec2{45, -80} * z}};
         polygon(roof, color);
+        lightSurface(roof);
     }
     if (b.complete() && !stage) {
         line(p + Vec2{28, -105} * z, p + Vec2{28, -205} * z, 0xd9d0b2, 2);

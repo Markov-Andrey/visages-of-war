@@ -15,6 +15,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     target_->Clear(D2D1::ColorF(0x081119));
     const auto extent = size();
     const BattleLayout layout(extent);
+    prepareNightLighting(game, view, extent, ui);
     const auto& map = game.map();
     target_->PushAxisAlignedClip(rect(layout.world.x, layout.world.y, layout.world.width, layout.world.height), D2D1_ANTIALIAS_MODE_ALIASED);
     const auto onScreen = [&](Vec2 p) { return p.x > -250 && p.x < extent.x + 250 && p.y > -80 && p.y < extent.y; };
@@ -76,7 +77,10 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                     brush_->SetColor(D2D1::ColorF(selectionColor(crystal.owner, game.player().id)));
                     target_->DrawEllipse(D2D1::Ellipse(point(p + Vec2{0, -5} * view.zoom), 34 * view.zoom, 16 * view.zoom), brush_.Get(), 2);
                 }
-                sprite(crystal_.Get(), rect(0, 0, 128, 128), p + Vec2{-48, -76} * view.zoom, Vec2{96, 96} * view.zoom);
+                auto* emission = game.fog().visible(crystal.cell) ? spriteLights_.at(crystal_.Get()).highlights.Get() : nullptr;
+                if (emission) drawLightGlow(p + Vec2{0, -22} * view.zoom, 46 * view.zoom, 0xbd8fff,
+                    crystalPulse(crystal.id, game.clock().elapsedTicks()));
+                sprite(crystal_.Get(), rect(0, 0, 128, 128), p + Vec2{-48, -76} * view.zoom, Vec2{96, 96} * view.zoom, false, 1, emission);
                 break;
             }
             case Kind::Environment: {
@@ -147,7 +151,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         const auto start = view.project({b.origin.x + b.definition.width * .5f, b.origin.y + b.definition.height * .5f}, float(map.at(b.origin).height));
         for (int i = 0; i < 20; i += 2) line(start + (p - start) * (i / 20.0f), start + (p - start) * ((i + 1) / 20.0f), 0xb6d7ba, 1.5f);
     }
-    drawNightLighting(game, view, extent, ui);
+    nightActive_ = false;
     if (!ui.placement.empty() && hover) {
         const auto& type = game.entityType(ui.placement);
         const unsigned colorPreview = game.canPlace(ui.placement, *hover) ? 0x7cdeb0 : 0xeb7c77;

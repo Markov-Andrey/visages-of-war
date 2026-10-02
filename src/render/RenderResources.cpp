@@ -20,9 +20,11 @@ void Renderer::verifyAssets() {
         for (const auto& stage : e.buildingSprite.stages) {
             images.push_back(imagePath(stage.image));
             if (!stage.teamMask.empty()) images.push_back(imagePath(stage.teamMask));
+            if (!stage.emissionMask.empty()) images.push_back(imagePath(stage.emissionMask));
             for (const auto& layer : stage.layers) {
                 images.push_back(imagePath(layer.image));
                 if (!layer.teamMask.empty()) images.push_back(imagePath(layer.teamMask));
+                if (!layer.emissionMask.empty()) images.push_back(imagePath(layer.emissionMask));
             }
         }
     }
@@ -50,7 +52,8 @@ void Renderer::verifyAssets() {
 }
 
 void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask,
-    SpriteTeamMask palette, const std::filesystem::path& maskPath) {
+    SpriteTeamMask palette, const std::filesystem::path& maskPath, bool lighting, bool highlights) {
+    if (bitmap) spriteLights_.erase(bitmap.Get());
     ComPtr<IWICBitmapDecoder> decoder;
     check(wic_->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf()));
     ComPtr<IWICBitmapFrameDecode> frame;
@@ -59,7 +62,7 @@ void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>
     check(wic_->CreateFormatConverter(converter.GetAddressOf()));
     check(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom));
     const auto properties = D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), 96, 96);
-    if (palette != SpriteTeamMask::None || !maskPath.empty()) {
+    if (lighting || palette != SpriteTeamMask::None || !maskPath.empty()) {
         UINT width{}, height{};
         check(converter->GetSize(&width, &height));
         if (!width || !height || width > 8192 || height > 8192) throw std::runtime_error("Invalid sprite dimensions");
@@ -95,6 +98,7 @@ void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>
             }
         }
         check(target_->CreateBitmap(D2D1::SizeU(width, height), pixels.data(), width * 4, properties, bitmap.ReleaseAndGetAddressOf()));
+        if (lighting) prepareSpriteLighting(bitmap.Get(), pixels, width, height, highlights);
     } else check(target_->CreateBitmapFromWicBitmap(converter.Get(), properties, bitmap.ReleaseAndGetAddressOf()));
 }
 
@@ -103,7 +107,7 @@ ID2D1Bitmap* Renderer::maskedBitmap(const std::string& image, const std::string&
     const auto tint = mask.empty() ? 0 : color;
     auto& bitmap = maskedImages_[{path, mask, tint}];
     if (!bitmap) loadBitmap(paths_.asset(path), bitmap, tint, SpriteTeamMask::None,
-        mask.empty() ? std::filesystem::path{} : paths_.asset(mask));
+        mask.empty() ? std::filesystem::path{} : paths_.asset(mask), true);
     return bitmap.Get();
 }
 
@@ -112,11 +116,11 @@ void Renderer::loadResources() {
     for (const auto& [id, path] : loadCommandIcons(paths_)) loadBitmap(path, commandIcons_[id]);
     check(target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), brush_.GetAddressOf()));
     groundBrush_ = materialResource(worldAssets_.materials().front().id).brush;
-    loadBitmap(paths_.asset(L"sprites/hall.png"), hall_);
-    loadBitmap(paths_.asset(L"sprites/crystal.png"), crystal_);
+    loadBitmap(paths_.asset(L"sprites/hall.png"), hall_, 0, SpriteTeamMask::None, {}, true);
+    loadBitmap(paths_.asset(L"sprites/crystal.png"), crystal_, 0, SpriteTeamMask::None, {}, true, true);
     loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_, SpriteTeamMask::Blue);
     loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_, SpriteTeamMask::Blue);
-    loadBitmap(paths_.asset(L"sprites/tree.png"), tree_);
+    loadBitmap(paths_.asset(L"sprites/tree.png"), tree_, 0, SpriteTeamMask::None, {}, true);
     loadBitmap(paths_.asset(L"ui/menu-background.png"), menuBackground_);
     loadBitmap(paths_.asset(L"ui/logo.png"), logo_);
     // Optional artwork: command buttons and unit cards also work without a frame.

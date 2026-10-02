@@ -6,6 +6,10 @@ namespace rts {
 using namespace render;
 
 void Renderer::reloadWorldAssets(const WorldAssets& assets) {
+    for (const auto& [path, bitmap] : worldSprites_) spriteLights_.erase(bitmap.Get());
+    for (const auto& [key, bitmap] : unitSheets_) spriteLights_.erase(bitmap.Get());
+    for (const auto& [key, bitmap] : maskedImages_) spriteLights_.erase(bitmap.Get());
+    emissionMasks_.clear();
     worldAssets_=assets; materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); maskedImages_.clear(); paintResources_.clear(); terrainPaint_.reset();
 }
 void Renderer::validateWorldAssets(const WorldAssets& assets) {
@@ -69,7 +73,7 @@ void Renderer::paintedTile(Cell c) {
 void Renderer::worldSprite(const WorldObjectDefinition& d,Vec2 position,float scale,float rotation,const Map& map,const WorldView& view) {
     if(d.image.empty()) return;
     const Cell cell{int(position.x),int(position.y)}; if(!map.contains(cell)) return;
-    auto& bitmap=worldSprites_[d.image]; if(!bitmap) loadBitmap(paths_.asset(d.image),bitmap);
+    auto& bitmap=worldSprites_[d.image]; if(!bitmap) loadBitmap(paths_.asset(d.image),bitmap,0,SpriteTeamMask::None,{},true);
     const auto imageSize=bitmap->GetSize();
     const auto source=d.source[2]>0&&d.source[3]>0?rect(d.source[0],d.source[1],d.source[2],d.source[3]):rect(0,0,imageSize.width,imageSize.height);
     if(source.right>imageSize.width||source.bottom>imageSize.height) throw std::runtime_error("Object sprite rectangle outside image");

@@ -4,10 +4,36 @@
 #include <cmath>
 
 namespace rts {
+float flamePulse(const BuildingSpriteLayer& layer, std::uint64_t ticks) {
+    const auto frame = (ticks / layer.ticksPerFrame + layer.phase) % layer.frames.size();
+    const double angle = frame * 6.283185307179586 / layer.frames.size();
+    return .5f + .5f * float(.65 * std::sin(angle) + .35 * std::sin(angle * 2 + .7));
+}
+float crystalPulse(EntityId id, std::uint64_t ticks) {
+    return .88f + .035f * float(std::sin(ticks * .035 + (id % 31)));
+}
+std::uint8_t emissionCoverage(std::uint32_t mask) {
+    // RGB already contains alpha: multiplying by alpha again would crush soft edges.
+    return static_cast<std::uint8_t>((((mask >> 16) & 255) * 54 + ((mask >> 8) & 255) * 183 + (mask & 255) * 19 + 128) / 256);
+}
+std::uint8_t highlightEmission(std::uint32_t pixel) {
+    const unsigned alpha = pixel >> 24;
+    if (!alpha) return 0;
+    const float brightness = std::max({pixel & 255, (pixel >> 8) & 255, (pixel >> 16) & 255}) / float(alpha);
+    const float t = std::clamp((brightness - .32f) / .48f, 0.0f, 1.0f);
+    return static_cast<std::uint8_t>(std::lround(255 * t * t * (3 - 2 * t)));
+}
+float lightFalloff(float distanceSquared, float radius) {
+    if (radius <= 0) return 0;
+    const float d = distanceSquared / (radius * radius);
+    const float wide = std::max(0.0f, 1 - d), core = std::max(0.0f, 1 - d * 12);
+    return .65f * wide * wide + .35f * core * core;
+}
 float nightStrength(const WorldClock& clock) {
     const float minute = static_cast<float>(clock.minuteOfDay());
-    if (minute >= 300 && minute < 420) return 1 - (minute - 300) / 120;
-    if (minute >= 1020 && minute < 1140) return (minute - 1020) / 120;
+    const auto smooth = [](float t) { return t * t * (3 - 2 * t); };
+    if (minute >= 300 && minute < 420) return 1 - smooth((minute - 300) / 120);
+    if (minute >= 1020 && minute < 1140) return smooth((minute - 1020) / 120);
     return clock.phase() == DayPhase::Night ? 1.0f : 0.0f;
 }
 std::vector<ProjectedLight> buildingLights(const Simulation& game, const WorldView& view) {
@@ -27,8 +53,13 @@ std::vector<ProjectedLight> buildingLights(const Simulation& game, const WorldVi
             const float phase = float((b.id * 17 + index++ * 7) % 101);
             if (!light.visible(b.training()) || light.intensity <= 0) continue;
             const double ticks = static_cast<double>(game.clock().elapsedTicks());
-            const float wave = float(.65 * std::sin(ticks * .19 + phase) + .35 * std::sin(ticks * .47 + phase * 1.7));
-            const float intensity = light.intensity * (1 - light.flicker * (.5f + .5f * wave));
+            float pulse = .5f + .5f * float(.65 * std::sin(ticks * .19 + phase) + .35 * std::sin(ticks * .47 + phase * 1.7));
+            if (light.animationLayer >= 0) {
+                const auto& layer = stage->layers.at(light.animationLayer);
+                // Same animation frame always produces the same exposure, including a pause.
+                pulse = flamePulse(layer, game.clock().elapsedTicks());
+            }
+            const float intensity = light.intensity * (1 - light.flicker * pulse);
             lights.push_back({Vec2{bounds.x, bounds.y} + light.position * scale,
                 light.radius * WorldView::tileSize * view.zoom, intensity, light.color});
         }
@@ -40,8 +71,7 @@ std::vector<ProjectedLight> crystalLights(const Simulation& game, const WorldVie
     for (const auto& crystal : game.crystals()) {
         if (crystal.remaining <= 0 || !game.fog().visible(crystal.cell)) continue;
         const auto ground = view.project(center(crystal.cell), float(game.map().at(crystal.cell).height));
-        const double phase = game.clock().elapsedTicks() * .035 + (crystal.id % 31);
-        const float intensity = .88f + .035f * float(std::sin(phase));
+        const float intensity = crystalPulse(crystal.id, game.clock().elapsedTicks());
         lights.push_back({ground + Vec2{0, -22} * view.zoom, 2.1f * WorldView::tileSize * view.zoom,
             intensity, 0xbd8fff});
     }
@@ -49,15 +79,15 @@ std::vector<ProjectedLight> crystalLights(const Simulation& game, const WorldVie
 }
 namespace {
 std::uint32_t overlayPixel(float night, float light, unsigned tint) {
-    // Composite a subtle warm tint over the locally weakened blue night veil.
-    const float dark = night * .42f * (1 - light), warm = night * .12f * light;
+    // Cool ambient light keeps texture contrast; compact warm cores sit in a wider faint pool.
+    const float dark = night * .48f * (1 - light * .88f), warm = night * .18f * light;
     const float alpha = warm + dark * (1 - warm);
     const auto component = [&](unsigned a, unsigned b) {
         return static_cast<std::uint32_t>(std::lround(a * dark * (1 - warm) + b * warm));
     };
     return (static_cast<std::uint32_t>(std::lround(alpha * 255)) << 24) |
-        (component(0x10, (tint >> 16) & 255) << 16) | (component(0x1d, (tint >> 8) & 255) << 8) |
-        component(0x45, tint & 255);
+        (component(0x18, (tint >> 16) & 255) << 16) | (component(0x29, (tint >> 8) & 255) << 8) |
+        component(0x50, tint & 255);
 }
 }
 void NightLightingRaster::update(const Simulation& game, const WorldView& view, Vec2 extent, const FogMask& fog,
@@ -66,6 +96,7 @@ void NightLightingRaster::update(const Simulation& game, const WorldView& view, 
     height_ = std::max(1, static_cast<int>(std::ceil(extent.y / pixelStep)));
     const float night = nightStrength(game.clock());
     pixels_.assign(static_cast<size_t>(width_) * height_, overlayPixel(night, 0, 0));
+    visibilityPixels_.assign(pixels_.size(), 0);
     if (night <= 0) return;
     auto lights = buildingLights(game, view);
     const auto crystals = crystalLights(game, view);
@@ -115,13 +146,13 @@ void NightLightingRaster::update(const Simulation& game, const WorldView& view, 
     }
     for (int y = 0; y < height_; ++y) for (int x = 0; x < width_; ++x) {
         const size_t index = static_cast<size_t>(y) * width_ + x;
+        visibilityPixels_[index] = static_cast<std::uint32_t>(std::lround(visibility_[index] * 255)) * 0x01010101u;
         if (visibility_[index] <= 0) continue;
         const Vec2 p{(x + .5f) * step.x, (y + .5f) * step.y};
         float strength = 0, total = 0, red = 0, green = 0, blue = 0;
         for (const auto& light : lights) {
             const auto d = p - light.position;
-            const float falloff = std::max(0.0f, 1 - (d.x * d.x + d.y * d.y) / (light.radius * light.radius));
-            const float amount = light.intensity * falloff * falloff;
+            const float amount = std::clamp(light.intensity, 0.0f, 1.0f) * lightFalloff(d.x * d.x + d.y * d.y, light.radius);
             strength = std::max(strength, amount); // Overlap must not burn out the scene.
             total += amount;
             red += ((light.color >> 16) & 255) * amount;
