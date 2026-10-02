@@ -3,6 +3,52 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Numbered groups share members, replace independently and recall the full selection", [] {
+        rts::EntityDefinition worker;
+        auto soldier = worker; soldier.id = "soldier"; soldier.canBuild = false; soldier.carryCapacity = 0;
+        auto scene = flatScenario();
+        scene.units = {{soldier.id, 0, {5, 4}}, {soldier.id, 1, {8, 8}}};
+        rts::Simulation game(std::move(scene), {}, worker, {worker, soldier});
+        rts::Selection selection;
+        const auto a = game.worker().id, b = game.units()[1].id, enemy = game.units()[2].id;
+        selection.ids = {a, b, a, enemy, game.buildings().front().id, 99999};
+        selection.activateGroup(game, a);
+        rts::ControlGroups groups;
+        for (size_t slot = 0; slot < rts::controlGroupCount; ++slot) groups.bind(slot, game, selection);
+        for (size_t slot = 0; slot < rts::controlGroupCount; ++slot) {
+            selection = {};
+            require(groups.recall(slot, game, selection) && selection.ids.size() == 2 && selection.contains(a) && selection.contains(b),
+                "Numbered group lost another active type, duplicated a unit or accepted a foreign/non-unit entity");
+            std::reverse(selection.ids.begin(), selection.ids.end());
+            require(groups.selected(slot, selection), "Group highlight depends on selection order");
+        }
+        selection.ids = {b}; groups.bind(0, game, selection);
+        require(groups.members(0) == std::vector{b} && groups.members(9).size() == 2, "Rebinding one slot changed another group");
+        selection = {}; groups.bind(0, game, selection);
+        selection.ids = {a};
+        require(!groups.recall(0, game, selection) && !groups.recall(10, game, selection) && selection.ids == std::vector{a},
+            "An empty or invalid group cleared the current selection");
+        groups.bind(10, game, selection);
+        require(groups.members(9).size() == 2 && rts::controlGroupKey(9) == L'0', "Tenth slot or overlapping membership was lost");
+    });
+    test("Casualties disappear from every numbered group and empty bindings vanish", [] {
+        rts::EntityDefinition worker; worker.maximumHealth = 1;
+        auto killer = worker; killer.id = "killer"; killer.canBuild = false; killer.carryCapacity = 0;
+        killer.attackDamage = 100; killer.attackWindupTicks = 1;
+        rts::Scenario scene{rts::Map(40, 32), {3, 3}, {22, 20}, {}};
+        scene.extraWorkers = {{7, 9}}; scene.units = {{killer.id, 1, {23, 20}}};
+        rts::Simulation game(std::move(scene), {}, worker, {worker, killer});
+        const auto victim = game.worker().id, survivor = game.units()[1].id;
+        rts::Selection selection; selection.ids = {victim, survivor};
+        rts::ControlGroups groups; groups.bind(0, game, selection);
+        selection.ids = {victim}; groups.bind(9, game, selection);
+        ticks(game, 20);
+        require(!game.unit(victim), "Casualty fixture did not kill the worker");
+        require(groups.recall(0, game, selection) && selection.ids == std::vector{survivor}, "Recall retained a dead group member");
+        require(groups.members(0) == std::vector{survivor} && groups.members(9).empty(), "Death was not removed from all bindings");
+        require(!groups.recall(9, game, selection) && selection.ids == std::vector{survivor}, "Wiped group remained selectable");
+        require(rts::GameplayUi{}.controlGroups.members(0).empty(), "New match inherited a numbered group");
+    });
     test("Active groups start with the hero, cycle by type and preserve the full selection", [&] {
         const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
@@ -102,6 +148,12 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
         for (rts::Vec2 extent : {rts::Vec2{800, 600}, rts::Vec2{1440, 900}, rts::Vec2{1920, 1080}}) {
             const rts::BattleLayout layout(extent);
+            const rts::SelectionPanelLayout panel(layout.info);
+            require(panel.content.width >= 200 && panel.portrait.x + panel.portrait.width < panel.content.x,
+                "Portrait overlaps selection content or leaves too little room for stats");
+            for (const auto b : layout.controlGroups)
+                require(b.x >= 0 && b.x + b.width <= extent.x && b.y + b.height < extent.y - 238,
+                    "Numbered group button escapes the screen or overlaps the hint strip");
             require(layout.commands.size() == 12 && layout.commands[3].y == layout.commands[0].y &&
                 layout.commands[4].y > layout.commands[3].y && layout.commands[11].y > layout.commands[7].y, "Command grid is not four by three");
             require(layout.info.x + layout.info.width < layout.commands.front().x, "Command grid overlaps selection info");
@@ -112,11 +164,15 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             for (const auto& card : cards.cards) {
                 visible |= card.active && card.id == game.units().back().id;
                 require(card.bounds.width == (card.active ? 40 : 32), "Active portrait size did not differ");
-                require(layout.info.contains({card.bounds.x, card.bounds.y}) &&
-                    layout.info.contains({card.bounds.x + card.bounds.width - 1, card.bounds.y + card.bounds.height - 1}), "Portrait escaped its panel");
+                const auto health = card.healthBar();
+                require(panel.content.contains({card.bounds.x - 1, card.bounds.y}) &&
+                    panel.content.contains({health.x + health.width, health.y + health.height}), "Card or health bar escaped the content panel");
             }
             require(visible, "Active portrait remained off-screen");
         }
+        selection.ids = {game.worker().id}; selection.prune(game);
+        const rts::SelectionCards single(game, selection, rts::BattleLayout({800, 600}).info);
+        require(single.total == 1 && single.cards.empty(), "Single-unit stats retained an invisible clickable card");
     });
     test("Idle worker cycling uses live free workers and skips holds, pending orders and other owners", [] {
         auto scene = flatScenario(); scene.extraWorkers = {{5, 3}, {6, 3}};

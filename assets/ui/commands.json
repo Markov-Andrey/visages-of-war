@@ -1,16 +1,16 @@
 {
   "icons": {
-    "move": "ui/commands/move.png",
-    "stop": "ui/commands/stop.png",
-    "attack": "ui/commands/attack.png",
-    "hold": "ui/commands/hold.png",
-    "patrol": "ui/commands/patrol.png",
-    "gather": "ui/commands/gather.png",
-    "attack-ground": "ui/commands/attack-ground.png",
-    "build": "ui/commands/build.png",
-    "back": "ui/commands/back.png",
-    "idle-worker": "ui/commands/idle-worker.png",
-    "rally": "ui/commands/rally.png",
-    "cancel": "ui/commands/cancel.png"
+    "move": "ui/commands/move",
+    "stop": "ui/commands/stop",
+    "attack": "ui/commands/attack",
+    "hold": "ui/commands/hold",
+    "patrol": "ui/commands/patrol",
+    "gather": "ui/commands/gather",
+    "attack-ground": "ui/commands/attack-ground",
+    "build": "ui/commands/build",
+    "idle-worker": "ui/commands/idle-worker",
+    "rally": "ui/commands/rally",
+    "cancel": "ui/commands/cancel",
+    "attributes": "ui/commands/attributes"
   }
 }

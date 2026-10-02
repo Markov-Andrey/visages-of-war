@@ -1,6 +1,6 @@
 #pragma once
 #include "rts/Simulation.hpp"
-#include "rts/Paths.hpp"
+#include "rts/IconAsset.hpp"
 #include <array>
 #include <map>
 
@@ -28,7 +28,7 @@ inline constexpr std::array<UnitCommandInfo, 9> unitCommands{{
     {UnitCommand::Gather, 5, "gather", L'G', L"Добывать", L"Выбрать видимую залежь кристаллов для добычи и доставки.", OrderKind::Gather, CommandScope::ActiveGroup},
     {UnitCommand::AttackGround, 6, "attack-ground", L'T', L"Обстрел", L"Обстреливать выбранную точку осадным оружием до нового приказа.", OrderKind::AttackGround, CommandScope::ActiveGroup},
     {UnitCommand::Build, 7, "build", L'B', L"Строить", L"Открыть список доступных построек.", OrderKind::Build, CommandScope::ActiveGroup},
-    {UnitCommand::Back, backCommandSlot, "back", L'X', L"Назад", L"Отменить выбор команды или вернуться к приказам.", OrderKind::Stop}
+    {UnitCommand::Back, backCommandSlot, "cancel", L'X', L"Назад", L"Отменить выбор команды или вернуться к приказам.", OrderKind::Stop}
 }};
 inline const UnitCommandInfo* unitCommandAt(size_t slot) {
     for (const auto& command : unitCommands) if (command.slot == slot) return &command;
@@ -70,5 +70,5 @@ inline bool idleWorker(const Simulation& game, const Unit& unit) {
     return unit.owner == game.player().id && unit.health > 0 && unit.definition.isWorker() &&
         unit.state == UnitState::Idle && !unit.pendingOrder && !unit.targetUnit && unit.progress == 0 && unitOrder(unit) == OrderKind::Stop;
 }
-std::map<std::string, std::filesystem::path> loadCommandIcons(const Paths& paths);
+std::map<std::string, IconAsset> loadCommandIcons(const Paths& paths);
 }

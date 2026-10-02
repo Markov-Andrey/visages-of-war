@@ -3,11 +3,11 @@
 namespace rts {
 using namespace render;
 void Renderer::snapshot(const Simulation& game, const std::filesystem::path& output, const Definitions* menuDefinitions, bool grid,
-    const GameplayUi* interfaceState, MenuPage menuPage, double previewSeconds, const MenuState* menuState, const WorldView* snapshotView) {
+    const GameplayUi* interfaceState, MenuPage menuPage, double previewSeconds, const MenuState* menuState, const WorldView* snapshotView, Vec2 snapshotSize) {
     discardTarget();
-    offscreenSize_ = {1440, 900};
+    offscreenSize_ = {std::clamp(std::floor(snapshotSize.x), 800.0f, 8192.0f), std::clamp(std::floor(snapshotSize.y), 600.0f, 8192.0f)};
     ComPtr<IWICBitmap> bitmap;
-    check(wic_->CreateBitmap(1440, 900, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, bitmap.GetAddressOf()));
+    check(wic_->CreateBitmap(UINT(offscreenSize_.x), UINT(offscreenSize_.y), GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, bitmap.GetAddressOf()));
     auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
     properties.dpiX = properties.dpiY = 96;
     check(factory_->CreateWicBitmapRenderTarget(bitmap.Get(), properties, target_.GetAddressOf()));
@@ -21,7 +21,7 @@ void Renderer::snapshot(const Simulation& game, const std::filesystem::path& out
         drawMenu(game, menu, *menuDefinitions, {-1, -1});
     } else {
         WorldView view{{0, 0}, .85f};
-        view.origin = Vec2{720, 350} - view.project(center(game.hall()) + Vec2{1, 2}, 0);
+        view.origin = offscreenSize_ * .5f - Vec2{0, 100} - view.project(center(game.hall()) + Vec2{1, 2}, 0);
         if (snapshotView) view = *snapshotView;
         GameplayUi ui;
         ui.selection.ids = {game.buildings().front().id};
@@ -45,7 +45,8 @@ void Renderer::writeSnapshot(IWICBitmap* bitmap, const std::filesystem::path& ou
     ComPtr<IWICBitmapFrameEncode> frame;
     check(encoder->CreateNewFrame(frame.GetAddressOf(), nullptr));
     check(frame->Initialize(nullptr));
-    check(frame->SetSize(1440, 900));
+    UINT width{}, height{}; check(bitmap->GetSize(&width, &height));
+    check(frame->SetSize(width, height));
     auto format = GUID_WICPixelFormat32bppBGRA;
     check(frame->SetPixelFormat(&format));
     check(frame->WriteSource(bitmap, nullptr));

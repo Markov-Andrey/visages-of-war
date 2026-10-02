@@ -15,10 +15,16 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     const auto icon = [&](const char* id, Vec2 position, float size) {
         const auto found = commandIcons_.find(id);
         if (found == commandIcons_.end()) return;
-        const auto dimensions = found->second->GetPixelSize();
+        auto& resource = found->second;
+        const auto color = resource.definition.mask.empty() ? 0 : teamColor_;
+        if (!resource.bitmap || resource.color != color) {
+            loadBitmap(resource.definition.image, resource.bitmap, color, SpriteTeamMask::None, resource.definition.mask);
+            resource.color = color;
+        }
+        const auto dimensions = resource.bitmap->GetPixelSize();
         const float scale = size / std::max(dimensions.width, dimensions.height);
         const Vec2 extent{dimensions.width * scale, dimensions.height * scale};
-        sprite(found->second.Get(), rect(0, 0, float(dimensions.width), float(dimensions.height)),
+        sprite(resource.bitmap.Get(), rect(0, 0, float(dimensions.width), float(dimensions.height)),
             position + (Vec2{size, size} - extent) * .5f, extent);
     };
     panel({0, 0, extent.x, 58}, 0x101c25);
@@ -31,9 +37,10 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     std::wostringstream clockText;
     clockText << (game.clock().phase() == DayPhase::Day ? L"ДЕНЬ   " : L"НОЧЬ   ")
               << std::setfill(L'0') << std::setw(2) << minutes / 60 << L":" << std::setw(2) << minutes % 60;
-    text(paused ? L"ПАУЗА  /  Пробел" : clockText.str(), rect(145, 20, 220, 25), 0xaabfbd);
-    text(grid ? L"F3 — сетка: вкл." : L"F3 — сетка: выкл.", rect(360, 21, 160, 25), 0x7d9b99);
-    text(L"КРИСТАЛЛЫ  " + std::to_wstring(game.storedCrystals()), rect(extent.x - 455, 16, 245, 35), 0xccb3f4, true);
+    const bool compact = extent.x < 1060;
+    text(paused ? L"ПАУЗА  /  Пробел" : clockText.str(), rect(145, 20, compact ? 180.0f : 220.0f, 25), 0xaabfbd);
+    if (!compact) text(grid ? L"F3 — сетка: вкл." : L"F3 — сетка: выкл.", rect(360, 21, 160, 25), 0x7d9b99);
+    text(L"КРИСТАЛЛЫ  " + std::to_wstring(game.storedCrystals()), rect(extent.x - 440, compact ? 21.0f : 16.0f, 230, 35), 0xccb3f4, !compact);
     text(L"АРМИЯ  " + std::to_wstring(game.armySupply().used()) + L" / 100", rect(extent.x - 188, 21, 185, 27), 0xaadacb);
     const auto armyCount = std::count_if(game.units().begin(), game.units().end(), [&](const Unit& u) {
         return u.owner == game.player().id && !u.definition.isWorker();
@@ -57,7 +64,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     const auto idleCount = std::count_if(game.units().begin(), game.units().end(), [&](const Unit& u) { return idleWorker(game, u); });
     panel(layout.idleWorker, idleCount == 0 ? 0x202b31 : layout.idleWorker.contains(ui.mouse) ? 0x36564f : 0x233d3d);
     worldOpacity_ = idleCount ? 1.0f : .3f;
-    icon("idle-worker", {layout.idleWorker.x + 8, layout.idleWorker.y + 8}, 40);
+    icon("idle-worker", {layout.idleWorker.x, layout.idleWorker.y}, layout.idleWorker.width);
     worldOpacity_ = 1;
     buttonFrame(layout.idleWorker);
     panel({12, extent.y - 238, std::min(800.0f, extent.x - 24), 28}, 0x15262d);
@@ -129,19 +136,11 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     } else if (unit) {
         const SelectionCards portraits(game, ui.selection, info);
         const auto group = ui.selection.activeGroup(game);
+        drawUnitSelection(game, ui.selection, info);
+        if (SelectionPanelLayout(info).portrait.contains(ui.mouse)) tooltip = &unit->definition;
         for (const auto& card : portraits.cards) {
             const auto* member = game.unit(card.id);
-            const auto b = card.bounds;
-            if (b.contains(ui.mouse)) tooltip = &member->definition;
-            panel(b, card.active ? 0x465541 : member->hero ? 0x55492f : 0x244039);
-            target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
-            unitPortrait(member->definition.sprite, {b.x, b.y}, {b.width, b.height}, teamColor_);
-            target_->PopAxisAlignedClip();
-            buttonFrame(b);
-            if (card.active) {
-                brush_->SetColor(D2D1::ColorF(0xe5cd83));
-                target_->DrawRectangle(rect(b.x + 1, b.y + 1, b.width - 2, b.height - 2), brush_.Get(), 2);
-            }
+            if (card.bounds.contains(ui.mouse) || card.healthBar().contains(ui.mouse)) tooltip = &member->definition;
         }
         const bool builder = commandEnabled(game, ui, UnitCommand::Build);
         if (builder && ui.buildMenu) {
@@ -159,7 +158,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         });
         if (ui.buildMenu) {
             labels[backCommandSlot] = L"Назад"; details[backCommandSlot] = L"Вернуться к приказам юнита.";
-            icons[backCommandSlot] = "back"; buttonKeys[backCommandSlot] = L'X';
+            icons[backCommandSlot] = "cancel"; buttonKeys[backCommandSlot] = L'X';
         } else for (const auto& command : unitCommands) {
             const size_t i = command.slot;
             if (!unitCommandVisible(game, ui, i)) continue;
@@ -190,21 +189,41 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         if (!labels[i].empty()) {
             worldOpacity_ = enabled[i] ? 1.0f : .3f;
             if (icons[i]) {
-                icon(icons[i], {b.x + 8, b.y + 8}, 40);
+                icon(icons[i], {b.x, b.y}, b.width);
             } else if (const auto* type = commandTypes[i]) {
-                target_->PushAxisAlignedClip(rect(b.x + 4, b.y + 4, 48, 48), D2D1_ANTIALIAS_MODE_ALIASED);
+                target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
                 if (type->mobile && !type->sprite.image.empty()) {
-                    unitPortrait(type->sprite, {b.x + 4, b.y + 4}, {48, 48}, teamColor_);
+                    unitPortrait(type->sprite, {b.x, b.y}, {b.width, b.height}, teamColor_);
                 } else if (const auto* stage = type->buildingSprite.stage(type->constructionTicks, type->constructionTicks)) {
-                    const float scale = 44.0f / std::max(stage->source[2], stage->source[3]);
+                    const float scale = std::min(b.width / stage->source[2], b.height / stage->source[3]);
                     const float width = stage->source[2] * scale, height = stage->source[3] * scale;
                     buildingImage(*stage, {b.x + (b.width - width) * .5f, b.y + (b.height - height) * .5f, width, height}, teamColor_);
-                } else icon("build", {b.x + 8, b.y + 8}, 40);
+                } else icon("build", {b.x, b.y}, b.width);
                 target_->PopAxisAlignedClip();
             }
             worldOpacity_ = 1;
         }
         buttonFrame(b);
+        if (active[i] && enabled[i]) {
+            brush_->SetColor(D2D1::ColorF(0xe5cd83));
+            target_->DrawRectangle(rect(b.x + 1, b.y + 1, b.width - 2, b.height - 2), brush_.Get(), 2);
+        }
+    }
+    for (size_t i = 0; i < controlGroupCount; ++i) {
+        const auto& members = ui.controlGroups.members(i);
+        if (members.empty()) continue;
+        const auto b = layout.controlGroups[i];
+        const bool hover = b.contains(ui.mouse), selected = ui.controlGroups.selected(i, ui.selection);
+        panel(b, selected ? 0x465541 : hover ? 0x36564f : 0x233d3d);
+        brush_->SetColor(D2D1::ColorF(selected ? 0xe5cd83 : 0x526c68));
+        target_->DrawRectangle(rect(b.x, b.y, b.width, b.height), brush_.Get());
+        text(std::wstring(1, controlGroupKey(i)), rect(b.x + 6, b.y + 6, 12, 22), 0xe5cd83);
+        text(std::to_wstring(members.size()), rect(b.x + 21, b.y + 6, 26, 22), 0xcbd7d0);
+        if (hover) {
+            actionTitle = L"Группа " + std::wstring(1, controlGroupKey(i));
+            actionDescription = L"Юнитов: " + std::to_wstring(members.size()) +
+                L"\nНажмите цифру или кнопку, чтобы выделить группу.\nCtrl + цифра — записать текущее выделение.";
+        }
     }
     if (layout.idleWorker.contains(ui.mouse)) {
         actionTitle = L"Незанятый работник  [F8]";

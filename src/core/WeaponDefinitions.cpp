@@ -178,9 +178,10 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
             throw std::runtime_error("Point projectiles require a splash radius; unit projectiles have single-target damage");
     }
     if (sprite.is_null()) return;
-    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"});
+    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait"});
     auto& s = e.sprite;
     s.image = imagePath(sprite.at("image"));
+    if (sprite.contains("portrait") && !sprite.at("portrait").is_null()) s.portrait = imagePath(sprite.at("portrait"));
     const auto& frameSize = sprite.at("frameSize");
     if (!frameSize.is_array() || frameSize.size() != 2) throw std::runtime_error("Sprite frame needs width and height");
     s.frameWidth = number(frameSize[0], 1, 1024); s.frameHeight = number(frameSize[1], 1, 1024);

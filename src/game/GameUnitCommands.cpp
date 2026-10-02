@@ -5,6 +5,9 @@ void GameApplication::clearCommandMode() {
     ui_.placement.clear(); ui_.rallyMode = false; ui_.orderMode.reset(); ui_.buildMenu = false;
     ui_.commandGroup.clear();
 }
+void GameApplication::selectControlGroup(size_t slot) {
+    if (ui_.controlGroups.recall(slot, game_, ui_.selection)) clearCommandMode();
+}
 void GameApplication::selectIdleWorker() {
     if (!ui_.selection.idleWorker(game_, ui_.idleWorkerCursor)) return;
     ui_.idleWorkerCursor = ui_.selection.ids.front();

@@ -11,6 +11,7 @@ enum class AttackPhase { Ready, Windup, Recovery, Cooldown };
 enum class SpriteTeamMask { None, Blue, Purple };
 struct UnitSpriteDefinition {
     std::string image = "sprites/worker.png";
+    std::string portrait; // Optional standalone HUD artwork; empty uses the idle icon.
     int frameWidth = 32, frameHeight = 32;
     Vec2 size{80, 80}, anchor{.5f, .7125f};
     std::array<int, 8> rows{0, 1, 2, 3, 4, 5, 6, 7}; // S, SE, E, NE, N, NW, W, SW.

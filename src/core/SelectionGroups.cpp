@@ -57,18 +57,16 @@ SelectionCards::SelectionCards(const Simulation& game, const Selection& selectio
         ordered.insert(ordered.end(), group.ids.begin(), group.ids.end());
     }
     total = ordered.size();
-    if (!total) return;
-    if (total == 1) {
-        cards.push_back({ordered.front(), {info.x + (info.width - 56) * .5f, info.y + (info.height - 56) * .5f, 56, 56}, true});
-        return;
-    }
+    // One unit uses live stats; the separate preview never acts as a group button.
+    if (total < 2) return;
+    info = SelectionPanelLayout(info).content;
     const size_t columns = static_cast<size_t>(std::max(1.0f, (info.width + 6) / 46));
     const size_t capacity = columns * 2;
     // Always bring the active type into view, including selections larger than the HUD.
     first = activeStart / capacity * capacity;
     const size_t visible = std::min(total - first, capacity);
     const size_t rows = (visible + columns - 1) / columns;
-    const float top = info.y + (info.height - (rows * 46.0f - 6)) * .5f;
+    const float top = info.y + (info.height - (rows * 56.0f - 9)) * .5f;
     for (size_t i = first; i < first + visible; ++i) {
         const bool highlighted = game.unit(ordered[i])->definition.id == active.type;
         const float side = highlighted ? 40.0f : 32.0f;
@@ -78,7 +76,7 @@ SelectionCards::SelectionCards(const Simulation& game, const Selection& selectio
         const size_t rowCount = std::min(columns, visible - row * columns);
         const float left = info.x + (info.width - (rowCount * 46.0f - 6)) * .5f;
         cards.push_back({ordered[i], {left + (slot % columns) * 46.0f + inset,
-            top + row * 46.0f + inset, side, side}, highlighted});
+            top + row * 56.0f + inset, side, side}, highlighted});
     }
 }
 }

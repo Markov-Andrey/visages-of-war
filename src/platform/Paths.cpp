@@ -65,6 +65,16 @@ fs::path Paths::asset(const fs::path& relative) const {
     }
     return path;
 }
+fs::path Paths::optionalAsset(const fs::path& relative) const {
+    const auto path = resolve(assets_, relative);
+    const auto status = fs::status(path);
+    if (status.type() == fs::file_type::not_found) return {};
+    if (!fs::is_regular_file(status)) {
+        const auto utf8 = path.u8string();
+        throw std::runtime_error("Expected an asset file: " + std::string(utf8.begin(), utf8.end()));
+    }
+    return path;
+}
 fs::path Paths::writable(const fs::path& relative) const {
     const auto path = resolve(userData_, relative);
     fs::create_directories(path.parent_path());

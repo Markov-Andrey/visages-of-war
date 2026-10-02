@@ -45,8 +45,10 @@ add_library(rts_core
     src/core/UnitOrders.cpp
     src/core/TacticalOrders.cpp
     src/core/CommandUi.cpp
+    src/core/IconAsset.cpp
     src/core/Selection.cpp
     src/core/SelectionGroups.cpp
+    src/core/ControlGroups.cpp
     src/platform/Paths.cpp
 )
 target_include_directories(rts_core PUBLIC include)
@@ -71,6 +73,7 @@ add_library(rts_render
     src/render/EntityRenderer.cpp
     src/render/SceneRenderer.cpp
     src/render/HudRenderer.cpp
+    src/render/SelectionRenderer.cpp
     src/render/MinimapRenderer.cpp
     src/render/MenuRenderer.cpp
     src/render/ColorSelectRenderer.cpp
@@ -125,7 +128,9 @@ target_link_libraries(VisagesForge PRIVATE rts_editor_core comdlg32)
 
 # A target (not POST_BUILD) also synchronizes assets when only data changes.
 add_custom_target(rts_assets ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:RTS>/assets"
+    COMMAND ${CMAKE_COMMAND} "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "-DDESTINATION=$<TARGET_FILE_DIR:RTS>/assets" "-DOUTPUT_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/out"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/scripts/sync-assets.cmake"
     COMMENT "Copying RTS assets next to executable"
     VERBATIM
 )
@@ -156,6 +161,9 @@ if(BUILD_TESTING)
     target_link_libraries(rts_tests PRIVATE rts_editor_core rts_render nlohmann_json::nlohmann_json)
     target_include_directories(rts_tests PRIVATE src)
     add_test(NAME rts_core COMMAND rts_tests "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+    add_test(NAME rts_asset_sync COMMAND ${CMAKE_COMMAND}
+        "-DSYNC=${CMAKE_CURRENT_SOURCE_DIR}/scripts/sync-assets.cmake"
+        "-DWORK=${CMAKE_BINARY_DIR}/asset-sync-test" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/AssetSync.cmake")
     # Deliberately use a working directory unrelated to the executable/assets.
     add_test(NAME rts_assets_from_other_cwd COMMAND RTS --verify-assets)
     set_tests_properties(rts_assets_from_other_cwd PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -164,7 +172,7 @@ if(BUILD_TESTING)
     add_test(NAME rts_menu_snapshot COMMAND RTS --snapshot-menu "${CMAKE_BINARY_DIR}/menu-preview.png")
     add_test(NAME rts_title_snapshot COMMAND RTS --snapshot-title "${CMAKE_BINARY_DIR}/title-preview.png")
     add_test(NAME rts_native_gameplay_ui COMMAND RTS --smoke-test)
-    # Includes 35 software snapshots with cold sprite/lighting caches; this is not a performance gate.
+    # Includes software snapshots with cold sprite/lighting caches; this is not a performance gate.
     set_tests_properties(rts_native_gameplay_ui PROPERTIES TIMEOUT 60 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME forge_assets_from_other_cwd COMMAND VisagesForge --verify-assets)
     set_tests_properties(forge_assets_from_other_cwd PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -177,6 +185,10 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS RTS VisagesForge RUNTIME DESTINATION .)
-install(DIRECTORY assets DESTINATION .)
+install(CODE "
+    execute_process(COMMAND \"${CMAKE_COMMAND}\" \"-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/assets\"
+        \"-DDESTINATION=\${CMAKE_INSTALL_PREFIX}/assets\" \"-DOUTPUT_ROOT=${CMAKE_CURRENT_SOURCE_DIR}/out\"
+        -P \"${CMAKE_CURRENT_SOURCE_DIR}/scripts/sync-assets.cmake\" COMMAND_ERROR_IS_FATAL ANY)
+")
 install(FILES README_TECHNICAL.md DESTINATION . RENAME README.md)
 install(DIRECTORY docs DESTINATION .)

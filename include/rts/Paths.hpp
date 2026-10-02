@@ -9,6 +9,8 @@ public:
     static Paths discover();
     static std::filesystem::path executable();
     std::filesystem::path asset(const std::filesystem::path& relative) const;
+    // Missing is allowed; invalid paths, unreadable files and directories are errors.
+    std::filesystem::path optionalAsset(const std::filesystem::path& relative) const;
     std::filesystem::path writable(const std::filesystem::path& relative) const;
     const std::filesystem::path& assetRoot() const { return assets_; }
     const std::filesystem::path& userRoot() const { return userData_; }

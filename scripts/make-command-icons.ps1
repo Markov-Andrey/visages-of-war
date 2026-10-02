@@ -1,7 +1,7 @@
 # Optional authoring tool for the initial placeholders. Never runs during the build.
 param(
-    [ValidateSet('move', 'stop', 'attack', 'hold', 'patrol', 'gather', 'attack-ground', 'build', 'back', 'idle-worker', 'rally', 'cancel')]
-    [string[]]$Names = @('move', 'stop', 'attack', 'hold', 'patrol', 'gather', 'attack-ground', 'build', 'back', 'idle-worker', 'rally', 'cancel')
+    [ValidateSet('move', 'stop', 'attack', 'hold', 'patrol', 'gather', 'attack-ground', 'build', 'idle-worker', 'rally', 'cancel')]
+    [string[]]$Names = @('move', 'stop', 'attack', 'hold', 'patrol', 'gather', 'attack-ground', 'build', 'idle-worker', 'rally', 'cancel')
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
@@ -14,6 +14,8 @@ function IconPath([int[]]$coordinates, [bool]$filled = $false) {
     if ($filled) { $canvas.FillPolygon($ink, $points) } else { $canvas.DrawLines($stroke, $points) }
 }
 foreach ($name in $Names) {
+    $destination = Join-Path $iconDirectory $name
+    [void][IO.Directory]::CreateDirectory($destination)
     $bitmap = [Drawing.Bitmap]::new(128, 128, [Drawing.Imaging.PixelFormat]::Format32bppArgb)
     $canvas = [Drawing.Graphics]::FromImage($bitmap)
     $stroke = [Drawing.Pen]::new([Drawing.Color]::FromArgb(255, 230, 210, 161), 3)
@@ -38,11 +40,10 @@ foreach ($name in $Names) {
             'gather' { IconPath @(32,9,49,26,42,52,22,52,15,26,32,9); IconPath @(32,9,27,29,32,52,38,29,32,9); IconLine 15 26 49 26 }
             'attack-ground' { $canvas.DrawEllipse($stroke, 14, 14, 36, 36); $canvas.DrawEllipse($stroke, 25, 25, 14, 14); IconLine 32 6 32 19; IconLine 32 45 32 58; IconLine 6 32 19 32; IconLine 45 32 58 32 }
             'build' { IconLine 16 53 39 24; IconPath @(28,14,37,6,56,25,47,34,28,14) $true; IconLine 11 50 21 57 }
-            'back' { IconLine 50 32 14 32; IconPath @(27,18,13,32,27,46) }
             'idle-worker' { $canvas.DrawEllipse($stroke, 22, 10, 20, 23); IconLine 18 17 46 17; IconPath @(13,54,16,43,25,38,39,38,48,43,51,54,13,54) }
             'rally' { IconLine 19 9 19 55; IconPath @(19,12,49,12,42,23,49,34,19,34); IconLine 12 55 27 55 }
             'cancel' { IconLine 17 17 47 47; IconLine 17 47 47 17 }
         }
-        $bitmap.Save((Join-Path $iconDirectory ($name + '.png')), [Drawing.Imaging.ImageFormat]::Png)
+        $bitmap.Save((Join-Path $destination 'icon.png'), [Drawing.Imaging.ImageFormat]::Png)
     } finally { $ink.Dispose(); $stroke.Dispose(); $canvas.Dispose(); $bitmap.Dispose() }
 }

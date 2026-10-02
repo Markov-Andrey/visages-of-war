@@ -35,6 +35,7 @@ private:
     bool executeTarget(rts::Cell target);
     void clearCommandMode();
     void selectIdleWorker();
+    void selectControlGroup(size_t slot);
     void exerciseUnitCommands();
     std::optional<rts::Cell> pickCommandTarget() const;
     void rightClick(std::optional<rts::Cell> target);

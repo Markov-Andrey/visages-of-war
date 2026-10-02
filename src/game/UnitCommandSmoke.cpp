@@ -129,5 +129,49 @@ void GameApplication::exerciseUnitCommands() {
         click({card.bounds.x + 10, card.bounds.y + 10}); break;
     }
     expectGroup("human.soldier", 2);
+    // SetKeyboardState only changes this UI thread's key state, without injecting system input.
+    const auto numberKey = [&](unsigned key, bool control) {
+        struct RestoreKeys {
+            BYTE keys[256]{};
+            RestoreKeys() { if (!GetKeyboardState(keys)) throw std::runtime_error("Cannot read keyboard state"); }
+            ~RestoreKeys() { SetKeyboardState(keys); }
+        } restore;
+        BYTE keys[256]; std::copy(std::begin(restore.keys), std::end(restore.keys), keys);
+        keys[VK_CONTROL] = keys[VK_LCONTROL] = control ? 0x80 : 0;
+        keys[VK_RCONTROL] = 0;
+        if (!SetKeyboardState(keys)) throw std::runtime_error("Cannot set test keyboard state");
+        onMessage(WM_KEYDOWN, key, 0);
+    };
+    for (size_t slot = 0; slot < rts::controlGroupCount; ++slot) {
+        numberKey(rts::controlGroupKey(slot), true);
+        if (ui_.controlGroups.members(slot).size() != wholeSelection.size())
+            throw std::runtime_error("Groups: Ctrl plus digit saved only the active type");
+    }
+    for (size_t slot = 0; slot < rts::controlGroupCount; ++slot) {
+        ui_.selection.ids = {first};
+        numberKey(rts::controlGroupKey(slot), false);
+        if (!ui_.controlGroups.selected(slot, ui_.selection)) throw std::runtime_error("Groups: digit did not recall selection");
+    }
+    ui_.selection.ids = {first}; numberKey('2', true);
+    if (ui_.controlGroups.members(0).size() != wholeSelection.size() || ui_.controlGroups.members(1) != std::vector{first})
+        throw std::runtime_error("Groups: replacement changed another group");
+    onMessage(WM_KEYDOWN, 'M', 0);
+    click({layout.controlGroups[0].x + 10, layout.controlGroups[0].y + 10});
+    if (ui_.orderMode || !ui_.controlGroups.selected(0, ui_.selection) || mouseInWorld() || cursorKind() != rts::CursorKind::Hand)
+        throw std::runtime_error("Groups: button leaked a target click to the world");
+    numberKey(VK_NUMPAD0, false);
+    if (!ui_.controlGroups.selected(9, ui_.selection)) throw std::runtime_error("Groups: numpad zero failed");
+    auto groupPreview = ui_; groupPreview.mouse = {-1, -1};
+    renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"control-groups-preview.png", nullptr, false, &groupPreview);
+    ui_.selection.ids = {first};
+    const auto smallCards = rts::SelectionCards(game_, ui_.selection, layout.info);
+    if (!smallCards.cards.empty()) throw std::runtime_error("Selection: single unit retained a group button");
+    const auto portrait = rts::SelectionPanelLayout(layout.info).portrait;
+    click({portrait.x + 10, portrait.y + 10});
+    if (ui_.selection.ids != std::vector{first} || mouseInWorld() || cursorKind() != rts::CursorKind::Default)
+        throw std::runtime_error("Selection: large portrait changed selection or behaved as a command");
+    auto smallPreview = ui_; smallPreview.mouse = {-1, -1};
+    renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"selection-small-preview.png", nullptr, false, &smallPreview,
+        rts::MenuPage::BattleSetup, 0, nullptr, nullptr, {800, 600});
 }
 }

@@ -29,6 +29,8 @@ rts::CursorKind GameApplication::cursorKind() const {
     if (const auto edge = cameraEdgeDirection(); edge != rts::Vec2{}) return rts::scrollCursor(edge);
     const rts::BattleLayout layout(renderer_.size());
     const auto* building = selectedBuilding();
+    for (size_t i = 0; i < rts::controlGroupCount; ++i)
+        if (!ui_.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse_)) return CursorKind::Hand;
     const auto selected = [&](auto predicate) {
         return std::any_of(ui_.selection.ids.begin(), ui_.selection.ids.end(), [&](rts::EntityId id) {
             const auto* u = game_.unit(id);
@@ -42,7 +44,7 @@ rts::CursorKind GameApplication::cursorKind() const {
     const bool minimap = layout.minimap.contains(mouse_);
     if (!mouseInWorld() && !minimap) {
         for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards)
-            if (card.bounds.contains(mouse_)) return CursorKind::Hand;
+            if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_)) return CursorKind::Hand;
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) {
             bool active = false;
             if (building) active = (building->complete() && ((i == 1 && !building->definition.trainableUnits.empty()) ||
@@ -104,6 +106,8 @@ void GameApplication::refreshCursor() {
 
 bool GameApplication::mouseInWorld() const {
     const rts::BattleLayout layout(renderer_.size());
+    for (size_t i = 0; i < rts::controlGroupCount; ++i)
+        if (!ui_.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse_)) return false;
     return layout.world.contains(mouse_) && !layout.army.contains(mouse_) && !layout.hero.contains(mouse_) && !layout.idleWorker.contains(mouse_);
 }
 
@@ -162,6 +166,10 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         if (layout.army.contains(mouse_)) { selectArmy(); return 0; }
         if (layout.hero.contains(mouse_)) { selectHero(); return 0; }
         if (layout.idleWorker.contains(mouse_)) { selectIdleWorker(); return 0; }
+        for (size_t i = 0; i < rts::controlGroupCount; ++i)
+            if (!ui_.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse_)) {
+                selectControlGroup(i); return 0;
+            }
         if (layout.minimap.contains(mouse_)) {
             const auto c = layout.minimapCell(mouse_, game_.map());
             if (!c) return 0;
@@ -171,7 +179,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) { action(i); return 0; }
-        for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards) if (card.bounds.contains(mouse_)) {
+        for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards) if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_)) {
             if (ui_.selection.activateGroup(game_, card.id)) clearCommandMode();
             return 0;
         }
@@ -255,6 +263,13 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         if (menu_.page != rts::MenuPage::Playing) return 0;
+        if ((wParam >= '0' && wParam <= '9') || (wParam >= VK_NUMPAD0 && wParam <= VK_NUMPAD9)) {
+            const auto digit = wParam >= VK_NUMPAD0 ? wParam - VK_NUMPAD0 : wParam - '0';
+            const size_t slot = digit == 0 ? 9 : size_t(digit - 1);
+            if (GetKeyState(VK_CONTROL) & 0x8000) ui_.controlGroups.bind(slot, game_, ui_.selection);
+            else selectControlGroup(slot);
+            return 0;
+        }
         if (wParam == VK_SPACE) paused_ = !paused_;
         if (wParam == VK_F3) grid_ = !grid_;
         if (wParam == VK_HOME) resetCamera(false);

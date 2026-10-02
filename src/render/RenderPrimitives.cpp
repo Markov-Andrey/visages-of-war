@@ -3,7 +3,11 @@
 namespace rts {
 using namespace render;
 void Renderer::buttonFrame(UiRect area) {
-    if (!buttonFrame_) return;
+    if (!buttonFrame_) {
+        brush_->SetColor(D2D1::ColorF(0xa6aaa8));
+        target_->DrawRectangle(rect(area.x + .5f, area.y + .5f, area.width - 1, area.height - 1), brush_.Get());
+        return;
+    }
     const auto pixels = buttonFrame_->GetSize();
     sprite(buttonFrame_.Get(), rect(0, 0, pixels.width, pixels.height),
         {area.x, area.y}, {area.width, area.height});

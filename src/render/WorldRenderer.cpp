@@ -10,7 +10,7 @@ void Renderer::reloadWorldAssets(const WorldAssets& assets) {
     for (const auto& [key, bitmap] : unitSheets_) spriteLights_.erase(bitmap.Get());
     for (const auto& [key, bitmap] : maskedImages_) spriteLights_.erase(bitmap.Get());
     emissionMasks_.clear();
-    worldAssets_=assets; materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); maskedImages_.clear(); paintResources_.clear(); terrainPaint_.reset();
+    worldAssets_=assets; materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); unitPortraits_.clear(); maskedImages_.clear(); paintResources_.clear(); terrainPaint_.reset();
 }
 void Renderer::validateWorldAssets(const WorldAssets& assets) {
     const auto dimensions=[&](const std::filesystem::path& file) {

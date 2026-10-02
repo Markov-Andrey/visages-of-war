@@ -44,8 +44,21 @@ struct Selection {
 private:
     std::string activeType_;
 };
+inline constexpr size_t controlGroupCount = 10;
+inline constexpr wchar_t controlGroupKey(size_t slot) { return slot == 9 ? L'0' : wchar_t(L'1' + slot); }
+class ControlGroups {
+public:
+    void bind(size_t slot, const Simulation& game, const Selection& selection);
+    bool recall(size_t slot, const Simulation& game, Selection& selection);
+    void prune(const Simulation& game);
+    const std::vector<EntityId>& members(size_t slot) const { return groups_.at(slot); }
+    bool selected(size_t slot, const Selection& selection) const;
+private:
+    std::array<std::vector<EntityId>, controlGroupCount> groups_;
+};
 struct GameplayUi {
     Selection selection;
+    ControlGroups controlGroups;
     std::optional<UiRect> drag;
     std::string placement;
     bool rallyMode{};
@@ -87,24 +100,36 @@ inline bool rallyPointLightVisible(const Simulation& game, const Building& build
 struct BattleLayout {
     UiRect world, minimap, info, menu, army, hero, idleWorker;
     std::array<UiRect, commandSlots> commands{};
+    std::array<UiRect, controlGroupCount> controlGroups{};
     static constexpr size_t commandCount = commandSlots;
     explicit BattleLayout(Vec2 size) {
         world = {0, 58, size.x, std::max(1.0f, size.y - 262)};
         minimap = {18, size.y - 186, 164, 164};
-        info = {204, size.y - 186, size.x - 552, 164};
+        info = {204, size.y - 186, size.x - 482, 164};
         menu = {18, 12, 100, 34};
         army = {18, 72, 164, 40};
         hero = {18, 120, 164, 86};
         idleWorker = {18, size.y - 302, 56, 56};
+        for (size_t i = 0; i < controlGroupCount; ++i)
+            controlGroups[i] = {204 + i * 54.0f, size.y - 278, 48, 32};
         for (size_t i = 0; i < commandCount; ++i)
             commands[i] = {size.x - 262 + (i % commandColumns) * 62.0f, size.y - 190 + (i / commandColumns) * 62.0f, 56, 56};
     }
     std::optional<Cell> minimapCell(Vec2 p, const Map& map) const { return MinimapProjection(minimap, map).pick(p); }
 };
+struct SelectionPanelLayout {
+    UiRect portrait, content;
+    explicit SelectionPanelLayout(UiRect info) {
+        const float side = std::clamp(info.width * .25f, 96.0f, 144.0f);
+        portrait = {info.x, info.y + (info.height - side) * .5f, side, side};
+        content = {info.x + side + 16, info.y, info.width - side - 16, info.height};
+    }
+};
 struct SelectionCard {
     EntityId id;
     UiRect bounds;
     bool active;
+    UiRect healthBar() const { return {bounds.x, bounds.y + bounds.height + 3, bounds.width, 4}; }
 };
 struct SelectionCards {
     std::vector<SelectionCard> cards;

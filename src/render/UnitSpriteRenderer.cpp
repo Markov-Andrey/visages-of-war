@@ -18,6 +18,20 @@ void Renderer::unitImage(const UnitSpriteDefinition& d, int column, int row, Vec
 void Renderer::unitPortrait(const UnitSpriteDefinition& d, Vec2 topLeft, Vec2 extent, unsigned color) {
     sprite(unitBitmap(d, color), rect(float(d.idle * d.frameWidth), float(d.rows[0] * d.frameHeight), float(d.frameWidth), float(d.frameHeight)), topLeft, extent, true);
 }
+void Renderer::unitHudPortrait(const UnitSpriteDefinition& d, UiRect bounds, unsigned color) {
+    if (d.portrait.empty()) {
+        unitPortrait(d, {bounds.x, bounds.y}, {bounds.width, bounds.height}, color);
+        return;
+    }
+    const auto path = imagePath(d.portrait);
+    auto& bitmap = unitPortraits_[path];
+    if (!bitmap) loadBitmap(paths_.asset(path), bitmap);
+    const auto pixels = bitmap->GetPixelSize();
+    const float scale = std::min(bounds.width / pixels.width, bounds.height / pixels.height);
+    const Vec2 extent{pixels.width * scale, pixels.height * scale};
+    sprite(bitmap.Get(), rect(0, 0, float(pixels.width), float(pixels.height)),
+        {bounds.x + (bounds.width - extent.x) * .5f, bounds.y + (bounds.height - extent.y) * .5f}, extent);
+}
 void Renderer::validateCombatAssets(const Definitions& definitions) {
     std::map<std::filesystem::path,Vec2> sizes;
     const auto dimensions = [&](const std::string& image) {
@@ -62,6 +76,7 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
         }
         if (e.mobile) {
             const auto& s = e.sprite; const auto size = dimensions(s.image);
+            if (!s.portrait.empty()) dimensions(s.portrait);
             int column = s.idle;
             for (const auto* frames : {&s.walk, &s.windup, &s.recovery}) column = std::max(column, *std::max_element(frames->begin(), frames->end()));
             const int row = *std::max_element(s.rows.begin(), s.rows.end());

@@ -6,10 +6,78 @@ namespace rts::tests {
 void dataTests(TestSuite& test, const TestContext& context) {
     test("Every command has a replaceable icon resolved from the asset catalog", [&] {
         const auto icons = rts::loadCommandIcons(context.worldPaths);
-        for (const auto& command : rts::unitCommands) require(icons.contains(command.icon) && std::filesystem::is_regular_file(icons.at(command.icon)), "Missing command image");
+        for (const auto& command : rts::unitCommands) require(icons.contains(command.icon) && std::filesystem::is_regular_file(icons.at(command.icon).image), "Missing command image");
         require(icons.contains("idle-worker"), "Missing worker selector image");
     });
     const auto& assets=context.assets;
+    test("Icon folders discover optional masks for every catalog entry and shared bundle", [&] {
+        const auto root = rts::Paths::executable().parent_path() / "command-icon-test";
+        std::filesystem::create_directories(root / "ui");
+        const std::filesystem::path plain = L"icons/Без маски", painted = L"icons/Магия/Пламя";
+        for (const auto& directory : {plain, painted}) {
+            std::filesystem::create_directories(root / directory);
+            std::filesystem::copy_file(assets / "sprites/crystal.png", root / directory / "icon.png", std::filesystem::copy_options::overwrite_existing);
+        }
+        const auto mask = root / painted / "mask.png";
+        std::filesystem::remove(mask);
+        rts::Paths paths(root, root / "user");
+        Json catalog;
+        const auto utf8 = [](const std::filesystem::path& path) {
+            const auto text = path.generic_u8string(); return std::string(text.begin(), text.end());
+        };
+        for (const auto& command : rts::unitCommands) catalog["icons"][command.icon] = utf8(plain);
+        for (const auto id : {"idle-worker", "rally", "cancel", "attributes", "future.spell"}) catalog["icons"][id] = utf8(painted);
+        const auto load = [&] { writeMap(root / "ui/commands.json", catalog); return rts::loadCommandIcons(paths); };
+        for (const auto& [id, icon] : load())
+            require(icon.mask.empty(), "A folder without mask.png acquired a mask");
+        std::filesystem::copy_file(assets / "sprites/crystal.png", mask, std::filesystem::copy_options::overwrite_existing);
+        const auto icons = load();
+        for (const auto id : {"idle-worker", "rally", "cancel", "attributes", "future.spell"})
+            require(icons.at(id).image == paths.asset(painted / "icon.png") && icons.at(id).mask == paths.asset(painted / "mask.png"),
+                "New, shared or auxiliary icon did not discover its mask");
+        require(icons.at("move").mask.empty(), "Mask leaked into another folder");
+        const auto direct = rts::loadIconAsset(paths, painted);
+        require(direct.image == icons.at("future.spell").image && direct.mask == icons.at("future.spell").mask,
+            "Generic icon loader depends on the command catalog");
+        std::filesystem::remove(mask);
+        require(load().at("future.spell").mask.empty(), "Reload retained a removed mask");
+    });
+    test("Icon folders require icon.png and reject invalid masks, paths and catalog entries", [&] {
+        const auto root = rts::Paths::executable().parent_path() / "command-icon-invalid-test";
+        std::filesystem::create_directories(root / "ui");
+        std::filesystem::create_directories(root / "bundle");
+        std::filesystem::copy_file(assets / "sprites/crystal.png", root / "bundle/icon.png", std::filesystem::copy_options::overwrite_existing);
+        rts::Paths paths(root, root / "user");
+        mustThrow([&] { rts::loadIconAsset(paths, "missing"); });
+        for (const auto directory : {"", "../outside", "C:/outside", "icons/file:stream"})
+            mustThrow([&] { rts::loadIconAsset(paths, directory); });
+        mustThrow([&] { paths.optionalAsset("../outside.png"); });
+        std::filesystem::create_directory(root / "bundle/mask.png");
+        mustThrow([&] { rts::loadIconAsset(paths, "bundle"); });
+        std::filesystem::remove(root / "bundle/mask.png");
+        Json catalog;
+        for (const auto& command : rts::unitCommands) catalog["icons"][command.icon] = "bundle";
+        for (const auto id : {"idle-worker", "rally", "cancel"}) catalog["icons"][id] = "bundle";
+        const auto load = [&] { writeMap(root / "ui/commands.json", catalog); return rts::loadCommandIcons(paths); };
+        auto& move = catalog["icons"]["move"];
+        for (const auto& invalid : {Json(nullptr), Json(123), Json::object(), Json(""), Json("bundle/icon.png"), Json("../outside")}) {
+            move = invalid; mustThrow([&] { load(); });
+        }
+        move = "bundle";
+        catalog["icons"].erase("cancel"); mustThrow([&] { load(); });
+    });
+    test("Optional unit portraits preserve the icon fallback and reject paths outside assets", [&] {
+        CatalogFixture fixture(assets);
+        require(fixture.load().entity("human.worker").sprite.portrait.empty(), "Existing units lost their portrait fallback");
+        auto& sprite = fixture.entities["entities"][0]["sprite"];
+        sprite["portrait"] = "portraits/Рабочий.png";
+        require(fixture.load().entity("human.worker").sprite.portrait == "portraits/Рабочий.png", "Portrait path did not load");
+        for (const auto path : {"../outside.png", "C:/outside.png", "portraits/file:stream"}) {
+            sprite["portrait"] = path; mustThrow([&] { fixture.load(); });
+        }
+        sprite["portrait"] = nullptr;
+        require(fixture.load().entity("human.worker").sprite.portrait.empty(), "Null portrait did not restore the fallback");
+    });
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Library publishes selected catalog entries grouped by faction", [&] {
         CatalogFixture fixture(assets);

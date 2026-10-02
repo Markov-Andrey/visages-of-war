@@ -128,6 +128,71 @@
                       "original": "dragon-point-animations-teamcolor.png",
                       "path": "sprites/markers/valeri/rally-point-team.png",
                       "imported": "2026-09-30"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/source/ui-buttons.png",
+                      "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/move/icon.png",
+                      "mask": "ui/commands/move/mask.png",
+                      "crop": [23, 175, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/stop/icon.png",
+                      "mask": "ui/commands/stop/mask.png",
+                      "crop": [323, 175, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/attributes/icon.png",
+                      "mask": "ui/commands/attributes/mask.png",
+                      "crop": [623, 175, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/attack/icon.png",
+                      "mask": "ui/commands/attack/mask.png",
+                      "crop": [923, 175, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/patrol/icon.png",
+                      "mask": "ui/commands/patrol/mask.png",
+                      "crop": [1223, 175, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/hold/icon.png",
+                      "mask": "ui/commands/hold/mask.png",
+                      "crop": [23, 499, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/cancel/icon.png",
+                      "mask": "ui/commands/cancel/mask.png",
+                      "crop": [323, 499, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/attack-ground/icon.png",
+                      "mask": "ui/commands/attack-ground/mask.png",
+                      "crop": [623, 499, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/gather/icon.png",
+                      "mask": "ui/commands/gather/mask.png",
+                      "crop": [923, 499, 290, 290], "imported": "2026-10-02"
+                  },
+                  {
+                      "original": "ui-buttons.png",
+                      "path": "ui/commands/build/icon.png",
+                      "mask": "ui/commands/build/mask.png",
+                      "crop": [1223, 499, 290, 290], "imported": "2026-10-02"
                   }
               ]
 }

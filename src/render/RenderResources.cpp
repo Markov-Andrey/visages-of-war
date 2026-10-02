@@ -13,9 +13,16 @@ void Renderer::verifyAssets() {
     std::vector<std::filesystem::path> images{L"sprites/hall.png", L"sprites/crystal.png", L"sprites/worker.png", L"sprites/tree.png",
         L"ui/menu-background.png", L"ui/logo.png", L"ui/project-icon.png"};
     if (std::filesystem::exists(paths_.assetRoot() / buttonFrameAsset)) images.emplace_back(buttonFrameAsset);
-    for (const auto& [id, path] : loadCommandIcons(paths_)) images.push_back(std::filesystem::relative(path, paths_.assetRoot()));
+    const auto commandIcons = loadCommandIcons(paths_);
+    for (const auto& [id, icon] : commandIcons) {
+        images.push_back(std::filesystem::relative(icon.image, paths_.assetRoot()));
+        if (!icon.mask.empty()) images.push_back(std::filesystem::relative(icon.mask, paths_.assetRoot()));
+    }
     for (const auto& e : definitions.entities()) {
-        if (e.mobile) images.push_back(imagePath(e.sprite.image));
+        if (e.mobile) {
+            images.push_back(imagePath(e.sprite.image));
+            if (!e.sprite.portrait.empty()) images.push_back(imagePath(e.sprite.portrait));
+        }
         if (e.projectile) images.push_back(imagePath(e.projectile->image));
         for (const auto& stage : e.buildingSprite.stages) {
             images.push_back(imagePath(stage.image));
@@ -34,6 +41,7 @@ void Renderer::verifyAssets() {
     }
     for (const auto& material : worldAssets_.materials()) images.push_back(material.image);
     for (const auto& object : worldAssets_.objects()) if (!object.image.empty()) images.push_back(object.image);
+    std::map<std::filesystem::path, std::pair<UINT, UINT>> imageSizes;
     for (const auto& name : images) {
         ComPtr<IWICBitmapDecoder> decoder;
         const auto path = paths_.asset(name);
@@ -46,9 +54,12 @@ void Renderer::verifyAssets() {
         UINT width{}, height{};
         check(converter->GetSize(&width, &height));
         if (!width || !height || width > 8192 || height > 8192) throw std::runtime_error("Invalid asset dimensions");
+        imageSizes[path] = {width, height};
         std::vector<BYTE> data(static_cast<size_t>(width) * height * 4);
         check(converter->CopyPixels(nullptr, width * 4, static_cast<UINT>(data.size()), data.data()));
     }
+    for (const auto& [id, icon] : commandIcons) if (!icon.mask.empty() && imageSizes.at(icon.image) != imageSizes.at(icon.mask))
+        throw std::runtime_error("Command icon team mask dimensions must match image: " + id);
 }
 
 void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask,
@@ -113,7 +124,7 @@ ID2D1Bitmap* Renderer::maskedBitmap(const std::string& image, const std::string&
 
 void Renderer::loadResources() {
     commandIcons_.clear();
-    for (const auto& [id, path] : loadCommandIcons(paths_)) loadBitmap(path, commandIcons_[id]);
+    for (const auto& [id, definition] : loadCommandIcons(paths_)) commandIcons_[id].definition = definition;
     check(target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), brush_.GetAddressOf()));
     groundBrush_ = materialResource(worldAssets_.materials().front().id).brush;
     loadBitmap(paths_.asset(L"sprites/hall.png"), hall_, 0, SpriteTeamMask::None, {}, true);

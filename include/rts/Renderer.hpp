@@ -30,7 +30,7 @@ public:
     void verifyAssets();
     void snapshot(const Simulation& game, const std::filesystem::path& output, const Definitions* menuDefinitions = nullptr, bool grid = false,
         const GameplayUi* interfaceState = nullptr, MenuPage menuPage = MenuPage::BattleSetup, double previewSeconds = 0,
-        const MenuState* menuState = nullptr, const WorldView* snapshotView = nullptr);
+        const MenuState* menuState = nullptr, const WorldView* snapshotView = nullptr, Vec2 snapshotSize = {1440, 900});
     void drawMenu(const Simulation& game, const MenuState& menu, const Definitions& definitions, Vec2 mouse);
     void drawEditor(const WorldEditor& editor, const WorldView& view, Vec2 mouse, bool grid);
     void reloadWorldAssets(const WorldAssets& assets);
@@ -61,6 +61,7 @@ private:
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);
     void unitPortrait(const UnitSpriteDefinition& definition, Vec2 topLeft, Vec2 extent, unsigned color);
+    void unitHudPortrait(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
     void drawProjectiles(const Simulation& game, const WorldView& view);
     void polygon(std::span<const Vec2> points, unsigned color, float opacity = 1.0f, bool fill = true);
     void line(Vec2 a, Vec2 b, unsigned color, float width = 1.0f);
@@ -70,6 +71,9 @@ private:
     void tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog = false);
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
     void hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid);
+    void drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info);
+    void drawUnitStats(const Unit& unit, UiRect bounds);
+    void drawHealthBar(const Unit& unit, UiRect bounds);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
     void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected);
     void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row);
@@ -87,9 +91,15 @@ private:
     std::map<std::string,MaterialResource> materialResources_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> worldSprites_;
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
+    std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitPortraits_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;
     std::map<std::string,RallySpriteDefinition> rallySprites_;
-    std::map<std::string,ComPtr<ID2D1Bitmap>> commandIcons_;
+    struct CommandIconResource {
+        IconAsset definition;
+        ComPtr<ID2D1Bitmap> bitmap;
+        unsigned color{};
+    };
+    std::map<std::string,CommandIconResource> commandIcons_;
     TerrainPaint terrainPaint_;
     std::map<TerrainPaint::Key,PaintResource> paintResources_;
     HWND window_{};
