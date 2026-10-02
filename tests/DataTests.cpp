@@ -391,7 +391,8 @@ void dataTests(TestSuite& test, const TestContext& context) {
         rts::applyTeamColorMask(blue, whiteMask, 0xff0000);
         require(blue[0] == 0 && blue[1] == 0 && std::abs(int(blue[2]) - 94) <= 1 && blue[3] == 255,
             "Dark base clipped without preserving luminosity");
-        const std::array<unsigned, 9> colors{0, 0xffffff, 0x808080, 0xff0000, 0x00ff00, 0x0000ff, 0x4080ff, 0xffd34d, 0xa354cc};
+        const std::array<unsigned, 12> colors{0, 0xffffff, 0x808080, 0xff0000, 0x00ff00, 0x0000ff, 0x4080ff, 0xffd34d, 0xa354cc,
+            0xffff00, 0xffbf00, 0xff8000};
         for (const auto color : colors) for (const int alpha : {1, 32, 128, 255}) for (const int shade : {0, alpha}) {
             const std::array<std::uint8_t, 4> original{std::uint8_t(shade), std::uint8_t(shade), std::uint8_t(shade), std::uint8_t(alpha)};
             auto pixel = original;
@@ -400,7 +401,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         }
     });
     test("Color blending preserves luminosity and alpha over colors and mask coverage", [] {
-        const std::array<unsigned, 7> teams{0x808080, 0xff0000, 0x00ff00, 0x0000ff, 0x4080ff, 0xffd34d, 0xa354cc};
+        const std::array<unsigned, 7> teams{0x808080, 0xff0000, 0x00ff00, 0x0000ff, 0x4080ff, 0x40ffd3, 0xa354cc};
         const auto luminosity = [](const auto& pixel) { return .11 * pixel[0] + .59 * pixel[1] + .30 * pixel[2]; };
         for (const auto team : teams) for (const int alpha : {0, 1, 32, 128, 255})
             for (const int b : {0, 51, 153, 255}) for (const int g : {0, 51, 153, 255}) for (const int r : {0, 51, 153, 255}) {
@@ -462,6 +463,45 @@ void dataTests(TestSuite& test, const TestContext& context) {
                     rts::applyTeamColorMask(light, emptyMask, 0xffffff);
                     rts::applyTeamColorMask(dark, emptyMask, 0);
                     require(light == base && dark == base, "Neutral paint escaped the mask");
+                }
+            }
+        }
+    });
+    test("Warm team paints brighten textured midtones without flattening shading or mask edges", [] {
+        const std::array<std::uint8_t, 4> fullMask{255, 255, 255, 255};
+        const auto luminosity = [](const auto& p) { return .11 * p[0] + .59 * p[1] + .30 * p[2]; };
+        // Independent reference: shaded red cloth has L=85.8/255. Lifted yellow
+        // is RGB(160,160,0), versus RGB(96,96,0) with unmodified Color blending.
+        const std::array<std::uint8_t, 16> original{30, 160, 220, 255, 20, 40, 200, 255, 10, 20, 100, 128, 20, 40, 200, 255};
+        const std::array<std::uint8_t, 16> mask{0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 128, 128, 128, 128};
+        auto yellow = original;
+        applyTeamColorMask(yellow, mask, 0xffff00);
+        require(yellow == std::array<std::uint8_t, 16>{30, 160, 220, 255, 0, 160, 160, 255, 0, 80, 80, 128, 10, 100, 180, 255},
+            "Yellow lost its hue, did not brighten, or applied mask alpha twice");
+        for (unsigned team : {0xffff00, 0xffbf00, 0xff8000}) for (int alpha : {0, 1, 32, 128, 255}) {
+            double previous = -1;
+            for (int shade = 0; shade <= alpha; ++shade) {
+                const auto s = std::uint8_t(shade), a = std::uint8_t(alpha);
+                const std::array<std::uint8_t, 4> base{s, s, s, a};
+                auto painted = base, white = base;
+                applyTeamColorMask(painted, fullMask, team);
+                applyTeamColorMask(white, fullMask, 0xffffff);
+                require(painted[3] == a && painted[0] <= a && painted[1] <= a && painted[2] <= a,
+                    "Warm paint damaged premultiplied transparency");
+                require(luminosity(painted) >= previous && std::abs(luminosity(painted) - luminosity(white)) <= 1,
+                    "Warm paint flattened/reversed shading or failed to inherit white's brightness");
+                previous = luminosity(painted);
+                if (alpha == 255 && shade >= 32 && shade <= 223)
+                    require(luminosity(painted) > shade + 15, "Warm midtones are still dull");
+                for (int coverage : {0, 64, 128, 192, 255}) {
+                    const auto c = std::uint8_t(coverage);
+                    const std::array<std::uint8_t, 4> soft{c, c, c, c};
+                    auto partial = base;
+                    applyTeamColorMask(partial, soft, team);
+                    for (int channel = 0; channel < 3; ++channel)
+                        require(std::abs(partial[channel] - (base[channel] * (255 - coverage) + painted[channel] * coverage) / 255.0) <= 1,
+                            "Warm correction escaped or doubled the soft mask");
+                    require(partial[3] == a, "Soft warm mask changed sprite alpha");
                 }
             }
         }

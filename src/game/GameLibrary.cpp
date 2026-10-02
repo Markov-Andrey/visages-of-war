@@ -4,6 +4,15 @@
 namespace rts::game {
 void GameApplication::advanceMenu(float elapsed) {
     if (menu_.page == MenuPage::Library) menu_.librarySeconds += elapsed;
+    Vec2 pointer{-1, -1};
+    POINT screen{};
+    if (GetForegroundWindow() == window_ && GetCursorPos(&screen) && WindowFromPoint(screen) == window_) {
+        if (ScreenToClient(window_, &screen)) {
+            const float scale = 96.0f / GetDpiForWindow(window_);
+            pointer = {screen.x * scale, screen.y * scale};
+        }
+    }
+    menu_.parallax.advance(pointer, renderer_.size(), elapsed);
 }
 bool GameApplication::libraryLinkAt(Vec2 mouse) const {
     const LibraryLayout layout(renderer_.size());

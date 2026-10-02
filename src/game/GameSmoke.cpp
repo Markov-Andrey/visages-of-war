@@ -103,6 +103,17 @@ void GameApplication::exerciseInterface() {
     checkFullscreen();
     // Exercise the same Win32 handlers used by mouse and keyboard, in a hidden window.
     {
+        auto preview = menu_;
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"menu-centre-preview.png",
+            &definitions_, false, nullptr, rts::MenuPage::Main, 0, &preview);
+        preview.parallax.offset = {-1, -1};
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"menu-left-preview.png",
+            &definitions_, false, nullptr, rts::MenuPage::Main, 0, &preview, nullptr, {1920, 1080});
+        preview.parallax.offset = {1, 1};
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"menu-right-preview.png",
+            &definitions_, false, nullptr, rts::MenuPage::Main, 0, &preview, nullptr, {1280, 1024});
+    }
+    {
         const rts::MenuLayout layout(renderer_.size());
         mouse_ = {layout.battles.x + 20, layout.battles.y + 20};
         menuClick();
@@ -186,9 +197,9 @@ void GameApplication::exerciseInterface() {
         menuClick();
         if (menu_.colorDropdown || menu_.page != rts::MenuPage::Library)
             throw std::runtime_error("Smoke: palette dismissal clicked through to Back");
-        for (const auto color : {rts::TeamColor::White, rts::TeamColor::Black}) {
+        for (const auto color : {rts::TeamColor::White, rts::TeamColor::Black, rts::TeamColor::Yellow, rts::TeamColor::Gold, rts::TeamColor::Orange}) {
             menu_.player.color = color;
-            const auto file = color == rts::TeamColor::White ? L"library-white-preview.png" : L"library-black-preview.png";
+            const auto file = L"library-color-" + std::to_wstring(static_cast<int>(color)) + L"-preview.png";
             renderer_.snapshot(game_, rts::Paths::executable().parent_path() / file, &definitions_, false, nullptr, rts::MenuPage::Library, 0, &menu_);
         }
         mouse_ = book.origin + rts::Vec2{book.back.x + 10, book.back.y + 10} * book.scale;

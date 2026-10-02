@@ -1,5 +1,6 @@
 #pragma once
 #include "rts/Match.hpp"
+#include "rts/MenuBackdrop.hpp"
 #include "rts/Types.hpp"
 #include <array>
 #include <algorithm>
@@ -18,6 +19,7 @@ struct MenuState {
     bool canResume{};
     size_t libraryFaction{}, libraryEntry{}, libraryFactionScroll{}, libraryEntryScroll{};
     double librarySeconds{}; // Presentation clock; browsing never advances the match.
+    MenuParallax parallax;
 };
 struct UiRect {
     float x, y, width, height;

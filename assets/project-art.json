@@ -5,8 +5,15 @@
     "files":  [
                   {
                       "original":  "background.png",
-                      "path":  "ui/menu-background.png",
-                      "sha256":  "6E94DC1097AF1DB05B6191B7AB9D31BA6B64CBC2DF1713018EB1D3FA9C69D98B"
+                      "path":  "ui/menu/background.png",
+                      "imported": "2026-10-02",
+                      "source": "Project owner layered menu revision; imported unchanged. Previous composite preserved at arts-concept/ui/background.png"
+                  },
+                  {
+                      "original": "background-valeri.png",
+                      "path": "ui/menu/valeri.png",
+                      "imported": "2026-10-02",
+                      "source": "Project owner transparent foreground for menu parallax; imported unchanged"
                   },
                   {
                       "original":  "name.png",

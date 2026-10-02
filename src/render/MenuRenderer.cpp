@@ -10,10 +10,13 @@ void Renderer::drawMenu(const Simulation& game, const MenuState& menu, const Def
     const auto extent = size();
     const MenuLayout layout(extent, menu.canResume);
     const auto backgroundSize = menuBackground_->GetSize();
-    const float cover = std::max(extent.x / backgroundSize.width, extent.y / backgroundSize.height);
+    const auto foregroundSize = menuForeground_->GetSize();
+    const MenuBackdropLayout backdrop(extent, {backgroundSize.width, backgroundSize.height},
+        {foregroundSize.width, foregroundSize.height}, menu.parallax.offset);
     sprite(menuBackground_.Get(), rect(0, 0, backgroundSize.width, backgroundSize.height),
-        {(extent.x - backgroundSize.width * cover) * .5f, (extent.y - backgroundSize.height * cover) * .5f},
-        {backgroundSize.width * cover, backgroundSize.height * cover});
+        backdrop.backgroundOrigin, backdrop.backgroundSize);
+    sprite(menuForeground_.Get(), rect(0, 0, foregroundSize.width, foregroundSize.height),
+        backdrop.foregroundOrigin, backdrop.foregroundSize);
     brush_->SetColor(D2D1::ColorF(0x080d14, menu.page == MenuPage::Main ? .12f : .78f));
     target_->FillRectangle(rect(0, 0, extent.x, extent.y), brush_.Get());
     const auto panel = [&](UiRect area, unsigned color, float opacity = 1.0f) {

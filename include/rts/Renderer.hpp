@@ -132,7 +132,7 @@ private:
     ComPtr<ID2D1Bitmap> fogBitmap_;
     ComPtr<ID2D1BitmapBrush> fogBrush_;
     ComPtr<ID2D1Bitmap> hall_, crystal_, worker_, enemy_, tree_, minimap_;
-    ComPtr<ID2D1Bitmap> menuBackground_, logo_, buttonFrame_;
+    ComPtr<ID2D1Bitmap> menuBackground_, menuForeground_, logo_, buttonFrame_;
     unsigned teamColor_ = teamRgb(TeamColor::Blue);
     unsigned enemyColor_ = teamRgb(TeamColor::Red);
     float worldOpacity_ = 1;

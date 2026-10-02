@@ -39,7 +39,7 @@ void Renderer::discardTarget() {
     nightBrush_.Reset(); nightBitmap_.Reset();
     glowBrushes_.clear(); glowVisibilityBrush_.Reset(); glowVisibility_.Reset();
     groundBrush_.Reset();
-    menuBackground_.Reset(); logo_.Reset(); buttonFrame_.Reset();
+    menuBackground_.Reset(); menuForeground_.Reset(); logo_.Reset(); buttonFrame_.Reset();
     minimap_.Reset(); tree_.Reset(); enemy_.Reset(); worker_.Reset(); crystal_.Reset(); hall_.Reset(); brush_.Reset(); target_.Reset(); windowTarget_.Reset();
 }
 

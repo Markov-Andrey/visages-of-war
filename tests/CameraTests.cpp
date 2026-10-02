@@ -1,5 +1,6 @@
 #include "TestSupport.hpp"
 #include "game/CameraController.hpp"
+#include "rts/MenuBackdrop.hpp"
 
 namespace rts::tests {
 namespace {
@@ -11,6 +12,27 @@ void advance(game::CameraController& camera, WorldView& view, int frames, float 
 }
 void cameraTests(TestSuite& test) {
     using game::CameraController;
+    test("Menu parallax is frame-rate independent and never reveals background edges", [] {
+        const Vec2 extent{1920, 1080}, pointer{1900, 1060};
+        MenuParallax slow, fast;
+        slow.advance(pointer, extent, .25f);
+        for (int i = 0; i < 30; ++i) fast.advance(pointer, extent, 1.0f / 120);
+        require(distance(slow.offset, fast.offset) < .0001f, "Menu parallax depends on frame rate");
+        require(slow.offset.x > 0 && slow.offset.x < 1, "Parallax jumped to its target or overshot");
+        slow.advance({-1, -1}, extent, 2);
+        require(distance(slow.offset, {}) < .0001f, "Absent pointer did not return the backdrop to centre");
+        for (Vec2 screen : {Vec2{800, 600}, Vec2{1280, 1024}, Vec2{1920, 1080}, Vec2{3440, 1440}})
+            for (Vec2 offset : {Vec2{-1, -1}, Vec2{1, 1}, Vec2{-1, 1}, Vec2{1, -1}, Vec2{}}) {
+                const MenuBackdropLayout layout(screen, {1672, 941}, {1024, 1535}, offset);
+                const auto end = layout.backgroundOrigin + layout.backgroundSize;
+                require(layout.backgroundOrigin.x < 0 && layout.backgroundOrigin.y < 0 && end.x > screen.x && end.y > screen.y,
+                    "Menu parallax exposed an empty border after resize");
+                require(std::abs(layout.foregroundSize.x / layout.foregroundSize.y - 1024.0f / 1535) < .0001f,
+                    "Foreground aspect ratio changed");
+                require(layout.foregroundOrigin.y + layout.foregroundSize.y > screen.y,
+                    "Parallax revealed the foreground's cropped bottom edge");
+            }
+    });
     test("Camera map borders stop scrolling without accumulated pressure or blocked tangential motion", [] {
         const Vec2 origin{0, 58}, size{1440, 638}, map{64, 48}, middle = origin + size * .5f;
         const float margin = game::cameraTuning.borderMargin;

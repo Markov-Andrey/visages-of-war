@@ -11,7 +11,7 @@ void Renderer::verifyAssets() {
     validateCombatAssets(definitions);
     // Decode all files, including on --verify-assets, without creating a window.
     std::vector<std::filesystem::path> images{L"sprites/hall.png", L"sprites/crystal.png", L"sprites/worker.png", L"sprites/tree.png",
-        L"ui/menu-background.png", L"ui/logo.png", L"ui/project-icon.png"};
+        L"ui/menu/background.png", L"ui/menu/valeri.png", L"ui/logo.png", L"ui/project-icon.png"};
     if (std::filesystem::exists(paths_.assetRoot() / buttonFrameAsset)) images.emplace_back(buttonFrameAsset);
     const auto commandIcons = loadCommandIcons(paths_);
     for (const auto& [id, icon] : commandIcons) {
@@ -132,7 +132,8 @@ void Renderer::loadResources() {
     loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_, SpriteTeamMask::Blue);
     loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_, SpriteTeamMask::Blue);
     loadBitmap(paths_.asset(L"sprites/tree.png"), tree_, 0, SpriteTeamMask::None, {}, true);
-    loadBitmap(paths_.asset(L"ui/menu-background.png"), menuBackground_);
+    loadBitmap(paths_.asset(L"ui/menu/background.png"), menuBackground_);
+    loadBitmap(paths_.asset(L"ui/menu/valeri.png"), menuForeground_);
     loadBitmap(paths_.asset(L"ui/logo.png"), logo_);
     // Optional artwork: command buttons and unit cards also work without a frame.
     if (std::filesystem::exists(paths_.assetRoot() / buttonFrameAsset))
