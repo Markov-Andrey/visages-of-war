@@ -71,13 +71,10 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                 if (!onScreen(p)) break;
                 worldOpacity_ = game.fog().visible(crystal.cell) ? 1.0f : .3f;
                 if (ui.selection.contains(crystal.id) && game.fog().visible(crystal.cell)) {
-                    drawSelectionRing(p + Vec2{0, -5} * view.zoom, 34, 16, view.zoom,
+                    drawSelectionRing(p, 28, 13, view.zoom,
                         selectionColor(crystal.owner, game.player().id));
                 }
-                auto* emission = game.fog().visible(crystal.cell) ? spriteLights_.at(crystal_.Get()).highlights.Get() : nullptr;
-                if (emission) drawLightGlow(p + Vec2{0, -22} * view.zoom, 46 * view.zoom, 0xbd8fff,
-                    crystalPulse(crystal.id, game.clock().elapsedTicks()));
-                sprite(crystal_.Get(), rect(0, 0, 128, 128), p + Vec2{-48, -76} * view.zoom, Vec2{96, 96} * view.zoom, false, 1, emission);
+                drawCrystal(crystal, p, view.zoom, game.fog().visible(crystal.cell), game.clock().elapsedTicks());
                 break;
             }
             case Kind::Environment: {

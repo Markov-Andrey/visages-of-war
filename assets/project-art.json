@@ -3,6 +3,27 @@
     "source":  "Artwork supplied by the project owner",
     "rights":  "Project artwork; not part of the third-party CC0 asset catalog",
     "files":  [
+        {
+          "original": "crystal-sprites.png",
+          "path": "sprites/resources/crystal/variants.png",
+          "imported": "2026-10-04",
+          "source": "Project owner crystal sheet; original PNG bytes preserved. The supplied 1536x1024 sheet contains 12 variants in four columns and three rows. Crops and ground anchors are in world/resources.json; each deposit occupies one logical cell.",
+          "sha256": "CE6A6C11E34EFF3AA117ACCC5282FE3E1B54EAC57BA80E479E9A3213DAA98BE6"
+        },
+        {
+          "original": "crystal.png",
+          "path": "ui/resources/crystal/icon.png",
+          "imported": "2026-10-04",
+          "source": "Project owner crystal UI icon; original PNG bytes and black backing preserved.",
+          "sha256": "598E585863FF076E7E1EE0EAADB720498E626437F5808678CC7E6C11AB15F3CE"
+        },
+        {
+          "original": "limit-ico.png",
+          "path": "ui/resources/supply/icon.png",
+          "imported": "2026-10-04",
+          "source": "Project owner army supply UI icon; original PNG bytes preserved.",
+          "sha256": "A7C0DFEAA586FCA16F26BA87EE1A4DBFAB1421E4AA8534C2E31E3E0C99785BA2"
+        },
                   {
                       "original":  "background.png",
                       "path":  "ui/menu/background.png",

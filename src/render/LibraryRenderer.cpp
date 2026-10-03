@@ -110,7 +110,7 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
 
     std::vector<std::pair<std::wstring, std::wstring>> stats{
         {L"Здоровье", std::to_wstring(entity.maximumHealth)},
-        {L"Стоимость", std::to_wstring(entity.cost.crystals) + L" кристаллов"},
+        {L"Стоимость", std::to_wstring(entity.cost.crystals)},
         {L"Лимит армии", std::to_wstring(entity.cost.supply)},
         {L"Атака", entity.attackDamage > 0 ? std::to_wstring(entity.attackDamage) : L"Не атакует"},
         {L"Обзор днём / ночью", std::to_wstring(entity.dayVision) + L" / " + std::to_wstring(entity.nightVision) + L" клеток"}
@@ -123,11 +123,15 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
         stats.emplace_back(L"Скорость", amount(entity.movementPerSecond) + L" клеток/с");
     }
     float y = 338;
+    size_t statIndex = 0;
     for (const auto& [label, value] : stats) {
         text(label, rect(782, y, 208, 25), 0x76634a);
-        text(value, rect(992, y, 222, 25), 0x392f25);
+        const char* resource = statIndex == 1 ? "crystal" : statIndex == 2 ? "supply" : nullptr;
+        if (resource) drawResourceIcon(resource, {992, y, 24, 24});
+        text(value, rect(resource ? 1022.0f : 992.0f, y, resource ? 192.0f : 222.0f, 25), 0x392f25);
         line({782, y + 25}, {1214, y + 25}, 0xd6c7a6);
         y += 31;
+        ++statIndex;
     }
     std::wstring abilities;
     if (entity.acceptsCargo) abilities = L"Принимает кристаллы рабочих.\n";

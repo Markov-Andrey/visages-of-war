@@ -49,6 +49,36 @@ WorldAssets WorldAssets::load(const Paths& paths) {
         sprite.variants.push_back(frame);
     }
     std::set<std::string> ids;
+    const auto resources = read(paths.asset(utf8Path(index.at("resourcesFile").get<std::string>())));
+    for (const auto& [id, image] : resources.at("icons").items()) {
+        auto path = utf8Path(image.get<std::string>()); paths.asset(path);
+        result.resourceIcons_.emplace(id, std::move(path));
+    }
+    for (const auto* id : {"crystal", "supply"}) if (!result.resourceIcons_.contains(id))
+        throw std::runtime_error("Missing resource icon: " + std::string(id));
+    const auto& crystal = resources.at("crystal");
+    auto& resource = result.crystalSprite_;
+    resource.image = utf8Path(crystal.at("image").get<std::string>()); paths.asset(resource.image);
+    resource.scale = number(crystal.at("scale"), .01f, 4);
+    const auto color = crystal.at("glowColor").get<std::string>();
+    if (color.size() != 6 || color.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos)
+        throw std::runtime_error("Invalid crystal glow color");
+    resource.glowColor = static_cast<unsigned>(std::stoul(color, nullptr, 16));
+    const auto& crystalVariants = crystal.at("variants");
+    if (!crystalVariants.is_array() || crystalVariants.empty() || crystalVariants.size() > 256)
+        throw std::runtime_error("Invalid crystal variants");
+    for (const auto& variant : crystalVariants) {
+        const auto& source = variant.at("source"); const auto& anchor = variant.at("anchor");
+        if (!source.is_array() || source.size() != 4 || !anchor.is_array() || anchor.size() != 2)
+            throw std::runtime_error("Invalid crystal crop or anchor");
+        UnitDeathFrame frame;
+        for (size_t i = 0; i < 4; ++i) {
+            if (!source[i].is_number_integer()) throw std::runtime_error("Crystal crop must use integer pixels");
+            frame.source[i] = int(number(source[i], i < 2 ? 0.f : 1.f, 8192));
+        }
+        frame.anchor = {number(anchor[0], 0, float(frame.source[2])), number(anchor[1], 0, float(frame.source[3]))};
+        resource.variants.push_back(frame);
+    }
     for (const auto& file : index.at("materialFiles")) for (const auto& j : read(paths.asset(utf8Path(file.get<std::string>())))) {
         TerrainMaterial m;
         m.id = identifier(j.at("id"), ids); m.name = j.at("name").get<std::string>();

@@ -1,0 +1,25 @@
+{
+  "icons": {
+    "crystal": "ui/resources/crystal/icon.png",
+    "supply": "ui/resources/supply/icon.png"
+  },
+  "crystal": {
+    "image": "sprites/resources/crystal/variants.png",
+    "scale": 0.24,
+    "glowColor": "ff713c",
+    "variants": [
+      { "source": [102, 61, 235, 280], "anchor": [117.5, 266] },
+      { "source": [469, 61, 248, 287], "anchor": [124, 273] },
+      { "source": [872, 49, 232, 305], "anchor": [116, 291] },
+      { "source": [1263, 100, 212, 236], "anchor": [106, 222] },
+      { "source": [101, 395, 195, 261], "anchor": [97.5, 247] },
+      { "source": [480, 446, 243, 202], "anchor": [121.5, 188] },
+      { "source": [869, 393, 222, 268], "anchor": [111, 254] },
+      { "source": [1241, 426, 211, 236], "anchor": [105.5, 222] },
+      { "source": [93, 698, 240, 250], "anchor": [120, 236] },
+      { "source": [508, 682, 186, 293], "anchor": [93, 279] },
+      { "source": [862, 711, 245, 245], "anchor": [122.5, 231] },
+      { "source": [1255, 724, 194, 240], "anchor": [97, 226] }
+    ]
+  }
+}

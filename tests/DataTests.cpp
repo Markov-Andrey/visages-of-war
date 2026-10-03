@@ -29,7 +29,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         const std::filesystem::path plain = L"icons/Без маски", painted = L"icons/Магия/Пламя";
         for (const auto& directory : {plain, painted}) {
             std::filesystem::create_directories(root / directory);
-            std::filesystem::copy_file(assets / "sprites/crystal.png", root / directory / "icon.png", std::filesystem::copy_options::overwrite_existing);
+            std::filesystem::copy_file(assets / "ui/resources/crystal/icon.png", root / directory / "icon.png", std::filesystem::copy_options::overwrite_existing);
         }
         const auto mask = root / painted / "mask.png";
         std::filesystem::remove(mask);
@@ -43,7 +43,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         const auto load = [&] { writeMap(root / "ui/commands.json", catalog); return rts::loadCommandIcons(paths); };
         for (const auto& [id, icon] : load())
             require(icon.mask.empty(), "A folder without mask.png acquired a mask");
-        std::filesystem::copy_file(assets / "sprites/crystal.png", mask, std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::copy_file(assets / "ui/resources/crystal/icon.png", mask, std::filesystem::copy_options::overwrite_existing);
         const auto icons = load();
         for (const auto id : {"idle-worker", "rally", "cancel", "attributes", "future.spell"})
             require(icons.at(id).image == paths.asset(painted / "icon.png") && icons.at(id).mask == paths.asset(painted / "mask.png"),
@@ -59,7 +59,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         const auto root = rts::Paths::executable().parent_path() / "command-icon-invalid-test";
         std::filesystem::create_directories(root / "ui");
         std::filesystem::create_directories(root / "bundle");
-        std::filesystem::copy_file(assets / "sprites/crystal.png", root / "bundle/icon.png", std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::copy_file(assets / "ui/resources/crystal/icon.png", root / "bundle/icon.png", std::filesystem::copy_options::overwrite_existing);
         rts::Paths paths(root, root / "user");
         mustThrow([&] { rts::loadIconAsset(paths, "missing"); });
         for (const auto directory : {"", "../outside", "C:/outside", "icons/file:stream"})

@@ -1,5 +1,6 @@
 {
   "materialFiles": ["world/materials.json"],
   "objectFiles": ["world/objects.json"],
-  "remainsFile": "world/remains.json"
+  "remainsFile": "world/remains.json",
+  "resourcesFile": "world/resources.json"
 }

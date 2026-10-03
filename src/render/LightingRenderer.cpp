@@ -17,7 +17,7 @@ void Renderer::prepareNightLighting(const Simulation& game, const WorldView& vie
                 light.radius * WorldView::tileSize * view.zoom, light.intensity, light.color});
         }
     }
-    nightLighting_.update(game, view, extent, fogMask_, rallyLights);
+    nightLighting_.update(game, view, extent, fogMask_, rallyLights, worldAssets_.crystalSprite().glowColor);
     const auto w = static_cast<UINT32>(nightLighting_.width()), h = static_cast<UINT32>(nightLighting_.height());
     const auto previous = nightBitmap_ ? nightBitmap_->GetPixelSize() : D2D1_SIZE_U{};
     if (!nightBitmap_ || previous.width != w || previous.height != h) {

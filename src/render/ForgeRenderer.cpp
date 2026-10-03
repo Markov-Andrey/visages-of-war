@@ -49,7 +49,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
             const auto item=items[next++];
             if(item.kind==0) environmentObject(s.environment[item.index],map,view);
             if(item.kind==1) decoration(s.landscape.decorations[item.index],map,view);
-            if(item.kind==2) { const auto c=s.crystals[item.index].cell; const auto p=view.project(center(c),float(map.at(c).height)); sprite(crystal_.Get(),rect(0,0,128,128),p+Vec2{-48,-76}*view.zoom,Vec2{96,96}*view.zoom); }
+            if(item.kind==2) { const auto& crystal=s.crystals[item.index]; const auto p=view.project(center(crystal.cell),float(map.at(crystal.cell).height)); drawCrystal(crystal,p,view.zoom); }
             if(item.kind==3) {
                 const auto p=view.project({s.hall.x+depot.width*.5f,s.hall.y+depot.height*.5f},float(map.at(s.hall).height));
                 const auto* stage=depot.buildingSprite.stage(depot.constructionTicks,depot.constructionTicks);

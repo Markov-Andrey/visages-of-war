@@ -40,8 +40,11 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     const bool compact = extent.x < 1060;
     text(paused ? L"ПАУЗА  /  Пробел" : clockText.str(), rect(145, 20, compact ? 180.0f : 220.0f, 25), 0xaabfbd);
     if (!compact) text(grid ? L"F3 — сетка: вкл." : L"F3 — сетка: выкл.", rect(360, 21, 160, 25), 0x7d9b99);
-    text(L"КРИСТАЛЛЫ  " + std::to_wstring(game.storedCrystals()), rect(extent.x - 440, compact ? 21.0f : 16.0f, 230, 35), 0xccb3f4, !compact);
-    text(L"АРМИЯ  " + std::to_wstring(game.armySupply().used()) + L" / 100", rect(extent.x - 188, 21, 185, 27), 0xaadacb);
+    const UiRect crystalCounter{extent.x - 440, 10, 230, 38}, supplyCounter{extent.x - 188, 10, 178, 38};
+    drawResourceIcon("crystal", {crystalCounter.x, 12, 34, 34});
+    text(std::to_wstring(game.storedCrystals()), rect(crystalCounter.x + 42, compact ? 21.0f : 16.0f, 178, 35), 0xeac2a4, !compact);
+    drawResourceIcon("supply", {supplyCounter.x, 12, 34, 34});
+    text(std::to_wstring(game.armySupply().used()) + L" / 100", rect(supplyCounter.x + 42, 21, 136, 27), 0xe4d4a5);
     const auto armyCount = std::count_if(game.units().begin(), game.units().end(), [&](const Unit& u) {
         return u.owner == game.player().id && !u.definition.isWorker();
     });
@@ -91,13 +94,13 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         const int remaining = resource->remaining;
         text(L"Кристаллы", rect(info.x, info.y, info.width, 34), 0xe0eade, true);
         text(L"Нейтральный объект", rect(info.x, info.y + 39, info.width, 24), 0x9dc1b6);
-        sprite(crystal_.Get(), rect(0, 0, 128, 128), {info.x - 12, info.y + 48}, {96, 96});
+        drawResourceIcon("crystal", {info.x - 12, info.y + 48, 96, 96});
         text(L"Остаток ресурса:  " + std::to_wstring(remaining) + L" / " + std::to_wstring(Crystal::maximum),
-            rect(info.x + 88, info.y + 78, info.width - 88, 26), 0xcbb5ef);
+            rect(info.x + 88, info.y + 78, info.width - 88, 26), 0xeac2a4);
         const float barWidth = std::max(1.0f, info.width - 100);
         panel({info.x + 88, info.y + 113, barWidth, 8}, 0x26313e);
-        if (remaining > 0) panel({info.x + 88, info.y + 113, barWidth * remaining / Crystal::maximum, 8}, 0xb695db);
-        text(L"Рабочие добывают ресурс и доставляют его в ратушу.",
+        if (remaining > 0) panel({info.x + 88, info.y + 113, barWidth * remaining / Crystal::maximum, 8}, worldAssets_.crystalSprite().glowColor);
+        text(L"Добывается в жилах рабочими. Кристаллы доставляются в ратушу.",
             rect(info.x, info.y + 143, info.width, 23), 0x7e9eaa);
     } else if (building) {
         const auto& b = *building;
@@ -230,6 +233,13 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         actionDescription = L"Свободно: " + std::to_wstring(idleCount) +
             L"\nВыбрать следующего незанятого работника и переместить к нему камеру.";
     }
+    if (crystalCounter.contains(ui.mouse)) {
+        actionTitle = L"Кристаллы";
+        actionDescription = L"Добывается в жилах рабочими.";
+    } else if (supplyCounter.contains(ui.mouse)) {
+        actionTitle = L"Лимит армии";
+        actionDescription = L"Занято: " + std::to_wstring(game.armySupply().used()) + L" / 100.\nКаждый юнит занимает часть лимита армии.";
+    }
     if (!actionTitle.empty()) {
         const float width = std::min(380.0f, extent.x - 24), height = 132;
         const float x = std::clamp(ui.mouse.x - width, 12.0f, extent.x - width - 12);
@@ -248,10 +258,12 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         text(wide(tooltip->factionName), rect(x + 14, y + 46, width - 28, 24), 0xa8b9b0);
         text(wide(tooltip->description), rect(x + 14, y + 75, width - 28, 77), 0xcbd7d0);
         const auto& cost = tooltip->cost;
-        text(L"Кристаллы: " + std::to_wstring(cost.crystals),
-            rect(x + 14, y + 165, width - 28, 23), game.storedCrystals() >= cost.crystals ? 0xcbb5ef : 0xed8b80);
+        drawResourceIcon("crystal", {x + 14, y + 163, 24, 24});
+        text(L"Стоимость: " + std::to_wstring(cost.crystals),
+            rect(x + 44, y + 165, width - 58, 23), game.storedCrystals() >= cost.crystals ? 0xeac2a4 : 0xed8b80);
+        drawResourceIcon("supply", {x + 14, y + 191, 24, 24});
         text(L"Лимит армии: " + std::to_wstring(cost.supply),
-            rect(x + 14, y + 193, width - 28, 23), game.armySupply().canReserve(cost.supply) ? 0x9dd7b0 : 0xed8b80);
+            rect(x + 44, y + 193, width - 58, 23), game.armySupply().canReserve(cost.supply) ? 0xe4d4a5 : 0xed8b80);
     }
 }
 }

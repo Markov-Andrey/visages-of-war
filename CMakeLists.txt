@@ -69,6 +69,7 @@ add_library(rts_render
     src/render/WorldRenderer.cpp
     src/render/UnitSpriteRenderer.cpp
     src/render/RemainsRenderer.cpp
+    src/render/ResourceRenderer.cpp
     src/render/DirectionalSpriteAssets.cpp
     src/render/UnitDirectionPreview.cpp
     src/render/BuildingSpriteRenderer.cpp

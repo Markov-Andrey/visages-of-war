@@ -2,6 +2,7 @@
 #include "rts/Environment.hpp"
 #include "rts/Paths.hpp"
 #include <array>
+#include <map>
 
 namespace rts {
 struct TerrainMaterial {
@@ -28,6 +29,12 @@ struct BonesSpriteDefinition {
     float scale = 1;
     bool pixelArt{};
 };
+struct CrystalSpriteDefinition {
+    std::filesystem::path image;
+    std::vector<UnitDeathFrame> variants;
+    float scale = 1;
+    unsigned glowColor = 0xff713c;
+};
 class WorldAssets {
 public:
     static WorldAssets load(const Paths& paths);
@@ -36,10 +43,14 @@ public:
     const auto& materials() const { return materials_; }
     const auto& objects() const { return objects_; }
     const BonesSpriteDefinition& bonesSprite() const { return bonesSprite_; }
+    const CrystalSpriteDefinition& crystalSprite() const { return crystalSprite_; }
+    const auto& resourceIcons() const { return resourceIcons_; }
     EnvironmentObject instantiate(const std::string& id, EntityId instance, Cell origin) const;
 private:
     std::vector<TerrainMaterial> materials_;
     std::vector<WorldObjectDefinition> objects_;
     BonesSpriteDefinition bonesSprite_;
+    CrystalSpriteDefinition crystalSprite_;
+    std::map<std::string, std::filesystem::path> resourceIcons_;
 };
 }

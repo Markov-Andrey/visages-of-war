@@ -143,7 +143,7 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
     const auto frame = unitFrame(u);
     unitImage(u.definition.sprite, frame.column, frame.row, p, view.zoom, u.owner == game.player().id ? teamColor_ : enemyColor_);
     if (u.cargo > 0) {
-        brush_->SetColor(D2D1::ColorF(0xc49af0));
+        brush_->SetColor(D2D1::ColorF(worldAssets_.crystalSprite().glowColor));
         target_->FillEllipse(D2D1::Ellipse(point(p + Vec2{16, -25} * view.zoom), 5 * view.zoom, 7 * view.zoom), brush_.Get());
     }
     if (selected || u.hero || u.owner != game.player().id || u.health < u.maximumHealth()) {

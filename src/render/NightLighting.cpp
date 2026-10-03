@@ -66,14 +66,14 @@ std::vector<ProjectedLight> buildingLights(const Simulation& game, const WorldVi
     }
     return lights;
 }
-std::vector<ProjectedLight> crystalLights(const Simulation& game, const WorldView& view) {
+std::vector<ProjectedLight> crystalLights(const Simulation& game, const WorldView& view, unsigned color) {
     std::vector<ProjectedLight> lights;
     for (const auto& crystal : game.crystals()) {
         if (crystal.remaining <= 0 || !game.fog().visible(crystal.cell)) continue;
         const auto ground = view.project(center(crystal.cell), float(game.map().at(crystal.cell).height));
         const float intensity = crystalPulse(crystal.id, game.clock().elapsedTicks());
         lights.push_back({ground + Vec2{0, -22} * view.zoom, 2.1f * WorldView::tileSize * view.zoom,
-            intensity, 0xbd8fff});
+            intensity, color});
     }
     return lights;
 }
@@ -91,7 +91,7 @@ std::uint32_t overlayPixel(float night, float light, unsigned tint) {
 }
 }
 void NightLightingRaster::update(const Simulation& game, const WorldView& view, Vec2 extent, const FogMask& fog,
-    std::span<const ProjectedLight> additionalLights) {
+    std::span<const ProjectedLight> additionalLights, unsigned crystalColor) {
     width_ = std::max(1, static_cast<int>(std::ceil(extent.x / pixelStep)));
     height_ = std::max(1, static_cast<int>(std::ceil(extent.y / pixelStep)));
     const float night = nightStrength(game.clock());
@@ -99,7 +99,7 @@ void NightLightingRaster::update(const Simulation& game, const WorldView& view, 
     visibilityPixels_.assign(pixels_.size(), 0);
     if (night <= 0) return;
     auto lights = buildingLights(game, view);
-    const auto crystals = crystalLights(game, view);
+    const auto crystals = crystalLights(game, view, crystalColor);
     lights.insert(lights.end(), crystals.begin(), crystals.end());
     lights.insert(lights.end(), additionalLights.begin(), additionalLights.end());
     std::erase_if(lights, [&](const auto& light) {

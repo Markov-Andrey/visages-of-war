@@ -44,7 +44,10 @@ void Renderer::drawUnitStats(const Unit& unit, UiRect b, std::uint64_t tick) {
     } else if (d.carryCapacity > 0) {
         extra = L"Кристаллы  " + std::to_wstring(unit.cargo) + L" / " + std::to_wstring(d.carryCapacity);
     } else extra = L"Уровень " + std::to_wstring(unit.level()) + L"  ·  Лимит " + std::to_wstring(d.cost.supply);
-    text(extra, rect(b.x, b.y + 137, width, 24), unit.hero ? 0xd6c38a : 0xbba9d6);
+    const char* resourceIcon = unit.hero ? nullptr : d.carryCapacity > 0 ? "crystal" : "supply";
+    if (resourceIcon) drawResourceIcon(resourceIcon, {b.x, b.y + 137, 22, 22});
+    const float extraInset = resourceIcon ? 28.f : 0.f;
+    text(extra, rect(b.x + extraInset, b.y + 137, width - extraInset, 24), unit.hero ? 0xd6c38a : 0xe4d4a5);
 }
 
 void Renderer::drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info) {

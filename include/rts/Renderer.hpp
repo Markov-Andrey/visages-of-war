@@ -60,6 +60,8 @@ private:
     void buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks = 0, bool training = false, bool visible = true);
     ID2D1Bitmap* maskedBitmap(const std::string& image, const std::string& mask, unsigned color);
     void drawRallyPoint(const Simulation& game, const Building& building, const WorldView& view);
+    void drawCrystal(const Crystal& crystal, Vec2 ground, float zoom, bool glowing = false, std::uint64_t tick = 0);
+    void drawResourceIcon(const std::string& id, UiRect bounds);
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);
     void corpseSprite(const Corpse& corpse, const WorldView& view, unsigned color);

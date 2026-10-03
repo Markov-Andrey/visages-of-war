@@ -28,7 +28,7 @@ UiRect buildingBounds(const Simulation& game, const Building& building, const Wo
 }
 UiRect crystalBounds(const Simulation& game, const Crystal& crystal, const WorldView& view) {
     const auto p = view.project(center(crystal.cell), float(game.map().at(crystal.cell).height));
-    return {p.x - 36 * view.zoom, p.y - 45 * view.zoom, 72 * view.zoom, 65 * view.zoom};
+    return {p.x - 32 * view.zoom, p.y - 74 * view.zoom, 64 * view.zoom, 80 * view.zoom};
 }
 std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view, Vec2 point) {
     std::optional<EntityId> result;

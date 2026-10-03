@@ -259,8 +259,8 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         for (const auto* mask : {"portraitMask", "iconMask", "teamMask"}) {
             CatalogFixture invalid(context.assets);
             for (auto& type : invalid.entities["entities"]) if (type["id"] == definition.id) {
-                if (std::string_view(mask) == "teamMask") type["sprite"]["death"][mask] = "sprites/crystal.png";
-                else type["sprite"][mask] = "sprites/crystal.png";
+                if (std::string_view(mask) == "teamMask") type["sprite"]["death"][mask] = "sprites/worker.png";
+                else type["sprite"][mask] = "sprites/worker.png";
             }
             mustThrow([&] { renderer.validateCombatAssets(invalid.load()); });
         }
