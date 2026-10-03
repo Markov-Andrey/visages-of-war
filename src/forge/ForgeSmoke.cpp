@@ -7,6 +7,7 @@
 
 namespace rts::forge {
 void ForgeApplication::exerciseInterface() {
+    const auto initialUnitCount = editor_->scenario().units.size();
     wchar_t title[64]{}; GetWindowTextW(window_,title,64);
     if(std::wstring_view(title)!=L"Visages Forge") throw std::runtime_error("Forge smoke: incorrect window identity");
     const auto at=[&](rts::Vec2 p){const float dpi=GetDpiForWindow(window_)/96.0f;return MAKELPARAM(static_cast<short>(p.x*dpi),static_cast<short>(p.y*dpi));};
@@ -22,11 +23,11 @@ void ForgeApplication::exerciseInterface() {
     uiClick(layout.actions[7]); if(editor_->scenario().landscape.paint.size()!=strokes) throw std::runtime_error("Forge smoke: redo failed");
     uiClick(layout.tools[2]); click(view_.project({18.27f,18.72f},0));
     uiClick(layout.tools[4]); uiClick(layout.choices[1]); click(view_.project({18.5f,17.5f},0));
-    if(editor_->scenario().landscape.decorations.size()!=1||editor_->scenario().units.size()!=23) throw std::runtime_error("Forge smoke: object or unit placement failed");
+    if(editor_->scenario().landscape.decorations.size()!=1||editor_->scenario().units.size()!=initialUnitCount+1) throw std::runtime_error("Forge smoke: object or unit placement failed");
     editor_->file=rts::Paths::executable().parent_path()/L"Forge — проверка сохранения.rtsmap";
     uiClick(layout.actions[3]); if(editor_->dirty) throw std::runtime_error("Forge smoke: save failed");
     const auto loaded=rts::loadScenario(editor_->file,worldAssets_,editor_->scenario().hallFootprint);
-    if(loaded.landscape.paint.size()!=strokes||loaded.units.size()!=23) throw std::runtime_error("Forge smoke: save did not round trip");
+    if(loaded.landscape.paint.size()!=strokes||loaded.units.size()!=initialUnitCount+1) throw std::runtime_error("Forge smoke: save did not round trip");
     uiClick(layout.tools[0]); uiClick(layout.choices[2]); click(view_.project({17.3f,18.3f},0));
     if(!editor_->dirty) throw std::runtime_error("Forge smoke: unsaved test fixture missing");
     renderer_.snapshotEditor(*editor_,rts::Paths::executable().parent_path()/L"forge-editor-preview.png");

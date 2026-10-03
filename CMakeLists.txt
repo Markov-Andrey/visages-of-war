@@ -32,6 +32,7 @@ add_library(rts_core
     src/render/FogMask.cpp
     src/render/NightLighting.cpp
     src/render/MinimapRaster.cpp
+    src/render/DirectionalSprite.cpp
     src/core/Navigation.cpp
     src/core/Formation.cpp
     src/core/Simulation.cpp
@@ -52,6 +53,7 @@ add_library(rts_core
     src/platform/Paths.cpp
 )
 target_include_directories(rts_core PUBLIC include)
+target_include_directories(rts_core PRIVATE src)
 target_link_libraries(rts_core PUBLIC rts_options PRIVATE nlohmann_json::nlohmann_json shell32 ole32)
 
 # The game consumes maps; only Forge and tests link the authoring model.
@@ -65,6 +67,8 @@ add_library(rts_render
     src/render/TerrainRenderer.cpp
     src/render/WorldRenderer.cpp
     src/render/UnitSpriteRenderer.cpp
+    src/render/DirectionalSpriteAssets.cpp
+    src/render/UnitDirectionPreview.cpp
     src/render/BuildingSpriteRenderer.cpp
     src/render/RallyPointRenderer.cpp
     src/render/LightingRenderer.cpp
@@ -149,6 +153,7 @@ if(BUILD_TESTING)
         tests/CombatTests.cpp
         tests/ProjectileTests.cpp
         tests/DataTests.cpp
+        tests/SpriteTests.cpp
         tests/VisionTests.cpp
         tests/LightingTests.cpp
         tests/SelectionTests.cpp

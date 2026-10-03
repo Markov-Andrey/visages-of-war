@@ -102,7 +102,7 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         Scenario site{Map(32, 26), {8, 11}, {11, 11}, {{{12, 12}, 1000}}};
         site.map.occupy({12, 12});
         for (int y = 8; y < 16; ++y) for (int x = 15; x < 23; ++x)
-            site.units.push_back({(x == 15 || x == 22) ? "human.archer" : "human.soldier", static_cast<PlayerId>(x < 19 ? 0 : 1), {x, y}});
+            site.units.push_back({(x == 15 || x == 22) ? "human.archer" : "human.peacemaker", static_cast<PlayerId>(x < 19 ? 0 : 1), {x, y}});
         auto types = definitions.entities();
         for (auto& type : types) type.dayVision = type.nightVision = 20;
         auto worker = definitions.entity("human.worker"); worker.dayVision = worker.nightVision = 20;

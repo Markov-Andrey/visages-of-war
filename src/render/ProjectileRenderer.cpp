@@ -11,9 +11,13 @@ void Renderer::drawProjectiles(const Simulation& game, const WorldView& view) {
         auto& bitmap = worldSprites_[path]; if (!bitmap) loadBitmap(paths_.asset(path), bitmap);
         const auto imageSize = bitmap->GetSize();
         const auto source = d.source[2] ? rect(float(d.source[0]),float(d.source[1]),float(d.source[2]),float(d.source[3])) : rect(0,0,imageSize.width,imageSize.height);
-        const auto position = view.project(p.position, p.height);
-        auto tangent = position - view.project(p.previousPosition, p.previousHeight);
-        if (p.elapsedTicks == 0) tangent = view.project(p.aim, p.aimHeight + 4 * d.arcHeight) - position;
+        const auto position = projectileScreenPosition(view, p);
+        auto tangent = position - projectileScreenPosition(view, p, true);
+        if (p.elapsedTicks == 0) {
+            const auto aim = view.project(p.aim, p.aimHeight + 4 * d.arcHeight) +
+                unitScreenOffset(view) * (d.targeting == ProjectileTargeting::Unit ? 1.0f : 0.0f);
+            tangent = aim - position;
+        }
         const float rotation = std::atan2(tangent.y,tangent.x) * 180 / std::numbers::pi_v<float> + d.rotationOffset;
         D2D1_MATRIX_3X2_F previous; target_->GetTransform(&previous);
         target_->SetTransform(D2D1::Matrix3x2F::Rotation(rotation,point(position)) * previous);

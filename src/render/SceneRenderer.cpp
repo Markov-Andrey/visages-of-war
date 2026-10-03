@@ -39,9 +39,9 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     for (size_t i = 0; i < game.buildings().size(); ++i) if (rallyPointVisible(game, game.buildings()[i], ui))
         items.push_back({game.buildings()[i].rally.y + .5f, Kind::RallyPoint, i});
     for (size_t i = 0; i < game.corpses().size(); ++i) if (game.fog().visible(game.corpses()[i].cell))
-        items.push_back({game.corpses()[i].position.y, Kind::Corpse, i});
+        items.push_back({unitDrawDepth(game.corpses()[i].position), Kind::Corpse, i});
     for (size_t i = 0; i < game.units().size(); ++i) if (game.fog().visible(game.units()[i].cell) && !airborne(game.units()[i].definition.movement))
-        items.push_back({game.units()[i].position.y, Kind::Unit, i});
+        items.push_back({unitDrawDepth(game.units()[i].position), Kind::Unit, i});
     std::stable_sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.depth < b.depth; });
     size_t nextItem = 0;
     // Draw back-to-front by ground row, with all objects ordered by their ground anchor.
@@ -99,20 +99,15 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             }
             case Kind::Corpse: {
                 const auto& corpse = game.corpses()[item.index];
-                const auto p = view.project(corpse.position, corpse.height);
+                const auto p = unitScreenAnchor(view, corpse.position, corpse.height);
                 if (!onScreen(p)) break;
-                D2D1_MATRIX_3X2_F transform;
-                target_->GetTransform(&transform);
-                target_->SetTransform(D2D1::Matrix3x2F::Rotation(90, point(p)) * transform);
-                worldOpacity_ = std::min(1.0f, corpse.remainingTicks / 30.0f);
-                unitPortrait(corpse.sprite, p + Vec2{-32,-32} * view.zoom, Vec2{64,64} * view.zoom,
-                    corpse.owner == game.player().id ? teamColor_ : enemyColor_);
-                target_->SetTransform(transform);
+                worldOpacity_ = std::min(1.0f, float(corpse.remainingTicks) / Simulation::ticksPerSecond);
+                corpseSprite(corpse, view, corpse.owner == game.player().id ? teamColor_ : enemyColor_);
                 break;
             }
             case Kind::Unit: {
                 const auto& u = game.units()[item.index];
-                if (onScreen(view.project(u.position, game.unitHeight(u)))) unitSprite(game, u, view, ui.selection.contains(u.id));
+                if (onScreen(unitScreenAnchor(view, u.position, game.unitHeight(u)))) unitSprite(game, u, view, ui.selection.contains(u.id));
                 break;
             }
             }
@@ -138,11 +133,11 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         }
     }
     if (grid) for (const auto& u : game.units()) if (ui.selection.contains(u.id)) {
-        Vec2 previous = view.project(u.position, game.unitHeight(u));
+        Vec2 previous = unitScreenAnchor(view, u.position, game.unitHeight(u));
         for (size_t i = u.next; i < u.route.size(); ++i) {
             const Cell c = u.route[i];
             if (!game.fog().explored(c)) break;
-            const auto next = view.project(center(c), airborne(u.definition.movement) ? 5.0f : map.surfaceHeight(c, center(c)));
+            const auto next = unitScreenAnchor(view, center(c), airborne(u.definition.movement) ? 5.0f : map.surfaceHeight(c, center(c)));
             line(previous, next, 0xe5ce92, 1.5f); previous = next;
         }
     }

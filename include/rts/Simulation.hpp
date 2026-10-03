@@ -9,6 +9,7 @@
 #include <memory>
 
 namespace rts {
+inline constexpr int simulationTicksPerSecond = 30;
 enum class EntityKind { Unit, Building };
 enum class UnitState { Idle, Moving, ToCrystal, Harvesting, ToHall, ToBuild, Building, WaitingForCrystal, ToAttack, Attacking };
 enum class OrderKind { Move, Interact, Stop, Build, Gather, Attack, AttackMove, Hold, Patrol, AttackGround };
@@ -55,7 +56,16 @@ struct Unit {
     int experienceToLevel() const { return hero && !atMaxLevel() ? hero->rules->thresholds[level()] - hero->rules->thresholds[level() - 1] : 0; }
     float experienceFraction() const { return atMaxLevel() ? 1.0f : experienceToLevel() ? float(experienceInLevel()) / experienceToLevel() : 0.0f; }
 };
-struct Corpse { Vec2 position; Cell cell; float height; PlayerId owner; int remainingTicks = 90; UnitSpriteDefinition sprite; };
+struct Corpse {
+    static constexpr int lifetimeTicks = 60 * simulationTicksPerSecond;
+    Vec2 position;
+    Cell cell;
+    float height;
+    PlayerId owner;
+    int remainingTicks = lifetimeTicks;
+    UnitSpriteDefinition sprite;
+    int ageTicks() const { return lifetimeTicks - remainingTicks; }
+};
 struct ProductionJob {
     std::string definitionId;
     int remainingTicks{}, totalTicks{}, paidCrystals{}, reservedSupply{};
@@ -80,7 +90,7 @@ struct UnitDied { EntityId unit; PlayerId owner; };
 
 class Simulation {
 public:
-    static constexpr int ticksPerSecond = 30;
+    static constexpr int ticksPerSecond = simulationTicksPerSecond;
     explicit Simulation(Scenario scenario, PlayerSettings player = {}, EntityDefinition workerType = {},
         std::vector<EntityDefinition> entityTypes = {}, std::string startingHero = {}, ProgressionRules progression = {});
     Simulation(const Simulation&) = delete;

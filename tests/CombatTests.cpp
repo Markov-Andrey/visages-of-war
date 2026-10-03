@@ -83,8 +83,36 @@ void combatTests(TestSuite& test, const TestContext& context) {
         rts::Selection picked; picked.ids = {friendly, enemy}; picked.prune(game);
         require(picked.ids.empty() && game.corpses().size() == 2, "Dead entities remained selectable or invisible death");
         require(!game.command({4, 4}), "Empty army accepted command"); game.stop();
-        ticks(game, 100);
+        require(game.corpses().front().remainingTicks == 60 * rts::Simulation::ticksPerSecond, "Default corpse lifetime is not 60 seconds");
+        ticks(game, 60 * rts::Simulation::ticksPerSecond - 1);
+        require(game.corpses().size() == 2 && game.corpses().front().remainingTicks == 1, "Corpse disappeared before 60 seconds");
+        game.tick();
         require(game.corpses().empty(), "Corpses never expire");
+    });
+    test("Ground and flying casualties leave passable corpses for exactly sixty seconds", [&] {
+        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
+        for (const auto& original : definitions.entities()) if (original.mobile) {
+            auto fighter = original; fighter.maximumHealth = 10; fighter.attackDamage = 10;
+            fighter.attackWindupTicks = 1; fighter.attackRange = 1.5f; fighter.projectile.reset();
+            auto victim = fighter; victim.id = "test.victim"; victim.attackDamage = 0;
+            rts::Scenario site{rts::Map(20, 20), {1, 1}, {8, 8}, {}};
+            site.units = {{victim.id, 1, {9, 8}}};
+            rts::Simulation game(std::move(site), {}, fighter, {fighter, victim});
+            const auto enemy = game.units().back().id;
+            require(game.attack(std::array{game.worker().id}, enemy), "Death fixture rejected attack");
+            ticks(game, 2);
+            require(!game.unit(enemy) && game.corpses().size() == 1 && game.corpses().front().ageTicks() == 0,
+                "Casualty did not create a fresh corpse");
+            require(game.command(std::array{game.worker().id}, {9, 8}), "Corpse cell cannot receive a movement order");
+            ticks(game, 60);
+            require(game.worker().cell == rts::Cell{9, 8} && game.corpses().size() == 1,
+                "Ground or air corpse obstructed its movement layer");
+            ticks(game, game.corpses().front().remainingTicks - 1);
+            require(game.corpses().size() == 1 && game.corpses().front().ageTicks() == 60 * rts::Simulation::ticksPerSecond - 1,
+                "Corpse expired before the default sixty seconds");
+            game.tick();
+            require(game.corpses().empty(), "Corpse survived past sixty seconds");
+        }
     });
     test("Hero progression crosses thresholds, caps at ten and leaves definitions unchanged", [] {
         rts::EntityDefinition hero;
@@ -161,8 +189,8 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const auto defs = rts::Definitions::load(assets / "data/catalog.json");
         const auto& commander = defs.commanders().front();
         rts::Simulation game(loadScenario(assets / "maps/demo.rtsmap"), {}, defs.entity(commander.startingWorker), defs.entities(), commander.startingHero);
-        require(game.units().size() == 29 && game.hero() && game.hero()->cell == rts::Cell{17, 20}, "Hero spawn ignored");
-        require(game.armySupply().used() == 47 && game.hero()->level() == 1, "Starting hero supply or level incorrect");
+        require(game.units().size() == 30 && game.hero() && game.hero()->cell == rts::Cell{17, 20}, "Hero spawn ignored");
+        require(game.armySupply().used() == 49 && game.hero()->level() == 1, "Starting hero supply or level incorrect");
         mustThrow([&] { rts::Simulation invalid(flatScenario(), {}, defs.entity(commander.startingWorker), defs.entities(), commander.startingHero); });
     });
     test("Hostile orders rejected and explicit move interrupts a swing", [] {
@@ -230,6 +258,8 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.worker().targetUnit == 0 && game.worker().state == rts::UnitState::Idle, "Dangling combat order after kill");
         require(game.command(own, {8, 3}), "Dead cell still reserved"); ticks(game, 120);
         require(game.worker().cell == rts::Cell{8, 3}, "Corpse blocks movement");
+        require(game.corpses().size() == 1 && game.corpses().front().cell == game.worker().cell,
+            "Movement test did not cross a still-existing corpse");
     });
     test("Squad combat acquires new targets after focused enemy dies", [] {
         rts::Scenario scenario{rts::Map(24, 20), {1, 1}, {8, 8}, {}};

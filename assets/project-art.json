@@ -200,6 +200,48 @@
                       "path": "ui/commands/build/icon.png",
                       "mask": "ui/commands/build/mask.png",
                       "crop": [1223, 499, 290, 290], "imported": "2026-10-02"
-                  }
-              ]
+                  },
+        {
+          "original": "peacemaker-nw-attack.png",
+          "path": "sprites/units/peacemaker/source/peacemaker-nw-attack.png",
+          "imported": "2026-10-03",
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
+          "sha256": "F5BDCE5BF191AFE22A97D66562C888491762CD091D384D373FE45E1A7FE76E10"
+        },
+        {
+          "original": "peacemaker-nw-walk.png",
+          "path": "sprites/units/peacemaker/source/peacemaker-nw-walk.png",
+          "imported": "2026-10-03",
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
+          "sha256": "9517D1C04F7533C1442C8C0F0E949D3FEEEF60514581B422637ABF5057FBA759"
+        },
+        {
+          "original": "peacemaker-se-attack.png",
+          "path": "sprites/units/peacemaker/source/peacemaker-se-attack.png",
+          "imported": "2026-10-03",
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
+          "sha256": "C28EC7DB074B3954D8AEF0E8FF80051810241FC85BD0BD699BCAADD633A85742"
+        },
+        {
+          "original": "peacemaker-se-walk.png",
+          "path": "sprites/units/peacemaker/source/peacemaker-se-walk.png",
+          "imported": "2026-10-03",
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
+          "sha256": "0F0A372616C7BB92D5E0E79E205E0A328643F83A0C4C29D7D4DE6C32ACB49934"
+        },
+        {
+          "original": "peacemaker-stand.png",
+          "path": "sprites/units/peacemaker/source/peacemaker-stand.png",
+          "imported": "2026-10-03",
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
+          "sha256": "62A5B701D11A77B1ECA9EC0A8039A533D5E37F2B6600CC6C654EABDDADF2227F"
+        },
+        {
+          "original": "peacemaker-death.png",
+          "path": "sprites/units/peacemaker/source/peacemaker-death.png",
+          "imported": "2026-10-03",
+          "source": "Project owner Peacemaker death animation; original bytes preserved. Four shared frames, last frame is the persistent corpse; crops and ground pivots in data/entities/humans.json.",
+          "sha256": "22106E00329C5998C0F1778AA9B1555EF2C267357D98AAB0CECBC7069CBEFEF1"
+        }
+    ]
 }

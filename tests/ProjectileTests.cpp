@@ -21,6 +21,29 @@ Simulation stationary(EntityDefinition gun) {
 }
 }
 void projectileTests(TestSuite& test, const TestContext& context) {
+    test("Projectile rendering follows shifted units but preserves ordered ground impacts", [] {
+        Projectile shot;
+        shot.flightTicks = 10; shot.position = {8.5f, 6.5f}; shot.previousPosition = {8, 6.5f};
+        shot.height = 3; shot.previousHeight = 2.5f;
+        for (float zoom : {.4f, 1.0f, 1.8f}) for (auto mode : {ProjectileTargeting::Unit, ProjectileTargeting::Point}) {
+            const WorldView view{{170, -60}, zoom};
+            shot.definition.targeting = mode;
+            for (int tick : {0, 5, 10}) {
+                shot.elapsedTicks = tick;
+                for (bool previous : {false, true}) {
+                    const auto logical = view.project(previous ? shot.previousPosition : shot.position,
+                        previous ? shot.previousHeight : shot.height);
+                    const auto visual = projectileScreenPosition(view, shot, previous);
+                    const float progress = float(previous ? std::max(0, tick - 1) : tick) / 10;
+                    const float offset = WorldView::tileSize * zoom / 3 * (mode == ProjectileTargeting::Unit ? 1 : 1 - progress);
+                    require(std::abs(visual.x - logical.x) < .001f && std::abs(visual.y - logical.y - offset) < .001f,
+                        "Projectile detached from the shooter/target or displaced a ground impact");
+                }
+            }
+        }
+        require(shot.position == Vec2{8.5f, 6.5f} && shot.previousPosition == Vec2{8, 6.5f} && shot.height == 3,
+            "Projectile presentation changed the simulation trajectory");
+    });
     test("Manual siege fire approaches and repeatedly attacks a fixed empty point until stopped", [] {
         auto gun = weapon(ProjectileTargeting::Point); gun.attackCooldownTicks = 8;
         gun.dayVision = gun.nightVision = 2;
@@ -162,7 +185,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
     test("Combat catalog validates trajectories, animation and optional melee projectile", [&] {
         CatalogFixture original(context.assets);
         const auto defs = original.load();
-        require(!defs.entity("human.soldier").projectile && defs.entity("human.archer").projectile->targeting == ProjectileTargeting::Unit &&
+        require(!defs.entity("human.peacemaker").projectile && defs.entity("human.archer").projectile->targeting == ProjectileTargeting::Unit &&
             defs.entity("human.catapult").projectile->targeting == ProjectileTargeting::Point,"Catalog weapon modes incorrect");
         const auto rejects = [&](const std::function<void(Json&)>& change) {
             auto f = original; change(f.entities["entities"][7]); mustThrow([&] { f.load(); });

@@ -1,6 +1,7 @@
 #pragma once
 #include "rts/Types.hpp"
 #include <array>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -9,15 +10,28 @@ enum class AttackTargets { SameLayer, Ground, Air, All };
 enum class ProjectileTargeting { Unit, Point };
 enum class AttackPhase { Ready, Windup, Recovery, Cooldown };
 enum class SpriteTeamMask { None, Blue, Purple };
+struct UnitDeathFrame {
+    std::array<int, 4> source{};
+    Vec2 anchor; // Ground pivot in pixels relative to this source rectangle.
+};
+struct UnitDeathSprite {
+    std::string image;
+    std::vector<UnitDeathFrame> frames;
+    float scale = 1; // Screen pixels per source pixel at zoom 1.
+    int ticksPerFrame = 6;
+};
 struct UnitSpriteDefinition {
     std::string image = "sprites/worker.png";
     std::string portrait; // Optional standalone HUD artwork; empty uses the idle icon.
+    std::string directionRecipe; // Optional two-view stand/walk/attack synthesis recipe.
+    bool pixelArt = true;
     int frameWidth = 32, frameHeight = 32;
     Vec2 size{80, 80}, anchor{.5f, .7125f};
     std::array<int, 8> rows{0, 1, 2, 3, 4, 5, 6, 7}; // S, SE, E, NE, N, NW, W, SW.
     std::vector<int> walk{0, 2, 1, 3}, windup{4, 5}, recovery{6, 7};
     int idle{};
     SpriteTeamMask teamMask = SpriteTeamMask::Blue;
+    std::optional<UnitDeathSprite> death; // One shared sequence, final frame persists as a corpse.
 };
 struct ProjectileDefinition {
     ProjectileTargeting targeting = ProjectileTargeting::Unit;

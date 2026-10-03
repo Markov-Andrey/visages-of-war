@@ -14,7 +14,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
         s.map.at({23,23}).blocked=true;
         s.environment={worldAssets.instantiate("tree",1500,{8,8}),worldAssets.instantiate("rock",1501,{12,12})}; s.environment[0].hitPoints=0;
         s.crystals={{{9,18},777}};
-        s.units={{"human.soldier",1,{8,9}},{"human.flying_soldier",0,{8,9}}};
+        s.units={{"human.peacemaker",1,{8,9}},{"human.flying_soldier",0,{8,9}}};
         s.landscape.baseMaterial="dark_grass";
         s.landscape.paint={{"earth",{8.137f,8.927f},1.8f,.7f,.3f,false},{"dark_grass",{8.82f,9.12f},.8f,.4f,.6f,false},{"grass",{8.33f,8.55f},.25f,.8f,.2f,true}};
         s.landscape.decorations={{1700,"small_bush",{8.137f,8.927f},.7f,35}};
@@ -74,7 +74,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
         const auto defs=rts::Definitions::load(assets/"data/catalog.json");
         rts::WorldEditor e({rts::Map(24,24),{1,1},{4,3},{}},worldAssets,defs);
         const auto choose=[&](rts::EditorTool tool,const std::string& id) {e.setTool(tool); const auto list=e.choices(); for(size_t i=0;i<list.size();++i) if(list[i].id==id)e.choice=i;};
-        choose(rts::EditorTool::Unit,"human.soldier"); require(e.apply({8.5f,8.5f}),"Soldier placement failed"); e.endStroke();
+        choose(rts::EditorTool::Unit,"human.peacemaker"); require(e.apply({8.5f,8.5f}),"Soldier placement failed"); e.endStroke();
         require(!e.apply({8.5f,8.5f}),"Two ground spawns accepted in one cell"); e.endStroke();
         choose(rts::EditorTool::Unit,"human.flying_soldier"); require(e.apply({8.5f,8.5f}),"Air spawn blocked by ground unit"); e.endStroke();
         choose(rts::EditorTool::Environment,"tree"); require(!e.apply({8.5f,8.5f}),"Tree placed through ground spawn"); e.endStroke();

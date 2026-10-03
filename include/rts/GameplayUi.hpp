@@ -1,4 +1,5 @@
 #pragma once
+#include "rts/UnitPresentation.hpp"
 #include "rts/Menu.hpp"
 #include "rts/Simulation.hpp"
 #include "rts/Minimap.hpp"

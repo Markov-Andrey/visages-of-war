@@ -125,9 +125,9 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
 }
 
 void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView& view, bool selected) {
-    const auto p = view.project(u.position, game.unitHeight(u));
+    const auto p = unitScreenAnchor(view, u.position, game.unitHeight(u));
     const Cell groundCell{int(std::floor(u.position.x)), int(std::floor(u.position.y))};
-    const auto shadow = view.project(u.position, game.map().surfaceHeight(groundCell, u.position));
+    const auto shadow = unitScreenAnchor(view, u.position, game.map().surfaceHeight(groundCell, u.position));
     brush_->SetColor(D2D1::ColorF(0, .35f));
     target_->FillEllipse(D2D1::Ellipse(point(shadow), 16 * view.zoom, 7 * view.zoom), brush_.Get());
     if (u.hero) {
@@ -152,8 +152,10 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
         target_->FillEllipse(D2D1::Ellipse(point(p + Vec2{16, -25} * view.zoom), 5 * view.zoom, 7 * view.zoom), brush_.Get());
     }
     if (selected || u.hero || u.owner != game.player().id || u.health < u.maximumHealth()) {
-        line(p + Vec2{-21, -59} * view.zoom, p + Vec2{21, -59} * view.zoom, 0x1b342e, 4);
-        line(p + Vec2{-21 + 42.0f * u.health / u.maximumHealth(), -59} * view.zoom, p + Vec2{-21, -59} * view.zoom,
+        // Taller authored art needs its bar above the same bounds used for picking.
+        const float barY = std::min(p.y - 59 * view.zoom, unitBounds(game, u, view).y - 7 * view.zoom);
+        line({p.x - 21 * view.zoom, barY}, {p.x + 21 * view.zoom, barY}, 0x1b342e, 4);
+        line({p.x + (-21 + 42.0f * u.health / u.maximumHealth()) * view.zoom, barY}, {p.x - 21 * view.zoom, barY},
             selectionColor(u.owner, game.player().id), 3);
     }
 }

@@ -12,7 +12,7 @@ bool Selection::hero(const Simulation& game) {
     return false;
 }
 UiRect unitBounds(const Simulation& game, const Unit& unit, const WorldView& view) {
-    const auto p = view.project(unit.position, game.unitHeight(unit));
+    const auto p = unitScreenAnchor(view, unit.position, game.unitHeight(unit));
     const auto& s = unit.definition.sprite;
     const auto extent = s.size * view.zoom;
     return {p.x + (.225f - s.anchor.x) * extent.x, p.y + (.0625f - s.anchor.y) * extent.y, .55f * extent.x, .825f * extent.y};
@@ -44,7 +44,7 @@ std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view
         if (b.owner == game.player().id && buildingBounds(game, b, view).contains(point) && d >= depth) { result = b.id; depth = d; }
     }
     for (const auto& u : game.units()) {
-        const float d = airborne(u.definition.movement) ? 1000.0f + u.position.y : u.position.y;
+        const float d = unitDrawDepth(u.position) + (airborne(u.definition.movement) ? 1000.0f : 0);
         if (u.owner == game.player().id && game.fog().visible(u.cell) && unitBounds(game, u, view).contains(point) && d >= depth) { result = u.id; depth = d; }
     }
     return result;
@@ -66,7 +66,7 @@ void Selection::box(const Simulation& game, const WorldView& view, UiRect bounds
     activeType_.clear();
     if (!additive || (!ids.empty() && !game.unit(ids.front()))) ids.clear();
     for (const auto& u : game.units()) {
-        const auto p = view.project(u.position, game.unitHeight(u)) + Vec2{0, -20 * view.zoom};
+        const auto p = unitScreenAnchor(view, u.position, game.unitHeight(u)) + Vec2{0, -20 * view.zoom};
         if (u.owner == game.player().id && game.fog().visible(u.cell) && bounds.contains(p) && !contains(u.id)) ids.push_back(u.id);
     }
 }

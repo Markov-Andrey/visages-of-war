@@ -100,8 +100,8 @@ void dataTests(TestSuite& test, const TestContext& context) {
     test("Large demo: workers, friendly army, hostile camp and reachable plateaus", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");
         rts::Simulation game(loadScenario(assets / "maps/demo.rtsmap"), {}, definitions.entity("human.worker"), definitions.entities());
-        require(game.map().width() == 64 && game.map().height() == 64 && game.units().size() == 28, "Wrong demo dimensions or army");
-        require(game.storedCrystals() == 300 && game.armySupply().used() == 42, "Enemy army consumed player supply");
+        require(game.map().width() == 64 && game.map().height() == 64 && game.units().size() == 29, "Wrong demo dimensions or army");
+        require(game.storedCrystals() == 300 && game.armySupply().used() == 44, "Enemy army consumed player supply");
         int friendly = 0, hostile = 0;
         for (const auto& u : game.units()) if (u.definition.attackDamage > 0) {
             if (u.owner == game.player().id) ++friendly;
@@ -111,7 +111,13 @@ void dataTests(TestSuite& test, const TestContext& context) {
                 require(rts::findPath(game.map(), game.worker().cell, u.cell).has_value(), "Enemy camp unreachable");
             }
         }
-        require(friendly == 16 && hostile == 6, "Missing starting soldiers");
+        require(friendly == 17 && hostile == 6, "Missing starting army");
+        require(std::count_if(game.units().begin(), game.units().end(), [](const auto& u) {
+            return u.definition.id == "human.peacemaker";
+        }) == 13, "Demo ground melee troops were not all replaced by Peacemakers");
+        require(std::count_if(game.units().begin(), game.units().end(), [&](const auto& u) {
+            return u.definition.id == "human.peacemaker" && u.owner == game.player().id && u.cell == rts::Cell{18, 16};
+        }) == 1, "Demo lost the Peacemaker beside the starting workers");
         for (int y = 0; y < game.map().height(); ++y) for (int x = 0; x < game.map().width(); ++x) {
             const auto& tile = game.map().at({x, y});
             if (tile.surface != rts::Surface::Land) require(tile.height == -1 && tile.ramp == rts::Cell{}, "Water plane must be flat at -1 regardless of depth");
@@ -187,7 +193,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(game.player().commanderId == "two" && game.worker().owner == 0, "Ownership lost");
         fixture.commanders["commanders"][1]["startingWorker"] = "missing";
         mustThrow([&] { fixture.load(); });
-        fixture.commanders["commanders"][1]["startingWorker"] = "human.soldier";
+        fixture.commanders["commanders"][1]["startingWorker"] = "human.peacemaker";
         mustThrow([&] { fixture.load(); });
     });
     test("Commander rally art is optional, validates frames and loops in authored order", [&] {
@@ -242,6 +248,15 @@ void dataTests(TestSuite& test, const TestContext& context) {
     test("One entity schema includes names, descriptions, factions, costs and external progression", [&] {
         CatalogFixture fixture(assets); const auto defs = fixture.load();
         require(defs.entities().size() == 9, "Unified catalog lost records");
+        mustThrow([&] { defs.entity("human.soldier"); });
+        require(defs.entity("human.barracks").trainableUnits == std::vector<std::string>{"human.peacemaker", "human.archer", "human.catapult"},
+            "Barracks did not replace the warrior with the Peacemaker");
+        const auto& flyer = defs.entity("human.flying_soldier");
+        const auto& archer = defs.entity("human.archer");
+        require(airborne(flyer.movement) && !flyer.projectile && flyer.sprite.image == archer.sprite.image &&
+            flyer.sprite.rows == archer.sprite.rows && flyer.sprite.walk == archer.sprite.walk &&
+            flyer.sprite.windup == archer.sprite.windup && flyer.sprite.recovery == archer.sprite.recovery &&
+            flyer.sprite.teamMask == archer.sprite.teamMask, "Flyer lost its temporary archer art or changed its gameplay");
         for (const auto& entity : defs.entities()) {
             require(!entity.displayName.empty() && !entity.description.empty() && entity.factionId == "humans", "Missing common metadata");
         }

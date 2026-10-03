@@ -30,13 +30,13 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     units.push_back({commander.startingWorker,0,s.worker});
     for(auto c:s.extraWorkers) units.push_back({commander.startingWorker,0,c});
     if(s.heroSpawn) units.push_back({commander.startingHero,0,*s.heroSpawn});
-    for(size_t i=0;i<units.size();++i) if(!airborne(editor.definitions().entity(units[i].definitionId).movement)) items.push_back({units[i].cell.y+.5f,4,i});
+    for(size_t i=0;i<units.size();++i) if(!airborne(editor.definitions().entity(units[i].definitionId).movement)) items.push_back({unitDrawDepth(center(units[i].cell)),4,i});
     std::stable_sort(items.begin(),items.end(),[](auto a,auto b){return a.depth<b.depth;});
     const auto visible=[&](Vec2 p){return p.x>-200&&p.x<layout.world.width+200&&p.y>-100&&p.y<extent.y+180;};
     const auto drawUnit=[&](const UnitSpawn& u) {
         const auto& d=editor.definitions().entity(u.definitionId); const bool air=airborne(d.movement);
-        const auto ground=view.project(center(u.cell),map.surfaceHeight(u.cell,center(u.cell)));
-        const auto p=air?view.project(center(u.cell),5):ground;
+        const auto ground=unitScreenAnchor(view,center(u.cell),map.surfaceHeight(u.cell,center(u.cell)));
+        const auto p=air?unitScreenAnchor(view,center(u.cell),5):ground;
         if(!visible(p)) return;
         if(air) { line(p,ground,0x76d99b,1.5f); brush_->SetColor(D2D1::ColorF(0x76d99b)); target_->DrawEllipse(D2D1::Ellipse(point(p),20*view.zoom,8*view.zoom),brush_.Get()); }
         unitImage(d.sprite,d.sprite.idle,d.sprite.rows[0],p,view.zoom,u.owner==0?teamColor_:enemyColor_);

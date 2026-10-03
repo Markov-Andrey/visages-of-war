@@ -144,6 +144,7 @@ void economyTests(TestSuite& test, const TestContext& context);
 void combatTests(TestSuite& test, const TestContext& context);
 void projectileTests(TestSuite& test, const TestContext& context);
 void dataTests(TestSuite& test, const TestContext& context);
+void spriteTests(TestSuite& test, const TestContext& context);
 void visionTests(TestSuite& test, const TestContext& context);
 void lightingTests(TestSuite& test, const TestContext& context);
 void selectionTests(TestSuite& test, const TestContext& context);

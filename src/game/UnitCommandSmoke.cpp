@@ -5,8 +5,8 @@ namespace rts::game {
 void GameApplication::exerciseUnitCommands() {
     rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {{{12, 9}, 1000}}};
     scene.map.occupy({12, 9}); scene.extraWorkers = {{8, 9}};
-    scene.units = {{"human.soldier", 0, {10, 10}}, {"human.catapult", 0, {11, 11}}, {"human.soldier", 1, {14, 11}},
-        {"human.archer", 0, {10, 12}}, {"human.soldier", 0, {9, 12}}};
+    scene.units = {{"human.peacemaker", 0, {10, 10}}, {"human.catapult", 0, {11, 11}}, {"human.peacemaker", 1, {14, 11}},
+        {"human.archer", 0, {10, 12}}, {"human.peacemaker", 0, {9, 12}}};
     scene.heroSpawn = rts::Cell{9, 8};
     game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), "human.hero");
     ui_ = {}; menu_.page = rts::MenuPage::Playing; resetCamera();
@@ -83,7 +83,7 @@ void GameApplication::exerciseUnitCommands() {
     if (portraits.cards.front().id != hero || !portraits.cards.front().active)
         throw std::runtime_error("Commands: hero was not first in the portrait strip");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"active-hero-preview.png", nullptr, false, &ui_);
-    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.soldier", 2);
+    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.peacemaker", 2);
     for (size_t slot : {size_t{5}, size_t{6}, size_t{7}, size_t{8}, size_t{9}, size_t{10}}) {
         mouse_ = {layout.commands[slot].x + 10, layout.commands[slot].y + 10};
         if (cursorKind() != rts::CursorKind::Default) throw std::runtime_error("Commands: hidden slot retained a hand cursor");
@@ -128,7 +128,7 @@ void GameApplication::exerciseUnitCommands() {
     for (const auto& card : soldierCards.cards) if (card.id == soldier) {
         click({card.bounds.x + 10, card.bounds.y + 10}); break;
     }
-    expectGroup("human.soldier", 2);
+    expectGroup("human.peacemaker", 2);
     // SetKeyboardState only changes this UI thread's key state, without injecting system input.
     const auto numberKey = [&](unsigned key, bool control) {
         struct RestoreKeys {

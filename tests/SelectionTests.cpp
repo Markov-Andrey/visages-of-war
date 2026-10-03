@@ -3,6 +3,44 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Every unit uses a lower-third ground anchor for drawing and selection while moving", [&] {
+        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
+        for (int level : {0, 2}) {
+            rts::Scenario scene{rts::Map(40, 32), {1, 1}, {5, 9}, {}};
+            for (int y = 0; y < scene.map.height(); ++y) for (int x = 0; x < scene.map.width(); ++x)
+                scene.map.at({x, y}).height = level;
+            int x = 5;
+            for (const auto& type : defs.entities()) if (type.mobile && type.id != "human.worker") {
+                scene.units.push_back({type.id, 0, {x, 15}}); x += 4;
+            }
+            rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities());
+            for (const auto& u : game.units())
+                require(game.order(std::array{u.id}, rts::OrderKind::Move, u.cell + rts::Cell{1, 0}), "Unit failed to start moving");
+            game.tick();
+            for (float zoom : {.4f, 1.0f, 1.8f}) {
+                const rts::WorldView view{{170, -60}, zoom};
+                for (const auto& u : game.units()) {
+                    const auto position = u.position;
+                    const auto logical = view.project(position, game.unitHeight(u));
+                    const auto feet = rts::unitScreenAnchor(view, position, game.unitHeight(u));
+                    require(std::abs(feet.x - logical.x) < .001f &&
+                        std::abs(feet.y - logical.y - rts::WorldView::tileSize * zoom / 3) < .001f,
+                        "Unit feet are not in the middle of the lower third");
+                    const auto& sprite = u.definition.sprite;
+                    const auto bounds = rts::unitBounds(game, u, view);
+                    require(std::abs(bounds.y - (feet.y + (.0625f - sprite.anchor.y) * sprite.size.y * zoom)) < .001f,
+                        "Unit picking does not follow the drawn sprite");
+                    const auto point = feet + rts::Vec2{0, -20 * zoom};
+                    require(rts::pickEntity(game, view, point) == u.id, "Shifted moving sprite was not clickable");
+                    rts::Selection selection;
+                    selection.box(game, view, {point.x - zoom, point.y - zoom, 2 * zoom, 2 * zoom}, false);
+                    require(selection.ids == std::vector{u.id}, "Small selection box missed the shifted unit");
+                    require(u.position == position, "Presentation changed logical coordinates");
+                }
+            }
+            require(game.worker().position != rts::center(game.worker().cell), "Presentation fixture did not move between cells");
+        }
+    });
     test("Numbered groups share members, replace independently and recall the full selection", [] {
         rts::EntityDefinition worker;
         auto soldier = worker; soldier.id = "soldier"; soldier.canBuild = false; soldier.carryCapacity = 0;
@@ -53,14 +91,14 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
         scene.heroSpawn = rts::Cell{9, 9};
-        scene.units = {{"human.archer", 0, {11, 10}}, {"human.soldier", 0, {10, 10}},
-            {"human.soldier", 0, {10, 12}}, {"human.catapult", 0, {11, 11}}};
+        scene.units = {{"human.archer", 0, {11, 10}}, {"human.peacemaker", 0, {10, 10}},
+            {"human.peacemaker", 0, {10, 12}}, {"human.catapult", 0, {11, 11}}};
         rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), "human.hero");
         rts::Selection selection;
         for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
         std::reverse(selection.ids.begin(), selection.ids.end());
         const auto original = selection.ids;
-        const std::array<std::string, 5> expected{"human.hero", "human.soldier", "human.archer", "human.catapult", "human.worker"};
+        const std::array<std::string, 5> expected{"human.hero", "human.peacemaker", "human.archer", "human.catapult", "human.worker"};
         const auto groups = selection.groups(game);
         require(groups.size() == expected.size() && groups[1].ids.size() == 2, "Types were not grouped together");
         for (const auto& type : expected) {
@@ -74,7 +112,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(selection.activateGroup(game, soldier), "Portrait did not activate its type");
         selection.ids.erase(std::find(selection.ids.begin(), selection.ids.end(), soldier));
         selection.prune(game);
-        require(selection.activeGroup(game).type == "human.soldier" && selection.activeGroup(game).ids.size() == 1,
+        require(selection.activeGroup(game).type == "human.peacemaker" && selection.activeGroup(game).ids.size() == 1,
             "Removing one soldier discarded the surviving active group");
         selection.army(game);
         require(selection.activeUnit(game)->hero.has_value(), "New army selection did not reset to hero");
@@ -89,8 +127,8 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         auto secondWorker = defs.entity("human.worker"); secondWorker.id = "other.worker"; types.push_back(secondWorker);
         auto secondSiege = defs.entity("human.catapult"); secondSiege.id = "other.siege"; types.push_back(secondSiege);
         rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
-        scene.units = {{"human.soldier", 0, {10, 10}}, {"human.catapult", 0, {11, 11}},
-            {secondWorker.id, 0, {8, 9}}, {secondSiege.id, 0, {12, 11}}, {"human.soldier", 1, {25, 25}}};
+        scene.units = {{"human.peacemaker", 0, {10, 10}}, {"human.catapult", 0, {11, 11}},
+            {secondWorker.id, 0, {8, 9}}, {secondSiege.id, 0, {12, 11}}, {"human.peacemaker", 1, {25, 25}}};
         rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), types);
         rts::GameplayUi ui;
         for (const auto& unit : game.units()) if (unit.owner == game.player().id) ui.selection.ids.push_back(unit.id);
@@ -99,7 +137,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             for (const auto& command : rts::unitCommands) if (command.command == kind) return command.slot;
             throw std::runtime_error("Missing command");
         };
-        require(ui.selection.activeGroup(game).type == "human.soldier", "Soldier did not lead the non-hero selection");
+        require(ui.selection.activeGroup(game).type == "human.peacemaker", "Soldier did not lead the non-hero selection");
         for (auto kind : {rts::UnitCommand::Move, rts::UnitCommand::Stop, rts::UnitCommand::Attack, rts::UnitCommand::Hold, rts::UnitCommand::Patrol})
             require(rts::unitCommandVisible(game, ui, slot(kind)), "Common soldier command hidden");
         for (auto kind : {rts::UnitCommand::Gather, rts::UnitCommand::Build, rts::UnitCommand::AttackGround})
@@ -281,7 +319,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         const auto bounds = rts::buildingBounds(game, game.buildings()[0], view);
         selection.click(game, view, {bounds.x + bounds.width * .5f, bounds.y + 30}, false);
         require(selection.ids.size() == 1 && selection.ids[0] == game.buildings()[0].id, "Building upper sprite not selectable");
-        const auto p = view.project(game.worker().position, game.workerHeight()) + rts::Vec2{0, -25 * view.zoom};
+        const auto p = rts::unitScreenAnchor(view, game.worker().position, game.workerHeight()) + rts::Vec2{0, -25 * view.zoom};
         selection.click(game, view, p, false);
         require(selection.ids.size() == 1 && selection.ids[0] == game.worker().id, "Unit click missed");
         selection.click(game, view, p, true);
@@ -305,7 +343,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             selection.click(game, view, crystalPoint, false);
             require(selection.ids == std::vector<rts::EntityId>{node.id}, "Crystal upper sprite was not selected");
             require(!game.command(selection.ids, {6, 5}) && game.worker().state == rts::UnitState::Idle, "Neutral selection issued an order to player units");
-            const auto workerPoint = view.project(game.worker().position, game.workerHeight()) + rts::Vec2{0, -25 * zoom};
+            const auto workerPoint = rts::unitScreenAnchor(view, game.worker().position, game.workerHeight()) + rts::Vec2{0, -25 * zoom};
             selection.click(game, view, workerPoint, true);
             require(selection.ids == std::vector<rts::EntityId>{game.worker().id}, "Shift mixed a crystal into a unit group");
             selection.click(game, view, crystalPoint, true);
@@ -436,9 +474,9 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         auto s = flatScenario(); s.worker = {3, 0}; s.extraWorkers = {{3, 3}};
         rts::Simulation game(std::move(s));
         const rts::WorldView view{{300, 200}, 1};
-        const auto back = view.project(game.units()[0].position, 0) + rts::Vec2{0, -25};
+        const auto back = rts::unitScreenAnchor(view, game.units()[0].position, 0) + rts::Vec2{0, -25};
         require(rts::pickEntity(game, view, back) == game.buildings()[0].id, "Unit behind the building won selection by its x coordinate");
-        const auto front = view.project(game.units()[1].position, 0) + rts::Vec2{0, -48};
+        const auto front = rts::unitScreenAnchor(view, game.units()[1].position, 0) + rts::Vec2{0, -48};
         require(rts::pickEntity(game, view, front) == game.units()[1].id, "Foreground unit hidden from selection");
     });
 }

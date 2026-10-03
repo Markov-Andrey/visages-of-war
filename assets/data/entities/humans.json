@@ -94,10 +94,10 @@
       }
     },
     {
-      "id": "human.soldier",
+      "id": "human.peacemaker",
       "factionId": "humans",
-      "name": "Воин",
-      "description": "Боец ближнего боя. Принимает удар на себя и занимает передние ряды строя.",
+      "name": "Миротворец",
+      "description": "Боец ближнего боя со щитом и булавой. Экспериментальная графика.",
       "cost": {
         "crystals": 60,
         "supply": 2
@@ -137,25 +137,27 @@
       "alternateForms": [],
       "attack": {
         "range": 1.5,
-        "windupTicks": 6,
-        "recoveryTicks": 6,
-        "cooldownTicks": 18,
+        "windupTicks": 10,
+        "recoveryTicks": 10,
+        "cooldownTicks": 16,
         "targets": "same_layer",
         "projectile": null
       },
       "sprite": {
-        "image": "sprites/worker.png",
+        "image": "sprites/units/peacemaker/source/peacemaker-stand.png",
+        "directionRecipe": "sprites/units/peacemaker/directions.json",
+        "pixelArt": false,
         "frameSize": [
-          32,
-          32
+          288,
+          288
         ],
         "size": [
-          80,
-          80
+          126,
+          126
         ],
         "anchor": [
           0.5,
-          0.7125
+          0.8888888888888888
         ],
         "rows": [
           0,
@@ -169,21 +171,77 @@
         ],
         "idle": 0,
         "walk": [
-          0,
-          2,
           1,
-          3
+          2,
+          3,
+          4
         ],
         "windup": [
-          4,
-          5
+          5,
+          6
         ],
         "recovery": [
-          6,
-          7
+          7,
+          8
         ],
-        "teamMask": "blue"
-      }
+        "teamMask": "none",
+        "death": {
+          "image": "sprites/units/peacemaker/source/peacemaker-death.png",
+          "scale": 0.118125,
+          "ticksPerFrame": 6,
+          "frames": [
+            {
+              "source": [
+                8,
+                80,
+                470,
+                555
+              ],
+              "anchor": [
+                257,
+                530
+              ]
+            },
+            {
+              "source": [
+                492,
+                150,
+                507,
+                520
+              ],
+              "anchor": [
+                305,
+                485
+              ]
+            },
+            {
+              "source": [
+                999,
+                302,
+                604,
+                350
+              ],
+              "anchor": [
+                361,
+                321
+              ]
+            },
+            {
+              "source": [
+                1597,
+                380,
+                575,
+                302
+              ],
+              "anchor": [
+                303,
+                260
+              ]
+            }
+          ]
+        }
+      },
+      "library": false
     },
     {
       "id": "human.hero",
@@ -331,50 +389,184 @@
             "from": 0,
             "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-0.png",
             "teamMask": null,
-            "source": [0, 0, 1312, 1199],
-            "anchor": [0.5, 0.8]
+            "source": [
+              0,
+              0,
+              1312,
+              1199
+            ],
+            "anchor": [
+              0.5,
+              0.8
+            ]
           },
           {
             "from": 33,
             "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-33.png",
             "teamMask": null,
-            "source": [0, 0, 1312, 1199],
-            "anchor": [0.5, 0.8]
+            "source": [
+              0,
+              0,
+              1312,
+              1199
+            ],
+            "anchor": [
+              0.5,
+              0.8
+            ]
           },
           {
             "from": 66,
             "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-66.png",
             "teamMask": null,
-            "source": [0, 0, 1312, 1199],
-            "anchor": [0.5, 0.8]
+            "source": [
+              0,
+              0,
+              1312,
+              1199
+            ],
+            "anchor": [
+              0.5,
+              0.8
+            ]
           },
           {
             "from": 100,
             "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-no-fire.png",
             "teamMask": "sprites/buildings/valeri/ratusha/aligned/ratusha-team.png",
-            "source": [0, 0, 1312, 1199],
-            "anchor": [0.5, 0.8],
+            "source": [
+              0,
+              0,
+              1312,
+              1199
+            ],
+            "anchor": [
+              0.5,
+              0.8
+            ],
             "lights": [
-              {"position": [656, 959.2], "radius": 4.2, "intensity": 0.92, "color": [255, 192, 112], "flicker": 0.025},
-              {"position": [670, 361], "radius": 1.7, "intensity": 1.0, "color": [255, 174, 70], "flicker": 0.06, "animationLayer": 0},
-              {"position": [691, 971], "radius": 1.25, "intensity": 1.0, "color": [255, 164, 68], "flicker": 0.1, "when": "training", "animationLayer": 2},
-              {"position": [991, 882], "radius": 1.25, "intensity": 1.0, "color": [255, 164, 68], "flicker": 0.1, "when": "training", "animationLayer": 3}
+              {
+                "position": [
+                  656,
+                  959.2
+                ],
+                "radius": 4.2,
+                "intensity": 0.92,
+                "color": [
+                  255,
+                  192,
+                  112
+                ],
+                "flicker": 0.025
+              },
+              {
+                "position": [
+                  670,
+                  361
+                ],
+                "radius": 1.7,
+                "intensity": 1.0,
+                "color": [
+                  255,
+                  174,
+                  70
+                ],
+                "flicker": 0.06,
+                "animationLayer": 0
+              },
+              {
+                "position": [
+                  691,
+                  971
+                ],
+                "radius": 1.25,
+                "intensity": 1.0,
+                "color": [
+                  255,
+                  164,
+                  68
+                ],
+                "flicker": 0.1,
+                "when": "training",
+                "animationLayer": 2
+              },
+              {
+                "position": [
+                  991,
+                  882
+                ],
+                "radius": 1.25,
+                "intensity": 1.0,
+                "color": [
+                  255,
+                  164,
+                  68
+                ],
+                "flicker": 0.1,
+                "when": "training",
+                "animationLayer": 3
+              }
             ],
             "layers": [
               {
                 "image": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
                 "emissive": true,
                 "frames": [
-                  [100, 0, 290, 435],
-                  [527, 0, 290, 435],
-                  [963, 0, 290, 435],
-                  [1405, 0, 290, 435],
-                  [100, 445, 290, 412],
-                  [527, 445, 290, 412],
-                  [963, 445, 290, 412],
-                  [1405, 445, 290, 412]
+                  [
+                    100,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    527,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    963,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    1405,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    100,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    527,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    963,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    1405,
+                    445,
+                    290,
+                    412
+                  ]
                 ],
-                "destination": [574, 210, 192, 242],
+                "destination": [
+                  574,
+                  210,
+                  192,
+                  242
+                ],
                 "ticksPerFrame": 3,
                 "phase": 0,
                 "when": "always"
@@ -383,24 +575,79 @@
                 "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-kupol.png",
                 "teamMask": "sprites/buildings/valeri/ratusha/aligned/ratusha-team.png",
                 "frames": [
-                  [0, 0, 1312, 1199]
+                  [
+                    0,
+                    0,
+                    1312,
+                    1199
+                  ]
                 ],
-                "destination": [0, 0, 1312, 1199]
+                "destination": [
+                  0,
+                  0,
+                  1312,
+                  1199
+                ]
               },
               {
                 "image": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
                 "emissive": true,
                 "frames": [
-                  [100, 0, 290, 435],
-                  [527, 0, 290, 435],
-                  [963, 0, 290, 435],
-                  [1405, 0, 290, 435],
-                  [100, 445, 290, 412],
-                  [527, 445, 290, 412],
-                  [963, 445, 290, 412],
-                  [1405, 445, 290, 412]
+                  [
+                    100,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    527,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    963,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    1405,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    100,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    527,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    963,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    1405,
+                    445,
+                    290,
+                    412
+                  ]
                 ],
-                "destination": [644, 875, 94, 150],
+                "destination": [
+                  644,
+                  875,
+                  94,
+                  150
+                ],
                 "ticksPerFrame": 3,
                 "phase": 2,
                 "when": "training"
@@ -409,16 +656,61 @@
                 "image": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
                 "emissive": true,
                 "frames": [
-                  [100, 0, 290, 435],
-                  [527, 0, 290, 435],
-                  [963, 0, 290, 435],
-                  [1405, 0, 290, 435],
-                  [100, 445, 290, 412],
-                  [527, 445, 290, 412],
-                  [963, 445, 290, 412],
-                  [1405, 445, 290, 412]
+                  [
+                    100,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    527,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    963,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    1405,
+                    0,
+                    290,
+                    435
+                  ],
+                  [
+                    100,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    527,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    963,
+                    445,
+                    290,
+                    412
+                  ],
+                  [
+                    1405,
+                    445,
+                    290,
+                    412
+                  ]
                 ],
-                "destination": [944, 786, 94, 150],
+                "destination": [
+                  944,
+                  786,
+                  94,
+                  150
+                ],
                 "ticksPerFrame": 3,
                 "phase": 5,
                 "when": "training"
@@ -442,7 +734,7 @@
       "id": "human.barracks",
       "factionId": "humans",
       "name": "Казарма",
-      "description": "Обучает воинов, лучников и катапульты. Точка сбора определяет, куда отправятся новые бойцы.",
+      "description": "Обучает миротворцев, лучников и катапульты. Точка сбора определяет, куда отправятся новые бойцы.",
       "cost": {
         "crystals": 100,
         "supply": 0
@@ -475,7 +767,7 @@
       "production": {
         "trainingTicks": 150,
         "trains": [
-          "human.soldier",
+          "human.peacemaker",
           "human.archer",
           "human.catapult"
         ]
@@ -549,7 +841,7 @@
     {
       "id": "human.flying_soldier",
       "factionId": "humans",
-      "name": "Летающий воин",
+      "name": "Летун",
       "description": "Летит над препятствиями и видит поверх леса и скал. Занимает место в воздушном строю.",
       "cost": {
         "crystals": 80,
@@ -597,7 +889,7 @@
         "projectile": null
       },
       "sprite": {
-        "image": "sprites/worker.png",
+        "image": "sprites/archer.png",
         "frameSize": [
           32,
           32
@@ -628,14 +920,14 @@
           3
         ],
         "windup": [
-          4,
-          5
+          8,
+          9
         ],
         "recovery": [
-          6,
-          7
+          10,
+          11
         ],
-        "teamMask": "blue"
+        "teamMask": "purple"
       }
     },
     {

@@ -178,10 +178,12 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
             throw std::runtime_error("Point projectiles require a splash radius; unit projectiles have single-target damage");
     }
     if (sprite.is_null()) return;
-    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait"});
+    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "directionRecipe", "pixelArt", "death"});
     auto& s = e.sprite;
     s.image = imagePath(sprite.at("image"));
     if (sprite.contains("portrait") && !sprite.at("portrait").is_null()) s.portrait = imagePath(sprite.at("portrait"));
+    if (sprite.contains("directionRecipe")) s.directionRecipe = imagePath(sprite.at("directionRecipe"));
+    if (sprite.contains("pixelArt")) s.pixelArt = sprite.at("pixelArt").get<bool>();
     const auto& frameSize = sprite.at("frameSize");
     if (!frameSize.is_array() || frameSize.size() != 2) throw std::runtime_error("Sprite frame needs width and height");
     s.frameWidth = number(frameSize[0], 1, 1024); s.frameHeight = number(frameSize[1], 1, 1024);
@@ -196,5 +198,29 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
     else if (mask == "blue") s.teamMask = SpriteTeamMask::Blue;
     else if (mask == "purple") s.teamMask = SpriteTeamMask::Purple;
     else throw std::runtime_error("Unknown sprite team mask");
+    if (sprite.contains("death") && !sprite.at("death").is_null()) {
+        const auto& j = sprite.at("death");
+        fields(j, {"image", "scale", "ticksPerFrame", "frames"});
+        auto& death = s.death.emplace();
+        death.image = imagePath(j.at("image"));
+        death.scale = real(j.at("scale"), .01f, 4);
+        death.ticksPerFrame = number(j.at("ticksPerFrame"), 1, 3600);
+        const auto& sequence = j.at("frames");
+        if (!sequence.is_array() || sequence.empty() || sequence.size() > 128)
+            throw std::runtime_error("Death animation requires 1..128 frames");
+        for (const auto& frame : sequence) {
+            fields(frame, {"source", "anchor"});
+            UnitDeathFrame f{sourceRectangle(frame.at("source")), pair(frame.at("anchor"), 0, 8192)};
+            if (f.anchor.x > f.source[2] || f.anchor.y > f.source[3])
+                throw std::runtime_error("Death ground anchor outside frame");
+            death.frames.push_back(f);
+        }
+    }
+    if (!s.directionRecipe.empty()) {
+        if (s.teamMask != SpriteTeamMask::None || s.idle != 0 || s.walk != std::vector<int>{1, 2, 3, 4} ||
+            s.windup != std::vector<int>{5, 6} || s.recovery != std::vector<int>{7, 8} ||
+            s.rows != std::array<int, 8>{0, 1, 2, 3, 4, 5, 6, 7})
+            throw std::runtime_error("Two-direction sprite needs unpainted stand/walk/attack columns and standard facing rows");
+    }
 }
 }

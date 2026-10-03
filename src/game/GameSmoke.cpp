@@ -62,7 +62,7 @@ void GameApplication::exerciseInterface() {
             forest.map.occupy({x, y});
             if (y == 14 || y == 15) clearing.push_back(id);
         }
-        forest.units = {{"human.soldier", 1, {18, 15}}};
+        forest.units = {{"human.peacemaker", 1, {18, 15}}};
         auto forestTypes = definitions_.entities();
         for (auto& type : forestTypes) if (type.acceptsCargo) type.dayVision = type.nightVision = 1;
         auto observer = definitions_.entity("human.worker"); observer.dayVision = observer.nightVision = 7;
@@ -281,11 +281,11 @@ void GameApplication::exerciseInterface() {
     const rts::BattleLayout shortcuts(renderer_.size());
     const auto heroId = game_.hero()->id;
     onMessage(WM_KEYDOWN, VK_F1, 0);
-    if (ui_.selection.ids.size() != 17 || !ui_.selection.contains(heroId)) throw std::runtime_error("Smoke: F1 army filter failed");
+    if (ui_.selection.ids.size() != 18 || !ui_.selection.contains(heroId)) throw std::runtime_error("Smoke: F1 army filter failed");
     onMessage(WM_KEYDOWN, VK_F2, 0);
     if (ui_.selection.ids != std::vector<rts::EntityId>{heroId}) throw std::runtime_error("Smoke: F2 hero failed");
     click({shortcuts.army.x + 20, shortcuts.army.y + 20});
-    if (ui_.selection.ids.size() != 17) throw std::runtime_error("Smoke: army button failed");
+    if (ui_.selection.ids.size() != 18) throw std::runtime_error("Smoke: army button failed");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"flying-preview.png", nullptr, false, &ui_);
     click({shortcuts.hero.x + 20, shortcuts.hero.y + 20});
     if (ui_.selection.ids != std::vector<rts::EntityId>{heroId}) throw std::runtime_error("Smoke: hero button failed");
@@ -315,7 +315,7 @@ void GameApplication::exerciseInterface() {
     if (game_.buildings().front().production.size() != 1) throw std::runtime_error("Smoke: production button failed");
     rts::Vec2 a{10000, 10000}, b{-10000, -10000};
     for (const auto& u : game_.units()) if (u.owner == game_.player().id && u.definition.canBuild) {
-        const auto p = view_.project(u.position, game_.unitHeight(u));
+        const auto p = rts::unitScreenAnchor(view_, u.position, game_.unitHeight(u));
         a.x = std::min(a.x, p.x - 28); a.y = std::min(a.y, p.y - 55);
         b.x = std::max(b.x, p.x + 28); b.y = std::max(b.y, p.y + 20);
     }
@@ -380,7 +380,7 @@ void GameApplication::exerciseInterface() {
     }
     onMessage(WM_MBUTTONUP, 0, at(screenCenter));
     auto arena = rts::loadScenario(paths_.asset(L"maps/demo.rtsmap"));
-    arena.units = {{"human.soldier", 0, {15, 18}}, {"human.soldier", 1, {17, 19}}};
+    arena.units = {{"human.peacemaker", 0, {15, 18}}, {"human.peacemaker", 1, {17, 19}}};
     game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("human.worker"), definitions_.entities());
     ui_ = {}; resetCamera();
     onMessage(WM_KEYDOWN, VK_F1, 0);
@@ -401,7 +401,7 @@ void GameApplication::exerciseInterface() {
     if (game_.units().size() == combatUnitCount || game_.corpses().empty()) throw std::runtime_error("Smoke: no unit died in combat");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"death-preview.png");
     auto heroScenario = rts::loadScenario(paths_.asset(L"maps/demo.rtsmap"));
-    heroScenario.units = {{"human.hero", 0, {15, 18}}, {"human.soldier", 1, {16, 18}}};
+    heroScenario.units = {{"human.hero", 0, {15, 18}}, {"human.peacemaker", 1, {16, 18}}};
     auto heroTypes = definitions_.entities();
     for (auto& type : heroTypes) if (type.id == "human.hero") { type.maximumHealth = 12; type.attackDamage = 0; }
     game_ = rts::Simulation(std::move(heroScenario), menu_.player, definitions_.entity("human.worker"), std::move(heroTypes));

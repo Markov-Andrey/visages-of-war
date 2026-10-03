@@ -298,7 +298,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.units().size() == 2 && game.armySupply().used() == 3, "Spawn charged supply twice");
         require(!game.building(*barracks)->training(), "Finished production left training effects active");
         require(game.train(*barracks) && game.cancelTraining(*barracks) && !game.building(*barracks)->training(), "Cancelled last job left training effects active");
-        require(game.units().back().definitionId == "human.soldier" && game.units().back().cell == rts::Cell{8, 5}, "Produced unit missed rally");
+        require(game.units().back().definitionId == "human.peacemaker" && game.units().back().cell == rts::Cell{8, 5}, "Produced unit missed rally");
         require(!game.setRally(*barracks, {7, 7}), "Rally accepted blocked crystal");
     });
     test("Completed production waits for a blocked exit and can still be cancelled", [] {

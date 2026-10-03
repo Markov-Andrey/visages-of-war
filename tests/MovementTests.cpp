@@ -173,7 +173,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         for (const auto& slot : expected) require(game.unit(slot.id)->cell == slot.cell && game.unit(slot.id)->state == rts::UnitState::Idle, "Flyers did not reform in their assigned slots");
         const auto* first = game.unit(ids.front());
         const rts::WorldView view{{100, 150}, 1};
-        const auto flyingPoint = view.project(first->position, game.unitHeight(*first)) + rts::Vec2{0, -25};
+        const auto flyingPoint = rts::unitScreenAnchor(view, first->position, game.unitHeight(*first)) + rts::Vec2{0, -25};
         require(rts::pickEntity(game, view, flyingPoint) == first->id, "Flying sprite is not selectable at altitude");
     });
     test("Flying units share ground cells but reserve their own flight layer", [] {

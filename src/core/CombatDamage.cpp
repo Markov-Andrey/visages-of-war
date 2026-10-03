@@ -16,7 +16,7 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
         if (u.hero && u.owner == player_.id) heroFallen_ = true;
         if (u.owner == player_.id) supply_.release(u.definition.cost.supply);
         const Cell cell{int(std::floor(u.position.x)), int(std::floor(u.position.y))};
-        corpses_.push_back({u.position, cell, map().surfaceHeight(cell, u.position), u.owner, 90, u.definition.sprite});
+        corpses_.push_back({u.position, cell, map().surfaceHeight(cell, u.position), u.owner, Corpse::lifetimeTicks, u.definition.sprite});
         events_.emplace_back(UnitDied{u.id, u.owner});
         deaths = true;
     }

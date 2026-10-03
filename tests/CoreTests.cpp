@@ -9,6 +9,7 @@ int wmain(int argc, wchar_t** argv) {
     rts::tests::combatTests(suite, context);
     rts::tests::projectileTests(suite, context);
     rts::tests::dataTests(suite, context);
+    rts::tests::spriteTests(suite, context);
     rts::tests::visionTests(suite, context);
     rts::tests::lightingTests(suite, context);
     rts::tests::selectionTests(suite, context);

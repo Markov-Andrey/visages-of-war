@@ -849,7 +849,7 @@
         14,
         20
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 0
     },
     {
@@ -857,7 +857,7 @@
         15,
         20
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 0
     },
     {
@@ -865,7 +865,7 @@
         14,
         21
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 0
     },
     {
@@ -873,7 +873,7 @@
         15,
         21
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 0
     },
     {
@@ -881,7 +881,7 @@
         14,
         19
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 0
     },
     {
@@ -889,7 +889,7 @@
         15,
         19
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 0
     },
     {
@@ -929,7 +929,7 @@
         53,
         55
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 1
     },
     {
@@ -937,7 +937,7 @@
         54,
         55
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 1
     },
     {
@@ -945,7 +945,7 @@
         53,
         56
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 1
     },
     {
@@ -953,7 +953,7 @@
         54,
         56
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 1
     },
     {
@@ -961,7 +961,7 @@
         53,
         57
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 1
     },
     {
@@ -969,7 +969,7 @@
         54,
         57
       ],
-      "asset": "human.soldier",
+      "asset": "human.peacemaker",
       "owner": 1
     },
     {
@@ -1018,6 +1018,14 @@
       "cell": [
         22,
         20
+      ]
+    },
+    {
+      "asset": "human.peacemaker",
+      "owner": 0,
+      "cell": [
+        18,
+        16
       ]
     }
   ]

@@ -4,6 +4,12 @@
 
 namespace rts {
 struct SpriteFrame { int column, row; };
+inline const UnitDeathFrame* corpseFrame(const Corpse& corpse) {
+    if (!corpse.sprite.death || corpse.sprite.death->frames.empty()) return nullptr;
+    const auto& death = *corpse.sprite.death;
+    const auto index = static_cast<size_t>(std::max(0, corpse.ageTicks()) / std::max(1, death.ticksPerFrame));
+    return &death.frames[std::min(index, death.frames.size() - 1)];
+}
 inline SpriteFrame locomotionFrame(const Unit& unit) {
     // Animation columns and directional rows come from each entity sprite definition.
     // Rows run clockwise on screen: S, SE, E, NE, N, NW, W, SW.

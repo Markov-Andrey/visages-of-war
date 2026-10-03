@@ -4,9 +4,9 @@
 namespace rts::game {
 void GameApplication::exerciseRangedCombat() {
     rts::Scenario scene{rts::Map(32,32),{10,10},{12,14},{}};
-    scene.units = {{"human.archer",0,{14,14}}, {"human.catapult",0,{14,16}}, {"human.soldier",1,{20,14}}};
+    scene.units = {{"human.archer",0,{14,14}}, {"human.catapult",0,{14,16}}, {"human.peacemaker",1,{20,14}}};
     auto types = definitions_.entities();
-    for (auto& d : types) if (d.id == "human.soldier") { d.attackDamage = 0; d.maximumHealth = 10000; }
+    for (auto& d : types) if (d.id == "human.peacemaker") { d.attackDamage = 0; d.maximumHealth = 10000; }
     game_ = rts::Simulation(std::move(scene),menu_.player,definitions_.entity("human.worker"),std::move(types));
     ui_ = {}; ui_.selection.army(game_);
     const auto enemy = game_.units().back().id;

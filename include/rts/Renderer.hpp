@@ -9,6 +9,7 @@
 #include "rts/MinimapRaster.hpp"
 #include "rts/WorldAssets.hpp"
 #include "rts/TerrainPaint.hpp"
+#include "rts/DirectionalSprite.hpp"
 #include <windows.h>
 #include <d2d1.h>
 #include <dwrite.h>
@@ -37,6 +38,7 @@ public:
     void validateWorldAssets(const WorldAssets& assets);
     void validateCombatAssets(const Definitions& definitions);
     void snapshotEditor(const WorldEditor& editor, const std::filesystem::path& output);
+    void snapshotUnitDirections(const UnitSpriteDefinition& sprite, const std::filesystem::path& output);
     Vec2 size() const;
 private:
     friend struct RendererLightingTest;
@@ -60,6 +62,7 @@ private:
     void drawRallyPoint(const Simulation& game, const Building& building, const WorldView& view);
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);
+    void corpseSprite(const Corpse& corpse, const WorldView& view, unsigned color);
     void unitPortrait(const UnitSpriteDefinition& definition, Vec2 topLeft, Vec2 extent, unsigned color);
     void unitHudPortrait(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
     void drawProjectiles(const Simulation& game, const WorldView& view);
@@ -92,6 +95,8 @@ private:
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> worldSprites_;
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitPortraits_;
+    // CPU atlases survive target recreation; cleared on explicit asset reload.
+    std::map<std::string, SpritePixels> directionalSheets_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;
     std::map<std::string,RallySpriteDefinition> rallySprites_;
     struct CommandIconResource {
