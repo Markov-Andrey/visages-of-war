@@ -4,6 +4,19 @@
 
 namespace rts::tests {
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Decomposition is a strict independent unit capability with a non-decomposing hero", [&] {
+        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
+        for (const auto& unit : definitions.entities()) if (unit.mobile)
+            require(unit.canDecompose == !unit.hero.has_value(), "Prototype decomposition classification changed");
+        CatalogFixture fixture(context.assets);
+        auto& worker = fixture.entities["entities"][0];
+        worker["canDecompose"] = false;
+        require(!fixture.load().entity("human.worker").canDecompose, "Capability depends on hero or type ID");
+        worker.erase("canDecompose"); require(fixture.load().entity("human.worker").canDecompose, "Missing capability must default to true");
+        for (const auto& invalid : {Json(1), Json("true"), Json(nullptr)}) {
+            worker["canDecompose"] = invalid; mustThrow([&] { fixture.load(); });
+        }
+    });
     test("Every command has a replaceable icon resolved from the asset catalog", [&] {
         const auto icons = rts::loadCommandIcons(context.worldPaths);
         for (const auto& command : rts::unitCommands) require(icons.contains(command.icon) && std::filesystem::is_regular_file(icons.at(command.icon).image), "Missing command image");
@@ -269,7 +282,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         for (const auto& entity : defs.entities()) {
             require(!entity.displayName.empty() && !entity.description.empty() && entity.factionId == "humans", "Missing common metadata");
         }
-        require(defs.entity("human.hero").hero && defs.entity("human.hero").maximumHealth == 400 && defs.entity("human.hero").cost.supply == 5, "Hero common properties missing");
+        require(defs.entity("human.hero").hero && defs.entity("human.hero").maximumHealth == 600 && defs.entity("human.hero").hero->healthPerLevel == 60 && defs.entity("human.hero").cost.supply == 5, "Hero common properties missing");
         require(defs.entity("human.hall").constructible && !defs.entity("human.hall").mobile && defs.entity("human.hall").cost.crystals == 200, "Building not in common catalog");
         require(defs.progression().thresholds.size() == 10, "External progression lost");
         fixture.rules["hero"]["thresholds"] = {0, 10, 30};

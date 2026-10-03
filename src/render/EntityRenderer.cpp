@@ -153,10 +153,10 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
     }
     if (selected || u.hero || u.owner != game.player().id || u.health < u.maximumHealth()) {
         // Taller authored art needs its bar above the same bounds used for picking.
-        const float barY = std::min(p.y - 59 * view.zoom, unitBounds(game, u, view).y - 7 * view.zoom);
-        line({p.x - 21 * view.zoom, barY}, {p.x + 21 * view.zoom, barY}, 0x1b342e, 4);
-        line({p.x + (-21 + 42.0f * u.health / u.maximumHealth()) * view.zoom, barY}, {p.x - 21 * view.zoom, barY},
-            selectionColor(u.owner, game.player().id), 3);
+        const float barHeight = std::max(3.0f, 4 * view.zoom);
+        const float barY = std::min(p.y - 59 * view.zoom, unitBounds(game, u, view).y - std::max(7 * view.zoom, barHeight * .5f + 2));
+        drawHealthBar(u, {p.x - 21 * view.zoom, barY - barHeight * .5f, 42 * view.zoom, barHeight},
+            game.clock().elapsedTicks(), selectionColor(u.owner, game.player().id));
     }
 }
 }

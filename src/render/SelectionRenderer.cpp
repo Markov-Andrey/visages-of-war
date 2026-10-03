@@ -14,24 +14,14 @@ std::wstring amount(float value) {
 }
 }
 
-void Renderer::drawHealthBar(const Unit& unit, UiRect b) {
-    const float health = std::clamp(float(unit.health) / std::max(1, unit.maximumHealth()), 0.0f, 1.0f);
-    brush_->SetColor(D2D1::ColorF(0x080f14));
-    target_->FillRectangle(rect(b.x - 1, b.y - 1, b.width + 2, b.height + 2), brush_.Get());
-    brush_->SetColor(D2D1::ColorF(0x374342));
-    target_->FillRectangle(rect(b.x, b.y, b.width, b.height), brush_.Get());
-    brush_->SetColor(D2D1::ColorF(health > .5f ? 0x75dc91 : health > .25f ? 0xe7c45d : 0xe86464));
-    target_->FillRectangle(rect(b.x, b.y, b.width * health, b.height), brush_.Get());
-}
-
-void Renderer::drawUnitStats(const Unit& unit, UiRect b) {
+void Renderer::drawUnitStats(const Unit& unit, UiRect b, std::uint64_t tick) {
     const auto& d = unit.definition;
     const float width = std::min(b.width, 560.0f);
     const bool columns = width >= 360;
     text(wide(d.displayName), rect(b.x, b.y, b.width, 32), 0xe0eade, width >= 300);
     text(L"Здоровье  " + std::to_wstring(unit.health) + L" / " + std::to_wstring(unit.maximumHealth()),
         rect(b.x, b.y + 34, width, 21), 0x9dd7b0);
-    drawHealthBar(unit, {b.x, b.y + 58, width, 5});
+    drawHealthBar(unit, {b.x, b.y + 58, width, 5}, tick);
     const auto damage = unit.attackDamage() > 0 ? L"Атака  " + std::to_wstring(unit.attackDamage()) : L"Не атакует";
     const auto range = unit.attackDamage() > 0 ? L"Дальность  " + amount(d.attackRange) : L"";
     const auto speed = L"Скорость  " + amount(d.movementPerSecond) + L" кл/с";
@@ -70,7 +60,7 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
     buttonFrame(p);
     const SelectionCards cards(game, selection, info);
     if (cards.total == 1) {
-        drawUnitStats(*unit, layout.content);
+        drawUnitStats(*unit, layout.content, game.clock().elapsedTicks());
         return;
     }
     for (const auto& card : cards.cards) {
@@ -86,7 +76,7 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
             brush_->SetColor(D2D1::ColorF(0xe5cd83));
             target_->DrawRectangle(rect(b.x + 1, b.y + 1, b.width - 2, b.height - 2), brush_.Get(), 2);
         }
-        drawHealthBar(*member, card.healthBar());
+        drawHealthBar(*member, card.healthBar(), game.clock().elapsedTicks());
     }
 }
 }

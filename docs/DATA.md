@@ -50,18 +50,26 @@
 
 ## Одна структура для всех сущностей
 
+Необязательное булево поле `canDecompose` (по умолчанию `true`) управляет останками
+мобильной сущности. Сейчас оно включено у всех юнитов, кроме героя. При `true` после
+смерти остаётся принадлежащее игроку тело на 60 секунд, затем нейтральные кости на
+300 секунд; обе стадии заканчиваются двухсекундным погружением. При `false` остаётся
+только короткая анимация исчезновения, без постоянного тела и костей. Признак независим
+от класса героя, типа движения и конкретного ID юнита.
+
 В каждом файле сущностей находится объект `{"version": 1, "entities": [...]}`.
 Все записи используют одинаковые поля. Пример героя:
 
 ```json
 {
   "id": "human.hero",
+  "canDecompose": false,
   "factionId": "humans",
   "name": "Рыцарь",
   "description": "Герой ближнего боя. Получает опыт за победы своей армии поблизости.",
   "cost": { "crystals": 0, "supply": 5 },
   "stats": {
-    "health": 400, "damage": 24,
+    "health": 600, "damage": 24,
     "level": 1, "dayVision": 10, "nightVision": 8
   },
   "mobility": {
@@ -71,7 +79,7 @@
   "construction": { "enabled": false, "ticks": 180, "footprint": [1, 1] },
   "production": { "trainingTicks": 300, "trains": [] },
   "depot": false,
-  "hero": { "healthPerLevel": 40, "damagePerLevel": 4 },
+  "hero": { "healthPerLevel": 60, "damagePerLevel": 4 },
   "visual": "unit",
   "alternateForms": [],
   "attack": {

@@ -3,6 +3,7 @@
 #include "rts/FogOfWar.hpp"
 #include "rts/WorldClock.hpp"
 #include "rts/Projectile.hpp"
+#include "rts/HealthFeedback.hpp"
 #include <deque>
 #include <string>
 #include <variant>
@@ -33,6 +34,7 @@ struct Unit {
     float groupSpeed{};
     UnitState state = UnitState::Idle;
     int health{}, cargo{};
+    HealthFeedback healthFeedback;
     std::vector<Cell> route;
     size_t next{};
     float progress{};
@@ -56,15 +58,34 @@ struct Unit {
     int experienceToLevel() const { return hero && !atMaxLevel() ? hero->rules->thresholds[level()] - hero->rules->thresholds[level() - 1] : 0; }
     float experienceFraction() const { return atMaxLevel() ? 1.0f : experienceToLevel() ? float(experienceInLevel()) / experienceToLevel() : 0.0f; }
 };
+enum class CorpsePhase { Body, Sinking, Vanishing };
 struct Corpse {
     static constexpr int lifetimeTicks = 60 * simulationTicksPerSecond;
+    static constexpr int sinkTicks = 2 * simulationTicksPerSecond;
+    static constexpr int vanishTicks = simulationTicksPerSecond;
     Vec2 position;
     Cell cell;
     float height;
     PlayerId owner;
     int remainingTicks = lifetimeTicks;
     UnitSpriteDefinition sprite;
-    int ageTicks() const { return lifetimeTicks - remainingTicks; }
+    EntityId id{}, sourceUnit{};
+    std::string definitionId;
+    CorpsePhase phase = CorpsePhase::Body;
+    int elapsedTicks{}, facingRow{}, vanishDuration = vanishTicks;
+    int ageTicks() const { return elapsedTicks; }
+};
+struct Bones {
+    static constexpr int lifetimeTicks = 300 * simulationTicksPerSecond;
+    static constexpr int sinkTicks = 2 * simulationTicksPerSecond;
+    EntityId id{}, sourceUnit{}, sourceCorpse{};
+    Vec2 position;
+    Cell cell;
+    float height{};
+    PlayerId owner = neutralPlayer;
+    std::uint32_t variation{}; // Chosen once; renderer maps it to the catalog's variants.
+    int remainingTicks = lifetimeTicks;
+    bool sinking{};
 };
 struct ProductionJob {
     std::string definitionId;
@@ -87,6 +108,9 @@ struct Building {
 struct ConstructionFinished { EntityId building; };
 struct UnitProduced { EntityId building; EntityId unit; };
 struct UnitDied { EntityId unit; PlayerId owner; };
+struct CorpseCreated { EntityId corpse, unit; PlayerId owner; };
+struct BonesCreated { EntityId bones, corpse; };
+struct RemainsRemoved { EntityId id; };
 
 class Simulation {
 public:
@@ -103,7 +127,8 @@ public:
     const WorldClock& clock() const { return clock_; }
     const FogOfWar& fog() const { return fog_; }
     const std::vector<EnvironmentObject>& environment() const { return scenario_.environment; }
-    using WorldEvent = std::variant<DayPhaseChanged, ObjectDestroyed, ObjectRestored, ConstructionFinished, UnitProduced, UnitDied, HeroLevelChanged>;
+    using WorldEvent = std::variant<DayPhaseChanged, ObjectDestroyed, ObjectRestored, ConstructionFinished, UnitProduced, UnitDied, HeroLevelChanged,
+        CorpseCreated, BonesCreated, RemainsRemoved>;
     std::vector<WorldEvent> takeEvents();
     bool damageEnvironment(EntityId id, int damage);
     bool setEnvironmentHealth(EntityId id, int hitPoints);
@@ -111,6 +136,9 @@ public:
     const Map& map() const { return scenario_.map; }
     const std::vector<Unit>& units() const { return units_; }
     const std::vector<Corpse>& corpses() const { return corpses_; }
+    const std::vector<Bones>& bones() const { return bones_; }
+    const Corpse* corpse(EntityId id) const;
+    const Bones* bones(EntityId id) const;
     const std::vector<Projectile>& projectiles() const { return projectiles_; }
     const std::vector<ProjectileImpact>& projectileImpacts() const { return projectileImpacts_; }
     const std::vector<Building>& buildings() const { return buildings_; }
@@ -168,6 +196,8 @@ private:
     void tickUnit(Unit& unit);
     void tickProduction();
     void tickCombat();
+    void leaveRemains(const Unit& unit);
+    void tickRemains();
     bool targetVisible(const Unit& observer, const Unit& target) const;
     bool attackReach(const Unit& attacker, const Unit& target, std::optional<Cell> from = {}) const;
     void cancelAttack(Unit& unit);
@@ -197,6 +227,7 @@ private:
     std::vector<WorldEvent> events_;
     std::vector<Unit> units_;
     std::vector<Corpse> corpses_;
+    std::vector<Bones> bones_;
     std::vector<Projectile> projectiles_;
     std::vector<ProjectileImpact> projectileImpacts_;
     std::vector<Building> buildings_;

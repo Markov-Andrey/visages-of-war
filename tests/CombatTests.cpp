@@ -2,6 +2,48 @@
 
 namespace rts::tests {
 void combatTests(TestSuite& test, const TestContext& context) {
+    test("Damage feedback holds, drains, combines hits and clears immediately on a lethal blow", [] {
+        rts::HealthFeedback feedback;
+        constexpr std::uint64_t first = 100;
+        feedback.record(150, 110, first);
+        require(feedback.remaining(first) == 40 && feedback.remaining(first + rts::HealthFeedback::holdTicks) == 40,
+            "Damage feedback did not hold the full hit");
+        const auto middle = first + rts::HealthFeedback::holdTicks + rts::HealthFeedback::drainTicks / 2;
+        const float drained = feedback.remaining(middle);
+        require(drained > 0 && drained < 40, "Red trail did not decay after its hold");
+        feedback.record(110, 80, middle);
+        feedback.record(80, 70, middle);
+        require(std::abs(feedback.remaining(middle) - (drained + 40)) < .001f, "Burst lost earlier damage or revived an already drained portion");
+        float previous = feedback.remaining(middle);
+        for (int dt = 1; dt <= rts::HealthFeedback::holdTicks + rts::HealthFeedback::drainTicks; ++dt) {
+            const float current = feedback.remaining(middle + dt);
+            require(current >= 0 && current <= previous, "Damage trail grew or overshot while draining"); previous = current;
+        }
+        require(previous == 0, "Damage trail never finished");
+        feedback.record(70, 70, middle + 100);
+        require(feedback.remaining(middle + 100) == 0, "Zero damage created a trail");
+        feedback.record(70, 30, middle + 100);
+        feedback.record(30, 0, middle + 101);
+        require(feedback.remaining(middle + 101) == 0 && feedback.remaining(middle + 102) == 0, "Fatal damage retained a visual trail");
+    });
+    test("Combat applies real damage immediately and health feedback survives level gains without changing combat", [] {
+        auto site = flatScenario(); site.extraWorkers = {{4, 4}};
+        rts::EntityDefinition attacker; attacker.attackDamage = 20; attacker.attackWindupTicks = 1;
+        attacker.attackRecoveryTicks = 0; attacker.attackCooldownTicks = 1000;
+        auto victim = attacker; victim.id = "health.victim"; victim.maximumHealth = 150; victim.attackDamage = 0; victim.hero.emplace();
+        site.units = {{victim.id, 1, {5, 3}}};
+        rts::Simulation game(std::move(site), {}, attacker, {attacker, victim});
+        const auto id = game.units().back().id;
+        ticks(game, 2);
+        require(game.unit(id)->health == 110 && game.unit(id)->healthFeedback.remaining(game.clock().elapsedTicks()) == 40,
+            "Simultaneous hits delayed real damage or lost their combined visual amount");
+        game.grantExperience(id, 100);
+        require(game.unit(id)->health == 150 && game.unit(id)->maximumHealth() == 190 &&
+            game.unit(id)->healthFeedback.remaining(game.clock().elapsedTicks()) == 40, "Level health gain became fake damage or erased recent hits");
+        ticks(game, rts::HealthFeedback::holdTicks + rts::HealthFeedback::drainTicks);
+        require(game.unit(id)->health == 150 && game.unit(id)->healthFeedback.remaining(game.clock().elapsedTicks()) == 0,
+            "Trail affected real health or waited for a render to expire");
+    });
     test("Attack move fights en route and resumes its destination while move ignores enemies", [] {
         for (const auto kind : {rts::OrderKind::Move, rts::OrderKind::AttackMove}) {
             rts::Scenario site{rts::Map(32, 18), {1, 1}, {4, 8}, {}};
@@ -87,11 +129,26 @@ void combatTests(TestSuite& test, const TestContext& context) {
         ticks(game, 60 * rts::Simulation::ticksPerSecond - 1);
         require(game.corpses().size() == 2 && game.corpses().front().remainingTicks == 1, "Corpse disappeared before 60 seconds");
         game.tick();
-        require(game.corpses().empty(), "Corpses never expire");
+        require(game.corpses().front().phase == rts::CorpsePhase::Sinking && game.bones().empty(), "Body did not begin sinking after sixty seconds");
+        ticks(game, rts::Corpse::sinkTicks);
+        require(game.corpses().empty() && game.bones().size() == 2, "Bodies did not become bones");
+        const auto pile = game.bones().front();
+        require(pile.owner == rts::neutralPlayer && pile.remainingTicks == rts::Bones::lifetimeTicks && game.bones(pile.id),
+            "Bones did not receive neutral ownership, a fresh lifetime or an ID");
+        const auto transitions = game.takeEvents();
+        require(std::count_if(transitions.begin(), transitions.end(), [](const auto& e) { return std::holds_alternative<rts::BonesCreated>(e); }) == 2,
+            "Bones creation events missing");
+        ticks(game, rts::Bones::lifetimeTicks - 1);
+        require(game.bones(pile.id)->remainingTicks == 1 && !game.bones(pile.id)->sinking && game.bones(pile.id)->variation == pile.variation,
+            "Bones changed art, ID or expired before five minutes");
+        game.tick();
+        require(game.bones(pile.id)->sinking && game.bones(pile.id)->remainingTicks == rts::Bones::sinkTicks, "Bones skipped their sinking phase");
+        ticks(game, rts::Bones::sinkTicks);
+        require(game.bones().empty() && !game.bones(pile.id), "Bones were not finally removed");
     });
-    test("Ground and flying casualties leave passable corpses for exactly sixty seconds", [&] {
+    test("Decomposing ground and flying casualties retain ownership, then leave neutral passable bones", [&] {
         const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
-        for (const auto& original : definitions.entities()) if (original.mobile) {
+        for (const auto& original : definitions.entities()) if (original.mobile && original.canDecompose) {
             auto fighter = original; fighter.maximumHealth = 10; fighter.attackDamage = 10;
             fighter.attackWindupTicks = 1; fighter.attackRange = 1.5f; fighter.projectile.reset();
             auto victim = fighter; victim.id = "test.victim"; victim.attackDamage = 0;
@@ -103,6 +160,8 @@ void combatTests(TestSuite& test, const TestContext& context) {
             ticks(game, 2);
             require(!game.unit(enemy) && game.corpses().size() == 1 && game.corpses().front().ageTicks() == 0,
                 "Casualty did not create a fresh corpse");
+            const auto body = game.corpses().front();
+            require(body.id != enemy && body.sourceUnit == enemy && body.owner == 1 && game.corpse(body.id), "Body lost its source, identity or owner");
             require(game.command(std::array{game.worker().id}, {9, 8}), "Corpse cell cannot receive a movement order");
             ticks(game, 60);
             require(game.worker().cell == rts::Cell{9, 8} && game.corpses().size() == 1,
@@ -111,7 +170,35 @@ void combatTests(TestSuite& test, const TestContext& context) {
             require(game.corpses().size() == 1 && game.corpses().front().ageTicks() == 60 * rts::Simulation::ticksPerSecond - 1,
                 "Corpse expired before the default sixty seconds");
             game.tick();
-            require(game.corpses().empty(), "Corpse survived past sixty seconds");
+            require(game.corpse(body.id)->phase == rts::CorpsePhase::Sinking && game.corpse(body.id)->owner == 1, "Sinking body changed ownership");
+            ticks(game, rts::Corpse::sinkTicks);
+            require(game.corpses().empty() && !game.corpse(body.id) && game.bones().size() == 1, "Body-to-bones transition failed");
+            const auto& pile = game.bones().front();
+            require(pile.id != body.id && pile.sourceCorpse == body.id && pile.sourceUnit == enemy && pile.owner == rts::neutralPlayer &&
+                pile.cell == body.cell && pile.position == body.position && pile.height == body.height, "Bones changed position or retained player ownership");
+            require(game.command(std::array{game.worker().id}, {8, 8}), "Could not leave bones cell"); ticks(game, 60);
+            require(game.command(std::array{game.worker().id}, {9, 8}), "Bones blocked a movement order"); ticks(game, 60);
+            require(game.worker().cell == rts::Cell{9, 8} && !game.attack(std::array{game.worker().id}, pile.id), "Bones blocked movement or became an attack target");
+        }
+    });
+    test("Non-decomposing units fade away without persistent bodies or bones", [&] {
+        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
+        for (const auto* id : {"human.hero", "human.peacemaker"}) {
+            auto killer = definitions.entity("human.peacemaker"); killer.attackDamage = 10000; killer.attackWindupTicks = 1;
+            auto victim = definitions.entity(id); victim.id = "vanishing.victim"; victim.canDecompose = false; victim.attackDamage = 0;
+            rts::Scenario site{rts::Map(20, 20), {1, 1}, {8, 8}, {}}; site.units = {{victim.id, 1, {9, 8}}};
+            rts::Simulation game(std::move(site), {}, killer, {killer, victim});
+            require(game.attack(std::array{game.worker().id}, game.units().back().id), "Vanish fixture rejected attack"); ticks(game, 2);
+            require(game.corpses().size() == 1 && game.corpses().front().phase == rts::CorpsePhase::Vanishing, "Unit left a persistent body");
+            const int duration = game.corpses().front().remainingTicks;
+            ticks(game, duration - 1); require(game.corpses().size() == 1, "Disappearance animation ended too early");
+            game.tick(); require(game.corpses().empty() && game.bones().empty(), "Non-decomposing unit left remains");
+            ticks(game, rts::Corpse::lifetimeTicks + rts::Corpse::sinkTicks);
+            require(game.bones().empty(), "A vanished unit created delayed bones");
+            const auto events = game.takeEvents();
+            require(std::none_of(events.begin(), events.end(), [](const auto& e) {
+                return std::holds_alternative<rts::CorpseCreated>(e) || std::holds_alternative<rts::BonesCreated>(e);
+            }), "Non-decomposing unit exposed interactable remains");
         }
     });
     test("Hero progression crosses thresholds, caps at ten and leaves definitions unchanged", [] {

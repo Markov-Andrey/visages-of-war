@@ -26,6 +26,11 @@ void Renderer::validateWorldAssets(const WorldAssets& assets) {
         const auto size=dimensions(d.image);
         if(d.source[2]>0&&d.source[3]>0&&(d.source[0]+d.source[2]>size.x||d.source[1]+d.source[3]>size.y)) throw std::runtime_error("Sprite source rectangle exceeds image: "+d.id);
     }
+    const auto& bones = assets.bonesSprite();
+    const auto bonesSize = dimensions(bones.image);
+    for (const auto& frame : bones.variants)
+        if (frame.source[0] + frame.source[2] > bonesSize.x || frame.source[1] + frame.source[3] > bonesSize.y)
+            throw std::runtime_error("Bones variant exceeds image");
 }
 Renderer::MaterialResource& Renderer::materialResource(const std::string& id) {
     auto& r=materialResources_[id]; if(r.bitmap) return r;

@@ -256,6 +256,13 @@
           "imported": "2026-10-03",
           "source": "Project owner Peacemaker button icon; original bytes preserved. Used for unit selection and training buttons, separately from the large portrait and world sprites.",
           "sha256": "EF2D6C74F4739486591E22FCE7CCB79C9DB3C0B5008BDCDBEDE0EB5988007393"
+        },
+        {
+          "original": "bones.png",
+          "path": "sprites/remains/bones.png",
+          "imported": "2026-10-03",
+          "source": "Project owner neutral bones sheet; original bytes preserved. Eight shared variants and ground anchors in world/remains.json. No team recoloring.",
+          "sha256": "A905A897C594CBFEC0A3D277A86DA8B6028D7C30023E1225E15B3146BA685844"
         }
     ]
 }

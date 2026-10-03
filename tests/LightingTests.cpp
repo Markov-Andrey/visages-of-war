@@ -3,6 +3,47 @@
 
 namespace rts {
 struct RendererLightingTest {
+    static void healthBars(const tests::TestContext& context) {
+        using render::check;
+        using tests::require;
+        platform::ComApartment apartment;
+        Renderer renderer(Paths(context.assets, Paths::executable().parent_path() / "health-bar-data"));
+        Renderer::ComPtr<IWICBitmap> output;
+        constexpr UINT width = 180, height = 100;
+        check(renderer.wic_->CreateBitmap(width, height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, output.GetAddressOf()));
+        auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
+        properties.dpiX = properties.dpiY = 96;
+        check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
+        check(renderer.target_->CreateSolidColorBrush(D2D1::ColorF(0), renderer.brush_.GetAddressOf()));
+        renderer.target_->BeginDraw(); renderer.target_->Clear(D2D1::ColorF(0x253038));
+        renderer.nightActive_ = true; // Health feedback must retain its UI brightness at night.
+        Unit unit;
+        unit.definition.maximumHealth = unit.health = 150;
+        renderer.drawHealthBar(unit, {10, 10, 150, 6}, 100);
+        unit.definition.maximumHealth = unit.health = 90;
+        renderer.drawHealthBar(unit, {10, 25, 150, 6}, 100);
+        unit.definition.maximumHealth = unit.health = 300;
+        renderer.drawHealthBar(unit, {10, 40, 150, 6}, 100);
+        unit.definition.maximumHealth = 150; unit.health = 20;
+        unit.healthFeedback.record(150, 20, 100);
+        renderer.drawHealthBar(unit, {10, 55, 150, 6}, 100, 0xe86464);
+        renderer.drawHealthBar(unit, {10, 70, 150, 6}, 100 + HealthFeedback::holdTicks + HealthFeedback::drainTicks);
+        unit.health = 0; unit.healthFeedback.record(20, 0, 101);
+        renderer.drawHealthBar(unit, {10, 85, 150, 6}, 101);
+        check(renderer.target_->EndDraw());
+        std::vector<std::uint32_t> pixels(width * height);
+        check(output->CopyPixels(nullptr, width * 4, UINT(pixels.size() * 4), reinterpret_cast<BYTE*>(pixels.data())));
+        const auto at = [&](int x, int y) { return pixels[y * width + x]; };
+        require(at(110, 12) == 0xff080f14 && at(109, 12) == 0xff75dc91 && at(111, 12) == 0xff75dc91,
+            "150 HP did not put a black divider at the 100-HP boundary");
+        for (int x = 10; x < 160; ++x) require(at(x, 27) == 0xff75dc91, "A bar below 100 HP acquired a divider");
+        require(at(60, 42) == 0xff080f14 && at(110, 42) == 0xff080f14 && at(159, 42) == 0xff75dc91,
+            "300 HP lost a section or gained a divider at its end");
+        require(at(15, 57) == 0xff75dc91 && at(60, 57) == 0xffec4b48 && at(9, 57) == 0xffe86464,
+            "Low health changed colour, damage was not red or enemy ownership disappeared");
+        require(at(15, 72) == 0xff75dc91 && at(60, 72) == 0xff080f14, "Drained damage did not expose black behind green health");
+        require(at(10, 87) == 0xff253038 && at(100, 87) == 0xff253038, "A dead unit retained its health bar");
+    }
     static std::uint32_t snapshotPixel(Renderer& renderer, const std::filesystem::path& file, int x, int y) {
         using render::check;
         Renderer::ComPtr<IWICBitmapDecoder> decoder;
@@ -69,6 +110,7 @@ struct RendererLightingTest {
 };
 namespace tests {
 void lightingTests(TestSuite& test, const TestContext& context) {
+    test("Health sections, damage colour and death visibility stay readable at night", [&] { RendererLightingTest::healthBars(context); });
     test("Night sprite composition preserves alpha, soft emission and foreground occlusion", [&] { RendererLightingTest::composite(context); });
     test("Night, dawn and daylight render with unchanged resources and paused time", [&] {
         platform::ComApartment apartment;

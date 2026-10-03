@@ -63,6 +63,7 @@ private:
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);
     void corpseSprite(const Corpse& corpse, const WorldView& view, unsigned color);
+    void bonesSprite(const Bones& bones, const WorldView& view);
     void unitPortrait(const UnitSpriteDefinition& definition, Vec2 topLeft, Vec2 extent, unsigned color);
     void unitIcon(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
     void unitUiImage(const std::string& image, UiRect bounds);
@@ -78,8 +79,8 @@ private:
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
     void hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid);
     void drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info);
-    void drawUnitStats(const Unit& unit, UiRect bounds);
-    void drawHealthBar(const Unit& unit, UiRect bounds);
+    void drawUnitStats(const Unit& unit, UiRect bounds, std::uint64_t tick);
+    void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
     void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected);
     void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row);

@@ -28,11 +28,12 @@ Json read(const std::filesystem::path& file) {
 }
 void version(const Json& root) { if (number(root.at("version"), 1, 1) != 1) throw std::runtime_error("Unsupported catalog version"); }
 EntityDefinition parseEntity(const Json& j) {
-    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "visual", "alternateForms", "attack", "sprite"}, {"buildingSprite", "library"});
+    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "visual", "alternateForms", "attack", "sprite"}, {"buildingSprite", "library", "canDecompose"});
     EntityDefinition e;
     e.id = string(j.at("id")); e.factionId = string(j.at("factionId"));
     e.displayName = string(j.at("name")); e.description = string(j.at("description"));
     if (j.contains("library")) e.libraryVisible = j.at("library").get<bool>();
+    if (j.contains("canDecompose")) e.canDecompose = j.at("canDecompose").get<bool>();
     const auto& cost = j.at("cost"); fields(cost, {"crystals", "supply"});
     e.cost = {number(cost.at("crystals"), 0, 1000000), number(cost.at("supply"), 0, ArmySupply::maximum)};
     const auto& stats = j.at("stats"); fields(stats, {"health", "damage", "level", "dayVision", "nightVision"});

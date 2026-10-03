@@ -19,7 +19,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     const auto& map = game.map();
     target_->PushAxisAlignedClip(rect(layout.world.x, layout.world.y, layout.world.width, layout.world.height), D2D1_ANTIALIAS_MODE_ALIASED);
     const auto onScreen = [&](Vec2 p) { return p.x > -250 && p.x < extent.x + 250 && p.y > -80 && p.y < extent.y; };
-    enum class Kind { Crystal, Environment, Decoration, Building, Corpse, Unit, RallyPoint };
+    enum class Kind { Crystal, Environment, Decoration, Building, Corpse, Bones, Unit, RallyPoint };
     struct Item { float depth; Kind kind; size_t index; };
     std::vector<Item> items;
     std::vector<const Building*> groundSelections;
@@ -40,6 +40,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         items.push_back({game.buildings()[i].rally.y + .5f, Kind::RallyPoint, i});
     for (size_t i = 0; i < game.corpses().size(); ++i) if (game.fog().visible(game.corpses()[i].cell))
         items.push_back({unitDrawDepth(game.corpses()[i].position), Kind::Corpse, i});
+    for (size_t i = 0; i < game.bones().size(); ++i) if (game.fog().visible(game.bones()[i].cell))
+        items.push_back({unitDrawDepth(game.bones()[i].position), Kind::Bones, i});
     for (size_t i = 0; i < game.units().size(); ++i) if (game.fog().visible(game.units()[i].cell) && !airborne(game.units()[i].definition.movement))
         items.push_back({unitDrawDepth(game.units()[i].position), Kind::Unit, i});
     std::stable_sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.depth < b.depth; });
@@ -96,8 +98,12 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                 const auto& corpse = game.corpses()[item.index];
                 const auto p = unitScreenAnchor(view, corpse.position, corpse.height);
                 if (!onScreen(p)) break;
-                worldOpacity_ = std::min(1.0f, float(corpse.remainingTicks) / Simulation::ticksPerSecond);
                 corpseSprite(corpse, view, corpse.owner == game.player().id ? teamColor_ : enemyColor_);
+                break;
+            }
+            case Kind::Bones: {
+                const auto& bones = game.bones()[item.index];
+                if (onScreen(unitScreenAnchor(view, bones.position, bones.height))) bonesSprite(bones, view);
                 break;
             }
             case Kind::Unit: {

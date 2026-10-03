@@ -12,8 +12,7 @@ void Simulation::cancelAttack(Unit& u) {
     }
 }
 void Simulation::tickCombat() {
-    for (auto& corpse : corpses_) --corpse.remainingTicks;
-    std::erase_if(corpses_, [](const Corpse& corpse) { return corpse.remainingTicks <= 0; });
+    tickRemains();
     std::vector<Hit> hits;
     tickProjectiles(hits); // Newly released shots start flying on the following tick.
     for (auto& u : units_) {

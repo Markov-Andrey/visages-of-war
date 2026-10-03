@@ -6,7 +6,9 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
     // Resolve this tick's hits together, so equal duels do not favour the lower entity ID.
     std::vector<std::pair<EntityId, PlayerId>> kills;
     for (const auto hit : hits) if (auto* target = mutableUnit(hit.target); target && target->health > 0) {
+        const int before = target->health;
         target->health = std::max(0, target->health - hit.damage);
+        target->healthFeedback.record(before, target->health, clock_.elapsedTicks());
         if (target->health == 0) kills.emplace_back(target->id, hit.owner);
     }
     // Dead heroes cannot gain levels or heal out of a simultaneous lethal hit.
@@ -15,8 +17,7 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
     for (const auto& u : units_) if (u.health == 0) {
         if (u.hero && u.owner == player_.id) heroFallen_ = true;
         if (u.owner == player_.id) supply_.release(u.definition.cost.supply);
-        const Cell cell{int(std::floor(u.position.x)), int(std::floor(u.position.y))};
-        corpses_.push_back({u.position, cell, map().surfaceHeight(cell, u.position), u.owner, Corpse::lifetimeTicks, u.definition.sprite});
+        leaveRemains(u);
         events_.emplace_back(UnitDied{u.id, u.owner});
         deaths = true;
     }

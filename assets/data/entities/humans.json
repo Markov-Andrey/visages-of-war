@@ -3,6 +3,7 @@
   "entities": [
     {
       "id": "human.worker",
+      "canDecompose": true,
       "factionId": "humans",
       "name": "Рабочий",
       "description": "Добывает кристаллы и относит их в ратушу. Строит и восстанавливает работу на стройплощадках.",
@@ -11,7 +12,7 @@
         "supply": 1
       },
       "stats": {
-        "health": 60,
+        "health": 90,
         "damage": 0,
         "level": 1,
         "dayVision": 8,
@@ -95,6 +96,7 @@
     },
     {
       "id": "human.peacemaker",
+      "canDecompose": true,
       "factionId": "humans",
       "name": "Миротворец",
       "description": "Боец ближнего боя со щитом и булавой. Экспериментальная графика.",
@@ -103,7 +105,7 @@
         "supply": 2
       },
       "stats": {
-        "health": 120,
+        "health": 180,
         "damage": 12,
         "level": 1,
         "dayVision": 9,
@@ -247,6 +249,7 @@
     },
     {
       "id": "human.hero",
+      "canDecompose": false,
       "factionId": "humans",
       "name": "Рыцарь",
       "description": "Герой ближнего боя. Получает опыт за врагов, побеждённых его армией поблизости, и усиливается с каждым уровнем.",
@@ -255,7 +258,7 @@
         "supply": 5
       },
       "stats": {
-        "health": 400,
+        "health": 600,
         "damage": 24,
         "level": 1,
         "dayVision": 10,
@@ -285,7 +288,7 @@
       },
       "depot": false,
       "hero": {
-        "healthPerLevel": 40,
+        "healthPerLevel": 60,
         "damagePerLevel": 4
       },
       "visual": "unit",
@@ -842,6 +845,7 @@
     },
     {
       "id": "human.flying_soldier",
+      "canDecompose": true,
       "factionId": "humans",
       "name": "Летун",
       "description": "Летит над препятствиями и видит поверх леса и скал. Занимает место в воздушном строю.",
@@ -850,7 +854,7 @@
         "supply": 2
       },
       "stats": {
-        "health": 120,
+        "health": 180,
         "damage": 12,
         "level": 1,
         "dayVision": 9,
@@ -934,6 +938,7 @@
     },
     {
       "id": "human.archer",
+      "canDecompose": true,
       "factionId": "humans",
       "name": "Лучник",
       "description": "Стреляет по наземным и воздушным целям. Выпущенная стрела следует за выбранной целью.",
@@ -942,7 +947,7 @@
         "supply": 2
       },
       "stats": {
-        "health": 80,
+        "health": 120,
         "damage": 14,
         "level": 1,
         "dayVision": 10,
@@ -1046,6 +1051,7 @@
     },
     {
       "id": "human.catapult",
+      "canDecompose": true,
       "factionId": "humans",
       "name": "Катапульта",
       "description": "Бьёт навесом по точке, зафиксированной при выстреле. Поражает наземных врагов в области; движущаяся цель может уклониться.",
@@ -1054,7 +1060,7 @@
         "supply": 4
       },
       "stats": {
-        "health": 220,
+        "health": 330,
         "damage": 45,
         "level": 1,
         "dayVision": 10,

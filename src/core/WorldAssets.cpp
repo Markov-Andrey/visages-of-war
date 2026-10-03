@@ -27,6 +27,27 @@ std::string identifier(const Json& j, std::set<std::string>& used) {
 WorldAssets WorldAssets::load(const Paths& paths) {
     WorldAssets result;
     const auto index = read(paths.asset(L"world/catalog.json"));
+    const auto remains = read(paths.asset(utf8Path(index.at("remainsFile").get<std::string>())));
+    const auto& bones = remains.at("bones");
+    auto& sprite = result.bonesSprite_;
+    sprite.image = utf8Path(bones.at("image").get<std::string>()); paths.asset(sprite.image);
+    sprite.scale = number(bones.at("scale"), .01f, 4);
+    sprite.pixelArt = bones.value("pixelArt", false);
+    const auto& variants = bones.at("variants");
+    if (!variants.is_array() || variants.empty() || variants.size() > 256) throw std::runtime_error("Invalid bones variants");
+    for (const auto& variant : variants) {
+        const auto& source = variant.at("source");
+        const auto& anchor = variant.at("anchor");
+        if (!source.is_array() || source.size() != 4 || !anchor.is_array() || anchor.size() != 2)
+            throw std::runtime_error("Invalid bones crop or anchor");
+        UnitDeathFrame frame;
+        for (size_t i = 0; i < 4; ++i) {
+            if (!source[i].is_number_integer()) throw std::runtime_error("Bones crop must use integer pixels");
+            frame.source[i] = int(number(source[i], i < 2 ? 0.0f : 1.0f, 8192));
+        }
+        frame.anchor = {number(anchor[0], 0, float(frame.source[2])), number(anchor[1], 0, float(frame.source[3]))};
+        sprite.variants.push_back(frame);
+    }
     std::set<std::string> ids;
     for (const auto& file : index.at("materialFiles")) for (const auto& j : read(paths.asset(utf8Path(file.get<std::string>())))) {
         TerrainMaterial m;

@@ -128,7 +128,9 @@ void editorTests(TestSuite& test, const TestContext& context) {
         const auto root=worldPaths.writable(L"catalog-test/world/catalog.json").parent_path().parent_path();
         const rts::Paths fixture(root,root/"user");
         std::filesystem::copy_file(assets/"sprites/tree.png",root/"image.png",std::filesystem::copy_options::overwrite_existing);
-        writeMap(root/"world/catalog.json",{{"materialFiles",{"world/materials.json"}},{"objectFiles",{"world/objects.json"}}});
+        writeMap(root/"world/catalog.json",{{"materialFiles",{"world/materials.json"}},{"objectFiles",{"world/objects.json"}},{"remainsFile","world/remains.json"}});
+        Json bones={{"image","image.png"},{"scale",.5},{"variants",Json::array({{{"source",{0,0,16,16}},{"anchor",{8,12}}}})}};
+        writeMap(root/"world/remains.json",{{"bones",bones}});
         nlohmann::json materials={{{"id","custom"},{"name","Своя текстура"},{"image","image.png"},{"repeatCells",8}}};
         nlohmann::json object={{"id","custom_tree"},{"name","Своя порода"},{"gameplay",true},{"kind","tree"},{"footprint",{1,1}},{"collision",{true}},{"health",250},{"blocksVision",true},
             {"sprite",{{"image","image.png"},{"source",{0,0,16,16}},{"size",{128,160}},{"anchor",{.5,.9}}}}};
@@ -139,6 +141,12 @@ void editorTests(TestSuite& test, const TestContext& context) {
         require(!loaded.object("custom_bush").gameplay,"New cosmetic definition did not load");
         object["collision"]={true}; writeMap(root/"world/objects.json",nlohmann::json::array({object})); mustThrow([&]{rts::WorldAssets::load(fixture);});
         object["collision"]={false}; object["sprite"]["image"]="../outside.png"; writeMap(root/"world/objects.json",nlohmann::json::array({object})); mustThrow([&]{rts::WorldAssets::load(fixture);});
+        object["sprite"]["image"]="image.png"; writeMap(root/"world/objects.json",Json::array({object}));
+        for (const auto& path : {"../bones.png", "C:/bones.png"}) {
+            bones["image"]=path; writeMap(root/"world/remains.json",{{"bones",bones}}); mustThrow([&]{rts::WorldAssets::load(fixture);});
+        }
+        bones["image"]="image.png"; bones["variants"][0]["source"][2]=0;
+        writeMap(root/"world/remains.json",{{"bones",bones}}); mustThrow([&]{rts::WorldAssets::load(fixture);});
     });
 }
 }

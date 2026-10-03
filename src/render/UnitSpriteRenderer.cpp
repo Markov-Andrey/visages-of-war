@@ -50,28 +50,6 @@ void Renderer::unitUiImage(const std::string& image, UiRect bounds) {
     sprite(bitmap.Get(), rect(0, 0, float(pixels.width), float(pixels.height)),
         {bounds.x + (bounds.width - extent.x) * .5f, bounds.y + (bounds.height - extent.y) * .5f}, extent, false, 0);
 }
-void Renderer::corpseSprite(const Corpse& corpse, const WorldView& view, unsigned color) {
-    const auto ground = unitScreenAnchor(view, corpse.position, corpse.height);
-    if (const auto* frame = corpseFrame(corpse)) {
-        const auto& d = corpse.sprite;
-        const auto& death = *d.death;
-        const auto path = imagePath(death.image);
-        if (d.teamMask == SpriteTeamMask::None) color = 0;
-        auto& bitmap = unitSheets_[{path, color, d.teamMask}];
-        if (!bitmap) loadBitmap(paths_.asset(path), bitmap, color, d.teamMask, {}, true);
-        const auto& r = frame->source;
-        const float scale = death.scale * view.zoom;
-        sprite(bitmap.Get(), rect(float(r[0]), float(r[1]), float(r[2]), float(r[3])),
-            ground - frame->anchor * scale, Vec2{float(r[2]), float(r[3])} * scale, d.pixelArt, .5f);
-        return;
-    }
-    // Temporary remains for units whose dedicated death artwork is not supplied yet.
-    D2D1_MATRIX_3X2_F transform;
-    target_->GetTransform(&transform);
-    target_->SetTransform(D2D1::Matrix3x2F::Rotation(90, point(ground)) * transform);
-    unitPortrait(corpse.sprite, ground + Vec2{-32,-32} * view.zoom, Vec2{64,64} * view.zoom, color);
-    target_->SetTransform(transform);
-}
 void Renderer::validateCombatAssets(const Definitions& definitions) {
     std::map<std::filesystem::path,Vec2> sizes;
     const auto dimensions = [&](const std::string& image) {

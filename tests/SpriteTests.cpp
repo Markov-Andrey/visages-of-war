@@ -148,6 +148,18 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         for (const auto& corpse : battle.corpses())
             require(corpseFrame(corpse)->source == death.frames.back().source, "Corpse restarted its death animation");
         renderer.snapshot(battle, output / "peacemaker-corpse.png");
+        require(context.worldAssets.bonesSprite().variants.size() == 8, "Supplied bones sheet lost a variation");
+        ticks(battle, battle.corpses().front().remainingTicks);
+        ticks(battle, Corpse::sinkTicks / 2);
+        renderer.snapshot(battle, output / "peacemaker-sinking.png");
+        ticks(battle, Corpse::sinkTicks - Corpse::sinkTicks / 2);
+        require(battle.corpses().empty() && battle.bones().size() == 2, "Body did not become a separate bones object");
+        ticks(battle, 12);
+        renderer.snapshot(battle, output / "peacemaker-bones.png");
+        ticks(battle, battle.bones().front().remainingTicks + Bones::sinkTicks / 2);
+        renderer.snapshot(battle, output / "bones-sinking.png");
+        ticks(battle, Bones::sinkTicks - Bones::sinkTicks / 2);
+        require(battle.bones().empty(), "Sinking bones survived their final removal");
         // Catalog syntax can be valid while a rectangle lies outside the actual PNG.
         CatalogFixture oversized(context.assets);
         for (auto& type : oversized.entities["entities"]) if (type["id"] == definition.id)

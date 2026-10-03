@@ -41,6 +41,7 @@ add_library(rts_core
     src/core/Combat.cpp
     src/core/CombatTargeting.cpp
     src/core/CombatDamage.cpp
+    src/core/Remains.cpp
     src/core/HeroProgression.cpp
     src/core/Projectiles.cpp
     src/core/UnitOrders.cpp
@@ -67,6 +68,7 @@ add_library(rts_render
     src/render/TerrainRenderer.cpp
     src/render/WorldRenderer.cpp
     src/render/UnitSpriteRenderer.cpp
+    src/render/RemainsRenderer.cpp
     src/render/DirectionalSpriteAssets.cpp
     src/render/UnitDirectionPreview.cpp
     src/render/BuildingSpriteRenderer.cpp
@@ -75,6 +77,7 @@ add_library(rts_render
     src/render/SpriteLighting.cpp
     src/render/ProjectileRenderer.cpp
     src/render/EntityRenderer.cpp
+    src/render/HealthBarRenderer.cpp
     src/render/SceneRenderer.cpp
     src/render/HudRenderer.cpp
     src/render/SelectionRenderer.cpp

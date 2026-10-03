@@ -73,6 +73,7 @@ struct EntityDefinition {
     bool libraryVisible{};
     ResourceCost cost{40, 1};
     bool mobile = true;
+    bool canDecompose = true;
     float movementPerSecond = 2.8f;
     int carryCapacity = 10;
     int trainingTicks = 90;

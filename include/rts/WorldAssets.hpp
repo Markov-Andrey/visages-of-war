@@ -22,6 +22,12 @@ struct WorldObjectDefinition {
     Vec2 size{64, 64}, anchor{.5f, 1};
     bool pixelArt{};
 };
+struct BonesSpriteDefinition {
+    std::filesystem::path image;
+    std::vector<UnitDeathFrame> variants;
+    float scale = 1;
+    bool pixelArt{};
+};
 class WorldAssets {
 public:
     static WorldAssets load(const Paths& paths);
@@ -29,9 +35,11 @@ public:
     const WorldObjectDefinition& object(const std::string& id) const;
     const auto& materials() const { return materials_; }
     const auto& objects() const { return objects_; }
+    const BonesSpriteDefinition& bonesSprite() const { return bonesSprite_; }
     EnvironmentObject instantiate(const std::string& id, EntityId instance, Cell origin) const;
 private:
     std::vector<TerrainMaterial> materials_;
     std::vector<WorldObjectDefinition> objects_;
+    BonesSpriteDefinition bonesSprite_;
 };
 }
