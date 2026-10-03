@@ -47,12 +47,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     // Draw back-to-front by ground row, with all objects ordered by their ground anchor.
     // Foreground elevated terrain is allowed to occlude lower objects behind its edge.
     for (int y = 0; y < map.height(); ++y) {
-        for (int x = 0; x < map.width(); ++x) {
-            const Cell c{x, y};
-            if (!onScreen(view.project(center(c), float(map.at(c).height))) || !fogMask_.covers(c)) continue;
-            worldOpacity_ = 1.0f;
-            tile(map, c, view, grid, true);
-        }
+        terrainRow(map, y, view, grid, true);
         worldOpacity_ = 1;
         for (const auto* building : groundSelections) buildingGroundSelection(game, *building, view, y);
         while (nextItem < items.size() && items[nextItem].depth < y + 1) {

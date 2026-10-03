@@ -242,6 +242,20 @@
           "imported": "2026-10-03",
           "source": "Project owner Peacemaker death animation; original bytes preserved. Four shared frames, last frame is the persistent corpse; crops and ground pivots in data/entities/humans.json.",
           "sha256": "22106E00329C5998C0F1778AA9B1555EF2C267357D98AAB0CECBC7069CBEFEF1"
+        },
+        {
+          "original": "peacemaker-portrait.png",
+          "path": "sprites/units/peacemaker/peacemaker-portrait.png",
+          "imported": "2026-10-03",
+          "source": "Project owner Peacemaker portrait; original bytes preserved. Large unit selection preview only, without team recoloring; button artwork is a separate icon asset.",
+          "sha256": "EA5427AFE6197CB700A84E2E1587805DDED0AD9AC3062008CAECDF07586FBC0F"
+        },
+        {
+          "original": "peacemaker-icon.png",
+          "path": "sprites/units/peacemaker/peacemaker-icon.png",
+          "imported": "2026-10-03",
+          "source": "Project owner Peacemaker button icon; original bytes preserved. Used for unit selection and training buttons, separately from the large portrait and world sprites.",
+          "sha256": "EF2D6C74F4739486591E22FCE7CCB79C9DB3C0B5008BDCDBEDE0EB5988007393"
         }
     ]
 }

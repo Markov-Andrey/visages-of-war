@@ -145,6 +145,8 @@
       },
       "sprite": {
         "image": "sprites/units/peacemaker/source/peacemaker-stand.png",
+        "portrait": "sprites/units/peacemaker/peacemaker-portrait.png",
+        "icon": "sprites/units/peacemaker/peacemaker-icon.png",
         "directionRecipe": "sprites/units/peacemaker/directions.json",
         "pixelArt": false,
         "frameSize": [

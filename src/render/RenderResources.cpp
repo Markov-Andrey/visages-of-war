@@ -22,6 +22,7 @@ void Renderer::verifyAssets() {
         if (e.mobile) {
             images.push_back(imagePath(e.sprite.image));
             if (!e.sprite.portrait.empty()) images.push_back(imagePath(e.sprite.portrait));
+            if (!e.sprite.icon.empty()) images.push_back(imagePath(e.sprite.icon));
         }
         if (e.projectile) images.push_back(imagePath(e.projectile->image));
         for (const auto& stage : e.buildingSprite.stages) {

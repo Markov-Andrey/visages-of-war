@@ -51,7 +51,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     const auto heroArea = layout.hero;
     panel(heroArea, !hero ? 0x303236 : heroArea.contains(ui.mouse) ? 0x535044 : 0x383d35);
     if (hero) {
-        unitPortrait(hero->definition.sprite, {heroArea.x, heroArea.y + 18}, {58,58}, teamColor_);
+        unitIcon(hero->definition.sprite, {heroArea.x, heroArea.y + 18, 58, 58}, teamColor_);
         text(L"F2  " + wide(hero->definition.displayName), rect(heroArea.x + 9, heroArea.y + 4, 147, 24), 0xebd693);
         text(L"Уровень " + std::to_wstring(hero->level()), rect(heroArea.x + 58, heroArea.y + 28, 102, 23), 0xe2dfc7);
         text(std::to_wstring(hero->health) + L" / " + std::to_wstring(hero->maximumHealth()), rect(heroArea.x + 58, heroArea.y + 50, 102, 23), 0x99d8ad);
@@ -193,7 +193,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             } else if (const auto* type = commandTypes[i]) {
                 target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
                 if (type->mobile && !type->sprite.image.empty()) {
-                    unitPortrait(type->sprite, {b.x, b.y}, {b.width, b.height}, teamColor_);
+                    unitIcon(type->sprite, b, teamColor_);
                 } else if (const auto* stage = type->buildingSprite.stage(type->constructionTicks, type->constructionTicks)) {
                     const float scale = std::min(b.width / stage->source[2], b.height / stage->source[3]);
                     const float width = stage->source[2] * scale, height = stage->source[3] * scale;

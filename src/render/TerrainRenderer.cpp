@@ -2,6 +2,30 @@
 
 namespace rts {
 using namespace render;
+void Renderer::terrainRow(const Map& map, int row, const WorldView& view, bool grid, bool fog) {
+    const auto drawEarly = [&](Cell cell) {
+        if (cell.y == 0) return false;
+        const auto& current = map.at(cell);
+        const auto& previous = map.at(cell + Cell{0, -1});
+        return current.height == previous.height && current.ramp == Cell{} && previous.ramp == Cell{};
+    };
+    const auto extent = size();
+    const auto draw = [&](Cell cell) {
+        const auto p = view.project(center(cell), float(map.at(cell).height));
+        if (p.x <= -250 || p.x >= extent.x + 250 || p.y <= -100 || p.y >= extent.y + 180 || (fog && !fogMask_.covers(cell))) return;
+        worldOpacity_ = 1;
+        tile(map, cell, view, grid, fog);
+    };
+    for (int x = 0; x < map.width(); ++x)
+        if (!drawEarly({x, row})) draw({x, row});
+    // Paint the next row of continuous flat ground before this row's objects.
+    // Lower-third anchors let rings/shadows spill across the cell boundary;
+    // painting that ground later would erase their lower edge. Each tile is
+    // still painted once, and cliffs/slopes retain their foreground ordering.
+    if (row + 1 < map.height()) for (int x = 0; x < map.width(); ++x)
+        if (drawEarly({x, row + 1})) draw({x, row + 1});
+}
+
 void Renderer::updateFogMask(const Simulation& game) {
     const bool changed = fogMask_.update(game.fog(), game.map().width(), game.map().height());
     if (!changed && fogBitmap_) return;

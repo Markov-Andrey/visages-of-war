@@ -124,6 +124,9 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         Simulation game(std::move(site), {}, definitions.entity("human.worker"), definitions.entities());
         GameplayUi ui; ui.selection.ids = {game.units().back().id};
         renderer.snapshot(game, output / "peacemaker-in-game.png", nullptr, false, &ui);
+        ui.selection.ids.push_back(game.worker().id);
+        require(ui.selection.activeUnit(game)->definition.id == "human.peacemaker", "Group preview did not keep the Peacemaker active");
+        renderer.snapshot(game, output / "peacemaker-group.png", nullptr, false, &ui);
         auto types = definitions.entities();
         for (auto& type : types) if (type.id == "human.peacemaker") {
             type.maximumHealth = type.attackDamage = 1; type.attackWindupTicks = 1;

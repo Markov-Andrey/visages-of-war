@@ -23,6 +23,7 @@ struct UnitDeathSprite {
 struct UnitSpriteDefinition {
     std::string image = "sprites/worker.png";
     std::string portrait; // Optional standalone HUD artwork; empty uses the idle icon.
+    std::string icon; // Optional button artwork; independent of the large portrait.
     std::string directionRecipe; // Optional two-view stand/walk/attack synthesis recipe.
     bool pixelArt = true;
     int frameWidth = 32, frameHeight = 32;

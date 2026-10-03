@@ -34,14 +34,21 @@ void Renderer::unitHudPortrait(const UnitSpriteDefinition& d, UiRect bounds, uns
         unitPortrait(d, {bounds.x, bounds.y}, {bounds.width, bounds.height}, color);
         return;
     }
-    const auto path = imagePath(d.portrait);
-    auto& bitmap = unitPortraits_[path];
+    unitUiImage(d.portrait, bounds);
+}
+void Renderer::unitIcon(const UnitSpriteDefinition& d, UiRect bounds, unsigned color) {
+    if (d.icon.empty()) unitPortrait(d, {bounds.x, bounds.y}, {bounds.width, bounds.height}, color);
+    else unitUiImage(d.icon, bounds);
+}
+void Renderer::unitUiImage(const std::string& image, UiRect bounds) {
+    const auto path = imagePath(image);
+    auto& bitmap = unitUiImages_[path];
     if (!bitmap) loadBitmap(paths_.asset(path), bitmap);
     const auto pixels = bitmap->GetPixelSize();
     const float scale = std::min(bounds.width / pixels.width, bounds.height / pixels.height);
     const Vec2 extent{pixels.width * scale, pixels.height * scale};
     sprite(bitmap.Get(), rect(0, 0, float(pixels.width), float(pixels.height)),
-        {bounds.x + (bounds.width - extent.x) * .5f, bounds.y + (bounds.height - extent.y) * .5f}, extent);
+        {bounds.x + (bounds.width - extent.x) * .5f, bounds.y + (bounds.height - extent.y) * .5f}, extent, false, 0);
 }
 void Renderer::corpseSprite(const Corpse& corpse, const WorldView& view, unsigned color) {
     const auto ground = unitScreenAnchor(view, corpse.position, corpse.height);
@@ -121,6 +128,7 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                 size = {float(pixels.width), float(pixels.height)};
             }
             if (!s.portrait.empty()) dimensions(s.portrait);
+            if (!s.icon.empty()) dimensions(s.icon);
             if (s.death) {
                 const auto deathSize = dimensions(s.death->image);
                 for (const auto& frame : s.death->frames)

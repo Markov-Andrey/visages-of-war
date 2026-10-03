@@ -79,7 +79,7 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
         brush_->SetColor(D2D1::ColorF(card.active ? 0x465541 : member->hero ? 0x55492f : 0x244039));
         target_->FillRectangle(rect(b.x, b.y, b.width, b.height), brush_.Get());
         target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
-        unitPortrait(member->definition.sprite, {b.x, b.y}, {b.width, b.height}, teamColor_);
+        unitIcon(member->definition.sprite, b, teamColor_);
         target_->PopAxisAlignedClip();
         buttonFrame(b);
         if (card.active) {

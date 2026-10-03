@@ -66,17 +66,26 @@ void dataTests(TestSuite& test, const TestContext& context) {
         move = "bundle";
         catalog["icons"].erase("cancel"); mustThrow([&] { load(); });
     });
-    test("Optional unit portraits preserve the icon fallback and reject paths outside assets", [&] {
+    test("Unit portrait and button artwork have independent optional paths with safe sprite fallbacks", [&] {
         CatalogFixture fixture(assets);
-        require(fixture.load().entity("human.worker").sprite.portrait.empty(), "Existing units lost their portrait fallback");
+        const auto read = [&](const char* field) {
+            const auto s = fixture.load().entity("human.worker").sprite;
+            return std::string(field) == "portrait" ? s.portrait : s.icon;
+        };
         auto& sprite = fixture.entities["entities"][0]["sprite"];
-        sprite["portrait"] = "portraits/Рабочий.png";
-        require(fixture.load().entity("human.worker").sprite.portrait == "portraits/Рабочий.png", "Portrait path did not load");
-        for (const auto path : {"../outside.png", "C:/outside.png", "portraits/file:stream"}) {
-            sprite["portrait"] = path; mustThrow([&] { fixture.load(); });
+        for (const auto* field : {"portrait", "icon"}) {
+            require(read(field).empty(), "Existing units lost the stand fallback");
+            sprite[field] = "portraits/Рабочий.png";
+            require(read(field) == "portraits/Рабочий.png", "Unit UI image path did not load");
+            for (const auto path : {"../outside.png", "C:/outside.png", "portraits/file:stream"}) {
+                sprite[field] = path; mustThrow([&] { fixture.load(); });
+            }
+            sprite[field] = nullptr;
+            require(read(field).empty(), "Null UI artwork did not restore the stand fallback");
         }
-        sprite["portrait"] = nullptr;
-        require(fixture.load().entity("human.worker").sprite.portrait.empty(), "Null portrait did not restore the fallback");
+        sprite["portrait"] = "portraits/Рабочий.png"; sprite["icon"] = "icons/Рабочий.png";
+        require(read("portrait") == "portraits/Рабочий.png" && read("icon") == "icons/Рабочий.png",
+            "Large preview and button artwork were mixed together");
     });
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Library publishes selected catalog entries grouped by faction", [&] {

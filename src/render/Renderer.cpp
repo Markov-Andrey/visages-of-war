@@ -32,7 +32,7 @@ void Renderer::ensureTarget() {
 
 void Renderer::discardTarget() {
     commandIcons_.clear();
-    materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); unitPortraits_.clear(); maskedImages_.clear(); paintResources_.clear();
+    materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); unitUiImages_.clear(); maskedImages_.clear(); paintResources_.clear();
     fogBrush_.Reset(); fogBitmap_.Reset();
     nightActive_ = false;
     spriteLights_.clear(); emissionMasks_.clear(); spriteLightLayer_.Reset();

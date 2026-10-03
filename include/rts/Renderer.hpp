@@ -64,6 +64,8 @@ private:
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);
     void corpseSprite(const Corpse& corpse, const WorldView& view, unsigned color);
     void unitPortrait(const UnitSpriteDefinition& definition, Vec2 topLeft, Vec2 extent, unsigned color);
+    void unitIcon(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
+    void unitUiImage(const std::string& image, UiRect bounds);
     void unitHudPortrait(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
     void drawProjectiles(const Simulation& game, const WorldView& view);
     void polygon(std::span<const Vec2> points, unsigned color, float opacity = 1.0f, bool fill = true);
@@ -72,6 +74,7 @@ private:
     void sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel = false, float lighting = 1, ID2D1Bitmap* emission = nullptr);
     void buttonFrame(UiRect area);
     void tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog = false);
+    void terrainRow(const Map& map, int row, const WorldView& view, bool grid, bool fog = false);
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
     void hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid);
     void drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info);
@@ -94,7 +97,7 @@ private:
     std::map<std::string,MaterialResource> materialResources_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> worldSprites_;
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
-    std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitPortraits_;
+    std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitUiImages_;
     // CPU atlases survive target recreation; cleared on explicit asset reload.
     std::map<std::string, SpritePixels> directionalSheets_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;

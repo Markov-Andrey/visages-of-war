@@ -44,7 +44,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     };
     size_t next=0;
     for(int y=0;y<map.height();++y) {
-        for(int x=0;x<map.width();++x) if(visible(view.project(center({x,y}),float(map.at({x,y}).height)))) tile(map,{x,y},view,grid);
+        terrainRow(map,y,view,grid);
         while(next<items.size()&&items[next].depth<y+1) {
             const auto item=items[next++];
             if(item.kind==0) environmentObject(s.environment[item.index],map,view);
