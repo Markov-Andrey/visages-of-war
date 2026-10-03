@@ -52,10 +52,10 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
     if (!unit) return;
     const SelectionPanelLayout layout(info);
     const auto p = layout.portrait;
-    brush_->SetColor(D2D1::ColorF(0x233b38));
-    target_->FillRectangle(rect(p.x, p.y, p.width, p.height), brush_.Get());
+    const auto color = unit->owner == game.player().id ? teamColor_ : enemyColor_;
+    drawPortraitBackdrop(p, color);
     target_->PushAxisAlignedClip(rect(p.x + 4, p.y + 4, p.width - 8, p.height - 8), D2D1_ANTIALIAS_MODE_ALIASED);
-    unitHudPortrait(unit->definition.sprite, {p.x + 4, p.y + 4, p.width - 8, p.height - 8}, teamColor_);
+    unitHudPortrait(unit->definition.sprite, {p.x + 4, p.y + 4, p.width - 8, p.height - 8}, color);
     target_->PopAxisAlignedClip();
     buttonFrame(p);
     const SelectionCards cards(game, selection, info);

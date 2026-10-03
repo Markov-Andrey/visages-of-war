@@ -146,14 +146,15 @@
         "projectile": null
       },
       "sprite": {
-        "image": "sprites/units/peacemaker/source/peacemaker-stand.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
         "portrait": "sprites/units/peacemaker/peacemaker-portrait.png",
         "icon": "sprites/units/peacemaker/peacemaker-icon.png",
         "directionRecipe": "sprites/units/peacemaker/directions.json",
+        "walkCycleDistance": 2,
         "pixelArt": false,
         "frameSize": [
-          288,
-          288
+          512,
+          512
         ],
         "size": [
           126,
@@ -161,7 +162,7 @@
         ],
         "anchor": [
           0.5,
-          0.8888888888888888
+          0.875
         ],
         "rows": [
           0,
@@ -190,60 +191,63 @@
         ],
         "teamMask": "none",
         "death": {
-          "image": "sprites/units/peacemaker/source/peacemaker-death.png",
-          "scale": 0.118125,
+          "image": "sprites/units/peacemaker/peacemaker.png",
+          "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
+          "scale": 0.24609375,
           "ticksPerFrame": 6,
           "frames": [
             {
               "source": [
-                8,
-                80,
-                470,
-                555
+                0,
+                2560,
+                512,
+                512
               ],
               "anchor": [
-                257,
-                530
+                256,
+                448
               ]
             },
             {
               "source": [
-                492,
-                150,
-                507,
-                520
+                512,
+                2560,
+                512,
+                512
               ],
               "anchor": [
-                305,
-                485
+                256,
+                448
               ]
             },
             {
               "source": [
-                999,
-                302,
-                604,
-                350
+                1024,
+                2560,
+                512,
+                512
               ],
               "anchor": [
-                361,
-                321
+                256,
+                448
               ]
             },
             {
               "source": [
-                1597,
-                380,
-                575,
-                302
+                1536,
+                2560,
+                512,
+                512
               ],
               "anchor": [
-                303,
-                260
+                256,
+                448
               ]
             }
           ]
-        }
+        },
+        "portraitMask": "sprites/units/peacemaker/peacemaker-portrait-mask.png",
+        "iconMask": "sprites/units/peacemaker/peacemaker-icon-mask.png"
       },
       "library": false
     },

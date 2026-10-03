@@ -7,8 +7,8 @@ namespace rts {
 // Timing uses the 30 Hz simulation clock, so pause and off-screen time agree.
 class HealthFeedback {
 public:
-    static constexpr int holdTicks = 12;  // 400 ms to notice the hit.
-    static constexpr int drainTicks = 18; // 600 ms of smooth right-to-left decay.
+    static constexpr int holdTicks = 9;  // 300 ms to notice the hit.
+    static constexpr int drainTicks = 9; // 300 ms of smooth right-to-left decay.
     float remaining(std::uint64_t now) const {
         if (damage_ <= 0 || now < lastHit_) return 0;
         const auto age = now - lastHit_;

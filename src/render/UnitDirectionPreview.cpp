@@ -14,7 +14,7 @@ void Renderer::snapshotUnitDirections(const UnitSpriteDefinition& definition, co
     properties.dpiX = properties.dpiY = 96;
     check(factory_->CreateWicBitmapRenderTarget(canvas.Get(), properties, target_.GetAddressOf()));
     check(target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), brush_.GetAddressOf()));
-    auto* atlas = unitBitmap(definition, 0);
+    auto* atlas = unitBitmap(definition, teamColor_);
     const std::array<const wchar_t*, 9> columns{L"Stand", L"Walk 1", L"Walk 2", L"Walk 3", L"Walk 4", L"Attack 1", L"Attack 2", L"Attack 3", L"Attack 4"};
     const std::array<const wchar_t*, 8> rows{L"S / warp", L"SE / source", L"E / warp", L"NE / mirror", L"N / warp", L"NW / source", L"W / warp", L"SW / mirror"};
     target_->BeginDraw();
@@ -38,7 +38,7 @@ void Renderer::snapshotUnitDirections(const UnitSpriteDefinition& definition, co
     check(target_->EndDraw());
     writeSnapshot(canvas.Get(), output);
     // An unlabelled atlas also makes frame-by-frame/animated inspection easy.
-    auto& pixels = directionalSheets_.at(definition.directionRecipe);
+    auto& pixels = directionalSheets_.at({definition.directionRecipe, teamColor_});
     ComPtr<IWICBitmap> raw;
     check(wic_->CreateBitmapFromMemory(UINT(pixels.width), UINT(pixels.height), GUID_WICPixelFormat32bppPBGRA,
         UINT(pixels.width * 4), UINT(pixels.bgra.size()), pixels.bgra.data(), raw.GetAddressOf()));

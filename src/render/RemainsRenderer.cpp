@@ -20,14 +20,19 @@ void Renderer::corpseSprite(const Corpse& corpse, const WorldView& view, unsigne
     if (const auto* frame = corpseFrame(corpse)) {
         const auto& death = *d.death;
         const auto path = imagePath(death.image);
-        if (d.teamMask == SpriteTeamMask::None) color = 0;
-        auto& bitmap = unitSheets_[{path, color, d.teamMask}];
-        if (!bitmap) loadBitmap(paths_.asset(path), bitmap, color, d.teamMask, {}, true);
+        ID2D1Bitmap* bitmap{};
+        if (!death.teamMask.empty()) bitmap = maskedBitmap(death.image, death.teamMask, color);
+        else {
+            if (d.teamMask == SpriteTeamMask::None) color = 0;
+            auto& original = unitSheets_[{path, color, d.teamMask}];
+            if (!original) loadBitmap(paths_.asset(path), original, color, d.teamMask, {}, true);
+            bitmap = original.Get();
+        }
         const auto& r = frame->source;
         const float scale = death.scale * view.zoom;
         const auto start = ground - frame->anchor * scale;
         const Vec2 extent = Vec2{float(r[2]), float(r[3])} * scale;
-        sprite(bitmap.Get(), rect(float(r[0]), float(r[1]), float(r[2]), float(r[3])), start, extent, d.pixelArt, .5f);
+        sprite(bitmap, rect(float(r[0]), float(r[1]), float(r[2]), float(r[3])), start, extent, d.pixelArt, .5f);
     } else if (corpse.phase == CorpsePhase::Vanishing) {
         // No persistent body or VFX for non-decomposing units, including the hero.
         unitImage(d, d.idle, corpse.facingRow, ground, view.zoom, color);

@@ -1,6 +1,7 @@
 #include "TestSupport.hpp"
 #include "rts/DirectionalSprite.hpp"
 #include "rts/Renderer.hpp"
+#include "rts/TeamColor.hpp"
 #include "render/DirectionalSpriteAssets.hpp"
 #include "platform/WindowsSupport.hpp"
 
@@ -77,6 +78,94 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         require(unitFrame(unit).column == 7, "Impact art is not aligned to damage release");
         unit.attackTicks = 5; require(unitFrame(unit).column == 8, "Follow-through frame missing");
     });
+    test("Slower walk animation follows travelled distance without slowing straight or diagonal movement", [] {
+        for (const auto destination : {Cell{12, 4}, Cell{12, 12}}) {
+            EntityDefinition normal; normal.movementPerSecond = 3.2f;
+            auto slower = normal; slower.sprite.walkCycleDistance = 2;
+            const Scenario site{Map(16, 16), {1, 1}, {4, 4}, {}};
+            Simulation baseline(site, {}, normal), adjusted(site, {}, slower);
+            baseline.command(destination); adjusted.command(destination);
+            auto previous = adjusted.worker().position;
+            float distance = 0;
+            for (int tick = 0; tick < 180; ++tick) {
+                baseline.tick(); adjusted.tick();
+                const auto& a = baseline.worker(); const auto& b = adjusted.worker();
+                require(a.cell == b.cell && a.position == b.position && a.state == b.state,
+                    "Walk animation tuning changed travel speed or arrival");
+                distance += std::hypot(b.position.x - previous.x, b.position.y - previous.y);
+                previous = b.position;
+                const float expected = std::fmod(distance / slower.sprite.walkCycleDistance, 1.0f);
+                const float delta = std::abs(b.walkCycle - expected);
+                require(std::min(delta, 1 - delta) < .0001f, "Walk cycle skipped or restarted at a cell boundary");
+            }
+            require(adjusted.worker().cell == destination && adjusted.worker().state == UnitState::Idle,
+                "Slower animation did not finish its move");
+            const float stopped = adjusted.worker().walkCycle;
+            ticks(adjusted, 30);
+            require(adjusted.worker().walkCycle == stopped && unitFrame(adjusted.worker()).column == slower.sprite.idle,
+                "Stopped unit continued its walk animation");
+        }
+    });
+    test("Walk cycle distance is optional, positive and configurable per sprite", [&] {
+        CatalogFixture fixture(context.assets);
+        auto& sprite = fixture.entities["entities"][0]["sprite"];
+        require(fixture.load().entity("human.worker").sprite.walkCycleDistance == 1, "Default walk tempo changed");
+        require(fixture.load().entity("human.peacemaker").sprite.walkCycleDistance == 2, "Peacemaker lost its calmer gait");
+        sprite["walkCycleDistance"] = 2;
+        require(fixture.load().entity("human.worker").sprite.walkCycleDistance == 2, "Configured walk distance ignored");
+        for (const auto& value : {Json(0), Json(-1), Json(17), Json("slow"), Json(nullptr)}) {
+            sprite["walkCycleDistance"] = value; mustThrow([&] { fixture.load(); });
+        }
+    });
+    test("Aligned Peacemaker cells preserve authored pixels and alpha under independent team paints", [&] {
+        platform::ComApartment apartment;
+        Microsoft::WRL::ComPtr<IWICImagingFactory> wic;
+        require(SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(wic.GetAddressOf()))), "WIC factory failed");
+        const auto read = [&](const std::string& name) {
+            Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
+            Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
+            Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
+            const auto path = context.worldPaths.asset(std::filesystem::path(std::u8string(name.begin(), name.end())));
+            require(SUCCEEDED(wic->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ,
+                WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf())), "Sprite decode failed");
+            require(SUCCEEDED(decoder->GetFrame(0, frame.GetAddressOf())), "Sprite frame missing");
+            require(SUCCEEDED(wic->CreateFormatConverter(converter.GetAddressOf())), "Sprite converter failed");
+            require(SUCCEEDED(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppPBGRA,
+                WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom)), "Sprite conversion failed");
+            UINT width{}, height{}; require(SUCCEEDED(converter->GetSize(&width, &height)), "Sprite size missing");
+            SpritePixels image{int(width), int(height), std::vector<std::uint8_t>(size_t(width) * height * 4)};
+            require(SUCCEEDED(converter->CopyPixels(nullptr, width * 4, UINT(image.bgra.size()), image.bgra.data())), "Sprite pixels missing");
+            return image;
+        };
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        const auto& sprite = definitions.entity("human.peacemaker").sprite;
+        const auto recipe = render::directionalRecipe(context.worldPaths, sprite);
+        require(sprite.frameWidth == 512 && sprite.frameHeight == 512 && recipe.pivot == Vec2{256, 448}, "Aligned source grid changed");
+        const auto original = read(sprite.image), mask = read(recipe.sources[0][0].teamMask);
+        require(original.width == 2048 && original.height == 3072 && mask.width == original.width && mask.height == original.height,
+            "Supplied sheet or mask dimensions changed");
+        for (const auto color : {teamRgb(TeamColor::Blue), teamRgb(TeamColor::Red), 0u}) {
+            const auto atlas = render::loadDirectionalSprite(context.worldPaths, wic.Get(), sprite, color);
+            auto painted = original.bgra;
+            applyTeamColorMask(painted, mask.bgra, color);
+            size_t changed = 0, unpainted = 0;
+            for (size_t direction = 0; direction < 2; ++direction) for (size_t column = 0; column < 9; ++column) {
+                const auto& source = recipe.sources[direction][column];
+                require(source.scale == 1 && source.source[2] == 512 && source.source[3] == 512 &&
+                    source.pivot == Vec2{float(source.source[0] + 256), float(source.source[1] + 448)}, "Prepared cell was recentered or rescaled");
+                for (int y = 0; y < 512; ++y) for (int x = 0; x < 512; ++x) {
+                    const auto from = (size_t(source.source[1] + y) * original.width + source.source[0] + x) * 4;
+                    const auto to = ((size_t(direction == 0 ? 1 : 5) * 512 + y) * atlas.width + column * 512 + x) * 4;
+                    require(std::equal(painted.begin() + from, painted.begin() + from + 4, atlas.bgra.begin() + to), "Authored facing pixels were shifted, filtered or painted incorrectly");
+                    require(atlas.bgra[to + 3] == original.bgra[from + 3], "Team paint changed transparency");
+                    changed += !std::equal(original.bgra.begin() + from, original.bgra.begin() + from + 3, atlas.bgra.begin() + to);
+                    unpainted += original.bgra[from + 3] && !mask.bgra[from + 3];
+                }
+            }
+            require(changed > 0 && unpainted > 0, "Team paint did not distinguish equipment from unmasked artwork");
+        }
+    });
     test("Directional catalog rejects incompatible layouts and unsafe recipe paths", [&] {
         CatalogFixture fixture(context.assets);
         auto& entities = fixture.entities["entities"];
@@ -103,6 +192,8 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         sprite["death"] = original; sprite["death"]["frames"][0]["source"][2] = 0;
         mustThrow([&] { fixture.load(); });
         sprite["death"] = original; sprite["death"]["frames"][0]["anchor"] = {8192, 8192};
+        mustThrow([&] { fixture.load(); });
+        sprite["death"] = original; sprite["death"]["teamMask"] = "../outside.png";
         mustThrow([&] { fixture.load(); });
         sprite["death"] = nullptr;
         Corpse fallback; fallback.sprite = fixture.load().entity("human.peacemaker").sprite;
@@ -165,6 +256,14 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         for (auto& type : oversized.entities["entities"]) if (type["id"] == definition.id)
             type["sprite"]["death"]["frames"][0]["source"] = {8190, 8190, 470, 555};
         mustThrow([&] { renderer.validateCombatAssets(oversized.load()); });
+        for (const auto* mask : {"portraitMask", "iconMask", "teamMask"}) {
+            CatalogFixture invalid(context.assets);
+            for (auto& type : invalid.entities["entities"]) if (type["id"] == definition.id) {
+                if (std::string_view(mask) == "teamMask") type["sprite"]["death"][mask] = "sprites/crystal.png";
+                else type["sprite"][mask] = "sprites/crystal.png";
+            }
+            mustThrow([&] { renderer.validateCombatAssets(invalid.load()); });
+        }
     });
 }
 }

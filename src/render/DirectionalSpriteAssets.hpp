@@ -5,5 +5,5 @@
 
 namespace rts::render {
 DirectionalSpriteRecipe directionalRecipe(const Paths& paths, const UnitSpriteDefinition& sprite);
-SpritePixels loadDirectionalSprite(const Paths& paths, IWICImagingFactory* wic, const UnitSpriteDefinition& sprite);
+SpritePixels loadDirectionalSprite(const Paths& paths, IWICImagingFactory* wic, const UnitSpriteDefinition& sprite, unsigned color = 0);
 }

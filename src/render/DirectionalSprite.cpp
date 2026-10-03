@@ -50,10 +50,14 @@ DirectionalSpriteRecipe loadDirectionalSpriteRecipe(const Paths& paths, const st
             const size_t count = std::string_view(animation) == "stand" ? 1 : 4;
             if (!sequence.is_array() || sequence.size() != count) throw std::runtime_error("Expected stand + four walk + four attack frames");
             for (const auto& item : sequence) {
-                fields(item, {"image", "source", "pivot", "scale"});
+                fields(item, {"image", "source", "pivot", "scale"}, {"teamMask"});
                 auto& frame = result.sources[direction][column++];
                 frame.image = string(item.at("image"));
                 paths.asset(utf8Path(frame.image)); // Includes traversal and Unicode validation.
+                if (item.contains("teamMask") && !item.at("teamMask").is_null()) {
+                    frame.teamMask = string(item.at("teamMask"));
+                    paths.asset(utf8Path(frame.teamMask));
+                }
                 const auto& rect = item.at("source");
                 if (!rect.is_array() || rect.size() != 4) throw std::runtime_error("Expected sprite source rectangle");
                 for (size_t i = 0; i < 4; ++i) frame.source[i] = number(rect[i], i < 2 ? 0 : 1, 8192);

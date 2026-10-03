@@ -3,6 +3,24 @@
 
 namespace { constexpr auto buttonFrameAsset = L"ui/button-frame.png"; }
 
+namespace rts::render {
+void applyImageTeamMask(IWICImagingFactory* wic, const std::filesystem::path& path,
+    UINT width, UINT height, std::span<BYTE> pixels, unsigned color) {
+    Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
+    Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
+    Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
+    check(wic->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf()));
+    check(decoder->GetFrame(0, frame.GetAddressOf()));
+    UINT maskWidth{}, maskHeight{}; check(frame->GetSize(&maskWidth, &maskHeight));
+    if (maskWidth != width || maskHeight != height) throw std::runtime_error("Team mask dimensions must match the original PNG");
+    check(wic->CreateFormatConverter(converter.GetAddressOf()));
+    check(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom));
+    std::vector<BYTE> mask(size_t(width) * height * 4);
+    check(converter->CopyPixels(nullptr, width * 4, static_cast<UINT>(mask.size()), mask.data()));
+    applyTeamColorMask(pixels, mask, color);
+}
+}
+
 namespace rts {
 using namespace render;
 void Renderer::verifyAssets() {
@@ -23,6 +41,12 @@ void Renderer::verifyAssets() {
             images.push_back(imagePath(e.sprite.image));
             if (!e.sprite.portrait.empty()) images.push_back(imagePath(e.sprite.portrait));
             if (!e.sprite.icon.empty()) images.push_back(imagePath(e.sprite.icon));
+            if (!e.sprite.portraitMask.empty()) images.push_back(imagePath(e.sprite.portraitMask));
+            if (!e.sprite.iconMask.empty()) images.push_back(imagePath(e.sprite.iconMask));
+            if (e.sprite.death) {
+                images.push_back(imagePath(e.sprite.death->image));
+                if (!e.sprite.death->teamMask.empty()) images.push_back(imagePath(e.sprite.death->teamMask));
+            }
         }
         if (e.projectile) images.push_back(imagePath(e.projectile->image));
         for (const auto& stage : e.buildingSprite.stages) {
@@ -81,16 +105,7 @@ void Renderer::loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>
         std::vector<BYTE> pixels(static_cast<size_t>(width) * height * 4);
         check(converter->CopyPixels(nullptr, width * 4, static_cast<UINT>(pixels.size()), pixels.data()));
         if (!maskPath.empty()) {
-            ComPtr<IWICBitmapDecoder> maskDecoder; ComPtr<IWICBitmapFrameDecode> maskFrame; ComPtr<IWICFormatConverter> maskConverter;
-            check(wic_->CreateDecoderFromFilename(maskPath.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, maskDecoder.GetAddressOf()));
-            check(maskDecoder->GetFrame(0, maskFrame.GetAddressOf()));
-            UINT maskWidth{}, maskHeight{}; check(maskFrame->GetSize(&maskWidth, &maskHeight));
-            if (maskWidth != width || maskHeight != height) throw std::runtime_error("Team mask dimensions must match the original PNG");
-            check(wic_->CreateFormatConverter(maskConverter.GetAddressOf()));
-            check(maskConverter->Initialize(maskFrame.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom));
-            std::vector<BYTE> mask(pixels.size());
-            check(maskConverter->CopyPixels(nullptr, width * 4, static_cast<UINT>(mask.size()), mask.data()));
-            applyTeamColorMask(pixels, mask, teamMask);
+            applyImageTeamMask(wic_.Get(), maskPath, width, height, pixels, teamMask);
         } else for (size_t i = 0; i < pixels.size(); i += 4) {
             const int blue = pixels[i], green = pixels[i + 1], red = pixels[i + 2];
             // Palette accents in the placeholder sheet, preserving skin and neutral armour.

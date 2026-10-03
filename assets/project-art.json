@@ -247,15 +247,43 @@
           "original": "peacemaker-portrait.png",
           "path": "sprites/units/peacemaker/peacemaker-portrait.png",
           "imported": "2026-10-03",
-          "source": "Project owner Peacemaker portrait; original bytes preserved. Large unit selection preview only, without team recoloring; button artwork is a separate icon asset.",
-          "sha256": "EA5427AFE6197CB700A84E2E1587805DDED0AD9AC3062008CAECDF07586FBC0F"
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
+          "sha256": "E5E8850363C9572DDDA7F295AFE488676E24E823FA733069F1A033082303380C"
         },
         {
           "original": "peacemaker-icon.png",
           "path": "sprites/units/peacemaker/peacemaker-icon.png",
           "imported": "2026-10-03",
-          "source": "Project owner Peacemaker button icon; original bytes preserved. Used for unit selection and training buttons, separately from the large portrait and world sprites.",
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
           "sha256": "EF2D6C74F4739486591E22FCE7CCB79C9DB3C0B5008BDCDBEDE0EB5988007393"
+        },
+        {
+          "original": "peacemaker.png",
+          "path": "sprites/units/peacemaker/peacemaker.png",
+          "imported": "2026-10-03",
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
+          "sha256": "18BCF446A482DFDE7D0151632C4F90F3734A23140E576699D34B52B972BE9233"
+        },
+        {
+          "original": "peacemaker-mask.png",
+          "path": "sprites/units/peacemaker/peacemaker-mask.png",
+          "imported": "2026-10-03",
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
+          "sha256": "6904EC6DE2E537BC6E8A9A6ABD043330A8EF03ADA896343C7CE7BCBC81D8B78B"
+        },
+        {
+          "original": "peacemaker-portrait-mask.png",
+          "path": "sprites/units/peacemaker/peacemaker-portrait-mask.png",
+          "imported": "2026-10-03",
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
+          "sha256": "1CF3DA8FBD00BE518716BFE7C711CF952F41D7F871D34D912A6E27EBCB414AFD"
+        },
+        {
+          "original": "peacemaker-icon-mask.png",
+          "path": "sprites/units/peacemaker/peacemaker-icon-mask.png",
+          "imported": "2026-10-03",
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
+          "sha256": "6109FCC1F794B36D1D4F0CEBA9E76AEDB93E9F02D6B8E218E4FCFF10B62BE641"
         },
         {
           "original": "bones.png",

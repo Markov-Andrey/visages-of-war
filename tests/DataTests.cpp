@@ -100,6 +100,24 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(read("portrait") == "portraits/Рабочий.png" && read("icon") == "icons/Рабочий.png",
             "Large preview and button artwork were mixed together");
     });
+    test("Unit UI team masks require matching artwork and safe independent paths", [&] {
+        CatalogFixture fixture(assets);
+        auto& sprite = fixture.entities["entities"][0]["sprite"];
+        for (const auto* field : {"portrait", "icon"}) {
+            const auto mask = std::string(field) + "Mask";
+            sprite[mask] = "portraits/Маска.png";
+            mustThrow([&] { fixture.load(); });
+            sprite[field] = "portraits/Рабочий.png";
+            const auto s = fixture.load().entity("human.worker").sprite;
+            require((mask == "portraitMask" ? s.portraitMask : s.iconMask) == "portraits/Маска.png", "UI mask path lost");
+            for (const auto* path : {"../outside.png", "C:/outside.png", "portraits/file:stream"}) {
+                sprite[mask] = path; mustThrow([&] { fixture.load(); });
+            }
+            sprite[mask] = nullptr;
+            const auto unpainted = fixture.load().entity("human.worker").sprite;
+            require((mask == "portraitMask" ? unpainted.portraitMask : unpainted.iconMask).empty(), "Null UI mask did not disable painting");
+        }
+    });
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Library publishes selected catalog entries grouped by faction", [&] {
         CatalogFixture fixture(assets);

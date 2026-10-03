@@ -178,11 +178,15 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
             throw std::runtime_error("Point projectiles require a splash radius; unit projectiles have single-target damage");
     }
     if (sprite.is_null()) return;
-    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "directionRecipe", "pixelArt", "death"});
+    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance"});
     auto& s = e.sprite;
     s.image = imagePath(sprite.at("image"));
     if (sprite.contains("portrait") && !sprite.at("portrait").is_null()) s.portrait = imagePath(sprite.at("portrait"));
     if (sprite.contains("icon") && !sprite.at("icon").is_null()) s.icon = imagePath(sprite.at("icon"));
+    if (sprite.contains("portraitMask") && !sprite.at("portraitMask").is_null()) s.portraitMask = imagePath(sprite.at("portraitMask"));
+    if (sprite.contains("iconMask") && !sprite.at("iconMask").is_null()) s.iconMask = imagePath(sprite.at("iconMask"));
+    if ((!s.portraitMask.empty() && s.portrait.empty()) || (!s.iconMask.empty() && s.icon.empty()))
+        throw std::runtime_error("Unit UI mask requires its matching artwork");
     if (sprite.contains("directionRecipe")) s.directionRecipe = imagePath(sprite.at("directionRecipe"));
     if (sprite.contains("pixelArt")) s.pixelArt = sprite.at("pixelArt").get<bool>();
     const auto& frameSize = sprite.at("frameSize");
@@ -194,6 +198,7 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
     for (size_t i = 0; i < 8; ++i) s.rows[i] = number(rows[i], 0, 255);
     s.idle = number(sprite.at("idle"), 0, 255);
     s.walk = frames(sprite.at("walk")); s.windup = frames(sprite.at("windup")); s.recovery = frames(sprite.at("recovery"));
+    if (sprite.contains("walkCycleDistance")) s.walkCycleDistance = real(sprite.at("walkCycleDistance"), .1f, 16);
     const auto mask = string(sprite.at("teamMask"));
     if (mask == "none") s.teamMask = SpriteTeamMask::None;
     else if (mask == "blue") s.teamMask = SpriteTeamMask::Blue;
@@ -201,9 +206,10 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
     else throw std::runtime_error("Unknown sprite team mask");
     if (sprite.contains("death") && !sprite.at("death").is_null()) {
         const auto& j = sprite.at("death");
-        fields(j, {"image", "scale", "ticksPerFrame", "frames"});
+        fields(j, {"image", "scale", "ticksPerFrame", "frames"}, {"teamMask"});
         auto& death = s.death.emplace();
         death.image = imagePath(j.at("image"));
+        if (j.contains("teamMask") && !j.at("teamMask").is_null()) death.teamMask = imagePath(j.at("teamMask"));
         death.scale = real(j.at("scale"), .01f, 4);
         death.ticksPerFrame = number(j.at("ticksPerFrame"), 1, 3600);
         const auto& sequence = j.at("frames");

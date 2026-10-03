@@ -11,6 +11,8 @@ inline std::filesystem::path imagePath(const std::string& value) { return std::f
 inline void check(HRESULT hr) {
     if (FAILED(hr)) throw std::runtime_error("Windows graphics operation failed: " + std::to_string(hr));
 }
+void applyImageTeamMask(IWICImagingFactory* wic, const std::filesystem::path& path,
+    UINT width, UINT height, std::span<BYTE> pixels, unsigned color);
 inline D2D1_POINT_2F point(Vec2 p) { return {p.x, p.y}; }
 inline D2D1_RECT_F rect(float x, float y, float width, float height) { return {x, y, x + width, y + height}; }
 inline D2D1::Matrix3x2F surfaceTransform(const std::array<Vec2, 4>& top, Cell cell) {

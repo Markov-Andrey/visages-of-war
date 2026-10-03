@@ -66,7 +66,7 @@ private:
     void bonesSprite(const Bones& bones, const WorldView& view);
     void unitPortrait(const UnitSpriteDefinition& definition, Vec2 topLeft, Vec2 extent, unsigned color);
     void unitIcon(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
-    void unitUiImage(const std::string& image, UiRect bounds);
+    void unitUiImage(const std::string& image, const std::string& mask, UiRect bounds, unsigned color);
     void unitHudPortrait(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
     void drawProjectiles(const Simulation& game, const WorldView& view);
     void polygon(std::span<const Vec2> points, unsigned color, float opacity = 1.0f, bool fill = true);
@@ -79,6 +79,7 @@ private:
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
     void hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid);
     void drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info);
+    void drawPortraitBackdrop(UiRect bounds, unsigned color);
     void drawUnitStats(const Unit& unit, UiRect bounds, std::uint64_t tick);
     void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
@@ -99,8 +100,9 @@ private:
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> worldSprites_;
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitUiImages_;
+    std::map<unsigned, ComPtr<ID2D1RadialGradientBrush>> portraitGradients_;
     // CPU atlases survive target recreation; cleared on explicit asset reload.
-    std::map<std::string, SpritePixels> directionalSheets_;
+    std::map<std::pair<std::string, unsigned>, SpritePixels> directionalSheets_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;
     std::map<std::string,RallySpriteDefinition> rallySprites_;
     struct CommandIconResource {

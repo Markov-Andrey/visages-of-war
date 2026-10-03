@@ -7,13 +7,13 @@ namespace rts {
 using namespace render;
 ID2D1Bitmap* Renderer::unitBitmap(const UnitSpriteDefinition& d, unsigned color) {
     const auto path = imagePath(d.directionRecipe.empty() ? d.image : d.directionRecipe);
-    if (d.teamMask == SpriteTeamMask::None) color = 0;
+    if (d.teamMask == SpriteTeamMask::None && d.directionRecipe.empty()) color = 0;
     auto& bitmap = unitSheets_[{path, color, d.teamMask}];
     if (!bitmap) {
         if (d.directionRecipe.empty()) loadBitmap(paths_.asset(path), bitmap, color, d.teamMask, {}, true);
         else {
-            auto& pixels = directionalSheets_[d.directionRecipe];
-            if (pixels.bgra.empty()) pixels = loadDirectionalSprite(paths_, wic_.Get(), d);
+            auto& pixels = directionalSheets_[{d.directionRecipe, color}];
+            if (pixels.bgra.empty()) pixels = loadDirectionalSprite(paths_, wic_.Get(), d, color);
             const auto properties = D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), 96, 96);
             check(target_->CreateBitmap(D2D1::SizeU(UINT(pixels.width), UINT(pixels.height)), pixels.bgra.data(), UINT(pixels.width * 4), properties, bitmap.GetAddressOf()));
             prepareSpriteLighting(bitmap.Get(), pixels.bgra, UINT(pixels.width), UINT(pixels.height), false);
@@ -34,20 +34,25 @@ void Renderer::unitHudPortrait(const UnitSpriteDefinition& d, UiRect bounds, uns
         unitPortrait(d, {bounds.x, bounds.y}, {bounds.width, bounds.height}, color);
         return;
     }
-    unitUiImage(d.portrait, bounds);
+    unitUiImage(d.portrait, d.portraitMask, bounds, color);
 }
 void Renderer::unitIcon(const UnitSpriteDefinition& d, UiRect bounds, unsigned color) {
     if (d.icon.empty()) unitPortrait(d, {bounds.x, bounds.y}, {bounds.width, bounds.height}, color);
-    else unitUiImage(d.icon, bounds);
+    else unitUiImage(d.icon, d.iconMask, bounds, color);
 }
-void Renderer::unitUiImage(const std::string& image, UiRect bounds) {
-    const auto path = imagePath(image);
-    auto& bitmap = unitUiImages_[path];
-    if (!bitmap) loadBitmap(paths_.asset(path), bitmap);
+void Renderer::unitUiImage(const std::string& image, const std::string& mask, UiRect bounds, unsigned color) {
+    ID2D1Bitmap* bitmap{};
+    if (!mask.empty()) bitmap = maskedBitmap(image, mask, color);
+    else {
+        const auto path = imagePath(image);
+        auto& original = unitUiImages_[path];
+        if (!original) loadBitmap(paths_.asset(path), original);
+        bitmap = original.Get();
+    }
     const auto pixels = bitmap->GetPixelSize();
     const float scale = std::min(bounds.width / pixels.width, bounds.height / pixels.height);
     const Vec2 extent{pixels.width * scale, pixels.height * scale};
-    sprite(bitmap.Get(), rect(0, 0, float(pixels.width), float(pixels.height)),
+    sprite(bitmap, rect(0, 0, float(pixels.width), float(pixels.height)),
         {bounds.x + (bounds.width - extent.x) * .5f, bounds.y + (bounds.height - extent.y) * .5f}, extent, false, 0);
 }
 void Renderer::validateCombatAssets(const Definitions& definitions) {
@@ -100,15 +105,23 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                     const auto sourceSize = dimensions(frame.image);
                     if (frame.source[0] + frame.source[2] > sourceSize.x || frame.source[1] + frame.source[3] > sourceSize.y)
                         throw std::runtime_error("Directional frame outside image: " + e.id);
+                    if (!frame.teamMask.empty() && dimensions(frame.teamMask) != sourceSize)
+                        throw std::runtime_error("Directional team mask dimensions must match image: " + e.id);
                 }
-                auto& pixels = directionalSheets_[s.directionRecipe];
-                if (pixels.bgra.empty()) pixels = loadDirectionalSprite(paths_, wic_.Get(), s);
+                auto& pixels = directionalSheets_[{s.directionRecipe, teamColor_}];
+                if (pixels.bgra.empty()) pixels = loadDirectionalSprite(paths_, wic_.Get(), s, teamColor_);
                 size = {float(pixels.width), float(pixels.height)};
             }
             if (!s.portrait.empty()) dimensions(s.portrait);
             if (!s.icon.empty()) dimensions(s.icon);
+            if (!s.portraitMask.empty() && dimensions(s.portraitMask) != dimensions(s.portrait))
+                throw std::runtime_error("Portrait team mask dimensions must match image: " + e.id);
+            if (!s.iconMask.empty() && dimensions(s.iconMask) != dimensions(s.icon))
+                throw std::runtime_error("Icon team mask dimensions must match image: " + e.id);
             if (s.death) {
                 const auto deathSize = dimensions(s.death->image);
+                if (!s.death->teamMask.empty() && dimensions(s.death->teamMask) != deathSize)
+                    throw std::runtime_error("Death team mask dimensions must match image: " + e.id);
                 for (const auto& frame : s.death->frames)
                     if (frame.source[0] + frame.source[2] > deathSize.x || frame.source[1] + frame.source[3] > deathSize.y)
                         throw std::runtime_error("Death frame outside image: " + e.id);

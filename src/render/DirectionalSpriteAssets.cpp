@@ -11,13 +11,13 @@ DirectionalSpriteRecipe directionalRecipe(const Paths& paths, const UnitSpriteDe
         throw std::runtime_error("Directional recipe canvas/pivot disagrees with unit sprite");
     return recipe;
 }
-SpritePixels loadDirectionalSprite(const Paths& paths, IWICImagingFactory* wic, const UnitSpriteDefinition& sprite) {
+SpritePixels loadDirectionalSprite(const Paths& paths, IWICImagingFactory* wic, const UnitSpriteDefinition& sprite, unsigned color) {
     const auto recipe = directionalRecipe(paths, sprite);
-    std::map<std::string, ComPtr<IWICBitmapSource>> images;
+    std::map<std::pair<std::string, std::string>, ComPtr<IWICBitmapSource>> images;
     std::array<std::array<SpritePixels, 9>, 2> frames;
     for (size_t direction = 0; direction < 2; ++direction) for (size_t column = 0; column < 9; ++column) {
         const auto& frame = recipe.sources[direction][column];
-        auto& image = images[frame.image];
+        auto& image = images[{frame.image, frame.teamMask}];
         if (!image) {
             ComPtr<IWICBitmapDecoder> decoder; ComPtr<IWICBitmapFrameDecode> decoded; ComPtr<IWICFormatConverter> converted;
             const auto path = paths.asset(imagePath(frame.image));
@@ -27,6 +27,16 @@ SpritePixels loadDirectionalSprite(const Paths& paths, IWICImagingFactory* wic, 
             check(converted->Initialize(decoded.Get(), GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom));
             ComPtr<IWICBitmap> cached;
             check(wic->CreateBitmapFromSource(converted.Get(), WICBitmapCacheOnLoad, cached.GetAddressOf()));
+            if (!frame.teamMask.empty()) {
+                UINT width{}, height{}; check(cached->GetSize(&width, &height));
+                if (!width || !height || width > 8192 || height > 8192)
+                    throw std::runtime_error("Invalid directional source dimensions");
+                std::vector<BYTE> pixels(size_t(width) * height * 4);
+                check(cached->CopyPixels(nullptr, width * 4, UINT(pixels.size()), pixels.data()));
+                applyImageTeamMask(wic, paths.asset(imagePath(frame.teamMask)), width, height, pixels, color);
+                check(wic->CreateBitmapFromMemory(width, height, GUID_WICPixelFormat32bppPBGRA, width * 4,
+                    UINT(pixels.size()), pixels.data(), cached.ReleaseAndGetAddressOf()));
+            }
             image = cached;
         }
         UINT width{}, height{}; check(image->GetSize(&width, &height));

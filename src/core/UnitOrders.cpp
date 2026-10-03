@@ -231,7 +231,7 @@ void Simulation::tickUnit(Unit& u) {
         const float speed = u.moveGroup ? std::min(u.definition.movementPerSecond, u.groupSpeed) : u.definition.movementPerSecond;
         u.progress = std::min(1.0f, u.progress + speed / ticksPerSecond / length);
         u.facing = d;
-        u.walkCycle = std::fmod(u.walkCycle + (u.progress - oldProgress) * length, 1.0f);
+        u.walkCycle = std::fmod(u.walkCycle + (u.progress - oldProgress) * length / u.definition.sprite.walkCycleDistance, 1.0f);
         u.position = center(u.cell) + (center(destination) - center(u.cell)) * u.progress;
         if (u.progress >= 1.0f) {
             u.cell = destination; u.progress = 0; ++u.next;

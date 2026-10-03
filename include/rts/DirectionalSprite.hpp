@@ -19,6 +19,7 @@ struct SpriteWarp {
 };
 struct DirectionalSourceFrame {
     std::string image;
+    std::string teamMask;
     std::array<int, 4> source{};
     Vec2 pivot{}; // Source-image coordinates, independent of crop/weapon extents.
     float scale = 1;

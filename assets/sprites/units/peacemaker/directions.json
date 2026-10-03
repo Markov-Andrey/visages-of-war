@@ -1,278 +1,296 @@
 {
   "version": 1,
   "frameSize": [
-    288,
-    288
+    512,
+    512
   ],
   "pivot": [
-    144,
-    256
+    256,
+    448
   ],
   "se": {
     "stand": [
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-stand.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          122,
-          27,
-          546,
-          916
+          0,
+          0,
+          512,
+          512
         ],
         "pivot": [
-          430,
-          930
+          256,
+          448
         ],
-        "scale": 0.209
+        "scale": 1
       }
     ],
     "walk": [
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-se-walk.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          70,
-          4,
-          465,
-          706
+          0,
+          1024,
+          512,
+          512
         ],
         "pivot": [
-          367,
-          700
+          256,
+          1472
         ],
-        "scale": 0.27
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-se-walk.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          553,
-          15,
-          470,
-          690
+          512,
+          1024,
+          512,
+          512
         ],
         "pivot": [
-          862,
-          700
+          768,
+          1472
         ],
-        "scale": 0.27
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-se-walk.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          1164,
-          22,
-          390,
-          680
+          1024,
+          1024,
+          512,
+          512
         ],
         "pivot": [
-          1415,
-          698
+          1280,
+          1472
         ],
-        "scale": 0.27
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-se-walk.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          1638,
-          17,
-          477,
-          690
+          1536,
+          1024,
+          512,
+          512
         ],
         "pivot": [
-          1944,
-          700
+          1792,
+          1472
         ],
-        "scale": 0.27
+        "scale": 1
       }
     ],
     "attack": [
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-se-attack.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          28,
-          118,
-          455,
-          580
-        ],
-        "pivot": [
-          294,
-          691
-        ],
-        "scale": 0.333
-      },
-      {
-        "image": "sprites/units/peacemaker/source/peacemaker-se-attack.png",
-        "source": [
-          571,
-          12,
-          443,
-          685
-        ],
-        "pivot": [
-          800,
-          691
-        ],
-        "scale": 0.333
-      },
-      {
-        "image": "sprites/units/peacemaker/source/peacemaker-se-attack.png",
-        "source": [
-          1058,
-          130,
-          556,
-          570
-        ],
-        "pivot": [
-          1236,
-          691
-        ],
-        "scale": 0.333
-      },
-      {
-        "image": "sprites/units/peacemaker/source/peacemaker-se-attack.png",
-        "source": [
-          1632,
-          143,
+          0,
+          1536,
           512,
-          554
+          512
         ],
         "pivot": [
-          1900,
-          691
+          256,
+          1984
         ],
-        "scale": 0.333
+        "scale": 1
+      },
+      {
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
+        "source": [
+          512,
+          1536,
+          512,
+          512
+        ],
+        "pivot": [
+          768,
+          1984
+        ],
+        "scale": 1
+      },
+      {
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
+        "source": [
+          1024,
+          1536,
+          512,
+          512
+        ],
+        "pivot": [
+          1280,
+          1984
+        ],
+        "scale": 1
+      },
+      {
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
+        "source": [
+          1536,
+          1536,
+          512,
+          512
+        ],
+        "pivot": [
+          1792,
+          1984
+        ],
+        "scale": 1
       }
     ]
   },
   "nw": {
     "stand": [
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-stand.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          877,
-          29,
-          457,
-          916
+          512,
+          0,
+          512,
+          512
         ],
         "pivot": [
-          1110,
-          932
+          768,
+          448
         ],
-        "scale": 0.209
+        "scale": 1
       }
     ],
     "walk": [
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-nw-walk.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          76,
-          22,
-          472,
-          675
+          0,
+          512,
+          512,
+          512
         ],
         "pivot": [
-          290,
-          692
+          256,
+          960
         ],
-        "scale": 0.28
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-nw-walk.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          579,
-          33,
-          499,
-          673
+          512,
+          512,
+          512,
+          512
         ],
         "pivot": [
-          808,
-          696
+          768,
+          960
         ],
-        "scale": 0.28
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-nw-walk.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          1110,
-          33,
-          533,
-          666
+          1024,
+          512,
+          512,
+          512
         ],
         "pivot": [
-          1343,
-          690
+          1280,
+          960
         ],
-        "scale": 0.28
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-nw-walk.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          1684,
-          37,
-          466,
-          662
+          1536,
+          512,
+          512,
+          512
         ],
         "pivot": [
-          1918,
-          691
+          1792,
+          960
         ],
-        "scale": 0.28
+        "scale": 1
       }
     ],
     "attack": [
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-nw-attack.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          25,
-          118,
-          467,
-          564
+          0,
+          2048,
+          512,
+          512
         ],
         "pivot": [
-          223,
-          673
+          256,
+          2496
         ],
-        "scale": 0.343
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-nw-attack.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          527,
-          7,
-          420,
-          675
+          512,
+          2048,
+          512,
+          512
         ],
         "pivot": [
-          699,
-          673
+          768,
+          2496
         ],
-        "scale": 0.343
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-nw-attack.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          1021,
-          131,
-          576,
-          540
+          1024,
+          2048,
+          512,
+          512
         ],
         "pivot": [
-          1220,
-          665
+          1280,
+          2496
         ],
-        "scale": 0.343
+        "scale": 1
       },
       {
-        "image": "sprites/units/peacemaker/source/peacemaker-nw-attack.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
         "source": [
-          1632,
-          130,
-          514,
-          550
+          1536,
+          2048,
+          512,
+          512
         ],
         "pivot": [
-          1806,
-          672
+          1792,
+          2496
         ],
-        "scale": 0.343
+        "scale": 1
       }
     ]
   },
