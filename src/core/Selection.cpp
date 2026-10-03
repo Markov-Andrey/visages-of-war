@@ -27,8 +27,10 @@ UiRect buildingBounds(const Simulation& game, const Building& building, const Wo
     return {p.x - w * .5f * view.zoom, p.y - (h - 55) * view.zoom, w * view.zoom, h * view.zoom};
 }
 UiRect crystalBounds(const Simulation& game, const Crystal& crystal, const WorldView& view) {
-    const auto p = view.project(center(crystal.cell), float(game.map().at(crystal.cell).height));
-    return {p.x - 32 * view.zoom, p.y - 74 * view.zoom, 64 * view.zoom, 80 * view.zoom};
+    const auto p = view.project(crystal.center(), float(game.map().at(crystal.cell).height));
+    const float width = 64.0f * crystal.width, top = 74.0f + 24 * (crystal.height - 1);
+    return {p.x - width * .5f * view.zoom, p.y - top * view.zoom, width * view.zoom,
+        (80 + 48.0f * (crystal.height - 1)) * view.zoom};
 }
 std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view, Vec2 point) {
     std::optional<EntityId> result;
@@ -36,8 +38,8 @@ std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view
     // Match drawing order: crystals first, then buildings and units at the same depth.
     for (size_t i = 0; i < game.crystals().size(); ++i) {
         const auto& node = game.crystals()[i];
-        const float d = node.cell.y + .5f;
-        if (node.remaining > 0 && game.fog().visible(node.cell) && crystalBounds(game, node, view).contains(point) && d >= depth) { result = node.id; depth = d; }
+        const float d = node.depth();
+        if (node.remaining > 0 && game.crystalVisible(node) && crystalBounds(game, node, view).contains(point) && d >= depth) { result = node.id; depth = d; }
     }
     for (const auto& b : game.buildings()) {
         const float d = buildingDepth(b);
@@ -74,7 +76,7 @@ void Selection::prune(const Simulation& game) {
     std::erase_if(ids, [&](EntityId id) {
         if (game.unit(id) || game.building(id)) return false;
         const auto* node = game.crystal(id);
-        return !node || node->remaining <= 0 || !game.fog().visible(node->cell);
+        return !node || node->remaining <= 0 || !game.crystalVisible(*node);
     });
     if (!activeType_.empty()) activeType_ = activeGroup(game).type;
 }

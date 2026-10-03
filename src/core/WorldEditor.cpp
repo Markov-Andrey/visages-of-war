@@ -34,6 +34,9 @@ void WorldEditor::reloadDefinitions(const WorldAssets& assets, const Definitions
     for(auto& o:candidate.environment) {
         const int hp=o.hitPoints; o=assets.instantiate(o.definitionId,o.id,o.origin); o.hitPoints=std::min(hp,o.maximumHitPoints);
     }
+    for(auto& c:candidate.crystals) {
+        const int remaining=c.remaining; c=assets.instantiateCrystal(c.definitionId,c.cell); c.remaining=std::min(remaining,c.capacity);
+    }
     const auto& depot=definitions.startingDepot(definitions.commanders().front().factionId);
     rebuildScenario(candidate,{depot.width,depot.height});
     scenario_=std::move(candidate); assets_=&assets; definitions_=&definitions;
@@ -45,7 +48,8 @@ std::vector<EditorChoice> WorldEditor::choices() const {
         for(const auto& m:assets_->materials()) result.push_back({m.id,m.name});
     if(tool==EditorTool::Decoration || tool==EditorTool::Environment) {
         for(const auto& d:assets_->objects()) if(d.gameplay==(tool==EditorTool::Environment)) result.push_back({d.id,d.name});
-        if(tool==EditorTool::Environment) result.push_back({"$crystal","Кристаллы / 1000"});
+        if(tool==EditorTool::Environment) for(const auto& d:assets_->crystalSprites())
+            result.push_back({"$"+d.id,d.name+" / "+std::to_string(d.capacity)});
     }
     if(tool==EditorTool::Unit) for(const auto& d:definitions_->entities()) if(d.mobile && d.width==1 && d.height==1) result.push_back({d.id,d.displayName});
     if(tool==EditorTool::Surface) result={{"land","Суша"},{"shallow","Мелководье"},{"deep","Глубокая вода"}};
@@ -104,7 +108,7 @@ bool WorldEditor::applyOne(Vec2 p) {
             if(assets_->object(id).gameplay) throw std::runtime_error("Expected cosmetic asset");
             s.landscape.decorations.push_back({nextId(),id,p,scale,rotation}); changed=true;
         } else if(tool==EditorTool::Environment) {
-            if(id=="$crystal") s.crystals.push_back({c,Crystal::maximum});
+            if(id.starts_with("$")) s.crystals.push_back(assets_->instantiateCrystal(id.substr(1),c));
             else s.environment.push_back(assets_->instantiate(id,nextId(),c));
             changed=true;
         } else if(tool==EditorTool::Unit) {
@@ -142,7 +146,7 @@ bool WorldEditor::applyOne(Vec2 p) {
             else {
                 const auto count=s.environment.size()+s.crystals.size()+s.units.size();
                 std::erase_if(s.environment,[&](const auto& o){return c.x>=o.origin.x&&c.y>=o.origin.y&&c.x<o.origin.x+o.width&&c.y<o.origin.y+o.height;});
-                std::erase_if(s.crystals,[&](const auto& v){return v.cell==c;}); std::erase_if(s.units,[&](const auto& v){return v.cell==c;});
+                std::erase_if(s.crystals,[&](const auto& v){return v.contains(c);}); std::erase_if(s.units,[&](const auto& v){return v.cell==c;});
                 changed=count!=s.environment.size()+s.crystals.size()+s.units.size();
                 if(s.map.at(c).ramp!=Cell{}) { s.map.at(c).ramp={}; changed=true; }
             }

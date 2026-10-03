@@ -50,7 +50,7 @@ void Renderer::drawMenu(const Simulation& game, const MenuState& menu, const Def
         for (int y = 0; y < game.map().height(); ++y) for (int x = 0; x < game.map().width(); ++x)
             tile(game.map(), {x, y}, preview, false);
         for (const auto& crystal : game.crystals()) {
-            const auto p = preview.project(center(crystal.cell), float(game.map().at(crystal.cell).height));
+            const auto p = preview.project(crystal.center(), float(game.map().at(crystal.cell).height));
             drawCrystal(crystal, p, std::max(preview.zoom, .12f));
         }
         text(L"Тестовая долина", rect(layout.map.x + 22, layout.map.y + 217, 380, 34), 0xe5e8d7, true);

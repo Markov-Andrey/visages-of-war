@@ -4,6 +4,21 @@
     "rights":  "Project artwork; not part of the third-party CC0 asset catalog",
     "files":  [
         {
+          "original": "crysal-medium.png",
+          "path": "sprites/resources/crystal/medium.png",
+          "imported": "2026-10-04",
+          "source": "Project owner artwork; original PNG bytes preserved. 12 variants, 2x2 logical footprint and 5500 crystals. Crops, ground anchors and scale are in world/resources.json.",
+          "sha256": "C8F5EEF3B6D589003F5005CF07DD5BD3EECB9ABECFCBA3BBB07BB538475769F5"
+        },
+        {
+          "original": "crysal-big.png",
+          "path": "sprites/resources/crystal/big.png",
+          "imported": "2026-10-04",
+          "source": "Project owner artwork; original PNG bytes preserved. 4 variants, 3x3 logical footprint and 15000 crystals. Crops, ground anchors and scale are in world/resources.json.",
+          "sha256": "0454F0571957B9AA4DC47B74BC10370BF7ED2A0EAB4A99DE41B8DEEF1567F7A7"
+        },
+
+        {
           "original": "crystal-sprites.png",
           "path": "sprites/resources/crystal/variants.png",
           "imported": "2026-10-04",

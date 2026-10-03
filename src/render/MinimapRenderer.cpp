@@ -20,7 +20,10 @@ void Renderer::drawMinimap(const Simulation& game, const BattleLayout& layout, c
         brush_->SetColor(D2D1::ColorF(color));
         target_->FillRectangle(rect(p.x - radius, p.y - radius, radius * 2, radius * 2), brush_.Get());
     };
-    for (size_t i = 0; i < game.crystals().size(); ++i) if (game.knownCrystal(i) > 0) dot(center(game.crystals()[i].cell), worldAssets_.crystalSprite().glowColor, 1.5f);
+    for (size_t i = 0; i < game.crystals().size(); ++i) if (game.knownCrystal(i) > 0) {
+        const auto& node = game.crystals()[i];
+        dot(node.center(), worldAssets_.crystalSprite(node.definitionId).glowColor, 1.5f + .5f * (node.width - 1));
+    }
     for (const auto& b : game.buildings()) dot({b.origin.x + b.definition.width * .5f, b.origin.y + b.definition.height * .5f}, teamColor_, 3);
     for (const auto& u : game.units()) if (u.owner == game.player().id || game.fog().visible(u.cell))
         dot(u.position, u.owner == game.player().id ? teamColor_ : enemyColor_, 1.5f);

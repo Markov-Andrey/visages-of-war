@@ -155,9 +155,10 @@ public:
     Cell hall() const { return scenario_.hall; }
     const std::vector<Crystal>& crystals() const { return scenario_.crystals; }
     const Crystal* crystal(EntityId id) const;
+    bool crystalVisible(const Crystal& node) const;
     int knownCrystal(size_t index) const {
         const auto& node = crystals().at(index);
-        return fog_.visible(node.cell) ? node.remaining : knownCrystals_.at(index);
+        return crystalVisible(node) ? node.remaining : knownCrystals_.at(index);
     }
     bool knownEnvironment(size_t index) const { return knownEnvironment_.at(index); }
     const Landscape& landscape() const { return scenario_.landscape; }

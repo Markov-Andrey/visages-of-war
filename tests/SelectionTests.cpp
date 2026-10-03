@@ -330,7 +330,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(selection.ids.size() == 3, "Additive box duplicated unit IDs");
     });
     test("Crystal sprite selection is neutral, single and excluded from army groups", [] {
-        auto s = flatScenario(rts::Crystal::maximum); s.extraWorkers = {{5, 3}};
+        auto s = flatScenario(rts::Crystal::defaultReserve); s.extraWorkers = {{5, 3}};
         rts::Simulation game(std::move(s));
         const auto& node = game.crystals().front();
         require(node.owner == rts::neutralPlayer && node.id && !game.unit(node.id) && !game.building(node.id), "Crystal has no independent neutral identity");

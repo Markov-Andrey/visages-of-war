@@ -80,7 +80,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     const auto info = layout.info;
     const Unit* unit = ui.selection.activeUnit(game);
     const Crystal* resource = ui.selection.ids.size() == 1 ? game.crystal(ui.selection.ids.front()) : nullptr;
-    if (resource && (!game.fog().visible(resource->cell) || resource->remaining <= 0)) resource = nullptr;
+    if (resource && (!game.crystalVisible(*resource) || resource->remaining <= 0)) resource = nullptr;
     const EntityDefinition* tooltip = hero && heroArea.contains(ui.mouse) ? &hero->definition : nullptr;
     std::wstring actionTitle, actionDescription;
     wchar_t tooltipKey{};
@@ -92,14 +92,14 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     std::array<wchar_t, commandSlots> buttonKeys{};
     if (resource) {
         const int remaining = resource->remaining;
-        text(L"Кристаллы", rect(info.x, info.y, info.width, 34), 0xe0eade, true);
+        text(wide(worldAssets_.crystalSprite(resource->definitionId).name), rect(info.x, info.y, info.width, 34), 0xe0eade, true);
         text(L"Нейтральный объект", rect(info.x, info.y + 39, info.width, 24), 0x9dc1b6);
         drawResourceIcon("crystal", {info.x - 12, info.y + 48, 96, 96});
-        text(L"Остаток ресурса:  " + std::to_wstring(remaining) + L" / " + std::to_wstring(Crystal::maximum),
+        text(L"Остаток ресурса:  " + std::to_wstring(remaining) + L" / " + std::to_wstring(resource->capacity),
             rect(info.x + 88, info.y + 78, info.width - 88, 26), 0xeac2a4);
         const float barWidth = std::max(1.0f, info.width - 100);
         panel({info.x + 88, info.y + 113, barWidth, 8}, 0x26313e);
-        if (remaining > 0) panel({info.x + 88, info.y + 113, barWidth * remaining / Crystal::maximum, 8}, worldAssets_.crystalSprite().glowColor);
+        if (remaining > 0) panel({info.x + 88, info.y + 113, barWidth * remaining / resource->capacity, 8}, worldAssets_.crystalSprite(resource->definitionId).glowColor);
         text(L"Добывается в жилах рабочими. Кристаллы доставляются в ратушу.",
             rect(info.x, info.y + 143, info.width, 23), 0x7e9eaa);
     } else if (building) {

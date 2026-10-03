@@ -1,4 +1,5 @@
 #include "rts/WorldAssets.hpp"
+#include "rts/Map.hpp"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <fstream>
@@ -56,29 +57,40 @@ WorldAssets WorldAssets::load(const Paths& paths) {
     }
     for (const auto* id : {"crystal", "supply"}) if (!result.resourceIcons_.contains(id))
         throw std::runtime_error("Missing resource icon: " + std::string(id));
-    const auto& crystal = resources.at("crystal");
-    auto& resource = result.crystalSprite_;
-    resource.image = utf8Path(crystal.at("image").get<std::string>()); paths.asset(resource.image);
-    resource.scale = number(crystal.at("scale"), .01f, 4);
-    const auto color = crystal.at("glowColor").get<std::string>();
-    if (color.size() != 6 || color.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos)
-        throw std::runtime_error("Invalid crystal glow color");
-    resource.glowColor = static_cast<unsigned>(std::stoul(color, nullptr, 16));
-    const auto& crystalVariants = crystal.at("variants");
-    if (!crystalVariants.is_array() || crystalVariants.empty() || crystalVariants.size() > 256)
-        throw std::runtime_error("Invalid crystal variants");
-    for (const auto& variant : crystalVariants) {
-        const auto& source = variant.at("source"); const auto& anchor = variant.at("anchor");
-        if (!source.is_array() || source.size() != 4 || !anchor.is_array() || anchor.size() != 2)
-            throw std::runtime_error("Invalid crystal crop or anchor");
-        UnitDeathFrame frame;
-        for (size_t i = 0; i < 4; ++i) {
-            if (!source[i].is_number_integer()) throw std::runtime_error("Crystal crop must use integer pixels");
-            frame.source[i] = int(number(source[i], i < 2 ? 0.f : 1.f, 8192));
+    for (const auto& crystal : resources.at("crystals")) {
+        CrystalSpriteDefinition resource;
+        resource.id = identifier(crystal.at("id"), ids);
+        resource.name = crystal.at("name").get<std::string>();
+        resource.width = crystal.at("footprint").at(0).get<int>();
+        resource.height = crystal.at("footprint").at(1).get<int>();
+        resource.capacity = crystal.at("capacity").get<int>();
+        if (resource.width < 1 || resource.height < 1 || resource.width > 16 || resource.height > 16 ||
+            resource.capacity < 1 || resource.capacity > 1000000) throw std::runtime_error("Invalid crystal footprint or capacity");
+        resource.image = utf8Path(crystal.at("image").get<std::string>()); paths.asset(resource.image);
+        resource.scale = number(crystal.at("scale"), .01f, 4);
+        const auto color = crystal.at("glowColor").get<std::string>();
+        if (color.size() != 6 || color.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos)
+            throw std::runtime_error("Invalid crystal glow color");
+        resource.glowColor = static_cast<unsigned>(std::stoul(color, nullptr, 16));
+        const auto& crystalVariants = crystal.at("variants");
+        if (!crystalVariants.is_array() || crystalVariants.empty() || crystalVariants.size() > 256)
+            throw std::runtime_error("Invalid crystal variants");
+        for (const auto& variant : crystalVariants) {
+            const auto& source = variant.at("source"); const auto& anchor = variant.at("anchor");
+            if (!source.is_array() || source.size() != 4 || !anchor.is_array() || anchor.size() != 2)
+                throw std::runtime_error("Invalid crystal crop or anchor");
+            UnitDeathFrame frame;
+            for (size_t i = 0; i < 4; ++i) {
+                if (!source[i].is_number_integer()) throw std::runtime_error("Crystal crop must use integer pixels");
+                frame.source[i] = int(number(source[i], i < 2 ? 0.f : 1.f, 8192));
+            }
+            frame.anchor = {number(anchor[0], 0, float(frame.source[2])), number(anchor[1], 0, float(frame.source[3]))};
+            resource.variants.push_back(frame);
         }
-        frame.anchor = {number(anchor[0], 0, float(frame.source[2])), number(anchor[1], 0, float(frame.source[3]))};
-        resource.variants.push_back(frame);
+        result.crystalSprites_.push_back(std::move(resource));
     }
+    result.crystalSprite(); // The default small deposit must exist.
+    ids.clear();
     for (const auto& file : index.at("materialFiles")) for (const auto& j : read(paths.asset(utf8Path(file.get<std::string>())))) {
         TerrainMaterial m;
         m.id = identifier(j.at("id"), ids); m.name = j.at("name").get<std::string>();
@@ -119,6 +131,14 @@ WorldAssets WorldAssets::load(const Paths& paths) {
     }
     if (result.materials_.empty() || result.objects_.empty()) throw std::runtime_error("Empty world asset catalog");
     return result;
+}
+const CrystalSpriteDefinition& WorldAssets::crystalSprite(const std::string& id) const {
+    for (const auto& d : crystalSprites_) if (d.id == id) return d;
+    throw std::runtime_error("Unknown crystal definition: " + id);
+}
+Crystal WorldAssets::instantiateCrystal(const std::string& id, Cell origin) const {
+    const auto& d = crystalSprite(id);
+    return {origin, d.capacity, 0, d.id, d.width, d.height, d.capacity};
 }
 const TerrainMaterial& WorldAssets::material(const std::string& id) const {
     for (const auto& d : materials_) if (d.id == id) return d;

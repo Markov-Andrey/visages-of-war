@@ -30,7 +30,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         if (game.fog().explored({int(p.x), int(p.y)})) items.push_back({p.y, Kind::Decoration, i});
     }
     for (size_t i = 0; i < game.crystals().size(); ++i) if (game.knownCrystal(i) > 0)
-        items.push_back({game.crystals()[i].cell.y + .5f, Kind::Crystal, i});
+        items.push_back({game.crystals()[i].depth(), Kind::Crystal, i});
     for (size_t i = 0; i < game.environment().size(); ++i) if (game.knownEnvironment(i)) {
         const auto& object = game.environment()[i];
         items.push_back({object.origin.y + object.height - .5f, Kind::Environment, i});
@@ -67,14 +67,14 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             }
             case Kind::Crystal: {
                 const auto& crystal = game.crystals()[item.index];
-                const auto p = view.project(center(crystal.cell), float(map.at(crystal.cell).height));
+                const auto p = view.project(crystal.center(), float(map.at(crystal.cell).height));
                 if (!onScreen(p)) break;
-                worldOpacity_ = game.fog().visible(crystal.cell) ? 1.0f : .3f;
-                if (ui.selection.contains(crystal.id) && game.fog().visible(crystal.cell)) {
-                    drawSelectionRing(p, 28, 13, view.zoom,
+                worldOpacity_ = game.crystalVisible(crystal) ? 1.0f : .3f;
+                if (ui.selection.contains(crystal.id) && game.crystalVisible(crystal)) {
+                    drawSelectionRing(p, 28 * crystal.width, 13 * crystal.height, view.zoom,
                         selectionColor(crystal.owner, game.player().id));
                 }
-                drawCrystal(crystal, p, view.zoom, game.fog().visible(crystal.cell), game.clock().elapsedTicks());
+                drawCrystal(crystal, p, view.zoom, game.crystalVisible(crystal), game.clock().elapsedTicks());
                 break;
             }
             case Kind::Environment: {

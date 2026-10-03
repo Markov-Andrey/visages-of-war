@@ -69,10 +69,11 @@ std::vector<ProjectedLight> buildingLights(const Simulation& game, const WorldVi
 std::vector<ProjectedLight> crystalLights(const Simulation& game, const WorldView& view, unsigned color) {
     std::vector<ProjectedLight> lights;
     for (const auto& crystal : game.crystals()) {
-        if (crystal.remaining <= 0 || !game.fog().visible(crystal.cell)) continue;
-        const auto ground = view.project(center(crystal.cell), float(game.map().at(crystal.cell).height));
+        if (crystal.remaining <= 0 || !game.crystalVisible(crystal)) continue;
+        const auto ground = view.project(crystal.center(), float(game.map().at(crystal.cell).height));
+        const float size = float(std::max(crystal.width, crystal.height));
         const float intensity = crystalPulse(crystal.id, game.clock().elapsedTicks());
-        lights.push_back({ground + Vec2{0, -22} * view.zoom, 2.1f * WorldView::tileSize * view.zoom,
+        lights.push_back({ground + Vec2{0, -22 - 10 * (size - 1)} * view.zoom, (2.1f + .5f * (size - 1)) * WorldView::tileSize * view.zoom,
             intensity, color});
     }
     return lights;

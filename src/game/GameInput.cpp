@@ -66,8 +66,8 @@ rts::CursorKind GameApplication::cursorKind() const {
         switch (*ui_.orderMode) {
         case rts::OrderKind::AttackMove: case rts::OrderKind::AttackGround: return CursorKind::Target;
         case rts::OrderKind::Gather:
-            return game_.fog().visible(*target) && std::any_of(game_.crystals().begin(), game_.crystals().end(),
-                [&](const auto& crystal) { return crystal.cell == *target && crystal.remaining > 0; }) ? CursorKind::Gather : CursorKind::Blocked;
+            return std::any_of(game_.crystals().begin(), game_.crystals().end(),
+                [&](const auto& crystal) { return crystal.contains(*target) && crystal.remaining > 0 && game_.crystalVisible(crystal); }) ? CursorKind::Gather : CursorKind::Blocked;
         default: return CursorKind::Move;
         }
     }
@@ -82,7 +82,7 @@ rts::CursorKind GameApplication::cursorKind() const {
         if (!selected([](const rts::Unit&) { return true; })) return CursorKind::Select;
         return selected([&](const rts::Unit& u) { return game_.canAttack(u, enemy); }) ? CursorKind::Attack : CursorKind::Blocked;
     }
-    for (const auto& crystal : game_.crystals()) if (crystal.cell == *target && crystal.remaining > 0 && game_.fog().visible(*target)) {
+    for (const auto& crystal : game_.crystals()) if (crystal.contains(*target) && crystal.remaining > 0 && game_.crystalVisible(crystal)) {
         if (selected([](const rts::Unit& u) { return u.definition.carryCapacity > 0; })) return CursorKind::Gather;
     }
     if (const auto id = rts::pickEntity(game_, view_, mouse_)) {

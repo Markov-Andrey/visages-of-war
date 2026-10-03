@@ -276,7 +276,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(rts::Crystal{}.remaining == 1000, "Default deposit is not full");
         const auto file = rts::Paths::executable().parent_path() / L"test-crystal-reserve.rtsmap";
         for (int amount : {-1, 0, 1, 1000, 1001}) {
-            auto j=mapJson(); j["resources"]={{{"cell",{3,3}},{"remaining",amount}}}; writeMap(file,j);
+            auto j=mapJson(); j["resources"]={{{"asset","crystal.small"},{"cell",{3,3}},{"remaining",amount}}}; writeMap(file,j);
             if (amount > 0 && amount <= 1000)
                 require(loadScenario(file).crystals[0].remaining == amount, "Valid resource reserve was not loaded");
             else mustThrow([&] { loadScenario(file); });
@@ -284,7 +284,29 @@ void dataTests(TestSuite& test, const TestContext& context) {
         mustThrow([] { rts::Simulation game(flatScenario(1001)); });
         mustThrow([] { rts::Simulation game(flatScenario(-1)); });
         const auto demo = loadScenario(assets / "maps/demo.rtsmap");
-        require(!demo.crystals.empty() && std::all_of(demo.crystals.begin(), demo.crystals.end(), [](const auto& c) { return c.remaining == 1000; }), "Demo deposits are not full");
+        require(!demo.crystals.empty() && std::all_of(demo.crystals.begin(), demo.crystals.end(), [](const auto& c) { return c.remaining == c.capacity; }), "Demo deposits are not full");
+    });
+    test("Crystal kinds round trip with catalog capacities and full footprints", [&] {
+        const auto world = WorldAssets::load(Paths::discover());
+        const auto file = Paths::executable().parent_path() / L"test-crystal-kinds.rtsmap";
+        struct Kind { const char* id; int size, capacity; };
+        for (const auto kind : {Kind{"crystal.small", 1, 1000}, Kind{"crystal.medium", 2, 5500}, Kind{"crystal.big", 3, 15000}}) {
+            auto j = mapJson(12, 12);
+            j["resources"] = {{{"asset", kind.id}, {"cell", {4, 4}}, {"remaining", kind.capacity}}};
+            writeMap(file, j);
+            const auto loaded = rts::loadScenario(file, world, {3, 2});
+            const auto& node = loaded.crystals.front();
+            require(node.width == kind.size && node.height == kind.size && node.capacity == kind.capacity, "Crystal definition lost");
+            for (int y = 0; y < kind.size; ++y) for (int x = 0; x < kind.size; ++x)
+                require(!loaded.map.walkable({4 + x, 4 + y}), "Crystal footprint is partially walkable");
+            saveScenario(loaded, file);
+            require(rts::loadScenario(file, world, {3, 2}).crystals.front().definitionId == kind.id, "Saved crystal changed type");
+            j["resources"][0]["remaining"] = kind.capacity + 1; writeMap(file, j);
+            mustThrow([&] { rts::loadScenario(file, world, {3, 2}); });
+            j["resources"][0]["remaining"] = kind.capacity;
+            j["resources"].push_back({{"asset", "crystal.small"}, {"cell", {3 + kind.size, 3 + kind.size}}, {"remaining", 1000}});
+            writeMap(file, j); mustThrow([&] { rts::loadScenario(file, world, {3, 2}); });
+        }
     });
     test("One entity schema includes names, descriptions, factions, costs and external progression", [&] {
         CatalogFixture fixture(assets); const auto defs = fixture.load();
@@ -622,7 +644,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(s.map.at({3, 3}).surface == rts::Surface::ShallowWater && s.map.at({4, 3}).surface == rts::Surface::DeepWater, "Water depth not loaded");
         j["terrain"]["surfaces"][0]="SLLLLL"; writeMap(file,j); mustThrow([&] { loadScenario(file); });
         j["terrain"]["surfaces"][0]="LLLLLL"; j["terrain"]["surfaces"][3]="LLLXLL"; writeMap(file,j); mustThrow([&] { loadScenario(file); });
-        j["terrain"]["surfaces"][3]="LLLSDL"; j["resources"]={{{"cell",{3,3}},{"remaining",50}}}; writeMap(file,j); mustThrow([&] { loadScenario(file); });
+        j["terrain"]["surfaces"][3]="LLLSDL"; j["resources"]={{{"asset","crystal.small"},{"cell",{3,3}},{"remaining",50}}}; writeMap(file,j); mustThrow([&] { loadScenario(file); });
     });
 }
 }

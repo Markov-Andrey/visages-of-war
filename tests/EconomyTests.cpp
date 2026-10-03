@@ -13,6 +13,27 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.crystals()[0].remaining == 0 && game.map().walkable({7, 7}), "Exhausted node still blocking");
         require(game.worker().state == rts::UnitState::Idle, "Worker did not finish");
     });
+    test("Large crystals accept clicks on every cell and release the entire footprint after harvesting", [] {
+        const auto world = WorldAssets::load(Paths::discover());
+        for (const auto* kind : {"crystal.medium", "crystal.big"}) {
+            Scenario s{Map(24, 24), {1, 1}, {17, 14}, {world.instantiateCrystal(kind, {13, 13})}};
+            s.crystals.front().remaining = 2;
+            const auto node = s.crystals.front();
+            rebuildScenario(s, {3, 2});
+            auto worker = gatheringWorker(); worker.dayVision = worker.nightVision = 3;
+            Simulation game(std::move(s), {}, worker);
+            const auto id = game.crystals().front().id;
+            require(!game.fog().visible(node.cell) && game.crystalVisible(game.crystals().front()), "Partial footprint visibility lost");
+            for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
+                require(game.command(node.cell + Cell{x, y}), "A crystal footprint cell rejected gathering");
+            const auto slots = perimeter(game.map(), node.cell, node.width, node.height);
+            require(std::find(slots.begin(), slots.end(), game.worker().route.back()) != slots.end(), "Worker did not approach the outer perimeter");
+            ticks(game, 1800);
+            require(game.crystals().front().remaining == 0 && game.storedCrystals() == 2 && game.crystals().front().id == id, "Depletion lost cargo or resource identity");
+            for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
+                require(game.map().walkable(node.cell + Cell{x, y}), "Depleted footprint still blocks movement");
+        }
+    });
     test("Explicit gathering crosses temporary traffic instead of switching to a nearer field", [] {
         auto s = gatheringScenario();
         for (int y = 0; y < 16; ++y) if (y != 8) s.map.at({8, y}).blocked = true;

@@ -87,7 +87,7 @@ void Simulation::applyOrder(Unit& u, Order order) {
         for (size_t i = 0; i < crystals().size(); ++i) {
             // The command was validated when issued. It may be applied after a step,
             // when this deposit has already depleted or left current vision.
-            if (crystals()[i].cell != order.cell) continue;
+            if (!crystals()[i].contains(order.cell)) continue;
             u.targetCrystal = u.gatherOriginCrystal = static_cast<int>(i); u.repeatGather = true;
             if (u.cargo >= u.definition.carryCapacity) returnCargo(u); else seekCrystal(u);
             return;
@@ -100,14 +100,14 @@ bool Simulation::command(std::span<const EntityId> ids, Cell c) {
     if (!map().contains(c)) return false;
     for (const auto& target : units_) if (target.owner != player_.id && target.cell == c && fog_.visible(c)) return attack(ids, target.id);
     auto kind = buildingAt(c) ? OrderKind::Interact : OrderKind::Move;
-    if (fog_.visible(c)) for (const auto& node : crystals()) if (node.cell == c && node.remaining > 0) kind = OrderKind::Gather;
+    for (const auto& node : crystals()) if (node.contains(c) && node.remaining > 0 && crystalVisible(node)) kind = OrderKind::Gather;
     return order(ids, kind, c);
 }
 bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
     if (!map().contains(c)) return false;
     if (kind == OrderKind::Attack || kind == OrderKind::Build) return false;
-    if (kind == OrderKind::Gather && (!fog_.visible(c) || std::none_of(crystals().begin(), crystals().end(),
-        [&](const Crystal& crystal) { return crystal.cell == c && crystal.remaining > 0; }))) return false;
+    if (kind == OrderKind::Gather && std::none_of(crystals().begin(), crystals().end(),
+        [&](const Crystal& crystal) { return crystal.contains(c) && crystal.remaining > 0 && crystalVisible(crystal); })) return false;
     std::vector<FormationMember> members;
     for (EntityId id : ids) {
         auto* u = mutableUnit(id);
@@ -254,7 +254,9 @@ void Simulation::tickUnit(Unit& u) {
     auto& crystal = scenario_.crystals[static_cast<size_t>(u.targetCrystal)];
     if (crystal.remaining > 0 && ++u.harvestTicks >= ticksPerSecond / 3) {
         u.harvestTicks = 0; --crystal.remaining; ++u.cargo;
-        if (crystal.remaining == 0) scenario_.map.release(crystal.cell);
+        if (crystal.remaining == 0)
+            for (int y = 0; y < crystal.height; ++y) for (int x = 0; x < crystal.width; ++x)
+                scenario_.map.release(crystal.cell + Cell{x, y});
     }
     if (u.cargo >= u.definition.carryCapacity || crystal.remaining == 0) {
         if (u.cargo > 0) returnCargo(u); else seekCrystal(u);

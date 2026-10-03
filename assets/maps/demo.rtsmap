@@ -735,112 +735,152 @@
       "cell": [
         9,
         18
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         10,
         19
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         11,
         19
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         8,
         18
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         23,
         11
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         24,
         11
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         25,
         12
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         30,
         15
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         31,
         15
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         45,
         39
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         46,
         39
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         47,
         40
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         21,
         36
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         22,
         37
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         51,
         15
-      ]
+      ],
+      "asset": "crystal.small"
     },
     {
       "remaining": 1000,
       "cell": [
         52,
         16
-      ]
+      ],
+      "asset": "crystal.small"
+    },
+    {
+      "asset": "crystal.big",
+      "cell": [
+        7,
+        21
+      ],
+      "remaining": 15000
+    },
+    {
+      "asset": "crystal.medium",
+      "cell": [
+        10,
+        15
+      ],
+      "remaining": 5500
+    },
+    {
+      "asset": "crystal.medium",
+      "cell": [
+        11,
+        21
+      ],
+      "remaining": 5500
     }
   ],
   "units": [

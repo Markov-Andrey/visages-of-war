@@ -19,13 +19,15 @@ bool Simulation::returnCargo(Unit& u) {
 bool Simulation::seekCrystal(Unit& u) {
     u.route.clear(); u.next = 0; u.progress = 0; u.blockedTicks = 0;
     if (!u.repeatGather || u.gatherOriginCrystal < 0) { u.state = UnitState::Idle; return false; }
-    const Cell origin = crystals()[u.gatherOriginCrystal].cell;
+    const auto& origin = crystals()[u.gatherOriginCrystal];
     // Never move this search origin to a fallback deposit: repeated exhaustion must
     // not walk the worker from one resource field into a completely different one.
     constexpr int neighborRadius = 3;
     const auto distance = [&](size_t i) {
-        const Cell d = crystals()[i].cell - origin;
-        return d.x * d.x + d.y * d.y;
+        const auto& node = crystals()[i];
+        const int dx = std::max({0, node.cell.x - (origin.cell.x + origin.width - 1), origin.cell.x - (node.cell.x + node.width - 1)});
+        const int dy = std::max({0, node.cell.y - (origin.cell.y + origin.height - 1), origin.cell.y - (node.cell.y + node.height - 1)});
+        return dx * dx + dy * dy;
     };
     std::vector<size_t> candidates;
     for (size_t i = 0; i < crystals().size(); ++i)
@@ -48,7 +50,8 @@ bool Simulation::seekCrystal(Unit& u) {
         return true;
     };
     for (size_t target : candidates) {
-        auto slots = perimeter(map(), crystals()[target].cell, 1, 1, u.definition.movement);
+        const auto& node = crystals()[target];
+        auto slots = perimeter(map(), node.cell, node.width, node.height, u.definition.movement);
         if (!waitingPath) {
             waitingPath = findPath(map(), u.cell, slots, {}, u.definition.movement);
             if (waitingPath) waitingTarget = static_cast<int>(target);

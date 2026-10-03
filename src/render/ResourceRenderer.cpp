@@ -3,7 +3,9 @@
 namespace rts {
 using namespace render;
 void Renderer::drawCrystal(const Crystal& crystal, Vec2 ground, float zoom, bool glowing, std::uint64_t tick) {
-    const auto& art = worldAssets_.crystalSprite();
+    const auto& art = worldAssets_.crystalSprite(crystal.definitionId);
+    auto& bitmap = worldSprites_[art.image];
+    if (!bitmap) loadBitmap(paths_.asset(art.image), bitmap, 0, SpriteTeamMask::None, {}, true, true);
     // Position is authored and shared by Forge and the match; match-assigned IDs
     // must not reshuffle the variants when entering play or depleting a neighbour.
     auto seed = std::uint32_t(crystal.cell.x) * 0x9e3779b9u ^ std::uint32_t(crystal.cell.y) * 0x85ebca6bu;
@@ -11,9 +13,10 @@ void Renderer::drawCrystal(const Crystal& crystal, Vec2 ground, float zoom, bool
     const auto& frame = art.variants.at(seed % art.variants.size());
     const auto& r = frame.source;
     const float scale = art.scale * zoom;
-    auto* emission = glowing ? spriteLights_.at(crystal_.Get()).highlights.Get() : nullptr;
-    if (emission) drawLightGlow(ground + Vec2{0, -22} * zoom, 36 * zoom, art.glowColor, crystalPulse(crystal.id, tick));
-    sprite(crystal_.Get(), rect(float(r[0]), float(r[1]), float(r[2]), float(r[3])),
+    auto* emission = glowing ? spriteLights_.at(bitmap.Get()).highlights.Get() : nullptr;
+    const float size = float(std::max(crystal.width, crystal.height));
+    if (emission) drawLightGlow(ground + Vec2{0, -22 - 10 * (size - 1)} * zoom, 36 * size * zoom, art.glowColor, crystalPulse(crystal.id, tick));
+    sprite(bitmap.Get(), rect(float(r[0]), float(r[1]), float(r[2]), float(r[3])),
         ground - frame.anchor * scale, Vec2{float(r[2]), float(r[3])} * scale, false, 1, emission);
 }
 

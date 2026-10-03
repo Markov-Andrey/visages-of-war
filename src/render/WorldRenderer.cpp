@@ -12,7 +12,6 @@ void Renderer::reloadWorldAssets(const WorldAssets& assets) {
     for (const auto& [key, bitmap] : maskedImages_) spriteLights_.erase(bitmap.Get());
     emissionMasks_.clear();
     worldAssets_=assets; materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); unitUiImages_.clear(); maskedImages_.clear(); paintResources_.clear(); terrainPaint_.reset();
-    if (target_) loadBitmap(paths_.asset(worldAssets_.crystalSprite().image), crystal_, 0, SpriteTeamMask::None, {}, true, true);
 }
 void Renderer::validateWorldAssets(const WorldAssets& assets) {
     const auto dimensions=[&](const std::filesystem::path& file) {
@@ -29,11 +28,12 @@ void Renderer::validateWorldAssets(const WorldAssets& assets) {
     }
     const auto& bones = assets.bonesSprite();
     for (const auto& [id, path] : assets.resourceIcons()) dimensions(path);
-    const auto& crystal = assets.crystalSprite();
-    const auto crystalSize = dimensions(crystal.image);
-    for (const auto& frame : crystal.variants)
-        if (frame.source[0] + frame.source[2] > crystalSize.x || frame.source[1] + frame.source[3] > crystalSize.y)
-            throw std::runtime_error("Crystal variant exceeds image");
+    for (const auto& crystal : assets.crystalSprites()) {
+        const auto crystalSize = dimensions(crystal.image);
+        for (const auto& frame : crystal.variants)
+            if (frame.source[0] + frame.source[2] > crystalSize.x || frame.source[1] + frame.source[3] > crystalSize.y)
+                throw std::runtime_error("Crystal variant exceeds image");
+    }
     const auto bonesSize = dimensions(bones.image);
     for (const auto& frame : bones.variants)
         if (frame.source[0] + frame.source[2] > bonesSize.x || frame.source[1] + frame.source[3] > bonesSize.y)

@@ -50,11 +50,16 @@ private:
 };
 
 struct Crystal {
-    static constexpr int maximum = 1000;
+    static constexpr int defaultReserve = 1000;
     static constexpr PlayerId owner = neutralPlayer;
     Cell cell;
-    int remaining = maximum;
+    int remaining = defaultReserve;
     EntityId id{}; // Assigned once by the match; depletion keeps this identity.
+    std::string definitionId = "crystal.small";
+    int width = 1, height = 1, capacity = defaultReserve; // Derived from the resource catalog.
+    bool contains(Cell c) const { return c.x >= cell.x && c.y >= cell.y && c.x < cell.x + width && c.y < cell.y + height; }
+    Vec2 center() const { return {cell.x + width * .5f, cell.y + height * .5f}; }
+    float depth() const { return cell.y + height - .5f; }
 };
 struct UnitSpawn { std::string definitionId; PlayerId owner{}; Cell cell; };
 struct Scenario {

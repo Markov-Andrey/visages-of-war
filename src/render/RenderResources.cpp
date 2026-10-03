@@ -28,10 +28,11 @@ void Renderer::verifyAssets() {
     const auto definitions = Definitions::load(paths_.asset(L"data/catalog.json"));
     validateCombatAssets(definitions);
     // Decode all files, including on --verify-assets, without creating a window.
-    std::vector<std::filesystem::path> images{L"sprites/hall.png", worldAssets_.crystalSprite().image, L"sprites/worker.png", L"sprites/tree.png",
+    std::vector<std::filesystem::path> images{L"sprites/hall.png", L"sprites/worker.png", L"sprites/tree.png",
         L"ui/menu/background.png", L"ui/menu/valeri.png", L"ui/logo.png", L"ui/project-icon.png"};
     if (std::filesystem::exists(paths_.assetRoot() / buttonFrameAsset)) images.emplace_back(buttonFrameAsset);
     for (const auto& [id, path] : worldAssets_.resourceIcons()) images.push_back(path);
+    for (const auto& crystal : worldAssets_.crystalSprites()) images.push_back(crystal.image);
     const auto commandIcons = loadCommandIcons(paths_);
     for (const auto& [id, icon] : commandIcons) {
         images.push_back(std::filesystem::relative(icon.image, paths_.assetRoot()));
@@ -145,7 +146,6 @@ void Renderer::loadResources() {
     check(target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), brush_.GetAddressOf()));
     groundBrush_ = materialResource(worldAssets_.materials().front().id).brush;
     loadBitmap(paths_.asset(L"sprites/hall.png"), hall_, 0, SpriteTeamMask::None, {}, true);
-    loadBitmap(paths_.asset(worldAssets_.crystalSprite().image), crystal_, 0, SpriteTeamMask::None, {}, true, true);
     loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_, SpriteTeamMask::Blue);
     loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_, SpriteTeamMask::Blue);
     loadBitmap(paths_.asset(L"sprites/tree.png"), tree_, 0, SpriteTeamMask::None, {}, true);

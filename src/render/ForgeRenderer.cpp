@@ -23,7 +23,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     std::vector<Item> items;
     for(size_t i=0;i<s.environment.size();++i) items.push_back({s.environment[i].origin.y+s.environment[i].height-.5f,0,i});
     for(size_t i=0;i<s.landscape.decorations.size();++i) items.push_back({s.landscape.decorations[i].position.y,1,i});
-    for(size_t i=0;i<s.crystals.size();++i) items.push_back({s.crystals[i].cell.y+.5f,2,i});
+    for(size_t i=0;i<s.crystals.size();++i) items.push_back({s.crystals[i].depth(),2,i});
     items.push_back({s.hall.y+depot.height-.5f,3,0});
     std::vector<UnitSpawn> units=s.units;
     const auto& commander=editor.definitions().commanders().front();
@@ -49,7 +49,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
             const auto item=items[next++];
             if(item.kind==0) environmentObject(s.environment[item.index],map,view);
             if(item.kind==1) decoration(s.landscape.decorations[item.index],map,view);
-            if(item.kind==2) { const auto& crystal=s.crystals[item.index]; const auto p=view.project(center(crystal.cell),float(map.at(crystal.cell).height)); drawCrystal(crystal,p,view.zoom); }
+            if(item.kind==2) { const auto& crystal=s.crystals[item.index]; const auto p=view.project(crystal.center(),float(map.at(crystal.cell).height)); drawCrystal(crystal,p,view.zoom); }
             if(item.kind==3) {
                 const auto p=view.project({s.hall.x+depot.width*.5f,s.hall.y+depot.height*.5f},float(map.at(s.hall).height));
                 const auto* stage=depot.buildingSprite.stage(depot.constructionTicks,depot.constructionTicks);
@@ -77,9 +77,17 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
         if(editor.tool==EditorTool::Decoration && !editor.selected().empty()) {
             worldOpacity_=.55f; worldSprite(worldAssets_.object(editor.selected()),*at,editor.scale,editor.rotation,map,view); worldOpacity_=1;
         }
-        if(editor.tool==EditorTool::Environment && editor.selected()!="$crystal" && !editor.selected().empty()) {
-            const auto& d=worldAssets_.object(editor.selected());
-            for(int y=0;y<d.height;++y) for(int x=0;x<d.width;++x) if(map.contains(c+Cell{x,y})) polygon(map.surfaceCorners(c+Cell{x,y},view),0x9de0c1,.4f,false);
+        if(editor.tool==EditorTool::Environment && !editor.selected().empty()) {
+            const bool resource=editor.selected().starts_with("$");
+            const auto footprint=[&] {
+                if(resource) { const auto& d=worldAssets_.crystalSprite(editor.selected().substr(1)); return Cell{d.width,d.height}; }
+                const auto& d=worldAssets_.object(editor.selected()); return Cell{d.width,d.height};
+            }();
+            for(int y=0;y<footprint.y;++y) for(int x=0;x<footprint.x;++x) if(map.contains(c+Cell{x,y})) polygon(map.surfaceCorners(c+Cell{x,y},view),0x9de0c1,.4f,false);
+            if(resource) {
+                const auto node=worldAssets_.instantiateCrystal(editor.selected().substr(1),c);
+                worldOpacity_=.55f; drawCrystal(node,view.project(node.center(),float(map.at(c).height)),view.zoom); worldOpacity_=1;
+            }
         }
     }
     target_->PopAxisAlignedClip();

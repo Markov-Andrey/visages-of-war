@@ -146,9 +146,9 @@ std::optional<rts::Cell> GameApplication::pickCommandTarget() const {
         }
     }
     for (const auto& crystal : game_.crystals()) {
-        if (crystal.remaining <= 0 || !game_.fog().visible(crystal.cell)) continue;
+        if (crystal.remaining <= 0 || !game_.crystalVisible(crystal)) continue;
         if (rts::crystalBounds(game_, crystal, view_).contains(mouse_)) {
-            const float depth = crystal.cell.y + .5f;
+            const float depth = crystal.depth();
             if (depth >= nearestDepth) { nearestDepth = depth; result = crystal.cell; }
         }
     }

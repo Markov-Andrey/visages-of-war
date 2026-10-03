@@ -1,25 +1,66 @@
 {
-  "icons": {
-    "crystal": "ui/resources/crystal/icon.png",
-    "supply": "ui/resources/supply/icon.png"
-  },
-  "crystal": {
-    "image": "sprites/resources/crystal/variants.png",
-    "scale": 0.24,
-    "glowColor": "ff713c",
-    "variants": [
-      { "source": [102, 61, 235, 280], "anchor": [117.5, 266] },
-      { "source": [469, 61, 248, 287], "anchor": [124, 273] },
-      { "source": [872, 49, 232, 305], "anchor": [116, 291] },
-      { "source": [1263, 100, 212, 236], "anchor": [106, 222] },
-      { "source": [101, 395, 195, 261], "anchor": [97.5, 247] },
-      { "source": [480, 446, 243, 202], "anchor": [121.5, 188] },
-      { "source": [869, 393, 222, 268], "anchor": [111, 254] },
-      { "source": [1241, 426, 211, 236], "anchor": [105.5, 222] },
-      { "source": [93, 698, 240, 250], "anchor": [120, 236] },
-      { "source": [508, 682, 186, 293], "anchor": [93, 279] },
-      { "source": [862, 711, 245, 245], "anchor": [122.5, 231] },
-      { "source": [1255, 724, 194, 240], "anchor": [97, 226] }
-    ]
-  }
+  "icons": {"crystal": "ui/resources/crystal/icon.png", "supply": "ui/resources/supply/icon.png"},
+  "crystals": [
+    {
+      "id": "crystal.small",
+      "name": "Малая жила",
+      "footprint": [1, 1],
+      "capacity": 1000,
+      "image": "sprites/resources/crystal/variants.png",
+      "scale": 0.24,
+      "glowColor": "ff713c",
+      "variants": [
+        {"source": [102, 61, 235, 280], "anchor": [117.5, 266]},
+        {"source": [469, 61, 248, 287], "anchor": [124, 273]},
+        {"source": [872, 49, 232, 305], "anchor": [116, 291]},
+        {"source": [1263, 100, 212, 236], "anchor": [106, 222]},
+        {"source": [101, 395, 195, 261], "anchor": [97.5, 247]},
+        {"source": [480, 446, 243, 202], "anchor": [121.5, 188]},
+        {"source": [869, 393, 222, 268], "anchor": [111, 254]},
+        {"source": [1241, 426, 211, 236], "anchor": [105.5, 222]},
+        {"source": [93, 698, 240, 250], "anchor": [120, 236]},
+        {"source": [508, 682, 186, 293], "anchor": [93, 279]},
+        {"source": [862, 711, 245, 245], "anchor": [122.5, 231]},
+        {"source": [1255, 724, 194, 240], "anchor": [97, 226]}
+      ]
+    },
+    {
+      "id": "crystal.medium",
+      "name": "Средняя жила",
+      "footprint": [2, 2],
+      "capacity": 5500,
+      "image": "sprites/resources/crystal/medium.png",
+      "scale": 0.35,
+      "glowColor": "ff713c",
+      "variants": [
+        {"source": [62, 15, 294, 318], "anchor": [147.0, 278]},
+        {"source": [421, 54, 314, 286], "anchor": [157.0, 246]},
+        {"source": [801, 45, 346, 276], "anchor": [173.0, 236]},
+        {"source": [1196, 32, 303, 321], "anchor": [151.5, 281]},
+        {"source": [32, 339, 332, 308], "anchor": [166.0, 268]},
+        {"source": [411, 341, 350, 299], "anchor": [175.0, 259]},
+        {"source": [818, 331, 301, 299], "anchor": [150.5, 259]},
+        {"source": [1180, 354, 323, 296], "anchor": [161.5, 256]},
+        {"source": [46, 654, 311, 324], "anchor": [155.5, 284]},
+        {"source": [430, 646, 337, 332], "anchor": [168.5, 292]},
+        {"source": [837, 669, 323, 293], "anchor": [161.5, 253]},
+        {"source": [1195, 674, 303, 306], "anchor": [151.5, 266]}
+      ]
+    },
+    {
+      "id": "crystal.big",
+      "name": "Большая жила",
+      "footprint": [3, 3],
+      "capacity": 15000,
+      "image": "sprites/resources/crystal/big.png",
+      "scale": 0.26,
+      "glowColor": "ff713c",
+      "variants": [
+        {"source": [78, 8, 652, 493], "anchor": [326.0, 413]},
+        {"source": [779, 21, 702, 459], "anchor": [351.0, 379]},
+        {"source": [75, 501, 684, 506], "anchor": [342.0, 426]},
+        {"source": [808, 480, 660, 525], "anchor": [330.0, 445]}
+      ]
+    }
+  ]
 }

@@ -30,11 +30,14 @@ struct BonesSpriteDefinition {
     bool pixelArt{};
 };
 struct CrystalSpriteDefinition {
+    std::string id, name;
+    int width = 1, height = 1, capacity = 1000;
     std::filesystem::path image;
     std::vector<UnitDeathFrame> variants;
     float scale = 1;
     unsigned glowColor = 0xff713c;
 };
+struct Crystal;
 class WorldAssets {
 public:
     static WorldAssets load(const Paths& paths);
@@ -43,14 +46,16 @@ public:
     const auto& materials() const { return materials_; }
     const auto& objects() const { return objects_; }
     const BonesSpriteDefinition& bonesSprite() const { return bonesSprite_; }
-    const CrystalSpriteDefinition& crystalSprite() const { return crystalSprite_; }
+    const CrystalSpriteDefinition& crystalSprite(const std::string& id = "crystal.small") const;
+    const auto& crystalSprites() const { return crystalSprites_; }
+    Crystal instantiateCrystal(const std::string& id, Cell origin) const;
     const auto& resourceIcons() const { return resourceIcons_; }
     EnvironmentObject instantiate(const std::string& id, EntityId instance, Cell origin) const;
 private:
     std::vector<TerrainMaterial> materials_;
     std::vector<WorldObjectDefinition> objects_;
     BonesSpriteDefinition bonesSprite_;
-    CrystalSpriteDefinition crystalSprite_;
+    std::vector<CrystalSpriteDefinition> crystalSprites_;
     std::map<std::string, std::filesystem::path> resourceIcons_;
 };
 }

@@ -66,8 +66,9 @@ void rebuildScenario(Scenario& s, Cell hallFootprint) {
         else if (!m.contains(o.origin) || !m.contains(o.origin + Cell{o.width-1,o.height-1})) throw std::runtime_error("Object outside map");
     }
     for (const auto& c : s.crystals) {
-        if (c.remaining < 1 || c.remaining > Crystal::maximum) throw std::runtime_error("Invalid crystal reserve");
-        occupyFlat(m, c.cell, 1, 1, {true});
+        if (c.capacity < 1 || c.capacity > 1000000 || c.remaining < 1 || c.remaining > c.capacity ||
+            c.width < 1 || c.width > 16 || c.height < 1 || c.height > 16) throw std::runtime_error("Invalid crystal reserve or footprint");
+        occupyFlat(m, c.cell, c.width, c.height, std::vector<bool>(c.width * c.height, true));
     }
     std::set<std::pair<int,int>> workers;
     for (const auto c : [&] { auto cells=s.extraWorkers; cells.push_back(s.worker); return cells; }())
@@ -133,7 +134,11 @@ Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& asse
         if (assets.object(d.definitionId).gameplay) throw std::runtime_error("Gameplay asset used as cosmetic decoration");
         s.landscape.decorations.push_back(std::move(d));
     }
-    for (const auto& c : j.at("resources")) s.crystals.push_back({cell(c.at("cell")),c.at("remaining").get<int>()});
+    for (const auto& c : j.at("resources")) {
+        auto node = assets.instantiateCrystal(c.at("asset").get<std::string>(), cell(c.at("cell")));
+        node.remaining = c.at("remaining").get<int>();
+        s.crystals.push_back(std::move(node));
+    }
     for (const auto& u : j.at("units")) {
         const int owner=u.at("owner").get<int>(); if (owner<0 || owner>=neutralPlayer) throw std::runtime_error("Invalid unit owner");
         s.units.push_back({u.at("asset").get<std::string>(),static_cast<PlayerId>(owner),cell(u.at("cell"))});
@@ -161,7 +166,7 @@ void saveScenario(const Scenario& s, const std::filesystem::path& path) {
     for(const auto& p:s.landscape.paint) j["paint"].push_back({{"material",p.material},{"position",xy(p.position)},{"radius",p.radius},{"opacity",p.opacity},{"hardness",p.hardness},{"erase",p.erase}});
     for(const auto& o:s.environment) j["environment"].push_back({{"id",o.id},{"asset",o.definitionId.empty()?(o.kind==EnvironmentKind::Tree?"tree":o.kind==EnvironmentKind::Rock?"rock":"arch"):o.definitionId},{"cell",xy(o.origin)},{"health",o.hitPoints}});
     for(const auto& d:s.landscape.decorations) j["decorations"].push_back({{"id",d.id},{"asset",d.definitionId},{"position",xy(d.position)},{"scale",d.scale},{"rotation",d.rotation}});
-    for(const auto& c:s.crystals) j["resources"].push_back({{"cell",xy(c.cell)},{"remaining",c.remaining}});
+    for(const auto& c:s.crystals) j["resources"].push_back({{"asset",c.definitionId},{"cell",xy(c.cell)},{"remaining",c.remaining}});
     for(const auto& u:s.units) j["units"].push_back({{"asset",u.definitionId},{"owner",u.owner},{"cell",xy(u.cell)}});
     auto temporary=path; temporary+=L".writing";
     { std::ofstream output(temporary,std::ios::binary|std::ios::trunc); output<<std::setw(2)<<j<<'\n'; output.flush(); if(!output) throw std::runtime_error("Cannot write map; original file preserved"); }

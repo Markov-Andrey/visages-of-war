@@ -241,8 +241,8 @@ void GameApplication::exerciseInterface() {
     if (cursorKind() != rts::CursorKind::Blocked) throw std::runtime_error("Smoke: blocked cursor failed");
     ui_.placement.clear();
     bool gatherCursor = false;
-    for (const auto& crystal : game_.crystals()) if (game_.fog().visible(crystal.cell)) {
-        mouse_ = view_.project(rts::center(crystal.cell), float(game_.map().at(crystal.cell).height)) + rts::Vec2{0, -12};
+    for (const auto& crystal : game_.crystals()) if (game_.crystalVisible(crystal)) {
+        mouse_ = view_.project(crystal.center(), float(game_.map().at(crystal.cell).height)) + rts::Vec2{0, -12};
         if (mouseInWorld() && cursorKind() == rts::CursorKind::Gather) { gatherCursor = true; break; }
     }
     if (!gatherCursor) throw std::runtime_error("Smoke: gather cursor failed");
@@ -263,7 +263,7 @@ void GameApplication::exerciseInterface() {
         mouse_ = p;
         if (!mouseInWorld() || rts::pickEntity(game_, view_, p) != node.id) continue;
         click(p);
-        if (!selectedCrystal() || selectedCrystal()->id != node.id || selectedCrystal()->remaining != rts::Crystal::maximum || cursorKind() != rts::CursorKind::Select)
+        if (!selectedCrystal() || selectedCrystal()->id != node.id || selectedCrystal()->remaining != node.capacity || cursorKind() != rts::CursorKind::Select)
             throw std::runtime_error("Smoke: neutral crystal selection failed");
         const auto message = game_.message();
         onMessage(WM_RBUTTONDOWN, 0, at(p)); action(1);

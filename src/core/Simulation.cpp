@@ -12,7 +12,10 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
     if (scenario_.playerSlots != 1 || player_.id != 0) throw std::invalid_argument("Invalid match setup");
     for (const auto& object : scenario_.environment) nextId_ = std::max(nextId_, object.id + 1);
     for (const auto& node : crystals())
-        if (node.remaining < 0 || node.remaining > Crystal::maximum) throw std::invalid_argument("Crystal reserve must be in [0, 1000]");
+        if (node.capacity < 1 || node.capacity > 1000000 || node.remaining < 0 || node.remaining > node.capacity ||
+            node.width < 1 || node.width > 16 || node.height < 1 || node.height > 16 ||
+            !map().contains(node.cell) || !map().contains(node.cell + Cell{node.width - 1, node.height - 1}))
+            throw std::invalid_argument("Invalid crystal reserve or footprint");
     if (std::none_of(entityTypes_.begin(), entityTypes_.end(), [&](const auto& type) { return type.id == workerType_.id; })) entityTypes_.push_back(workerType_);
     if (std::none_of(entityTypes_.begin(), entityTypes_.end(), [](const auto& type) { return type.constructible && type.acceptsCargo; })) {
         EntityDefinition depot;
@@ -47,6 +50,11 @@ const Unit* Simulation::hero() const {
 }
 const Building* Simulation::building(EntityId id) const { for (const auto& b : buildings_) if (b.id == id) return &b; return nullptr; }
 const Crystal* Simulation::crystal(EntityId id) const { for (const auto& node : crystals()) if (node.id == id) return &node; return nullptr; }
+bool Simulation::crystalVisible(const Crystal& node) const {
+    for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
+        if (fog_.visible(node.cell + Cell{x, y})) return true;
+    return false;
+}
 Unit* Simulation::mutableUnit(EntityId id) { for (auto& u : units_) if (u.id == id) return &u; return nullptr; }
 Building* Simulation::mutableBuilding(EntityId id) { for (auto& b : buildings_) if (b.id == id) return &b; return nullptr; }
 const Building* Simulation::buildingAt(Cell c) const { for (const auto& b : buildings_) if (b.contains(c)) return &b; return nullptr; }
@@ -117,7 +125,7 @@ void Simulation::updateVision() {
         sources.push_back({b.origin + Cell{b.definition.width / 2, b.definition.height / 2}, radius});
     }
     fog_.update(map(), sources);
-    for (size_t i = 0; i < crystals().size(); ++i) if (fog_.visible(crystals()[i].cell)) knownCrystals_[i] = crystals()[i].remaining;
+    for (size_t i = 0; i < crystals().size(); ++i) if (crystalVisible(crystals()[i])) knownCrystals_[i] = crystals()[i].remaining;
     for (size_t i = 0; i < environment().size(); ++i) if (environmentVisible(i)) knownEnvironment_[i] = environment()[i].active();
 }
 void Simulation::tick() {
