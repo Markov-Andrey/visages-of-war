@@ -1,7 +1,7 @@
 {
   "bones": {
     "image": "sprites/remains/bones.png",
-    "scale": 0.14,
+    "scale": 0.12,
     "pixelArt": false,
     "variants": [
       {"source": [47, 84, 474, 263], "anchor": [237, 223.55]},

@@ -58,10 +58,10 @@ struct Unit {
     int experienceToLevel() const { return hero && !atMaxLevel() ? hero->rules->thresholds[level()] - hero->rules->thresholds[level() - 1] : 0; }
     float experienceFraction() const { return atMaxLevel() ? 1.0f : experienceToLevel() ? float(experienceInLevel()) / experienceToLevel() : 0.0f; }
 };
-enum class CorpsePhase { Body, Sinking, Vanishing };
+enum class CorpsePhase { Body, Fading, Vanishing };
 struct Corpse {
     static constexpr int lifetimeTicks = 60 * simulationTicksPerSecond;
-    static constexpr int sinkTicks = 2 * simulationTicksPerSecond;
+    static constexpr int fadeTicks = 2 * simulationTicksPerSecond;
     static constexpr int vanishTicks = simulationTicksPerSecond;
     Vec2 position;
     Cell cell;
@@ -77,7 +77,7 @@ struct Corpse {
 };
 struct Bones {
     static constexpr int lifetimeTicks = 300 * simulationTicksPerSecond;
-    static constexpr int sinkTicks = 2 * simulationTicksPerSecond;
+    static constexpr int fadeTicks = 2 * simulationTicksPerSecond;
     EntityId id{}, sourceUnit{}, sourceCorpse{};
     Vec2 position;
     Cell cell;
@@ -85,7 +85,7 @@ struct Bones {
     PlayerId owner = neutralPlayer;
     std::uint32_t variation{}; // Chosen once; renderer maps it to the catalog's variants.
     int remainingTicks = lifetimeTicks;
-    bool sinking{};
+    bool fading{};
 };
 struct ProductionJob {
     std::string definitionId;

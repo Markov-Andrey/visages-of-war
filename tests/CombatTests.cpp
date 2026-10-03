@@ -129,8 +129,8 @@ void combatTests(TestSuite& test, const TestContext& context) {
         ticks(game, 60 * rts::Simulation::ticksPerSecond - 1);
         require(game.corpses().size() == 2 && game.corpses().front().remainingTicks == 1, "Corpse disappeared before 60 seconds");
         game.tick();
-        require(game.corpses().front().phase == rts::CorpsePhase::Sinking && game.bones().empty(), "Body did not begin sinking after sixty seconds");
-        ticks(game, rts::Corpse::sinkTicks);
+        require(game.corpses().front().phase == rts::CorpsePhase::Fading && game.bones().empty(), "Body did not begin fading after sixty seconds");
+        ticks(game, rts::Corpse::fadeTicks);
         require(game.corpses().empty() && game.bones().size() == 2, "Bodies did not become bones");
         const auto pile = game.bones().front();
         require(pile.owner == rts::neutralPlayer && pile.remainingTicks == rts::Bones::lifetimeTicks && game.bones(pile.id),
@@ -139,11 +139,11 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(std::count_if(transitions.begin(), transitions.end(), [](const auto& e) { return std::holds_alternative<rts::BonesCreated>(e); }) == 2,
             "Bones creation events missing");
         ticks(game, rts::Bones::lifetimeTicks - 1);
-        require(game.bones(pile.id)->remainingTicks == 1 && !game.bones(pile.id)->sinking && game.bones(pile.id)->variation == pile.variation,
+        require(game.bones(pile.id)->remainingTicks == 1 && !game.bones(pile.id)->fading && game.bones(pile.id)->variation == pile.variation,
             "Bones changed art, ID or expired before five minutes");
         game.tick();
-        require(game.bones(pile.id)->sinking && game.bones(pile.id)->remainingTicks == rts::Bones::sinkTicks, "Bones skipped their sinking phase");
-        ticks(game, rts::Bones::sinkTicks);
+        require(game.bones(pile.id)->fading && game.bones(pile.id)->remainingTicks == rts::Bones::fadeTicks, "Bones skipped their fading phase");
+        ticks(game, rts::Bones::fadeTicks);
         require(game.bones().empty() && !game.bones(pile.id), "Bones were not finally removed");
     });
     test("Decomposing ground and flying casualties retain ownership, then leave neutral passable bones", [&] {
@@ -170,8 +170,8 @@ void combatTests(TestSuite& test, const TestContext& context) {
             require(game.corpses().size() == 1 && game.corpses().front().ageTicks() == 60 * rts::Simulation::ticksPerSecond - 1,
                 "Corpse expired before the default sixty seconds");
             game.tick();
-            require(game.corpse(body.id)->phase == rts::CorpsePhase::Sinking && game.corpse(body.id)->owner == 1, "Sinking body changed ownership");
-            ticks(game, rts::Corpse::sinkTicks);
+            require(game.corpse(body.id)->phase == rts::CorpsePhase::Fading && game.corpse(body.id)->owner == 1, "Fading body changed ownership");
+            ticks(game, rts::Corpse::fadeTicks);
             require(game.corpses().empty() && !game.corpse(body.id) && game.bones().size() == 1, "Body-to-bones transition failed");
             const auto& pile = game.bones().front();
             require(pile.id != body.id && pile.sourceCorpse == body.id && pile.sourceUnit == enemy && pile.owner == rts::neutralPlayer &&
@@ -193,7 +193,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             const int duration = game.corpses().front().remainingTicks;
             ticks(game, duration - 1); require(game.corpses().size() == 1, "Disappearance animation ended too early");
             game.tick(); require(game.corpses().empty() && game.bones().empty(), "Non-decomposing unit left remains");
-            ticks(game, rts::Corpse::lifetimeTicks + rts::Corpse::sinkTicks);
+            ticks(game, rts::Corpse::lifetimeTicks + rts::Corpse::fadeTicks);
             require(game.bones().empty(), "A vanished unit created delayed bones");
             const auto events = game.takeEvents();
             require(std::none_of(events.begin(), events.end(), [](const auto& e) {

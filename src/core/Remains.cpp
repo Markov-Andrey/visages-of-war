@@ -39,7 +39,7 @@ void Simulation::leaveRemains(const Unit& unit) {
 void Simulation::tickRemains() {
     // Existing bones age first, so a newly created pile receives all 300 seconds.
     for (auto& pile : bones_) if (--pile.remainingTicks == 0) {
-        if (!pile.sinking) { pile.sinking = true; pile.remainingTicks = Bones::sinkTicks; }
+        if (!pile.fading) { pile.fading = true; pile.remainingTicks = Bones::fadeTicks; }
         else events_.emplace_back(RemainsRemoved{pile.id});
     }
     std::erase_if(bones_, [](const Bones& pile) { return pile.remainingTicks <= 0; });
@@ -47,10 +47,10 @@ void Simulation::tickRemains() {
         ++body.elapsedTicks;
         if (--body.remainingTicks > 0) continue;
         if (body.phase == CorpsePhase::Body) {
-            body.phase = CorpsePhase::Sinking; body.remainingTicks = Corpse::sinkTicks;
+            body.phase = CorpsePhase::Fading; body.remainingTicks = Corpse::fadeTicks;
             continue;
         }
-        if (body.phase == CorpsePhase::Sinking) {
+        if (body.phase == CorpsePhase::Fading) {
             Bones pile;
             pile.id = nextId_++; pile.sourceUnit = body.sourceUnit; pile.sourceCorpse = body.id;
             pile.position = body.position; pile.cell = body.cell; pile.height = body.height;
