@@ -6,9 +6,10 @@ namespace rts::render {
 template<class T> using ComPtr = Microsoft::WRL::ComPtr<T>;
 DirectionalSpriteRecipe directionalRecipe(const Paths& paths, const UnitSpriteDefinition& sprite) {
     auto recipe = loadDirectionalSpriteRecipe(paths, sprite.directionRecipe);
-    if (recipe.width != sprite.frameWidth || recipe.height != sprite.frameHeight ||
-        recipe.pivot != Vec2{sprite.anchor.x * recipe.width, sprite.anchor.y * recipe.height})
-        throw std::runtime_error("Directional recipe canvas/pivot disagrees with unit sprite");
+    if (recipe.width != sprite.frameWidth || recipe.height != sprite.frameHeight)
+        throw std::runtime_error("Directional recipe canvas disagrees with unit sprite");
+    // The recipe pivot aligns source frames during synthesis. The sprite anchor
+    // independently places the finished artwork relative to the selection ring.
     return recipe;
 }
 SpritePixels loadDirectionalSprite(const Paths& paths, IWICImagingFactory* wic, const UnitSpriteDefinition& sprite, unsigned color) {

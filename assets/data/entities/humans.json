@@ -162,7 +162,7 @@
         ],
         "anchor": [
           0.5,
-          0.875
+          0.84375
         ],
         "rows": [
           0,
@@ -205,7 +205,7 @@
               ],
               "anchor": [
                 256,
-                448
+                336
               ]
             },
             {
@@ -217,7 +217,7 @@
               ],
               "anchor": [
                 256,
-                448
+                336
               ]
             },
             {
@@ -229,7 +229,7 @@
               ],
               "anchor": [
                 256,
-                448
+                272
               ]
             },
             {
@@ -241,7 +241,7 @@
               ],
               "anchor": [
                 256,
-                448
+                256
               ]
             }
           ]
@@ -249,7 +249,7 @@
         "portraitMask": "sprites/units/peacemaker/peacemaker-portrait-mask.png",
         "iconMask": "sprites/units/peacemaker/peacemaker-icon-mask.png"
       },
-      "library": false
+      "library": true
     },
     {
       "id": "human.hero",

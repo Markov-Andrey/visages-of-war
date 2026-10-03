@@ -81,6 +81,7 @@ add_library(rts_render
     src/render/SceneRenderer.cpp
     src/render/HudRenderer.cpp
     src/render/SelectionRenderer.cpp
+    src/render/SelectionRingRenderer.cpp
     src/render/PortraitRenderer.cpp
     src/render/MinimapRenderer.cpp
     src/render/MenuRenderer.cpp

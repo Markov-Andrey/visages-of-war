@@ -79,6 +79,7 @@ private:
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
     void hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid);
     void drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info);
+    void drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color);
     void drawPortraitBackdrop(UiRect bounds, unsigned color);
     void drawUnitStats(const Unit& unit, UiRect bounds, std::uint64_t tick);
     void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14);
@@ -101,6 +102,7 @@ private:
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitUiImages_;
     std::map<unsigned, ComPtr<ID2D1RadialGradientBrush>> portraitGradients_;
+    std::map<std::tuple<unsigned, int, int>, ComPtr<ID2D1Bitmap>> selectionRings_;
     // CPU atlases survive target recreation; cleared on explicit asset reload.
     std::map<std::pair<std::string, unsigned>, SpritePixels> directionalSheets_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;

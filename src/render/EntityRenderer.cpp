@@ -131,8 +131,7 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
     brush_->SetColor(D2D1::ColorF(0, .35f));
     target_->FillEllipse(D2D1::Ellipse(point(shadow), 16 * view.zoom, 7 * view.zoom), brush_.Get());
     if (u.hero) {
-        brush_->SetColor(D2D1::ColorF(0xe0c276));
-        target_->DrawEllipse(D2D1::Ellipse(point(p), 27 * view.zoom, 13 * view.zoom), brush_.Get(), 2);
+        if (!selected) drawSelectionRing(p, 27, 13, view.zoom, 0xe0c276);
         text(L"" + std::to_wstring(u.level()), rect(p.x + 27 * view.zoom, p.y - 57 * view.zoom, 38, 24), 0xe0c276);
     }
     if (selected) {
@@ -142,8 +141,7 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
             brush_->SetColor(D2D1::ColorF(color));
             target_->FillEllipse(D2D1::Ellipse(point(shadow), 2.5f * view.zoom, 2.5f * view.zoom), brush_.Get());
         }
-        brush_->SetColor(D2D1::ColorF(color));
-        target_->DrawEllipse(D2D1::Ellipse(point(p), 23 * view.zoom, 11 * view.zoom), brush_.Get(), 2);
+        drawSelectionRing(p, u.hero ? 27 : 23, u.hero ? 13 : 11, view.zoom, color);
     }
     const auto frame = unitFrame(u);
     unitImage(u.definition.sprite, frame.column, frame.row, p, view.zoom, u.owner == game.player().id ? teamColor_ : enemyColor_);

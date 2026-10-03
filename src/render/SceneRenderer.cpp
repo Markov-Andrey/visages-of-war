@@ -71,8 +71,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                 if (!onScreen(p)) break;
                 worldOpacity_ = game.fog().visible(crystal.cell) ? 1.0f : .3f;
                 if (ui.selection.contains(crystal.id) && game.fog().visible(crystal.cell)) {
-                    brush_->SetColor(D2D1::ColorF(selectionColor(crystal.owner, game.player().id)));
-                    target_->DrawEllipse(D2D1::Ellipse(point(p + Vec2{0, -5} * view.zoom), 34 * view.zoom, 16 * view.zoom), brush_.Get(), 2);
+                    drawSelectionRing(p + Vec2{0, -5} * view.zoom, 34, 16, view.zoom,
+                        selectionColor(crystal.owner, game.player().id));
                 }
                 auto* emission = game.fog().visible(crystal.cell) ? spriteLights_.at(crystal_.Get()).highlights.Get() : nullptr;
                 if (emission) drawLightGlow(p + Vec2{0, -22} * view.zoom, 46 * view.zoom, 0xbd8fff,

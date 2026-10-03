@@ -122,8 +122,9 @@ void dataTests(TestSuite& test, const TestContext& context) {
     test("Library publishes selected catalog entries grouped by faction", [&] {
         CatalogFixture fixture(assets);
         auto defs = fixture.load();
-        require(rts::libraryFactions(defs).size() == 1 && rts::libraryEntries(defs, "humans").size() == 1 &&
-            rts::libraryEntries(defs, "humans").front()->id == "human.hall", "Initial library includes unfinished entries");
+        const auto published = rts::libraryEntries(defs, "humans");
+        require(rts::libraryFactions(defs).size() == 1 && published.size() == 2 &&
+            published[0]->id == "human.peacemaker" && published[1]->id == "human.hall", "Library lost its published entries or includes unfinished ones");
         fixture.catalog["factions"].push_back({{"id", "forest"}, {"name", "Лес"}, {"description", "Test faction"}});
         fixture.catalog["factions"].push_back({{"id", "empty"}, {"name", "Пусто"}, {"description", "Test faction"}});
         auto entity = fixture.entities["entities"][0];
@@ -248,7 +249,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(art.frames.size() == 6 && !art.teamMask.empty(), "Valeri lost six-frame masked rally art");
         for (std::uint64_t tick = 0; tick < 96; ++tick)
             require(&art.frame(tick) == &art.frames[(tick / 8) % 6], "Rally skipped, reordered or failed to loop a frame");
-        require(rts::libraryEntries(defs, "humans").size() == 1, "Rally marker became a library entry");
+        require(rts::libraryEntries(defs, "humans").size() == 2, "Rally marker became a library entry");
         const auto original = fixture.commanders["commanders"][0]["rallySprite"];
         const auto rejects = [&](const std::function<void(Json&)>& change) {
             auto invalid = original; change(invalid);
