@@ -82,7 +82,8 @@ private:
     void drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color);
     void drawPortraitBackdrop(UiRect bounds, unsigned color);
     void drawUnitStats(const Unit& unit, UiRect bounds, std::uint64_t tick);
-    void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14);
+    void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14, bool beveled = false);
+    void drawHealthBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
     void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected);
     void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row);
@@ -103,6 +104,7 @@ private:
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitUiImages_;
     std::map<unsigned, ComPtr<ID2D1RadialGradientBrush>> portraitGradients_;
     std::map<std::tuple<unsigned, int, int>, ComPtr<ID2D1Bitmap>> selectionRings_;
+    std::array<ComPtr<ID2D1LinearGradientBrush>, 3> healthBarGradients_;
     // CPU atlases survive target recreation; cleared on explicit asset reload.
     std::map<std::pair<std::string, unsigned>, SpritePixels> directionalSheets_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;

@@ -6,9 +6,10 @@
 #include "rts/CommandUi.hpp"
 
 namespace rts {
+inline constexpr unsigned friendlySelectionColor = 0x75dc91;
 inline unsigned selectionColor(PlayerId owner, PlayerId player) {
     if (owner == neutralPlayer) return 0xffd34d;
-    return owner == player ? 0x75dc91 : 0xe86464;
+    return owner == player ? friendlySelectionColor : 0xe86464;
 }
 inline UiRect buildingStageBounds(const BuildingSpriteStage& stage, float scale, Vec2 ground, float zoom) {
     const Vec2 extent = Vec2{float(stage.source[2]), float(stage.source[3])} * (scale * zoom);

@@ -116,11 +116,8 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
     }
     if (selected || !b.complete()) {
         const float y = (stage || b.complete()) ? bounds.y - 12 : p.y - 100 * z;
-        brush_->SetColor(D2D1::ColorF(0x10232b));
-        target_->FillRectangle(rect(p.x - 48, y, 96, 6), brush_.Get());
-        const float progress = b.complete() ? float(b.health) / type.maximumHealth : float(b.constructionProgress) / type.constructionTicks;
-        brush_->SetColor(D2D1::ColorF(b.complete() ? selectionColor(b.owner, game.player().id) : 0xe3be79));
-        target_->FillRectangle(rect(p.x - 48, y, 96 * progress, 6), brush_.Get());
+        drawHealthBar(b.health, type.maximumHealth, 0, {p.x - 48, y, 96, 6},
+            selectionColor(b.owner, game.player().id), true);
     }
 }
 
@@ -151,10 +148,10 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
     }
     if (selected || u.hero || u.owner != game.player().id || u.health < u.maximumHealth()) {
         // Taller authored art needs its bar above the same bounds used for picking.
-        const float barHeight = std::max(3.0f, 4 * view.zoom);
+        const float barHeight = std::max(4.0f, 6 * view.zoom);
         const float barY = std::min(p.y - 59 * view.zoom, unitBounds(game, u, view).y - std::max(7 * view.zoom, barHeight * .5f + 2));
         drawHealthBar(u, {p.x - 21 * view.zoom, barY - barHeight * .5f, 42 * view.zoom, barHeight},
-            game.clock().elapsedTicks(), selectionColor(u.owner, game.player().id));
+            game.clock().elapsedTicks(), selectionColor(u.owner, game.player().id), true);
     }
 }
 }
