@@ -105,7 +105,8 @@ bool GameApplication::colorSelectKey(WPARAM key) {
 }
 
 const rts::Building* GameApplication::selectedBuilding() const {
-    return ui_.selection.ids.size() == 1 ? game_.building(ui_.selection.ids.front()) : nullptr;
+    const auto* building = ui_.selection.ids.size() == 1 ? game_.building(ui_.selection.ids.front()) : nullptr;
+    return building && building->owner == game_.player().id && rts::selectableEntity(game_, building->id) ? building : nullptr;
 }
 
 const rts::Crystal* GameApplication::selectedCrystal() const {
@@ -132,7 +133,7 @@ void GameApplication::rightClick(std::optional<rts::Cell> target) {
     if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu) { clearCommandMode(); return; }
     if (!target || selectedCrystal()) return;
     if (const auto* b = selectedBuilding()) game_.setRally(b->id, *target);
-    else game_.command(ui_.selection.ids, *target);
+    else if (ui_.selection.activeUnit(game_)) game_.command(ui_.selection.ids, *target);
 }
 
 std::optional<rts::Cell> GameApplication::pickCommandTarget() const {

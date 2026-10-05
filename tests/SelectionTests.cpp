@@ -3,6 +3,92 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Enemy and neutral units can only be inspected singly and never become command recipients", [] {
+        rts::EntityDefinition worker;
+        worker.dayVision = worker.nightVision = 12;
+        worker.maximumMana = 100;
+        worker.abilities = {{1, "Dummy", "", 10, 150}};
+        rts::Scenario scene{rts::Map(40, 32), {1, 1}, {8, 8}, {}};
+        scene.extraWorkers = {{10, 8}};
+        scene.units = {{worker.id, 1, {14, 8}}, {worker.id, 1, {18, 8}},
+            {worker.id, rts::neutralPlayer, {14, 12}}, {worker.id, 1, {35, 25}}};
+        rts::Simulation game(std::move(scene), {}, worker, {worker});
+        const rts::WorldView view{{90, 70}, .8f};
+        const auto point = [&](rts::EntityId id) {
+            const auto b = rts::unitBounds(game, *game.unit(id), view);
+            return rts::Vec2{b.x + b.width * .5f, b.y + b.height * .5f};
+        };
+        rts::GameplayUi ui;
+        const auto friendly = game.worker().id, enemy = game.units()[2].id;
+        for (size_t index : {size_t{2}, size_t{3}, size_t{4}}) {
+            const auto& foreign = game.units()[index];
+            ui.selection.ids = {friendly};
+            ui.selection.click(game, view, point(foreign.id), true);
+            require(ui.selection.ids == std::vector{foreign.id} && ui.selection.inspectedUnit(game) == &foreign &&
+                !ui.selection.activeUnit(game) && ui.selection.groups(game).empty(), "Inspection mixed owners or hid foreign stats");
+            for (size_t slot = 0; slot < rts::commandSlots; ++slot)
+                require(!rts::unitCommandVisible(game, ui, slot) && !rts::abilityCommandAt(game, ui, slot), "Foreign command or ability was exposed");
+            const auto state = foreign.state;
+            require(!game.activateAbility(foreign.id, 1) && !game.order(ui.selection.ids, rts::OrderKind::Move, {20, 20}),
+                "Inspected foreign unit accepted a command");
+            game.stop(ui.selection.ids);
+            require(foreign.mana == 100 && foreign.state == state && foreign.abilityCooldown(1) == 0, "Inspection changed foreign runtime state");
+            ui.controlGroups.bind(0, game, ui.selection);
+            require(ui.controlGroups.members(0).empty(), "Inspection entered an army control group");
+            require(!ui.selection.selectTypeInView(game, view, {0, 0, 2000, 2000}, point(foreign.id), true) &&
+                ui.selection.ids == std::vector{foreign.id}, "Foreign double click selected multiple units");
+            ui.selection.click(game, view, point(friendly), true);
+            require(ui.selection.ids == std::vector{friendly}, "Shift click mixed a friendly unit with inspection");
+        }
+        ui.selection.ids = {enemy};
+        ui.selection.box(game, view, {0, 0, 2000, 2000}, true);
+        require(ui.selection.ids == std::vector{friendly, game.units()[1].id}, "Box selection retained or added foreign units");
+        const auto hidden = game.units().back().id;
+        require(!rts::selectableEntity(game, hidden) && rts::pickEntity(game, view, point(hidden)) != hidden, "Hidden enemy was selectable");
+        ui.selection.ids = {enemy};
+        auto& fog = const_cast<rts::FogOfWar&>(game.fog());
+        fog.update(game.map(), {});
+        require(!ui.selection.inspectedUnit(game) && rts::pickEntity(game, view, point(enemy)) != enemy, "Inspection leaked through fog");
+        ui.selection.prune(game);
+        require(ui.selection.ids.empty(), "Enemy stayed selected after leaving vision");
+    });
+    test("Foreign building inspection uses the entire visible footprint and rejects commands", [] {
+        rts::Simulation game({rts::Map(24, 24), {2, 2}, {7, 7}, {}});
+        // Configure a foreign runtime fixture; authored maps currently only spawn the player's depot.
+        auto& building = const_cast<rts::Building&>(game.buildings().front());
+        auto& fog = const_cast<rts::FogOfWar&>(game.fog());
+        const auto edge = building.origin + rts::Cell{building.definition.width - 1, building.definition.height - 1};
+        fog.update(game.map(), std::array{rts::VisionSource{edge, 0, true}});
+        require(!game.fog().visible(building.origin) && rts::buildingVisible(game, building), "Footprint visibility only checked the origin");
+        const rts::WorldView view{{200, 180}, 1};
+        const auto b = rts::buildingBounds(game, building, view);
+        const rts::Vec2 point{b.x + b.width * .5f, b.y + b.height * .5f};
+        rts::Selection selection;
+        for (rts::PlayerId owner : {rts::PlayerId{1}, rts::neutralPlayer}) {
+            building.owner = owner;
+            selection.ids = {game.worker().id};
+            selection.click(game, view, point, true);
+            require(selection.ids == std::vector{building.id} && rts::selectableEntity(game, building.id), "Foreign building did not replace army selection");
+            const auto rally = building.rally;
+            const int balance = game.storedCrystals();
+            require(!game.train(building.id) && !game.setRally(building.id, {10, 10}) && !game.cancelTraining(building.id),
+                "Foreign building accepted production or rally control");
+            require(building.rally == rally && game.storedCrystals() == balance && building.production.empty(), "Foreign building command changed state");
+            building.constructionProgress = 0;
+            require(!game.cancelConstruction(building.id), "Foreign construction could be cancelled");
+            game.command(std::array{game.worker().id}, building.origin);
+            require(game.worker().state != rts::UnitState::ToBuild && game.worker().targetBuilding != building.id,
+                "Player worker tried to finish foreign construction");
+            building.constructionProgress = building.definition.constructionTicks;
+        }
+        fog.update(game.map(), {});
+        require(!rts::selectableEntity(game, building.id) && rts::pickEntity(game, view, point) != building.id, "Hidden building stayed inspectable");
+        selection.prune(game);
+        require(selection.ids.empty(), "Building stayed selected after leaving vision");
+        fog.update(game.map(), std::array{rts::VisionSource{edge, 0, true}});
+        building.health = 0;
+        require(!rts::selectableEntity(game, building.id) && rts::pickEntity(game, view, point) != building.id, "Destroyed building stayed selectable");
+    });
     test("HUD notifications expire after four real seconds and repeated messages restart the timer", [] {
         using namespace std::chrono;
         const rts::GameplayNotification::Clock::time_point began{};

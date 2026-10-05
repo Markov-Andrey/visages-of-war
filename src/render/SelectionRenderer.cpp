@@ -51,7 +51,7 @@ void Renderer::drawUnitStats(const Unit& unit, UiRect b) {
 }
 
 void Renderer::drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info) {
-    const auto* unit = selection.activeUnit(game);
+    const auto* unit = selection.inspectedUnit(game);
     if (!unit) return;
     const SelectionPanelLayout layout(info);
     const auto p = layout.portrait;
@@ -63,7 +63,7 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
     buttonFrame(p);
     portraitVitals(layout, unit->health, unit->maximumHealth(), 0x9dd7b0, unit->mana, unit->maximumMana());
     const SelectionCards cards(game, selection, info);
-    if (cards.total == 1) {
+    if (cards.total <= 1) {
         drawUnitStats(*unit, layout.content);
         return;
     }

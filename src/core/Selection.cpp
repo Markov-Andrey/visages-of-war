@@ -1,6 +1,25 @@
 #include "rts/GameplayUi.hpp"
 
 namespace rts {
+namespace {
+bool onlyPlayerUnits(const Simulation& game, std::span<const EntityId> ids) {
+    return std::all_of(ids.begin(), ids.end(), [&](EntityId id) {
+        const auto* unit = game.unit(id);
+        return unit && unit->owner == game.player().id;
+    });
+}
+}
+bool buildingVisible(const Simulation& game, const Building& building) {
+    for (int y = 0; y < building.definition.height; ++y) for (int x = 0; x < building.definition.width; ++x)
+        if (game.fog().visible(building.origin + Cell{x, y})) return true;
+    return false;
+}
+bool selectableEntity(const Simulation& game, EntityId id) {
+    if (const auto* unit = game.unit(id)) return unit->health > 0 && game.fog().visible(unit->cell);
+    if (const auto* building = game.building(id)) return building->health > 0 && buildingVisible(game, *building);
+    const auto* crystal = game.crystal(id);
+    return crystal && crystal->remaining > 0 && game.crystalVisible(*crystal);
+}
 void Selection::army(const Simulation& game) {
     activeType_.clear();
     ids.clear();
@@ -43,11 +62,11 @@ std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view
     }
     for (const auto& b : game.buildings()) {
         const float d = buildingDepth(b);
-        if (b.owner == game.player().id && buildingBounds(game, b, view).contains(point) && d >= depth) { result = b.id; depth = d; }
+        if (b.health > 0 && buildingVisible(game, b) && buildingBounds(game, b, view).contains(point) && d >= depth) { result = b.id; depth = d; }
     }
     for (const auto& u : game.units()) {
         const float d = unitDrawDepth(u.position) + (airborne(u.definition.movement) ? 1000.0f : 0);
-        if (u.owner == game.player().id && game.fog().visible(u.cell) && unitBounds(game, u, view).contains(point) && d >= depth) { result = u.id; depth = d; }
+        if (u.health > 0 && game.fog().visible(u.cell) && unitBounds(game, u, view).contains(point) && d >= depth) { result = u.id; depth = d; }
     }
     return result;
 }
@@ -56,20 +75,25 @@ void Selection::click(const Simulation& game, const WorldView& view, Vec2 point,
     const auto id = pickEntity(game, view, point);
     if (!additive) ids.clear();
     if (!id) return;
+    const auto* unit = game.unit(*id);
+    // Foreign units, buildings and resources are inspected singly, never mixed with an army.
+    if (!unit) {
+        if (additive && ids.size() == 1 && ids.front() == *id) ids.clear();
+        else ids = {*id};
+        return;
+    }
+    if (unit->owner != game.player().id) { ids = {*id}; return; }
+    if (!onlyPlayerUnits(game, ids)) ids.clear();
     const auto it = std::find(ids.begin(), ids.end(), *id);
     if (it != ids.end()) ids.erase(it);
-    else {
-        // Buildings and neutral resources are selected singly, outside mobile groups.
-        if (!game.unit(*id) || (!ids.empty() && !game.unit(ids.front()))) ids.clear();
-        ids.push_back(*id);
-    }
+    else ids.push_back(*id);
 }
 bool Selection::selectTypeInView(const Simulation& game, const WorldView& view, UiRect viewport, Vec2 point, bool additive) {
     if (!viewport.contains(point)) return false;
     const auto id = pickEntity(game, view, point);
     const auto* clicked = id ? game.unit(*id) : nullptr;
     if (!clicked || clicked->owner != game.player().id || clicked->health <= 0) return false;
-    if (!additive || (!ids.empty() && !game.unit(ids.front()))) ids.clear();
+    if (!additive || !onlyPlayerUnits(game, ids)) ids.clear();
     activeType_ = clicked->definition.id;
     for (const auto& unit : game.units()) {
         if (unit.owner != game.player().id || unit.health <= 0 || unit.definition.id != clicked->definition.id ||
@@ -82,18 +106,14 @@ bool Selection::selectTypeInView(const Simulation& game, const WorldView& view, 
 }
 void Selection::box(const Simulation& game, const WorldView& view, UiRect bounds, bool additive) {
     activeType_.clear();
-    if (!additive || (!ids.empty() && !game.unit(ids.front()))) ids.clear();
+    if (!additive || !onlyPlayerUnits(game, ids)) ids.clear();
     for (const auto& u : game.units()) {
         const auto p = unitScreenAnchor(view, u.position, game.unitHeight(u)) + Vec2{0, -20 * view.zoom};
-        if (u.owner == game.player().id && game.fog().visible(u.cell) && bounds.contains(p) && !contains(u.id)) ids.push_back(u.id);
+        if (u.owner == game.player().id && u.health > 0 && game.fog().visible(u.cell) && bounds.contains(p) && !contains(u.id)) ids.push_back(u.id);
     }
 }
 void Selection::prune(const Simulation& game) {
-    std::erase_if(ids, [&](EntityId id) {
-        if (game.unit(id) || game.building(id)) return false;
-        const auto* node = game.crystal(id);
-        return !node || node->remaining <= 0 || !game.crystalVisible(*node);
-    });
+    std::erase_if(ids, [&](EntityId id) { return !selectableEntity(game, id); });
     if (!activeType_.empty()) activeType_ = activeGroup(game).type;
 }
 bool Selection::idleWorker(const Simulation& game, EntityId after) {

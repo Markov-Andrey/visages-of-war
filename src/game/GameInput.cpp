@@ -88,7 +88,7 @@ rts::CursorKind GameApplication::cursorKind() const {
     }
     if (const auto id = rts::pickEntity(game_, view_, mouse_)) {
         const auto* site = game_.building(*id);
-        if (site && !site->complete() && selected([](const rts::Unit& u) { return u.definition.canBuild; })) return CursorKind::Build;
+        if (site && site->owner == game_.player().id && !site->complete() && selected([](const rts::Unit& u) { return u.definition.canBuild; })) return CursorKind::Build;
         return CursorKind::Select;
     }
     if (selected([](const rts::Unit&) { return true; })) {

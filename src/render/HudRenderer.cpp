@@ -7,6 +7,7 @@ using namespace render;
 void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid) {
     const auto extent = size();
     const Building* building = ui.selection.ids.size() == 1 ? game.building(ui.selection.ids.front()) : nullptr;
+    if (building && !selectableEntity(game, building->id)) building = nullptr;
     const BattleLayout layout(extent);
     const auto panel = [&](UiRect area, unsigned color) {
         brush_->SetColor(D2D1::ColorF(color));
@@ -83,7 +84,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     }
     drawMinimap(game, layout, view);
     const auto info = layout.info;
-    const Unit* unit = ui.selection.activeUnit(game);
+    const Unit* unit = ui.selection.inspectedUnit(game);
     const Crystal* resource = ui.selection.ids.size() == 1 ? game.crystal(ui.selection.ids.front()) : nullptr;
     if (resource && (!game.crystalVisible(*resource) || resource->remaining <= 0)) resource = nullptr;
     const EntityDefinition* tooltip = hero && heroArea.contains(ui.mouse) ? &hero->definition : nullptr;
@@ -184,6 +185,11 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         text(L"Нет выделения", rect(info.x, info.y, info.width, 34), 0xe0eade, true);
         text(L"Выберите здание или выделите юнитов рамкой.", rect(info.x, info.y + 47, info.width, 45), 0x9eb6b7);
         text(L"Края экрана / стрелки / средняя кнопка — камера\nF3 — сетка   •   Пробел — пауза", rect(info.x, info.y + 104, info.width, 55), 0x6e9395);
+    }
+    // Inspection shares stats and portraits, but never exposes another owner's command panel.
+    if ((building && building->owner != game.player().id) || (unit && unit->owner != game.player().id)) {
+        labels.fill({}); details.fill({}); icons.fill(nullptr); commandTypes.fill(nullptr);
+        enabled.fill(false); active.fill(false); buttonKeys.fill(0);
     }
     if (unit) for (size_t i = firstAbilitySlot; i < firstAbilitySlot + abilityKeys.size(); ++i) {
         const auto* ability = abilityCommandAt(game, ui, i);

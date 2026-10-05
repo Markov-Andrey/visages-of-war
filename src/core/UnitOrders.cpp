@@ -41,7 +41,7 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     if (order.kind == OrderKind::AttackGround) { chaseGround(u); return; }
     if (order.kind == OrderKind::Build) {
         const auto* b = building(order.target);
-        if (!b || b->complete() || !u.definition.canBuild) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
+        if (!b || b->owner != u.owner || b->complete() || !u.definition.canBuild) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
         u.targetBuilding = b->id;
         if (!setRoute(u, perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement), UnitState::ToBuild))
             setMessage(L"Рабочий не может добраться до стройки.");
@@ -49,8 +49,8 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     }
     if (order.kind == OrderKind::Interact) {
         if (const auto* b = buildingAt(order.cell)) {
-            if (!b->complete() && u.definition.canBuild) { applyOrder(u, {OrderKind::Build, {}, b->id}); return; }
-            if (b->complete() && b->definition.acceptsCargo && u.cargo > 0) { returnCargo(u); return; }
+            if (b->owner == u.owner && !b->complete() && u.definition.canBuild) { applyOrder(u, {OrderKind::Build, {}, b->id}); return; }
+            if (b->owner == u.owner && b->complete() && b->definition.acceptsCargo && u.cargo > 0) { returnCargo(u); return; }
             setRoute(u, perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement), UnitState::Moving);
             return;
         }

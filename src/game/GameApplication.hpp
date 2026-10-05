@@ -37,6 +37,7 @@ private:
     void selectIdleWorker();
     void selectControlGroup(size_t slot);
     void exerciseUnitCommands();
+    void exerciseInspection();
     std::optional<rts::Cell> pickCommandTarget() const;
     void rightClick(std::optional<rts::Cell> target);
     rts::CursorKind cursorKind() const;

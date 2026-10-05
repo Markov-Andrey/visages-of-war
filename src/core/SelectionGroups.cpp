@@ -29,6 +29,10 @@ const Unit* Selection::activeUnit(const Simulation& game) const {
     const auto group = activeGroup(game);
     return group.ids.empty() ? nullptr : game.unit(group.ids.front());
 }
+const Unit* Selection::inspectedUnit(const Simulation& game) const {
+    if (ids.size() == 1) return selectableEntity(game, ids.front()) ? game.unit(ids.front()) : nullptr;
+    return activeUnit(game);
+}
 
 bool Selection::cycleGroup(const Simulation& game, bool reverse) {
     const auto choices = groups(game);

@@ -26,6 +26,8 @@ inline UiRect buildingLayerBounds(const BuildingSpriteStage& stage, const Buildi
 UiRect buildingBounds(const Simulation& game, const Building& building, const WorldView& view);
 UiRect crystalBounds(const Simulation& game, const Crystal& crystal, const WorldView& view);
 inline float buildingDepth(const Building& building) { return building.origin.y + building.definition.height - .15f; }
+bool buildingVisible(const Simulation& game, const Building& building);
+bool selectableEntity(const Simulation& game, EntityId id);
 std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view, Vec2 point);
 struct SelectionGroup {
     std::string type;
@@ -44,6 +46,7 @@ struct Selection {
     std::vector<SelectionGroup> groups(const Simulation& game) const;
     SelectionGroup activeGroup(const Simulation& game) const;
     const Unit* activeUnit(const Simulation& game) const;
+    const Unit* inspectedUnit(const Simulation& game) const;
     bool cycleGroup(const Simulation& game, bool reverse = false);
     bool activateGroup(const Simulation& game, EntityId member);
 private:

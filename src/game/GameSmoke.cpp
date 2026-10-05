@@ -424,5 +424,6 @@ void GameApplication::exerciseInterface() {
     game_.takeEvents();
     exerciseRangedCombat();
     exerciseUnitCommands();
+    exerciseInspection();
 }
 }
