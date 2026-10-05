@@ -44,7 +44,7 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
         if (!b || b->complete() || !u.definition.canBuild) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
         u.targetBuilding = b->id;
         if (!setRoute(u, perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement), UnitState::ToBuild))
-            message_ = L"Рабочий не может добраться до стройки.";
+            setMessage(L"Рабочий не может добраться до стройки.");
         return;
     }
     if (order.kind == OrderKind::Interact) {
@@ -65,7 +65,7 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
         }
     }
     if (path) { u.blockedTicks = 0; followPath(u, std::move(*path), UnitState::Moving); }
-    else if (!setRoute(u, std::span<const Cell>(&order.cell, 1), UnitState::Moving)) message_ = L"Нет доступного пути.";
+    else if (!setRoute(u, std::span<const Cell>(&order.cell, 1), UnitState::Moving)) setMessage(L"Нет доступного пути.");
 }
 bool Simulation::command(Cell c) { if (units_.empty()) return false; const EntityId id = worker().id; return command(std::span<const EntityId>(&id, 1), c); }
 bool Simulation::command(std::span<const EntityId> ids, Cell c) {
@@ -140,13 +140,13 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
             any = true;
         }
     }
-    message_ = any ? L"Приказ принят." : L"Нет доступного пути.";
+    setMessage(any ? L"" : L"Нет доступного пути.");
     return any;
 }
 void Simulation::stop() { if (units_.empty()) return; const EntityId id = worker().id; stop(std::span<const EntityId>(&id, 1)); }
 void Simulation::stop(std::span<const EntityId> ids) {
     for (EntityId id : ids) if (auto* u = mutableUnit(id); u && u->owner == player_.id) issue(*u, {OrderKind::Stop});
-    message_ = L"Приказ остановки принят.";
+    setMessage({});
 }
 void Simulation::arrived(Unit& u) {
     u.route.clear(); u.next = 0;
@@ -201,7 +201,7 @@ void Simulation::tickUnit(Unit& u) {
         if (std::find(positions.begin(), positions.end(), u.cell) == positions.end()) { u.state = UnitState::Idle; return; }
         ++b->constructionProgress;
         b->health = std::max(1, b->definition.maximumHealth * b->constructionProgress / b->definition.constructionTicks);
-        if (b->complete()) { events_.emplace_back(ConstructionFinished{b->id}); u.state = UnitState::Idle; message_ = L"Здание готово."; }
+        if (b->complete()) { events_.emplace_back(ConstructionFinished{b->id}); u.state = UnitState::Idle; setMessage(L"Здание готово."); }
         return;
     }
     if (u.state != UnitState::Harvesting || u.targetCrystal < 0) return;

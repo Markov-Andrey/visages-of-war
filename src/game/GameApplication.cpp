@@ -16,6 +16,7 @@ GameApplication::GameApplication(rts::Paths paths, std::filesystem::path mapFile
 int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
     verify();
     WNDCLASSEXW wc{sizeof(wc)};
+    wc.style = CS_DBLCLKS;
     wc.hInstance = instance;
     wc.lpfnWndProc = windowProcedure;
     wc.lpszClassName = L"RTS.MainWindow";

@@ -11,5 +11,6 @@
     "entities/humans.json"
   ],
   "commandersFile": "commanders.json",
-  "rulesFile": "rules.json"
+  "rulesFile": "rules.json",
+  "abilitiesFile": "abilities.json"
 }

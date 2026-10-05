@@ -58,8 +58,10 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         text(L"F2  " + wide(hero->definition.displayName), rect(heroArea.x + 9, heroArea.y + 4, 147, 24), 0xebd693);
         text(L"Уровень " + std::to_wstring(hero->level()), rect(heroArea.x + 58, heroArea.y + 28, 102, 23), 0xe2dfc7);
         text(std::to_wstring(hero->health) + L" / " + std::to_wstring(hero->maximumHealth()), rect(heroArea.x + 58, heroArea.y + 50, 102, 23), 0x99d8ad);
-        panel({heroArea.x + 8, heroArea.y + 76, 148, 4}, 0x17222a);
-        panel({heroArea.x + 8, heroArea.y + 76, 148 * hero->experienceFraction(), 4}, 0xaca0ec);
+        if (hero->maximumMana() > 0)
+            text(std::to_wstring(hero->mana) + L" / " + std::to_wstring(hero->maximumMana()), rect(heroArea.x + 58, heroArea.y + 71, 102, 22), 0x8bbaff);
+        panel({heroArea.x + 8, heroArea.y + 96, 148, 4}, 0x17222a);
+        panel({heroArea.x + 8, heroArea.y + 96, 148 * hero->experienceFraction(), 4}, 0xaca0ec);
     } else {
         text(L"F2  Герой", rect(heroArea.x + 12, heroArea.y + 12, 140, 24), 0x88898c);
         text(game.heroFallen() ? L"Погиб" : L"Нет героя", rect(heroArea.x + 12, heroArea.y + 43, 140, 24), 0x717377);
@@ -70,12 +72,15 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     icon("idle-worker", {layout.idleWorker.x, layout.idleWorker.y}, layout.idleWorker.width);
     worldOpacity_ = 1;
     buttonFrame(layout.idleWorker);
-    panel({12, extent.y - 238, std::min(800.0f, extent.x - 24), 28}, 0x15262d);
     const std::wstring hint = !ui.placement.empty() ? L"Размещение: " + wide(game.entityType(ui.placement).displayName) + L"  •  ЛКМ — строить  •  ПКМ / Esc — отмена" :
         ui.rallyMode ? L"ЛКМ по карте — точка сбора. ПКМ / Esc — отмена." :
         ui.orderMode ? std::wstring(orderName(*ui.orderMode)) + L"  •  ЛКМ — цель  •  ПКМ / Esc — отмена" :
-        ui.buildMenu ? L"Выберите постройку. X / Esc — назад." : game.message();
-    text(hint, rect(24, extent.y - 233, extent.x - 48, 25), 0xb8cbc5);
+        ui.buildMenu ? L"Выберите постройку. X / Esc — назад." : std::wstring(ui.notification.text(game));
+    if (!hint.empty()) {
+        const auto n = layout.notification;
+        panel(n, 0x15262d);
+        centeredText(hint, {n.x + 12, n.y + 6, n.width - 24, n.height - 12}, 0xb8cbc5);
+    }
     drawMinimap(game, layout, view);
     const auto info = layout.info;
     const Unit* unit = ui.selection.activeUnit(game);
@@ -85,29 +90,29 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     std::wstring actionTitle, actionDescription;
     wchar_t tooltipKey{};
     std::array<const EntityDefinition*, commandSlots> commandTypes{};
+    std::array<const AbilityDefinition*, commandSlots> abilities{};
     if (building && info.contains(ui.mouse)) tooltip = &building->definition;
     std::array<std::wstring, commandSlots> labels{}, details{};
     std::array<bool, commandSlots> enabled{}, active{};
     std::array<const char*, commandSlots> icons{};
     std::array<wchar_t, commandSlots> buttonKeys{};
     if (resource) {
-        const int remaining = resource->remaining;
-        text(wide(worldAssets_.crystalSprite(resource->definitionId).name), rect(info.x, info.y, info.width, 34), 0xe0eade, true);
-        text(L"Нейтральный объект", rect(info.x, info.y + 39, info.width, 24), 0x9dc1b6);
-        drawResourceIcon("crystal", {info.x - 12, info.y + 48, 96, 96});
-        text(L"Остаток ресурса:  " + std::to_wstring(remaining) + L" / " + std::to_wstring(resource->capacity),
-            rect(info.x + 88, info.y + 78, info.width - 88, 26), 0xeac2a4);
-        const float barWidth = std::max(1.0f, info.width - 100);
-        panel({info.x + 88, info.y + 113, barWidth, 8}, 0x26313e);
-        if (remaining > 0) panel({info.x + 88, info.y + 113, barWidth * remaining / resource->capacity, 8}, worldAssets_.crystalSprite(resource->definitionId).glowColor);
-        text(L"Добывается в жилах рабочими. Кристаллы доставляются в ратушу.",
-            rect(info.x, info.y + 143, info.width, 23), 0x7e9eaa);
+        const SelectionPanelLayout portrait(info);
+        drawCrystalPortrait(*resource, portrait);
+        const auto content = portrait.content;
+        text(wide(worldAssets_.crystalSprite(resource->definitionId).name), rect(content.x, content.y, content.width, 34), 0xe0eade, content.width >= 300);
+        text(L"Нейтральный объект", rect(content.x, content.y + 39, content.width, 24), 0x9dc1b6);
+        text(L"Кристальная жила.\nРабочие добывают кристаллы и доставляют их в ратушу.",
+            rect(content.x, content.y + 78, content.width, 82), 0x7e9eaa);
     } else if (building) {
         const auto& b = *building;
-        text(wide(b.definition.displayName), rect(info.x, info.y, info.width, 34), 0xe0eade, true);
-        text(L"Прочность  " + std::to_wstring(b.health) + L" / " + std::to_wstring(b.definition.maximumHealth), rect(info.x, info.y + 39, info.width, 25), 0x9dc1b6);
+        const SelectionPanelLayout portrait(info);
+        drawBuildingPortrait(game, b, portrait);
+        const auto content = portrait.content;
+        text(wide(b.definition.displayName), rect(content.x, content.y, content.width, 34), 0xe0eade, content.width >= 300);
+        text(wide(b.definition.factionName) + L"  ·  Здание", rect(content.x, content.y + 39, content.width, 25), 0x9dc1b6);
         if (!b.complete()) {
-            text(L"Строительство  " + std::to_wstring(b.constructionProgress * 100 / b.definition.constructionTicks) + L"%", rect(info.x, info.y + 70, info.width, 28), 0xe4c388);
+            text(L"Строительство  " + std::to_wstring(b.constructionProgress * 100 / b.definition.constructionTicks) + L"%", rect(content.x, content.y + 70, content.width, 28), 0xe4c388);
             labels[5] = L"Отменить строительство"; details[5] = L"Прекратить строительство и вернуть ресурсы.";
             icons[5] = "cancel"; buttonKeys[5] = L'X';
         } else if (!b.definition.trainableUnits.empty()) {
@@ -124,18 +129,19 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 labels[5] = L"Отменить обучение"; details[5] = L"Отменить последний заказ в очереди и вернуть ресурсы.";
                 icons[5] = "cancel"; buttonKeys[5] = L'X';
             }
-            text(L"Очередь  " + std::to_wstring(b.production.size()) + L" / 5", rect(info.x, info.y + 72, info.width, 24), 0x9eb6b7);
+            text(L"Очередь  " + std::to_wstring(b.production.size()) + L" / 5", rect(content.x, content.y + 72, content.width, 24), 0x9eb6b7);
             for (size_t i = 0; i < b.production.size(); ++i) {
                 const auto& job = b.production[i];
-                const float x = info.x + i * 55;
-                panel({x, info.y + 102, 46, 42}, i == 0 ? 0x315b53 : 0x20363d);
-                text(std::to_wstring(i + 1), rect(x + 17, info.y + 108, 25, 25), 0xd7e8df);
+                const float step = std::min(55.f, content.width / 5), width = step - 7;
+                const float x = content.x + i * step;
+                panel({x, content.y + 102, width, 42}, i == 0 ? 0x315b53 : 0x20363d);
+                centeredText(std::to_wstring(i + 1), {x, content.y + 108, width, 25}, 0xd7e8df);
                 brush_->SetColor(D2D1::ColorF(0x88d2b6));
-                target_->FillRectangle(rect(x, info.y + 140, 46 * (1 - float(job.remainingTicks) / job.totalTicks), 4), brush_.Get());
+                target_->FillRectangle(rect(x, content.y + 140, width * (1 - float(job.remainingTicks) / job.totalTicks), 4), brush_.Get());
             }
             if (!b.production.empty() && b.production.front().remainingTicks == 0)
-                text(L"Освободите выход из здания", rect(info.x, info.y + 145, info.width, 23), 0xe4c388);
-        } else text(L"Расширяет обзор днём и ночью", rect(info.x, info.y + 76, info.width, 30), 0x9eb6b7);
+                text(L"Освободите выход из здания", rect(content.x, content.y + 145, content.width, 23), 0xe4c388);
+        } else text(L"Расширяет обзор днём и ночью", rect(content.x, content.y + 76, content.width, 30), 0x9eb6b7);
     } else if (unit) {
         const SelectionCards portraits(game, ui.selection, info);
         const auto group = ui.selection.activeGroup(game);
@@ -143,7 +149,8 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         if (SelectionPanelLayout(info).portrait.contains(ui.mouse)) tooltip = &unit->definition;
         for (const auto& card : portraits.cards) {
             const auto* member = game.unit(card.id);
-            if (card.bounds.contains(ui.mouse) || card.healthBar().contains(ui.mouse)) tooltip = &member->definition;
+            if (card.bounds.contains(ui.mouse) || card.healthBar().contains(ui.mouse) ||
+                (member->maximumMana() > 0 && card.manaBar().contains(ui.mouse))) tooltip = &member->definition;
         }
         const bool builder = commandEnabled(game, ui, UnitCommand::Build);
         if (builder && ui.buildMenu) {
@@ -178,6 +185,16 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         text(L"Выберите здание или выделите юнитов рамкой.", rect(info.x, info.y + 47, info.width, 45), 0x9eb6b7);
         text(L"Края экрана / стрелки / средняя кнопка — камера\nF3 — сетка   •   Пробел — пауза", rect(info.x, info.y + 104, info.width, 55), 0x6e9395);
     }
+    if (unit) for (size_t i = firstAbilitySlot; i < firstAbilitySlot + abilityKeys.size(); ++i) {
+        const auto* ability = abilityCommandAt(game, ui, i);
+        if (!ability) continue;
+        abilities[i] = ability;
+        labels[i] = wide(ability->displayName);
+        details[i] = wide(ability->description) + L"\nМана: " + std::to_wstring(ability->manaCost) +
+            L"  ·  Перезарядка: " + std::to_wstring(ability->cooldownTicks / Simulation::ticksPerSecond) + L" с";
+        buttonKeys[i] = abilityKeys[i - firstAbilitySlot];
+        enabled[i] = unit->abilityCooldown(ability->id) == 0 && unit->mana >= ability->manaCost;
+    }
     for (size_t i = 0; i < layout.commandCount; ++i) {
         const auto b = layout.commands[i];
         if (building || ui.buildMenu) enabled[i] = !labels[i].empty();
@@ -191,7 +208,10 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         panel(b, !enabled[i] ? 0x142630 : active[i] ? 0x536749 : b.contains(ui.mouse) ? 0x36564f : 0x233d3d);
         if (!labels[i].empty()) {
             worldOpacity_ = enabled[i] ? 1.0f : .3f;
-            if (icons[i]) {
+            if (abilities[i]) {
+                centeredText(wide(abilities[i]->displayName).substr(0, 1), {b.x, b.y + 3, b.width, 32},
+                    enabled[i] ? 0xb3d4ff : 0x5a718c, true);
+            } else if (icons[i]) {
                 icon(icons[i], {b.x, b.y}, b.width);
             } else if (const auto* type = commandTypes[i]) {
                 target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
@@ -205,6 +225,18 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 target_->PopAxisAlignedClip();
             }
             worldOpacity_ = 1;
+        }
+        if (const auto* ability = abilities[i]) {
+            const int cooldown = unit->abilityCooldown(ability->id);
+            if (cooldown > 0) {
+                brush_->SetColor(D2D1::ColorF(0x07101e, .8f));
+                target_->FillRectangle(rect(b.x, b.y, b.width, b.height * cooldown / ability->cooldownTicks), brush_.Get());
+                centeredText(std::to_wstring((cooldown + Simulation::ticksPerSecond - 1) / Simulation::ticksPerSecond),
+                    {b.x, b.y + 7, b.width, 29}, 0xe2eaff, true);
+            }
+            text(std::wstring(1, buttonKeys[i]), rect(b.x + 4, b.y + 1, 15, 20), 0xd8dfec);
+            centeredText(std::to_wstring(ability->manaCost), {b.x, b.y + b.height - 19, b.width, 19},
+                unit->mana >= ability->manaCost ? 0x8bbaff : 0xed8b80);
         }
         buttonFrame(b);
         if (active[i] && enabled[i]) {

@@ -16,6 +16,12 @@ void GameApplication::selectIdleWorker() {
 }
 void GameApplication::unitAction(size_t index) {
     if (!rts::unitCommandVisible(game_, ui_, index)) return;
+    if (const auto* ability = rts::abilityCommandAt(game_, ui_, index)) {
+        const auto* unit = ui_.selection.activeUnit(game_);
+        clearCommandMode();
+        game_.activateAbility(unit->id, ability->id);
+        return;
+    }
     if (ui_.buildMenu) {
         if (index < 3 && index < game_.buildingTypes().size() && rts::commandEnabled(game_, ui_, rts::UnitCommand::Build)) {
             ui_.placement = game_.buildingTypes()[index]->id; ui_.buildMenu = false;
@@ -42,6 +48,10 @@ bool GameApplication::unitHotkey(unsigned key) {
         if (key == 'X') { clearCommandMode(); return true; }
         return false;
     }
+    for (size_t i = 0; i < rts::abilityKeys.size(); ++i)
+        if (key == rts::abilityKeys[i] && rts::abilityCommandAt(game_, ui_, rts::firstAbilitySlot + i)) {
+            unitAction(rts::firstAbilitySlot + i); return true;
+        }
     for (const auto& command : rts::unitCommands) if (key == command.key) {
         unitAction(command.slot); return true;
     }

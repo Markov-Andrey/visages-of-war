@@ -35,6 +35,7 @@ void Renderer::discardTarget() {
     portraitGradients_.clear();
     selectionRings_.clear();
     for (auto& gradient : healthBarGradients_) gradient.Reset();
+    for (auto& gradient : manaBarGradients_) gradient.Reset();
     materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); unitUiImages_.clear(); maskedImages_.clear(); paintResources_.clear();
     fogBrush_.Reset(); fogBitmap_.Reset();
     nightActive_ = false;

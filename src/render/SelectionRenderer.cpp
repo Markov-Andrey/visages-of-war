@@ -14,18 +14,18 @@ std::wstring amount(float value) {
 }
 }
 
-void Renderer::drawUnitStats(const Unit& unit, UiRect b, std::uint64_t tick) {
+void Renderer::drawUnitStats(const Unit& unit, UiRect b) {
     const auto& d = unit.definition;
     const float width = std::min(b.width, 560.0f);
     const bool columns = width >= 360;
     text(wide(d.displayName), rect(b.x, b.y, b.width, 32), 0xe0eade, width >= 300);
-    text(L"Здоровье  " + std::to_wstring(unit.health) + L" / " + std::to_wstring(unit.maximumHealth()),
-        rect(b.x, b.y + 34, width, 21), 0x9dd7b0);
-    drawHealthBar(unit, {b.x, b.y + 58, width, 5}, tick);
+    const std::wstring role = unit.hero ? L"Герой" : d.isWorker() ? L"Рабочий" : L"Воин";
+    text(width >= 300 ? wide(d.factionName) + L"  ·  " + role : role,
+        rect(b.x, b.y + 34, width, 24), 0x9eb6b7);
     const auto damage = unit.attackDamage() > 0 ? L"Атака  " + std::to_wstring(unit.attackDamage()) : L"Не атакует";
     const auto range = unit.attackDamage() > 0 ? L"Дальность  " + amount(d.attackRange) : L"";
     const auto speed = L"Скорость  " + amount(d.movementPerSecond) + L" кл/с";
-    const auto vision = L"Обзор  " + std::to_wstring(d.dayVision) + L" / " + std::to_wstring(d.nightVision) + L" (день / ночь)";
+    const auto vision = L"Обзор  " + std::to_wstring(d.dayVision) + L" / " + std::to_wstring(d.nightVision) + (width >= 300 ? L" (день / ночь)" : L"");
     if (columns) {
         const float second = b.x + width * .5f;
         text(damage, rect(b.x, b.y + 73, width * .5f - 8, 22), 0xd7ddd0);
@@ -61,9 +61,10 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
     unitHudPortrait(unit->definition.sprite, {p.x + 4, p.y + 4, p.width - 8, p.height - 8}, color);
     target_->PopAxisAlignedClip();
     buttonFrame(p);
+    portraitVitals(layout, unit->health, unit->maximumHealth(), 0x9dd7b0, unit->mana, unit->maximumMana());
     const SelectionCards cards(game, selection, info);
     if (cards.total == 1) {
-        drawUnitStats(*unit, layout.content, game.clock().elapsedTicks());
+        drawUnitStats(*unit, layout.content);
         return;
     }
     for (const auto& card : cards.cards) {
@@ -80,6 +81,7 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
             target_->DrawRectangle(rect(b.x + 1, b.y + 1, b.width - 2, b.height - 2), brush_.Get(), 2);
         }
         drawHealthBar(*member, card.healthBar(), game.clock().elapsedTicks());
+        drawManaBar(*member, card.manaBar());
     }
 }
 }

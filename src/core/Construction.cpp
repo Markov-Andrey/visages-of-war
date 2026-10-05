@@ -36,8 +36,8 @@ bool Simulation::canPlace(const std::string& typeId, Cell origin) const {
 }
 std::optional<EntityId> Simulation::construct(std::span<const EntityId> builders, const std::string& typeId, Cell origin) {
     const auto& type = entityType(typeId);
-    if (stored_ < type.cost.crystals) { message_ = L"Недостаточно кристаллов."; return std::nullopt; }
-    if (!canPlace(typeId, origin)) { message_ = L"Нужна видимая, свободная и ровная площадка."; return std::nullopt; }
+    if (stored_ < type.cost.crystals) { setMessage(L"Недостаточно кристаллов."); return std::nullopt; }
+    if (!canPlace(typeId, origin)) { setMessage(L"Нужна видимая, свободная и ровная площадка."); return std::nullopt; }
     Map preview = map();
     for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x) preview.occupy(origin + Cell{x, y});
     Unit* builder = nullptr;
@@ -47,14 +47,14 @@ std::optional<EntityId> Simulation::construct(std::span<const EntityId> builders
         const Vec2 start = u->position;
         if (findUnitPath(preview, start, perimeter(preview, origin, type.width, type.height, u->definition.movement), {}, u->definition.collisionRadius, u->definition.movement)) { builder = u; break; }
     }
-    if (!builder) { message_ = L"Выберите рабочего, который может подойти к площадке."; return std::nullopt; }
-    if (!supply_.reserve(type.cost.supply)) { message_ = L"Достигнут лимит армии: 100."; return std::nullopt; }
+    if (!builder) { setMessage(L"Выберите рабочего, который может подойти к площадке."); return std::nullopt; }
+    if (!supply_.reserve(type.cost.supply)) { setMessage(L"Достигнут лимит армии: 100."); return std::nullopt; }
     scenario_.map = std::move(preview);
     const EntityId id = nextId_++;
     buildings_.push_back({id, player_.id, type, origin, 1, 0, defaultRally(type, origin), {}});
     stored_ -= type.cost.crystals;
     issue(*builder, {OrderKind::Build, {}, id});
-    message_ = L"Стройплощадка размещена.";
+    setMessage(L"Стройплощадка размещена.");
     updateVision();
     return id;
 }
@@ -66,23 +66,23 @@ bool Simulation::cancelConstruction(EntityId id) {
     stored_ += it->definition.cost.crystals; supply_.release(it->definition.cost.supply);
     for (auto& u : units_) if (u.targetBuilding == id) issue(u, {OrderKind::Stop});
     buildings_.erase(it); updateVision();
-    message_ = L"Строительство отменено. Кристаллы возвращены.";
+    setMessage(L"Строительство отменено. Кристаллы возвращены.");
     return true;
 }
 bool Simulation::train(EntityId id, const std::string& definitionId) {
     auto* b = mutableBuilding(id);
     if (!b || b->owner != player_.id || !b->complete() || b->definition.trainableUnits.empty()) return false;
-    if (b->production.size() >= 5) { message_ = L"Очередь производства заполнена."; return false; }
+    if (b->production.size() >= 5) { setMessage(L"Очередь производства заполнена."); return false; }
     const auto& choices = b->definition.trainableUnits;
     const auto& selected = definitionId.empty() ? choices.front() : definitionId;
     if (std::find(choices.begin(), choices.end(), selected) == choices.end()) return false;
     const auto& type = entityType(selected);
-    if (!type.mobile || type.width != 1 || type.height != 1) { message_ = L"Этот тип пока нельзя выпустить как подвижную единицу."; return false; }
-    if (stored_ < type.cost.crystals) { message_ = L"Недостаточно кристаллов."; return false; }
-    if (!supply_.reserve(type.cost.supply)) { message_ = L"Достигнут лимит армии: 100."; return false; }
+    if (!type.mobile || type.width != 1 || type.height != 1) { setMessage(L"Этот тип пока нельзя выпустить как подвижную единицу."); return false; }
+    if (stored_ < type.cost.crystals) { setMessage(L"Недостаточно кристаллов."); return false; }
+    if (!supply_.reserve(type.cost.supply)) { setMessage(L"Достигнут лимит армии: 100."); return false; }
     stored_ -= type.cost.crystals;
     b->production.push_back({type.id, type.trainingTicks, type.trainingTicks, type.cost.crystals, type.cost.supply});
-    message_ = L"Юнит добавлен в очередь.";
+    setMessage(L"Юнит добавлен в очередь.");
     return true;
 }
 bool Simulation::cancelTraining(EntityId id) {
@@ -90,7 +90,7 @@ bool Simulation::cancelTraining(EntityId id) {
     if (!b || b->owner != player_.id || b->production.empty()) return false;
     const auto job = b->production.back();
     b->production.pop_back(); stored_ += job.paidCrystals; supply_.release(job.reservedSupply);
-    message_ = L"Последний заказ отменён.";
+    setMessage(L"Последний заказ отменён.");
     return true;
 }
 bool Simulation::setRally(EntityId id, Cell c) {
@@ -98,13 +98,13 @@ bool Simulation::setRally(EntityId id, Cell c) {
     if (!b || b->owner != player_.id || b->definition.trainableUnits.empty()) return false;
     for (const auto& produced : b->definition.trainableUnits) {
         const auto movement = entityType(produced).movement;
-        if (!map().walkable(c, movement)) { message_ = L"Точка сбора недоступна этому типу передвижения."; return false; }
+        if (!map().walkable(c, movement)) { setMessage(L"Точка сбора недоступна этому типу передвижения."); return false; }
         const auto exits = perimeter(map(), b->origin, b->definition.width, b->definition.height, movement);
         bool reachable = false;
         for (Cell exit : exits) if (findPath(map(), exit, c, movement)) { reachable = true; break; }
-        if (!reachable) { message_ = L"Точка сбора недоступна."; return false; }
+        if (!reachable) { setMessage(L"Точка сбора недоступна."); return false; }
     }
-    b->rally = c; message_ = L"Точка сбора установлена."; return true;
+    b->rally = c; setMessage(L"Точка сбора установлена."); return true;
 }
 void Simulation::tickProduction() {
     for (auto& b : buildings_) {

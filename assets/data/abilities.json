@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "abilities": [
+    {
+      "id": 1,
+      "name": "Пустышка",
+      "description": "Расходует ману и запускает перезарядку. Не требует цели.",
+      "targeting": "none",
+      "manaCost": 25,
+      "cooldownTicks": 150
+    }
+  ]
+}

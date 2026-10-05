@@ -291,6 +291,8 @@ void GameApplication::exerciseInterface() {
     if (ui_.selection.ids != std::vector<rts::EntityId>{heroId}) throw std::runtime_error("Smoke: hero button failed");
     game_.grantExperience(heroId, 200);
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-preview.png");
+    renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-hud-compact.png",
+        nullptr, false, &ui_, rts::MenuPage::BattleSetup, 0, nullptr, nullptr, {800, 600});
     rts::GameplayUi tooltipUi;
     tooltipUi.selection.ids = {game_.worker().id};
     const auto command = rts::BattleLayout({1440, 900}).commands[1];
@@ -338,6 +340,8 @@ void GameApplication::exerciseInterface() {
     for (int tick = 0; tick < 750; ++tick) game_.tick();
     if (game_.units().size() != initialUnitCount + 2 || game_.units().back().cell != armyRally)
         throw std::runtime_error("Smoke: trained soldier did not reach rally");
+    mouse_ = {layout.minimap.x + 10, layout.minimap.y + 10};
+    if (mouseInWorld()) throw std::runtime_error("Smoke: raised minimap leaked input into the world");
     const rts::MinimapProjection mini(layout.minimap, game_.map());
     const rts::Cell miniRally{24, 27};
     onMessage(WM_RBUTTONDOWN, 0, at(mini.project(rts::center(miniRally))));

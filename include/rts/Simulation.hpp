@@ -39,7 +39,8 @@ struct Unit {
     Cell groupTarget{};
     float groupRadius{};
     UnitState state = UnitState::Idle;
-    int health{}, cargo{};
+    int health{}, mana{}, cargo{};
+    std::vector<AbilityCooldown> abilityCooldowns;
     HealthFeedback healthFeedback;
     std::vector<Cell> route;
     size_t next{};
@@ -57,6 +58,15 @@ struct Unit {
     std::optional<HeroProgression> hero;
     int level() const { return hero ? hero->level : definition.level; }
     int maximumHealth() const { return definition.maximumHealth + (hero ? (level() - 1) * definition.hero->healthPerLevel : 0); }
+    int maximumMana() const { return definition.maximumMana; }
+    const AbilityDefinition* ability(int abilityId) const {
+        for (const auto& value : definition.abilities) if (value.id == abilityId) return &value;
+        return nullptr;
+    }
+    int abilityCooldown(int abilityId) const {
+        for (const auto& value : abilityCooldowns) if (value.abilityId == abilityId) return value.remainingTicks;
+        return 0;
+    }
     int attackDamage() const { return definition.attackDamage + (hero ? (level() - 1) * definition.hero->damagePerLevel : 0); }
     bool atMaxLevel() const { return hero && level() == static_cast<int>(hero->rules->thresholds.size()); }
     int experienceInLevel() const { return hero ? hero->experience - hero->rules->thresholds[level() - 1] : 0; }
@@ -169,12 +179,14 @@ public:
     const Landscape& landscape() const { return scenario_.landscape; }
     int storedCrystals() const { return stored_; }
     const std::wstring& message() const { return message_; }
+    std::uint64_t messageRevision() const { return messageRevision_; }
     float unitHeight(const Unit& unit) const;
     float workerHeight() const { return unitHeight(worker()); }
     bool command(Cell c);
     bool command(std::span<const EntityId> ids, Cell c);
     bool order(std::span<const EntityId> ids, OrderKind kind, Cell target = {});
     bool attack(std::span<const EntityId> ids, EntityId target);
+    bool activateAbility(EntityId unit, int ability);
     bool canAttack(const Unit& attacker, const Unit& target) const;
     void stop();
     void stop(std::span<const EntityId> ids);
@@ -186,6 +198,7 @@ public:
     bool setRally(EntityId buildingId, Cell cell);
     void tick();
 private:
+    void setMessage(std::wstring message) { message_ = std::move(message); ++messageRevision_; }
     Unit* mutableUnit(EntityId id);
     Building* mutableBuilding(EntityId id);
     EntityId spawn(const EntityDefinition& definition, Cell cell, bool reserved, PlayerId owner = 0);
@@ -246,6 +259,7 @@ private:
     uint64_t nextMoveGroup_ = 1;
     int stored_{};
     bool heroFallen_{};
+    std::uint64_t messageRevision_{};
     std::wstring message_ = L"Выберите юнитов рамкой или здание щелчком. ПКМ — приказ.";
 };
 }

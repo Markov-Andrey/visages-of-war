@@ -4,6 +4,8 @@
 #include "rts/Simulation.hpp"
 #include "rts/Minimap.hpp"
 #include "rts/CommandUi.hpp"
+#include <chrono>
+#include <string_view>
 
 namespace rts {
 inline constexpr unsigned friendlySelectionColor = 0x75dc91;
@@ -33,6 +35,7 @@ struct Selection {
     std::vector<EntityId> ids;
     bool contains(EntityId id) const { return std::find(ids.begin(), ids.end(), id) != ids.end(); }
     void click(const Simulation& game, const WorldView& view, Vec2 point, bool additive);
+    bool selectTypeInView(const Simulation& game, const WorldView& view, UiRect viewport, Vec2 point, bool additive);
     void box(const Simulation& game, const WorldView& view, UiRect bounds, bool additive);
     void prune(const Simulation& game);
     void army(const Simulation& game);
@@ -58,7 +61,23 @@ public:
 private:
     std::array<std::vector<EntityId>, controlGroupCount> groups_;
 };
+class GameplayNotification {
+public:
+    using Clock = std::chrono::steady_clock;
+    std::wstring_view text(const Simulation& game, Clock::time_point now = Clock::now()) {
+        if (!revision_ || *revision_ != game.messageRevision()) {
+            revision_ = game.messageRevision();
+            expires_ = now + std::chrono::seconds(4);
+        }
+        return now < expires_ ? std::wstring_view(game.message()) : std::wstring_view{};
+    }
+private:
+    std::optional<std::uint64_t> revision_;
+    Clock::time_point expires_{};
+};
 struct GameplayUi {
+    // Presentation cache: notification lifetime continues while the simulation is paused.
+    mutable GameplayNotification notification;
     Selection selection;
     ControlGroups controlGroups;
     std::optional<UiRect> drag;
@@ -77,8 +96,15 @@ inline bool commandEnabled(const Simulation& game, const GameplayUi& ui, UnitCom
         return unit && unit->owner == game.player().id && unit->health > 0 && commandCapable(*unit, command);
     });
 }
+inline const AbilityDefinition* abilityCommandAt(const Simulation& game, const GameplayUi& ui, size_t slot) {
+    if (ui.buildMenu || slot < firstAbilitySlot || slot >= firstAbilitySlot + abilityKeys.size()) return nullptr;
+    const auto* unit = ui.selection.activeUnit(game);
+    const auto index = slot - firstAbilitySlot;
+    return unit && index < unit->definition.abilities.size() ? &unit->definition.abilities[index] : nullptr;
+}
 inline bool unitCommandVisible(const Simulation& game, const GameplayUi& ui, size_t slot) {
     if (!ui.selection.activeUnit(game)) return false;
+    if (abilityCommandAt(game, ui, slot)) return true;
     if (slot == backCommandSlot) return ui.buildMenu || ui.orderMode || !ui.placement.empty();
     if (ui.buildMenu) return slot < 3 && slot < game.buildingTypes().size() && commandEnabled(game, ui, UnitCommand::Build);
     const auto* command = unitCommandAt(slot);
@@ -100,30 +126,38 @@ inline bool rallyPointLightVisible(const Simulation& game, const Building& build
     return rallyPointVisible(game, building, ui) && game.fog().visible(building.rally);
 }
 struct BattleLayout {
-    UiRect world, minimap, info, menu, army, hero, idleWorker;
+    UiRect world, minimap, info, menu, army, hero, idleWorker, notification;
     std::array<UiRect, commandSlots> commands{};
     std::array<UiRect, controlGroupCount> controlGroups{};
     static constexpr size_t commandCount = commandSlots;
     explicit BattleLayout(Vec2 size) {
         world = {0, 58, size.x, std::max(1.0f, size.y - 262)};
-        minimap = {18, size.y - 186, 164, 164};
-        info = {204, size.y - 186, size.x - 482, 164};
+        const float miniSide = size.x < 1060 ? std::clamp(size.x * .23f, 184.f, 224.f) : 240.f;
+        minimap = {18, size.y - miniSide - 22, miniSide, miniSide};
+        const float commandSide = size.x < 1000 ? 48.f : 56.f, commandPitch = commandSide + 6;
+        const float commandLeft = size.x - (commandColumns * commandPitch - 6) - 20;
+        const float infoLeft = minimap.x + minimap.width + 22;
+        info = {infoLeft, size.y - 186, commandLeft - infoLeft - 16, 164};
         menu = {18, 12, 100, 34};
         army = {18, 72, 164, 40};
-        hero = {18, 120, 164, 86};
-        idleWorker = {18, size.y - 302, 56, 56};
+        hero = {18, 120, 164, 104};
+        idleWorker = {18, minimap.y - 68, 56, 56};
         for (size_t i = 0; i < controlGroupCount; ++i)
-            controlGroups[i] = {204 + i * 54.0f, size.y - 278, 48, 32};
+            controlGroups[i] = {infoLeft + i * 54.0f, size.y - 278, 48, 32};
         for (size_t i = 0; i < commandCount; ++i)
-            commands[i] = {size.x - 262 + (i % commandColumns) * 62.0f, size.y - 190 + (i / commandColumns) * 62.0f, 56, 56};
+            commands[i] = {commandLeft + (i % commandColumns) * commandPitch, size.y - 190 + (i / commandColumns) * commandPitch, commandSide, commandSide};
+        const float messageWidth = std::min(760.f, size.x - 64), messageHeight = 48;
+        notification = {(size.x - messageWidth) * .5f, controlGroups.front().y - messageHeight - 12, messageWidth, messageHeight};
     }
     std::optional<Cell> minimapCell(Vec2 p, const Map& map) const { return MinimapProjection(minimap, map).pick(p); }
 };
 struct SelectionPanelLayout {
-    UiRect portrait, content;
+    UiRect portrait, health, mana, content;
     explicit SelectionPanelLayout(UiRect info) {
-        const float side = std::clamp(info.width * .25f, 96.0f, 144.0f);
-        portrait = {info.x, info.y + (info.height - side) * .5f, side, side};
+        const float side = std::clamp(info.width * .25f, 96.0f, 120.0f);
+        portrait = {info.x, info.y + (info.height - side - 44) * .5f, side, side};
+        health = {portrait.x, portrait.y + side + 4, side, 20};
+        mana = {portrait.x, health.y + 20, side, 20};
         content = {info.x + side + 16, info.y, info.width - side - 16, info.height};
     }
 };
@@ -132,6 +166,7 @@ struct SelectionCard {
     UiRect bounds;
     bool active;
     UiRect healthBar() const { return {bounds.x, bounds.y + bounds.height + 3, bounds.width, 4}; }
+    UiRect manaBar() const { return {bounds.x, bounds.y + bounds.height + 9, bounds.width, 3}; }
 };
 struct SelectionCards {
     std::vector<SelectionCard> cards;

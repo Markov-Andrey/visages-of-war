@@ -72,7 +72,7 @@ inline void ticks(rts::Simulation& game, int count) { for (int i = 0; i < count;
 using Json = nlohmann::json;
 struct CatalogFixture {
     std::filesystem::path root;
-    Json catalog, entities, commanders, rules;
+    Json catalog, entities, commanders, rules, abilities;
     explicit CatalogFixture(const std::filesystem::path& assets) {
         const auto read = [](const std::filesystem::path& path) { std::ifstream file(path); return Json::parse(file); };
         root = rts::Paths::executable().parent_path() / L"Каталог для проверки";
@@ -80,6 +80,7 @@ struct CatalogFixture {
         entities = read(assets / "data/entities/humans.json");
         commanders = read(assets / "data/commanders.json");
         rules = read(assets / "data/rules.json");
+        abilities = read(assets / "data/abilities.json");
     }
     rts::Definitions load() const {
         std::filesystem::create_directories(root / "entities");
@@ -87,6 +88,7 @@ struct CatalogFixture {
         std::ofstream(root / "entities/humans.json") << entities.dump(2);
         std::ofstream(root / "commanders.json") << commanders.dump(2);
         std::ofstream(root / "rules.json") << rules.dump(2);
+        std::ofstream(root / "abilities.json") << abilities.dump(2);
         return rts::Definitions::load(root / "catalog.json");
     }
 };

@@ -39,6 +39,14 @@ void Renderer::text(const std::wstring& value, D2D1_RECT_F bounds, unsigned colo
                       bounds, brush_.Get(), D2D1_DRAW_TEXT_OPTIONS_CLIP);
 }
 
+void Renderer::centeredText(const std::wstring& value, UiRect bounds, unsigned color, bool heading) {
+    auto* format = heading ? titleFormat_.Get() : bodyFormat_.Get();
+    const auto alignment = format->GetTextAlignment();
+    format->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+    text(value, rect(bounds.x, bounds.y, bounds.width, bounds.height), color, heading);
+    format->SetTextAlignment(alignment);
+}
+
 void Renderer::sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel, float lighting, ID2D1Bitmap* emission) {
     if (nightActive_ && lighting > 0 && spriteLights_.contains(bitmap)) {
         litSprite(bitmap, source, topLeft, extent, pixel, lighting, emission);

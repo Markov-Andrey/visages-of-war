@@ -70,7 +70,7 @@ EntityId Simulation::spawn(const EntityDefinition& type, Cell cell, bool reserve
     if (owner == player_.id && !reserved && !supply_.reserve(type.cost.supply)) throw std::invalid_argument("Initial army exceeds supply cap");
     Unit u;
     u.id = nextId_++; u.owner = owner; u.definitionId = type.id; u.definition = type;
-    u.cell = cell; u.position = u.tickPosition = center(cell); u.health = type.maximumHealth;
+    u.cell = cell; u.position = u.tickPosition = center(cell); u.health = type.maximumHealth; u.mana = type.maximumMana;
     if (type.hero) u.hero = HeroProgression{1, 0, progression_};
     units_.push_back(std::move(u));
     return units_.back().id;
@@ -131,7 +131,11 @@ void Simulation::tick() {
     if (phase) events_.emplace_back(*phase);
     // Advance the front of each moving group first, so IDs do not make a convoy wait backwards.
     std::vector<Unit*> updateOrder;
-    for (auto& u : units_) { u.tickPosition = u.position; u.tickVelocity = u.velocity; u.velocity = {}; updateOrder.push_back(&u); }
+    for (auto& u : units_) {
+        for (auto& cooldown : u.abilityCooldowns) --cooldown.remainingTicks;
+        std::erase_if(u.abilityCooldowns, [](const auto& cooldown) { return cooldown.remainingTicks <= 0; });
+        u.tickPosition = u.position; u.tickVelocity = u.velocity; u.velocity = {}; updateOrder.push_back(&u);
+    }
     std::stable_sort(updateOrder.begin(), updateOrder.end(), [](const Unit* a, const Unit* b) {
         if (a->moveGroup != b->moveGroup) return a->moveGroup < b->moveGroup;
         if (!a->moveGroup) return a->id < b->id;

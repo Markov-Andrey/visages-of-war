@@ -44,7 +44,8 @@ rts::CursorKind GameApplication::cursorKind() const {
     const bool minimap = layout.minimap.contains(mouse_);
     if (!mouseInWorld() && !minimap) {
         for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards)
-            if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_)) return CursorKind::Hand;
+            if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_) ||
+                (game_.unit(card.id)->maximumMana() > 0 && card.manaBar().contains(mouse_))) return CursorKind::Hand;
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) {
             bool active = false;
             if (building) active = (building->complete() && ((i == 1 && !building->definition.trainableUnits.empty()) ||
@@ -108,7 +109,7 @@ bool GameApplication::mouseInWorld() const {
     const rts::BattleLayout layout(renderer_.size());
     for (size_t i = 0; i < rts::controlGroupCount; ++i)
         if (!ui_.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse_)) return false;
-    return layout.world.contains(mouse_) && !layout.army.contains(mouse_) && !layout.hero.contains(mouse_) && !layout.idleWorker.contains(mouse_);
+    return layout.world.contains(mouse_) && !layout.army.contains(mouse_) && !layout.hero.contains(mouse_) && !layout.idleWorker.contains(mouse_) && !layout.minimap.contains(mouse_);
 }
 
 rts::Vec2 GameApplication::mousePosition(LPARAM lParam) const {
@@ -153,12 +154,14 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     case WM_CAPTURECHANGED:
         dragging_ = false; panning_ = false; minimapDragging_ = false; ui_.drag.reset(); return 0;
     case WM_MBUTTONDOWN:
+    case WM_MBUTTONDBLCLK:
         if (menu_.page == rts::MenuPage::Playing) {
             camera_.stop(view_); panning_ = true; panStart_ = mousePosition(lParam); SetCapture(window_);
         }
         return 0;
     case WM_MBUTTONUP: panning_ = false; ReleaseCapture(); return 0;
-    case WM_LBUTTONDOWN: {
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONDBLCLK: {
         mouse_ = mousePosition(lParam);
         if (menu_.page != rts::MenuPage::Playing) { menuClick(); return 0; }
         const rts::BattleLayout layout(renderer_.size());
@@ -179,7 +182,8 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) { action(i); return 0; }
-        for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards) if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_)) {
+        for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards) if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_) ||
+                (game_.unit(card.id)->maximumMana() > 0 && card.manaBar().contains(mouse_))) {
             if (ui_.selection.activateGroup(game_, card.id)) clearCommandMode();
             return 0;
         }
@@ -199,6 +203,10 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         camera_.stop(view_);
+        if (message == WM_LBUTTONDBLCLK && ui_.selection.selectTypeInView(game_, view_, layout.world, mouse_, (wParam & MK_SHIFT) != 0)) {
+            clearCommandMode();
+            return 0;
+        }
         dragging_ = true; adding_ = (wParam & MK_SHIFT) != 0; dragStart_ = mouse_; SetCapture(window_);
         return 0;
     }
@@ -212,7 +220,8 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         dragging_ = false; minimapDragging_ = false; ui_.drag.reset(); ReleaseCapture();
         return 0;
     }
-    case WM_RBUTTONDOWN: {
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONDBLCLK: {
         mouse_ = mousePosition(lParam);
         if (menu_.page != rts::MenuPage::Playing) return 0;
         const rts::BattleLayout layout(renderer_.size());

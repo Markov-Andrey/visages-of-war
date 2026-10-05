@@ -62,6 +62,12 @@ struct ProgressionRules {
     int experiencePerVictimLevel = 50;
     std::vector<int> thresholds{0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200};
 };
+struct AbilityDefinition {
+    int id{};
+    std::string displayName, description;
+    int manaCost{}, cooldownTicks{};
+};
+struct AbilityCooldown { int abilityId{}, remainingTicks{}; };
 struct ResourceCost { int crystals{}, supply{}; };
 enum class EntityVisual { Unit, Hall, Barracks, Tower };
 struct EntityDefinition {
@@ -80,6 +86,8 @@ struct EntityDefinition {
     int trainingTicks = 90;
     int dayVision = 8, nightVision = 6;
     int maximumHealth = 60;
+    int maximumMana{};
+    std::vector<AbilityDefinition> abilities; // Resolved from the separate ability catalog.
     bool canBuild = true;
     MovementType movement = MovementType::Walking;
     int formationPriority = 1;

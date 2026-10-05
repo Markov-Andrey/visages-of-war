@@ -28,7 +28,7 @@ Json read(const std::filesystem::path& file) {
 }
 void version(const Json& root) { if (number(root.at("version"), 1, 1) != 1) throw std::runtime_error("Unsupported catalog version"); }
 EntityDefinition parseEntity(const Json& j) {
-    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "visual", "alternateForms", "attack", "sprite"}, {"buildingSprite", "library", "canDecompose"});
+    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "visual", "alternateForms", "attack", "sprite"}, {"buildingSprite", "library", "canDecompose", "abilities"});
     EntityDefinition e;
     e.id = string(j.at("id")); e.factionId = string(j.at("factionId"));
     e.displayName = string(j.at("name")); e.description = string(j.at("description"));
@@ -36,8 +36,9 @@ EntityDefinition parseEntity(const Json& j) {
     if (j.contains("canDecompose")) e.canDecompose = j.at("canDecompose").get<bool>();
     const auto& cost = j.at("cost"); fields(cost, {"crystals", "supply"});
     e.cost = {number(cost.at("crystals"), 0, 1000000), number(cost.at("supply"), 0, ArmySupply::maximum)};
-    const auto& stats = j.at("stats"); fields(stats, {"health", "damage", "level", "dayVision", "nightVision"});
+    const auto& stats = j.at("stats"); fields(stats, {"health", "damage", "level", "dayVision", "nightVision"}, {"mana"});
     e.maximumHealth = number(stats.at("health"), 1, 1000000);
+    if (stats.contains("mana")) e.maximumMana = number(stats.at("mana"), 0, 1000000);
     e.attackDamage = number(stats.at("damage"), 0, 1000000);
     data::parseWeapon(e, j.at("attack"), j.at("sprite"));
     e.level = number(stats.at("level"), 1, 100);
@@ -108,13 +109,24 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         return paths.asset(std::filesystem::path(std::u8string(text.begin(), text.end())));
     };
     const auto root = read(catalogPath);
-    fields(root, {"version", "factions", "entityFiles", "commandersFile", "rulesFile"}); version(root);
+    fields(root, {"version", "factions", "entityFiles", "commandersFile", "rulesFile", "abilitiesFile"}); version(root);
     if (!root.at("factions").is_array() || root.at("factions").empty()) throw std::runtime_error("No factions");
     for (const auto& j : root.at("factions")) {
         fields(j, {"id", "name", "description"});
         FactionDefinition faction{string(j.at("id")), string(j.at("name")), string(j.at("description"))};
         for (const auto& previous : result.factions_) if (previous.id == faction.id) throw std::runtime_error("Duplicate faction: " + faction.id);
         result.factions_.push_back(std::move(faction));
+    }
+    const auto abilities = read(resolve(root.at("abilitiesFile")));
+    fields(abilities, {"version", "abilities"}); version(abilities);
+    if (!abilities.at("abilities").is_array()) throw std::runtime_error("Expected ability array");
+    for (const auto& j : abilities.at("abilities")) {
+        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks"});
+        if (string(j.at("targeting")) != "none") throw std::runtime_error("Only immediate untargeted abilities are implemented");
+        AbilityDefinition ability{number(j.at("id"), 1, 1000000), string(j.at("name")), string(j.at("description")),
+            number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), 1, 1000000)};
+        for (const auto& previous : result.abilities_) if (previous.id == ability.id) throw std::runtime_error("Duplicate ability ID");
+        result.abilities_.push_back(std::move(ability));
     }
     const auto rules = read(resolve(root.at("rulesFile"))); fields(rules, {"version", "hero"}); version(rules);
     const auto& hero = rules.at("hero"); fields(hero, {"experienceRadius", "experiencePerVictimLevel", "thresholds"});
@@ -137,6 +149,17 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         for (const auto& j : content.at("entities")) {
             try {
                 auto entity = parseEntity(j);
+                if (j.contains("abilities")) {
+                    const auto& ids = j.at("abilities");
+                    if (!ids.is_array() || ids.size() > 3 || (!entity.mobile && !ids.empty()))
+                        throw std::runtime_error("Units support up to three active abilities");
+                    std::set<int> unique;
+                    for (const auto& value : ids) {
+                        const int id = number(value, 1, 1000000);
+                        if (!unique.insert(id).second) throw std::runtime_error("Duplicate unit ability");
+                        entity.abilities.push_back(result.ability(id));
+                    }
+                }
                 entity.factionName = result.faction(entity.factionId).displayName;
                 if (!result.entityIndex_.emplace(entity.id, result.entities_.size()).second) throw std::runtime_error("Duplicate entity ID");
                 result.entities_.push_back(std::move(entity));
@@ -178,6 +201,10 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     }
     if (result.commanders_.empty()) throw std::runtime_error("No commanders");
     return result;
+}
+const AbilityDefinition& Definitions::ability(int id) const {
+    for (const auto& ability : abilities_) if (ability.id == id) return ability;
+    throw std::out_of_range("Unknown ability: " + std::to_string(id));
 }
 const EntityDefinition& Definitions::entity(const std::string& id) const {
     const auto found = entityIndex_.find(id);

@@ -64,6 +64,22 @@ void Selection::click(const Simulation& game, const WorldView& view, Vec2 point,
         ids.push_back(*id);
     }
 }
+bool Selection::selectTypeInView(const Simulation& game, const WorldView& view, UiRect viewport, Vec2 point, bool additive) {
+    if (!viewport.contains(point)) return false;
+    const auto id = pickEntity(game, view, point);
+    const auto* clicked = id ? game.unit(*id) : nullptr;
+    if (!clicked || clicked->owner != game.player().id || clicked->health <= 0) return false;
+    if (!additive || (!ids.empty() && !game.unit(ids.front()))) ids.clear();
+    activeType_ = clicked->definition.id;
+    for (const auto& unit : game.units()) {
+        if (unit.owner != game.player().id || unit.health <= 0 || unit.definition.id != clicked->definition.id ||
+            !game.fog().visible(unit.cell) || contains(unit.id)) continue;
+        const auto bounds = unitBounds(game, unit, view);
+        if (bounds.x < viewport.x + viewport.width && bounds.x + bounds.width > viewport.x &&
+            bounds.y < viewport.y + viewport.height && bounds.y + bounds.height > viewport.y) ids.push_back(unit.id);
+    }
+    return true;
+}
 void Selection::box(const Simulation& game, const WorldView& view, UiRect bounds, bool additive) {
     activeType_.clear();
     if (!additive || (!ids.empty() && !game.unit(ids.front()))) ids.clear();

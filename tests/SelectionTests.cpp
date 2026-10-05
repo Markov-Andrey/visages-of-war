@@ -3,6 +3,29 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("HUD notifications expire after four real seconds and repeated messages restart the timer", [] {
+        using namespace std::chrono;
+        const rts::GameplayNotification::Clock::time_point began{};
+        rts::Simulation game({rts::Map(16, 16), {1, 1}, {5, 5}, {}});
+        rts::GameplayNotification notice;
+        require(!notice.text(game, began).empty(), "Initial notification was missing");
+        require(!notice.text(game, began + milliseconds(3999)).empty(), "Notification disappeared too early");
+        require(notice.text(game, began + seconds(4)).empty(), "Notification did not expire while simulation was paused");
+        require(!game.message().empty(), "Presentation expiry changed simulation message");
+
+        const auto rejectOrder = [&] { require(!game.order({}, rts::OrderKind::Move, {10, 10}), "Empty selection accepted an order"); };
+        rejectOrder();
+        const auto error = game.message();
+        require(notice.text(game, began + seconds(5)) == error, "New notification did not appear");
+        rejectOrder();
+        require(game.message() == error && notice.text(game, began + seconds(8)) == error, "Repeated notification changed its text");
+        require(!notice.text(game, began + milliseconds(11999)).empty(), "Repeated message failed to restart its lifetime");
+        require(notice.text(game, began + seconds(12)).empty(), "Repeated notification did not expire");
+        rejectOrder();
+        require(notice.text(game, began + seconds(13)) == error, "Expired notification could not appear again");
+        game.stop();
+        require(notice.text(game, began + seconds(14)).empty(), "Cleared message remained visible");
+    });
     test("Every unit uses a lower-third ground anchor for drawing and selection while moving", [&] {
         const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
         for (int level : {0, 2}) {
@@ -39,6 +62,42 @@ void selectionTests(TestSuite& test, const TestContext& context) {
                 }
             }
             require(game.worker().position != rts::center(game.worker().cell), "Presentation fixture did not move between cells");
+        }
+    });
+    test("Double click selects matching friendly units in the camera and Shift adds without duplicates", [] {
+        rts::EntityDefinition worker;
+        auto other = worker; other.id = "other";
+        rts::Scenario scene{rts::Map(40, 32), {1, 1}, {8, 8}, {}};
+        scene.extraWorkers = {{10, 8}, {28, 8}, {10, 24}};
+        scene.units = {{other.id, 0, {12, 8}}, {worker.id, 1, {9, 11}}, {worker.id, rts::neutralPlayer, {12, 11}}};
+        rts::Simulation game(std::move(scene), {}, worker, {worker, other});
+        const auto first = game.units()[0].id, second = game.units()[1].id, distant = game.units()[2].id, different = game.units()[4].id;
+        for (float zoom : {.4f, 1.0f, 1.8f}) {
+            const rts::WorldView view{{120, -70}, zoom};
+            const auto corner = view.project({6, 6});
+            const rts::UiRect viewport{corner.x, corner.y, 8 * rts::WorldView::tileSize * zoom, 6 * rts::WorldView::tileSize * zoom};
+            const auto bounds = rts::unitBounds(game, game.worker(), view);
+            const rts::Vec2 point{bounds.x + bounds.width * .5f, bounds.y + bounds.height * .5f};
+            rts::Selection selection; selection.ids = {different};
+            require(selection.selectTypeInView(game, view, viewport, point, false) && selection.ids == std::vector{first, second},
+                "Double click included off-camera, foreign, neutral or differently typed units");
+            const auto edge = rts::unitBounds(game, *game.unit(second), view);
+            const rts::UiRect clipped{viewport.x, viewport.y, edge.x + edge.width * .5f - viewport.x, viewport.height};
+            require(selection.selectTypeInView(game, view, clipped, point, false) && selection.contains(second),
+                "Partially visible matching unit was excluded");
+            selection.ids = {different, first};
+            require(selection.selectTypeInView(game, view, viewport, point, true) && selection.ids == std::vector{different, first, second},
+                "Shift double click lost selection or duplicated units");
+            require(selection.selectTypeInView(game, view, viewport, point, true) && selection.ids.size() == 3,
+                "Repeated Shift double click toggled or duplicated units");
+            const auto selected = selection.ids;
+            require(!selection.selectTypeInView(game, view, viewport, {viewport.x - 1, viewport.y - 1}, false) && selection.ids == selected,
+                "A click outside the world changed selection");
+            require(!selection.selectTypeInView(game, view, viewport, {viewport.x + 1, viewport.y + 1}, false) && selection.ids == selected,
+                "A ground double click selected a unit type");
+            auto panned = view; panned.origin.x -= 20 * rts::WorldView::tileSize * zoom;
+            require(selection.selectTypeInView(game, panned, viewport, point, false) && selection.ids == std::vector{distant},
+                "Type selection ignored the camera position");
         }
     });
     test("Numbered groups share members, replace independently and recall the full selection", [] {
@@ -187,6 +246,13 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         for (rts::Vec2 extent : {rts::Vec2{800, 600}, rts::Vec2{1440, 900}, rts::Vec2{1920, 1080}}) {
             const rts::BattleLayout layout(extent);
             const rts::SelectionPanelLayout panel(layout.info);
+            require(layout.minimap.height > layout.info.height && layout.minimap.x + layout.minimap.width < layout.info.x &&
+                layout.idleWorker.y + layout.idleWorker.height < layout.minimap.y, "Larger minimap overlaps its neighbouring controls");
+            require(panel.health.y >= panel.portrait.y + panel.portrait.height && panel.mana.y >= panel.health.y + panel.health.height &&
+                panel.mana.x + panel.mana.width <= layout.info.x + layout.info.width &&
+                panel.mana.y + panel.mana.height <= layout.info.y + layout.info.height, "Portrait values escaped their reserved rows");
+            require(std::abs(layout.notification.x + layout.notification.width * .5f - extent.x * .5f) < .01f &&
+                layout.notification.y + layout.notification.height < layout.controlGroups[0].y, "Notification overlaps the bottom controls");
             require(panel.content.width >= 200 && panel.portrait.x + panel.portrait.width < panel.content.x,
                 "Portrait overlaps selection content or leaves too little room for stats");
             for (const auto b : layout.controlGroups)
@@ -204,7 +270,9 @@ void selectionTests(TestSuite& test, const TestContext& context) {
                 require(card.bounds.width == (card.active ? 40 : 32), "Active portrait size did not differ");
                 const auto health = card.healthBar();
                 require(panel.content.contains({card.bounds.x - 1, card.bounds.y}) &&
-                    panel.content.contains({health.x + health.width, health.y + health.height}), "Card or health bar escaped the content panel");
+                    panel.content.contains({health.x + health.width, health.y + health.height}) &&
+                    panel.content.contains({card.manaBar().x + card.manaBar().width, card.manaBar().y + card.manaBar().height}),
+                    "Card or paired bars escaped the content panel");
             }
             require(visible, "Active portrait remained off-screen");
         }

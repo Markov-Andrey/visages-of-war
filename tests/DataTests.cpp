@@ -4,6 +4,37 @@
 
 namespace rts::tests {
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Mana and untargeted abilities resolve from their data catalogs with strict validation", [&] {
+        CatalogFixture fixture(context.assets);
+        const auto definitions = fixture.load();
+        require(definitions.entity("human.worker").maximumMana == 0, "Ordinary units gained a mana pool");
+        const auto& hero = definitions.entity("human.hero");
+        require(hero.maximumMana == 200 && hero.abilities.size() == 1 && hero.abilities.front().id == 1 &&
+            definitions.ability(1).manaCost == 25 && definitions.ability(1).cooldownTicks == 150, "Hero placeholder ability data missing");
+        auto& worker = fixture.entities["entities"][0];
+        worker["stats"]["mana"] = 75; worker["abilities"] = Json::array({1});
+        require(fixture.load().entity("human.worker").maximumMana == 75 &&
+            fixture.load().entity("human.worker").abilities.front().id == 1, "Mana or ability is hardcoded to heroes");
+        for (const auto& value : {Json(-1), Json(1000001), Json(1.5), Json("50"), Json(true), Json(nullptr)}) {
+            worker["stats"]["mana"] = value; mustThrow([&] { fixture.load(); });
+        }
+        worker["stats"]["mana"] = 0;
+        require(fixture.load().entity("human.worker").maximumMana == 0, "Zero mana was rejected");
+        for (const auto& value : {Json::array({999}), Json::array({1, 1}), Json::array({0}), Json(nullptr)}) {
+            worker["abilities"] = value; mustThrow([&] { fixture.load(); });
+        }
+        worker.erase("abilities");
+        const auto original = fixture.abilities;
+        fixture.abilities["abilities"].push_back(fixture.abilities["abilities"][0]); mustThrow([&] { fixture.load(); });
+        for (const auto& value : {Json(-1), Json(1.5), Json("25")}) {
+            fixture.abilities = original; fixture.abilities["abilities"][0]["manaCost"] = value;
+            mustThrow([&] { fixture.load(); });
+        }
+        fixture.abilities = original; fixture.abilities["abilities"][0]["targeting"] = "point";
+        mustThrow([&] { fixture.load(); });
+        fixture.abilities = original; fixture.abilities["abilities"][0]["cooldownTicks"] = 0;
+        mustThrow([&] { fixture.load(); });
+    });
     test("Unit collision radius is catalog data with strict physical bounds", [&] {
         CatalogFixture fixture(context.assets);
         auto& motion = fixture.entities["entities"][0]["mobility"];

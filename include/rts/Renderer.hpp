@@ -76,6 +76,11 @@ private:
     void text(const std::wstring& value, D2D1_RECT_F rect, unsigned color, bool heading = false);
     void sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel = false, float lighting = 1, ID2D1Bitmap* emission = nullptr);
     void buttonFrame(UiRect area);
+    void centeredText(const std::wstring& value, UiRect bounds, unsigned color, bool heading = false);
+    void portraitVitals(const SelectionPanelLayout& layout, int current, int maximum, unsigned color, int mana = 0, int maximumMana = 0);
+    void buildingPortrait(const BuildingSpriteStage& stage, UiRect area, unsigned color, std::uint64_t tick = 0, bool training = false);
+    void drawBuildingPortrait(const Simulation& game, const Building& building, const SelectionPanelLayout& layout);
+    void drawCrystalPortrait(const Crystal& crystal, const SelectionPanelLayout& layout);
     void tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog = false);
     void terrainRow(const Map& map, int row, const WorldView& view, bool grid, bool fog = false);
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
@@ -83,9 +88,11 @@ private:
     void drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info);
     void drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color);
     void drawPortraitBackdrop(UiRect bounds, unsigned color);
-    void drawUnitStats(const Unit& unit, UiRect bounds, std::uint64_t tick);
+    void drawUnitStats(const Unit& unit, UiRect bounds);
     void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14, bool beveled = false);
     void drawHealthBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled);
+    void drawManaBar(const Unit& unit, UiRect bounds, bool beveled = false);
+    void drawVitalBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
     void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected);
     void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row);
@@ -106,7 +113,7 @@ private:
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitUiImages_;
     std::map<unsigned, ComPtr<ID2D1RadialGradientBrush>> portraitGradients_;
     std::map<std::tuple<unsigned, int, int>, ComPtr<ID2D1Bitmap>> selectionRings_;
-    std::array<ComPtr<ID2D1LinearGradientBrush>, 3> healthBarGradients_;
+    std::array<ComPtr<ID2D1LinearGradientBrush>, 3> healthBarGradients_, manaBarGradients_;
     // CPU atlases survive target recreation; cleared on explicit asset reload.
     std::map<std::pair<std::string, unsigned>, SpritePixels> directionalSheets_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;

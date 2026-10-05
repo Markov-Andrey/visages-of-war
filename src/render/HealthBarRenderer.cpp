@@ -7,8 +7,19 @@ void Renderer::drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick
 }
 
 void Renderer::drawHealthBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled) {
-    if (current <= 0 || bounds.width <= 0 || bounds.height <= 0) return;
-    maximum = std::max(1, maximum);
+    if (current <= 0) return;
+    drawVitalBar(current, maximum, recentDamage, bounds, border, beveled, false);
+}
+
+void Renderer::drawManaBar(const Unit& unit, UiRect bounds, bool beveled) {
+    if (unit.maximumMana() <= 0 || unit.health <= 0) return;
+    drawVitalBar(unit.mana, unit.maximumMana(), 0, bounds, 0x315595, beveled, true);
+}
+
+void Renderer::drawVitalBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana) {
+    if (maximum <= 0 || bounds.width <= 0 || bounds.height <= 0) return;
+    auto& gradients = mana ? manaBarGradients_ : healthBarGradients_;
+    const unsigned fillColor = mana ? 0x699fff : friendlySelectionColor;
     const float health = std::clamp(float(current), 0.0f, float(maximum));
     const float trail = std::min(float(maximum), health + std::max(0.f, recentDamage));
     const float pixelsPerHealth = bounds.width / maximum;
@@ -21,13 +32,18 @@ void Renderer::drawHealthBar(int current, int maximum, float recentDamage, UiRec
             {0x96e4ab, friendlySelectionColor, 0x63bb7b, 0x366543, 0x468457},
             {0xffa08a, 0xf46550, 0xe84c40, 0x952a2b, 0xbc3932}
         };
+        constexpr unsigned manaColors[3][5]{
+            {0x27354c, 0x1b2941, 0x172338, 0x080f1c, 0x111d31},
+            {0xafd5ff, 0x699fff, 0x548be5, 0x2a4a90, 0x3865bd},
+            {0xafd5ff, 0x699fff, 0x548be5, 0x2a4a90, 0x3865bd}
+        };
         constexpr float stopsAt[]{0.f, .12f, .49f, .50f, 1.f};
-        for (size_t i = 0; i < healthBarGradients_.size(); ++i) {
-            auto& gradient = healthBarGradients_[i];
+        for (size_t i = 0; i < gradients.size(); ++i) {
+            auto& gradient = gradients[i];
             if (!gradient) {
                 D2D1_GRADIENT_STOP stops[5];
                 for (size_t j = 0; j < std::size(stops); ++j)
-                    stops[j] = {stopsAt[j], D2D1::ColorF(colors[i][j])};
+                    stops[j] = {stopsAt[j], D2D1::ColorF(mana ? manaColors[i][j] : colors[i][j])};
                 ComPtr<ID2D1GradientStopCollection> collection;
                 check(target_->CreateGradientStopCollection(stops, UINT(std::size(stops)), D2D1_GAMMA_2_2,
                     D2D1_EXTEND_MODE_CLAMP, collection.GetAddressOf()));
@@ -59,7 +75,7 @@ void Renderer::drawHealthBar(int current, int maximum, float recentDamage, UiRec
             const bool cap = first == 0 || last == maximum;
             const float rounding = std::min(bounds.height * (cap ? .28f : .16f), (right - left) * .5f);
             const auto section = D2D1::RoundedRect(rect(left, bounds.y, right - left, bounds.height), rounding, rounding);
-            target_->FillRoundedRectangle(section, healthBarGradients_[0].Get());
+            target_->FillRoundedRectangle(section, gradients[0].Get());
             const auto paint = [&](float from, float to, ID2D1Brush* fill) {
                 const float start = std::max(left, from), end = std::min(right, to);
                 if (end <= start) return;
@@ -69,8 +85,8 @@ void Renderer::drawHealthBar(int current, int maximum, float recentDamage, UiRec
                 target_->FillRoundedRectangle(section, fill);
                 target_->PopAxisAlignedClip();
             };
-            paint(healthEnd, trailEnd, healthBarGradients_[2].Get());
-            paint(bounds.x, healthEnd, healthBarGradients_[1].Get());
+            paint(healthEnd, trailEnd, gradients[2].Get());
+            paint(bounds.x, healthEnd, gradients[1].Get());
         }
         target_->SetAntialiasMode(antialias);
         return;
@@ -85,7 +101,7 @@ void Renderer::drawHealthBar(int current, int maximum, float recentDamage, UiRec
     fill(bounds, 0x080f14);
     if (trail > health)
         fill({bounds.x + health * pixelsPerHealth, bounds.y, (trail - health) * pixelsPerHealth, bounds.height}, 0xec4b48);
-    fill({bounds.x, bounds.y, health * pixelsPerHealth, bounds.height}, friendlySelectionColor);
+    fill({bounds.x, bounds.y, health * pixelsPerHealth, bounds.height}, fillColor);
     // Keep every 100-HP boundary, even at small zoom. A partial last section keeps
     // its true width (e.g. 150 HP = 100 + 50), without adding an end divider.
     target_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);

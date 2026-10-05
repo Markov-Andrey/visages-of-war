@@ -11,7 +11,7 @@ bool Simulation::returnCargo(Unit& u) {
         if (!path) path = findUnitPath(map(), u.position, perimeter(map(), b.origin, b.definition.width, b.definition.height, u.definition.movement), {}, u.definition.collisionRadius, u.definition.movement);
         if (path && (!best || path->cost < best->cost)) { best = std::move(path); depot = b.id; }
     }
-    if (!best) { u.state = UnitState::Idle; u.route.clear(); message_ = L"Нет пути к ратуше. Груз сохранён."; return false; }
+    if (!best) { u.state = UnitState::Idle; u.route.clear(); setMessage(L"Нет пути к ратуше. Груз сохранён."); return false; }
     u.targetBuilding = depot;
     const Cell goal = best->cells.back();
     return setRoute(u, std::span<const Cell>(&goal, 1), UnitState::ToHall);

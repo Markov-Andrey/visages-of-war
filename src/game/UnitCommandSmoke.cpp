@@ -27,6 +27,17 @@ void GameApplication::exerciseUnitCommands() {
         {layout.world.width * .5f, layout.world.y + layout.world.height * .5f}, {}, 1.0f / 60);
     if (ui_.selection.ids != std::vector{second} || !layout.world.contains(view_.project(game_.unit(second)->position)))
         throw std::runtime_error("Commands: idle worker button did not cycle and focus");
+    if (!(GetClassLongPtrW(window_, GCL_STYLE) & CS_DBLCLKS)) throw std::runtime_error("Selection: window does not receive double clicks");
+    const auto workerBounds = rts::unitBounds(game_, *game_.unit(first), view_);
+    const rts::Vec2 workerPoint{workerBounds.x + workerBounds.width * .5f, workerBounds.y + workerBounds.height * .5f};
+    click(workerPoint);
+    if (ui_.selection.ids != std::vector{first}) throw std::runtime_error("Selection: single click did not select one worker");
+    onMessage(WM_LBUTTONDBLCLK, 0, at(workerPoint)); onMessage(WM_LBUTTONUP, 0, at(workerPoint));
+    if (ui_.selection.ids != std::vector{first, second}) throw std::runtime_error("Selection: double click or its button-up lost matching workers");
+    ui_.selection.ids = {soldier};
+    onMessage(WM_LBUTTONDOWN, MK_SHIFT, at(workerPoint)); onMessage(WM_LBUTTONUP, MK_SHIFT, at(workerPoint));
+    onMessage(WM_LBUTTONDBLCLK, MK_SHIFT, at(workerPoint)); onMessage(WM_LBUTTONUP, MK_SHIFT, at(workerPoint));
+    if (ui_.selection.ids != std::vector{soldier, first, second}) throw std::runtime_error("Selection: Shift double click replaced or duplicated selection");
     ui_.selection.ids = {soldier}; focus({13, 11}, true);
     onMessage(WM_KEYDOWN, 'M', 0); click(view_.project(rts::center({17, 10}), 0));
     if (ui_.orderMode || rts::unitOrder(*game_.unit(soldier)) != rts::OrderKind::Move) throw std::runtime_error("Commands: M target failed");
@@ -83,6 +94,18 @@ void GameApplication::exerciseUnitCommands() {
     if (portraits.cards.front().id != hero || !portraits.cards.front().active)
         throw std::runtime_error("Commands: hero was not first in the portrait strip");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"active-hero-preview.png", nullptr, false, &ui_);
+    const int manaBefore = game_.unit(hero)->mana;
+    const auto* ability = rts::abilityCommandAt(game_, ui_, rts::firstAbilitySlot);
+    if (!ability) throw std::runtime_error("Abilities: hero button missing");
+    onMessage(WM_KEYDOWN, rts::abilityKeys[0], 0);
+    if (ui_.orderMode || game_.unit(hero)->mana != manaBefore - ability->manaCost ||
+        game_.unit(hero)->abilityCooldown(ability->id) != ability->cooldownTicks)
+        throw std::runtime_error("Abilities: hotkey did not cast immediately");
+    const auto abilityButton = layout.commands[rts::firstAbilitySlot];
+    click({abilityButton.x + 10, abilityButton.y + 10});
+    if (game_.unit(hero)->mana != manaBefore - ability->manaCost || ui_.orderMode)
+        throw std::runtime_error("Abilities: cooldown button repeated the cast");
+    renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-ability-cooldown.png", nullptr, false, &ui_);
     onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.peacemaker", 2);
     for (size_t slot : {size_t{5}, size_t{6}, size_t{7}, size_t{8}, size_t{9}, size_t{10}}) {
         mouse_ = {layout.commands[slot].x + 10, layout.commands[slot].y + 10};

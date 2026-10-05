@@ -9,6 +9,8 @@ enum class UnitCommand { Move, Stop, Attack, Hold, Patrol, Gather, AttackGround,
 enum class CommandScope { Selection, ActiveGroup };
 inline constexpr size_t commandColumns = 4, commandRows = 3, commandSlots = commandColumns * commandRows;
 inline constexpr size_t backCommandSlot = commandSlots - 1;
+inline constexpr size_t firstAbilitySlot = 8;
+inline constexpr std::array abilityKeys{L'Q', L'W', L'E'};
 struct UnitCommandInfo {
     UnitCommand command;
     size_t slot;

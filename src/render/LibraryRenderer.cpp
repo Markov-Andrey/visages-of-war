@@ -87,18 +87,8 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     target_->FillEllipse(D2D1::Ellipse(point({518, 585}), 147, 24), brush_.Get());
     const auto* stage = entity.buildingSprite.stage(entity.constructionTicks, entity.constructionTicks);
     if (stage) {
-        // Fit the complete idle composition, including layers extending beyond the base crop.
-        float left = 0, top = 0, right = float(stage->source[2]), bottom = float(stage->source[3]);
-        for (const auto& layer : stage->layers) if (layer.visible(false)) {
-            left = std::min(left, layer.destination[0]); top = std::min(top, layer.destination[1]);
-            right = std::max(right, layer.destination[0] + layer.destination[2]);
-            bottom = std::max(bottom, layer.destination[1] + layer.destination[3]);
-        }
-        const float scale = std::min(art.width / (right - left), art.height / (bottom - top));
-        const UiRect bounds{art.x + (art.width - (right - left) * scale) * .5f - left * scale,
-            art.y + (art.height - (bottom - top) * scale) * .5f - top * scale,
-            stage->source[2] * scale, stage->source[3] * scale};
-        buildingImage(*stage, bounds, teamRgb(menu.player.color), static_cast<std::uint64_t>(menu.librarySeconds * Simulation::ticksPerSecond), false);
+        buildingPortrait(*stage, art, teamRgb(menu.player.color),
+            static_cast<std::uint64_t>(menu.librarySeconds * Simulation::ticksPerSecond));
     } else if (entity.mobile && !entity.sprite.image.empty()) {
         const float scale = std::min(art.width / entity.sprite.frameWidth, art.height / entity.sprite.frameHeight);
         const Vec2 extent{entity.sprite.frameWidth * scale, entity.sprite.frameHeight * scale};

@@ -2,6 +2,37 @@
 
 namespace rts::tests {
 void combatTests(TestSuite& test, const TestContext& context) {
+    test("Untargeted abilities spend mana once, preserve orders and unlock after exactly five simulation seconds", [&] {
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        Scenario site{Map(32, 32), {1, 1}, {4, 6}, {}};
+        site.heroSpawn = Cell{6, 6}; site.units = {{"human.hero", 1, {28, 28}}};
+        Simulation game(std::move(site), {}, definitions.entity("human.worker"), definitions.entities(), "human.hero");
+        const auto id = game.units().back().id, foreign = game.units()[1].id;
+        require(game.unit(id)->mana == 200 && game.worker().mana == 0, "Spawn did not initialize independent mana pools");
+        require(game.order(std::array{id}, OrderKind::Move, {12, 6}), "Ability movement setup failed");
+        const auto position = game.unit(id)->position;
+        require(!game.activateAbility(game.worker().id, 1) && !game.activateAbility(foreign, 1) &&
+            !game.activateAbility(id, 999) && !game.activateAbility(99999, 1), "Unknown or unauthorized caster accepted");
+        require(game.activateAbility(id, 1) && game.unit(id)->mana == 175 && game.unit(id)->abilityCooldown(1) == 150,
+            "Ability failed to atomically spend mana and start cooldown");
+        require(game.unit(id)->currentOrder.kind == OrderKind::Move && game.unit(id)->position == position,
+            "Untargeted ability changed movement or required a target");
+        require(!game.activateAbility(id, 1) && game.unit(id)->mana == 175 && game.unit(id)->abilityCooldown(1) == 150,
+            "Repeated click spent mana or restarted cooldown");
+        ticks(game, 149);
+        require(game.unit(id)->abilityCooldown(1) == 1 && !game.activateAbility(id, 1), "Cooldown ended before five seconds");
+        game.tick();
+        require(game.unit(id)->abilityCooldown(1) == 0 && game.activateAbility(id, 1), "Cooldown did not expire on its final tick");
+        while (game.unit(id)->mana > 0) {
+            ticks(game, 150); require(game.activateAbility(id, 1), "Ready ability rejected sufficient mana");
+        }
+        ticks(game, 150);
+        require(!game.activateAbility(id, 1) && game.unit(id)->mana == 0 && game.unit(id)->abilityCooldown(1) == 0,
+            "Insufficient mana went negative or started cooldown");
+        require(game.unit(foreign)->mana == 200 && game.unit(foreign)->abilityCooldown(1) == 0, "Cooldown or mana leaked between units");
+        game.grantExperience(id, 100);
+        require(game.unit(id)->maximumMana() == 200 && game.unit(id)->mana == 0, "Level up unexpectedly refilled mana");
+    });
     test("Damage feedback holds, drains, combines hits and clears immediately on a lethal blow", [] {
         rts::HealthFeedback feedback;
         constexpr std::uint64_t first = 100;

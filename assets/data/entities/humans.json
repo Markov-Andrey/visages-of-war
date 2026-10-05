@@ -255,6 +255,7 @@
     },
     {
       "id": "human.hero",
+      "abilities": [1],
       "canDecompose": false,
       "factionId": "humans",
       "name": "Рыцарь",
@@ -265,6 +266,7 @@
       },
       "stats": {
         "health": 600,
+        "mana": 200,
         "damage": 24,
         "level": 1,
         "dayVision": 10,

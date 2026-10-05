@@ -20,11 +20,13 @@ public:
     const CommanderDefinition& commander(const std::string& id) const;
     const FactionDefinition& faction(const std::string& id) const;
     const EntityDefinition& entity(const std::string& id) const;
+    const AbilityDefinition& ability(int id) const;
     const EntityDefinition& startingDepot(const std::string& factionId) const;
     const std::vector<EntityDefinition>& entities() const { return entities_; }
     const ProgressionRules& progression() const { return progression_; }
 private:
     std::vector<EntityDefinition> entities_;
+    std::vector<AbilityDefinition> abilities_;
     std::unordered_map<std::string, size_t> entityIndex_;
     std::vector<CommanderDefinition> commanders_;
     std::vector<FactionDefinition> factions_;

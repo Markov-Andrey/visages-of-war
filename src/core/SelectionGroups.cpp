@@ -66,7 +66,7 @@ SelectionCards::SelectionCards(const Simulation& game, const Selection& selectio
     first = activeStart / capacity * capacity;
     const size_t visible = std::min(total - first, capacity);
     const size_t rows = (visible + columns - 1) / columns;
-    const float top = info.y + (info.height - (rows * 56.0f - 9)) * .5f;
+    const float top = info.y + (info.height - (rows * 62.0f - 10)) * .5f;
     for (size_t i = first; i < first + visible; ++i) {
         const bool highlighted = game.unit(ordered[i])->definition.id == active.type;
         const float side = highlighted ? 40.0f : 32.0f;
@@ -76,7 +76,7 @@ SelectionCards::SelectionCards(const Simulation& game, const Selection& selectio
         const size_t rowCount = std::min(columns, visible - row * columns);
         const float left = info.x + (info.width - (rowCount * 46.0f - 6)) * .5f;
         cards.push_back({ordered[i], {left + (slot % columns) * 46.0f + inset,
-            top + row * 56.0f + inset, side, side}, highlighted});
+            top + row * 62.0f + inset, side, side}, highlighted});
     }
 }
 }

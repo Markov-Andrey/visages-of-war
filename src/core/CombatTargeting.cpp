@@ -42,7 +42,7 @@ bool Simulation::attack(std::span<const EntityId> ids, EntityId targetId) {
         if (!u || u->owner != player_.id || !canAttack(*u, *target)) continue;
         issue(*u, {OrderKind::Attack, {}, targetId}); any = true;
     }
-    message_ = any ? L"Атакуем выбранную цель." : L"Выбранные юниты не могут атаковать эту цель.";
+    setMessage(any ? L"Атакуем выбранную цель." : L"Выбранные юниты не могут атаковать эту цель.");
     return any;
 }
 void Simulation::chase(Unit& u, const Unit& target) {
