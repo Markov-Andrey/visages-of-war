@@ -28,6 +28,8 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     u.velocity = {};
     u.motionFacing.reset();
     u.targetUnit = 0; cancelAttack(u); u.chaseTicks = 0;
+    u.unreachableTarget = 0; u.targetRetryTicks = 0;
+    u.route.clear(); u.next = 0; u.blockedTicks = 0;
     u.repeatGather = false; u.targetCrystal = -1; u.gatherOriginCrystal = -1; u.targetBuilding = 0; u.harvestTicks = 0;
     if (order.kind == OrderKind::Attack) {
         const auto* target = unit(order.target);
@@ -179,6 +181,7 @@ void Simulation::arrived(Unit& u) {
     }
 }
 void Simulation::tickUnit(Unit& u) {
+    if (u.state == UnitState::Idle && u.moveGroup) yieldFormation(u);
     if (u.state == UnitState::Idle && !u.targetUnit &&
         (u.currentOrder.kind == OrderKind::Patrol || u.currentOrder.kind == OrderKind::AttackMove) && ++u.blockedTicks >= 15)
         resumeOrder(u);

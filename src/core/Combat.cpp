@@ -17,6 +17,7 @@ void Simulation::tickCombat() {
     tickProjectiles(hits); // Newly released shots start flying on the following tick.
     for (auto& u : units_) {
         if (u.chaseTicks > 0) --u.chaseTicks;
+        if (u.targetRetryTicks > 0) --u.targetRetryTicks;
         if (u.attackPhase == AttackPhase::Recovery || u.attackPhase == AttackPhase::Cooldown) {
             if (u.attackTicks > 0) --u.attackTicks;
             if (u.attackTicks == 0) {
@@ -28,23 +29,49 @@ void Simulation::tickCombat() {
         }
         if (u.attackDamage() <= 0) continue;
         const bool ground = u.currentOrder.kind == OrderKind::AttackGround;
+        const bool automatic = !ground && u.currentOrder.kind != OrderKind::Attack;
+        if (automatic && u.targetUnit && u.targetUnit == u.unreachableTarget && u.targetRetryTicks > 0) {
+            u.targetUnit = 0; u.route.clear(); u.next = 0; u.state = UnitState::Idle;
+        }
         if (!u.targetUnit && !ground && u.state == UnitState::Attacking) resumeOrder(u);
         const bool scanning = u.state == UnitState::Idle || u.currentOrder.kind == OrderKind::AttackMove ||
             u.currentOrder.kind == OrderKind::Patrol;
-        if (!u.targetUnit && !ground && scanning) {
+        const auto acquire = [&](bool onlyInReach) {
             const Unit* best = nullptr;
-            int bestDistance = std::numeric_limits<int>::max();
+            float bestScore = std::numeric_limits<float>::max();
             const int vision = clock_.phase() == DayPhase::Day ? u.definition.dayVision : u.definition.nightVision;
             for (const auto& candidate : units_) {
-                if (!canAttack(u, candidate)) continue;
-                if (u.currentOrder.kind == OrderKind::Hold && !attackReach(u, candidate)) continue;
-                const Cell d = candidate.cell - u.cell;
-                const int distance = d.x * d.x + d.y * d.y;
-                if (distance < bestDistance && visionReaches(map(), {u.cell, vision, airborne(u.definition.movement)}, candidate.cell)) {
-                    best = &candidate; bestDistance = distance;
+                if (!canAttack(u, candidate) || (candidate.id == u.unreachableTarget && u.targetRetryTicks > 0)) continue;
+                const bool inReach = attackReach(u, candidate);
+                if ((onlyInReach || u.currentOrder.kind == OrderKind::Hold) && !inReach) continue;
+                float score = lengthSquared(candidate.position - u.position);
+                if (inReach) score -= 10000;
+                else {
+                    // Spread automatic melee acquisition along the front. A focused
+                    // click never passes through this target replacement policy.
+                    for (const auto& ally : units_) if (ally.id != u.id && ally.owner == u.owner &&
+                        ally.targetUnit == candidate.id && !ally.definition.projectile) score += 2;
+                    if (candidate.id == u.targetUnit && u.blockedTicks >= 18) score += 8;
+                }
+                if (score < bestScore && visionReaches(map(), {u.cell, vision, airborne(u.definition.movement)}, candidate.cell)) {
+                    best = &candidate; bestScore = score;
                 }
             }
+            return best;
+        };
+        if (!u.targetUnit && !ground && scanning) {
+            const auto* best = acquire(false);
             if (best) { u.targetUnit = best->id; chase(u, *best); }
+        } else if (automatic && u.targetUnit && u.attackPhase != AttackPhase::Windup && u.attackPhase != AttackPhase::Recovery &&
+            (clock_.elapsedTicks() + u.id) % 6 == 0) {
+            const auto* current = unit(u.targetUnit);
+            if (current && !attackReach(u, *current)) {
+                const auto* best = acquire(u.blockedTicks < 18);
+                if (best && best->id != u.targetUnit) {
+                    u.targetUnit = best->id; u.route.clear(); u.next = 0; u.blockedTicks = 0;
+                    chase(u, *best);
+                }
+            }
         }
         if (!u.targetUnit && !ground) continue;
         const auto* target = unit(u.targetUnit);

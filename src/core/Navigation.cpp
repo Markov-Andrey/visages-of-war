@@ -7,7 +7,7 @@
 namespace rts {
 namespace {
 std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell> goals, std::span<const Cell> occupied,
-    MovementType movement, Vec2 position, float radius, std::span<const Circle> obstacles, std::optional<Vec2> destination = {}) {
+    MovementType movement, Vec2 position, float radius, std::span<const Circle> obstacles, std::optional<Vec2> destination = {}, int expansionLimit = 0) {
     if (!map.walkable(start, movement) || goals.empty()) return std::nullopt;
     std::vector<bool> blocked(static_cast<size_t>(map.width()) * map.height());
     for (Cell c : occupied) if (map.contains(c) && c != start) blocked[static_cast<size_t>(c.y) * map.width() + c.x] = true;
@@ -51,6 +51,7 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
     cost[index(start)] = 0;
     open.push({heuristic(start), 0, index(start), 0});
     constexpr std::array<Cell, 8> directions{{{1, 0}, {0, 1}, {-1, 0}, {0, -1}, {1, 1}, {-1, 1}, {-1, -1}, {1, -1}}};
+    int expanded = 0;
     while (!open.empty()) {
         const auto current = open.top();
         open.pop();
@@ -62,6 +63,7 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
             std::reverse(path.cells.begin(), path.cells.end());
             return path;
         }
+        if (expansionLimit > 0 && ++expanded >= expansionLimit) return std::nullopt;
         for (Cell d : directions) {
             const Cell to = from + d;
             if (!map.canStep(from, to, movement)) continue;
@@ -93,11 +95,11 @@ std::optional<Path> findUnitPath(const Map& map, Vec2 start, std::span<const Cel
     return searchPath(map, cellAt(start), goals, {}, movement, start, radius, obstacles);
 }
 std::optional<Path> findUnitPathTo(const Map& map, Vec2 start, Vec2 goal,
-    std::span<const Circle> obstacles, float radius, MovementType movement) {
+    std::span<const Circle> obstacles, float radius, MovementType movement, int expansionLimit) {
     if (!std::isfinite(radius) || radius < .05f || radius > .5f ||
         !map.canTraverse(start, start, radius, movement) || !map.canTraverse(goal, goal, radius, movement)) return std::nullopt;
     const Cell cell = cellAt(goal);
-    return searchPath(map, cellAt(start), std::span<const Cell>(&cell, 1), {}, movement, start, radius, obstacles, goal);
+    return searchPath(map, cellAt(start), std::span<const Cell>(&cell, 1), {}, movement, start, radius, obstacles, goal, expansionLimit);
 }
 std::optional<Path> findPath(const Map& map, Cell start, Cell goal, MovementType movement) {
     return findPath(map, start, std::span<const Cell>(&goal, 1), {}, movement);

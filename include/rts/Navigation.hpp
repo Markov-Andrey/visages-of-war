@@ -10,7 +10,7 @@ std::optional<Path> findPath(const Map& map, Cell start, Cell goal, MovementType
 std::optional<Path> findUnitPath(const Map& map, Vec2 start, std::span<const Cell> goals,
     std::span<const Circle> obstacles, float radius, MovementType movement);
 std::optional<Path> findUnitPathTo(const Map& map, Vec2 start, Vec2 goal,
-    std::span<const Circle> obstacles, float radius, MovementType movement);
+    std::span<const Circle> obstacles, float radius, MovementType movement, int expansionLimit = 0);
 struct RouteField {
     int width{};
     MovementType movement = MovementType::Walking;

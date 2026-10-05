@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <string_view>
 #include <vector>
 
 namespace {
@@ -24,9 +25,49 @@ template<class Work> void measure(const char* name, Work work) {
     std::cout << name << ": " << std::fixed << std::setprecision(3) << samples[3]
               << " ms; checksum=" << checksum << '\n';
 }
+void combatBenchmark() {
+    using Clock = std::chrono::steady_clock;
+    for (int count : {24, 50}) for (bool focus : {false, true}) {
+        rts::Scenario site{rts::Map(96, 96), {1, 1}, {30, 40}, {}};
+        rts::EntityDefinition fighter;
+        fighter.attackDamage = 10; fighter.maximumHealth = 100000; fighter.collisionRadius = .45f;
+        fighter.canBuild = false; fighter.dayVision = fighter.nightVision = 30;
+        for (int i = 0; i < count; ++i) {
+            if (i) site.units.push_back({fighter.id, 0, {30 + i % 5, 40 + i / 5}});
+            site.units.push_back({fighter.id, 1, {42 + i % 5, 40 + i / 5}});
+        }
+        rts::Simulation game(std::move(site), {}, fighter, {fighter});
+        std::vector<rts::EntityId> own;
+        rts::EntityId target{};
+        for (const auto& u : game.units()) {
+            if (u.owner == 0) own.push_back(u.id); else if (!target) target = u.id;
+        }
+        const auto commandStart = Clock::now();
+        if (focus) game.attack(own, target);
+        const double commandMs = std::chrono::duration<double, std::milli>(Clock::now() - commandStart).count();
+        std::vector<double> samples;
+        for (int tick = 0; tick < 300; ++tick) {
+            const auto start = Clock::now(); game.tick();
+            samples.push_back(std::chrono::duration<double, std::milli>(Clock::now() - start).count());
+        }
+        const double first = samples.front();
+        std::sort(samples.begin(), samples.end());
+        int damage = 0, engaged = 0;
+        for (const auto& u : game.units()) {
+            damage += u.maximumHealth() - u.health;
+            engaged += u.state == rts::UnitState::Attacking;
+        }
+        std::cout << "combat " << count << "v" << count << (focus ? " focus" : " automatic")
+                  << " / 96x96 / 300 ticks: command=" << commandMs << " ms; first=" << first
+                  << " ms; p50=" << samples[150] << " ms; p95=" << samples[285]
+                  << " ms; max=" << samples.back() << " ms; damage=" << damage << "; engaged=" << engaged << std::endl;
+    }
+}
 }
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc == 2 && std::string_view(argv[1]) == "--combat-only") { combatBenchmark(); return 0; }
+    combatBenchmark();
     rts::Map open(128, 128);
     std::vector<rts::FormationMember> members;
     for (int i = 0; i < 48; ++i) members.push_back({rts::EntityId(i + 1), {10 + i % 8, 20 + i / 8}});

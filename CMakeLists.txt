@@ -41,6 +41,7 @@ add_library(rts_core
     src/core/Abilities.cpp
     src/core/Combat.cpp
     src/core/CombatTargeting.cpp
+    src/core/CombatMovement.cpp
     src/core/CombatDamage.cpp
     src/core/Remains.cpp
     src/core/HeroProgression.cpp

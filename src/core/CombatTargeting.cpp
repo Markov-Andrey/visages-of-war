@@ -15,14 +15,14 @@ bool Simulation::canAttack(const Unit& attacker, const Unit& target) const {
     return attacker.attackDamage() > 0 && target.health > 0 && combat::hostile(attacker.owner, target.owner) &&
         combat::accepts(attacker.definition.attackTargets, airborne(attacker.definition.movement), airborne(target.definition.movement));
 }
-bool Simulation::attackReach(const Unit& attacker, const Unit& target, std::optional<Cell> origin) const {
+bool Simulation::attackReach(const Unit& attacker, const Unit& target, std::optional<Vec2> origin) const {
     if (!canAttack(attacker, target)) return false;
-    const Vec2 start = origin ? center(*origin) : attacker.position;
+    const Vec2 start = origin.value_or(attacker.position);
     const Vec2 delta = target.position - start;
     if (delta.x * delta.x + delta.y * delta.y > attacker.definition.attackRange * attacker.definition.attackRange) return false;
     if (attacker.definition.projectile) return true;
     // Direct melee cannot reach across a cliff or through a static obstacle.
-    const Cell from = origin.value_or(attacker.cell), d = target.cell - from;
+    const Cell from = cellAt(start), d = target.cell - from;
     const int steps = std::max(std::abs(d.x), std::abs(d.y));
     if (steps == 0) return map().walkable(from, attacker.definition.movement);
     Cell previous = from;
@@ -46,20 +46,10 @@ bool Simulation::attack(std::span<const EntityId> ids, EntityId targetId) {
     return any;
 }
 void Simulation::chase(Unit& u, const Unit& target) {
-    u.chaseTicks = 15;
     if (attackReach(u, target)) {
         u.route.clear(); u.next = 0; u.blockedTicks = 0; u.state = UnitState::Attacking;
         return;
     }
-    std::vector<Cell> slots;
-    const auto held = occupied(u, true);
-    const int radius = static_cast<int>(std::ceil(u.definition.attackRange));
-    for (int y = std::max(0, target.cell.y - radius); y <= std::min(map().height() - 1, target.cell.y + radius); ++y)
-        for (int x = std::max(0, target.cell.x - radius); x <= std::min(map().width() - 1, target.cell.x + radius); ++x) {
-            const Cell c{x, y};
-            if (map().walkable(c, u.definition.movement) && attackReach(u, target, c) &&
-                std::find(held.begin(), held.end(), c) == held.end()) slots.push_back(c);
-        }
-    if (!setRoute(u, slots, UnitState::ToAttack)) u.state = UnitState::ToAttack;
+    approachCombat(u, target.position, &target);
 }
 }

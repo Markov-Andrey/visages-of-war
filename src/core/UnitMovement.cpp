@@ -3,11 +3,54 @@
 #include <array>
 
 namespace rts {
+namespace {
+float formationDepth(const Unit& u, Vec2 p) { return p.x * u.formationForward.x + p.y * u.formationForward.y; }
+std::pair<float, float> roleBand(const Unit& u, std::span<const Unit> units) {
+    const float own = formationDepth(u, u.currentOrder.position.value_or(u.routeDestination));
+    float ownMin = own, ownMax = own, front = 1e9f, back = -1e9f;
+    for (const auto& other : units) if (other.moveGroup == u.moveGroup) {
+        const float d = formationDepth(u, other.currentOrder.position.value_or(other.routeDestination));
+        if (other.definition.formationPriority < u.definition.formationPriority) front = std::min(front, d);
+        else if (other.definition.formationPriority > u.definition.formationPriority) back = std::max(back, d);
+        else { ownMin = std::min(ownMin, d); ownMax = std::max(ownMax, d); }
+    }
+    return {(ownMin + back) * .5f, (ownMax + front) * .5f};
+}
+// A cell-based detour may not connect to an interior fractional slot after the
+// crowd settles. Find another continuous place in the same role's depth band.
+std::optional<Path> relaxedFormationPath(const Simulation& game, const Unit& u, std::span<const Circle> bodies) {
+    const auto [back, front] = roleBand(u, game.units());
+    std::vector<Vec2> goals;
+    const auto clear = [&](Vec2 from, Vec2 to) {
+        return std::none_of(bodies.begin(), bodies.end(), [&](Circle body) {
+            return sweptCircleIntersects(from, to, u.definition.collisionRadius, body);
+        });
+    };
+    for (const auto& other : game.units()) if (other.moveGroup == u.moveGroup && other.state == UnitState::Idle) {
+        const float spacing = u.definition.collisionRadius + other.definition.collisionRadius + .08f;
+        for (int i = 0; i < 24; ++i) {
+            const float angle = i * .261799388f;
+            const Vec2 p = other.position + Vec2{std::cos(angle), std::sin(angle)} * spacing;
+            const float d = formationDepth(u, p);
+            if (d < back || d > front || lengthSquared(p - center(u.groupTarget)) > (u.groupRadius + .7f) * (u.groupRadius + .7f)) continue;
+            if (clear(p, p) && game.map().canTraverse(p, p, u.definition.collisionRadius, u.definition.movement)) goals.push_back(p);
+        }
+    }
+    const Vec2 original = u.currentOrder.position.value_or(u.routeDestination);
+    const auto score = [&](Vec2 p) { return lengthSquared(p - u.position) + .5f * lengthSquared(p - original); };
+    std::stable_sort(goals.begin(), goals.end(), [&](Vec2 a, Vec2 b) { return score(a) < score(b); });
+    for (Vec2 p : goals) if (clear(u.position, p) && game.map().canTraverse(u.position, p, u.definition.collisionRadius, u.definition.movement))
+        return Path{{u.cell, cellAt(p)}, 0, p};
+    for (size_t i = 0; i < goals.size(); ++i)
+        if (auto path = findUnitPathTo(game.map(), u.position, goals[i], bodies, u.definition.collisionRadius, u.definition.movement, 256)) return path;
+    return {};
+}
+}
 std::vector<Circle> Simulation::unitObstacles(const Unit& self, bool claimDestinations, bool ignoreGroup) const {
     std::vector<Circle> result;
     for (const auto& other : units_) {
         if (other.id == self.id || airborne(other.definition.movement) != airborne(self.definition.movement)) continue;
-        if (ignoreGroup && self.moveGroup && self.moveGroup == other.moveGroup) continue;
+        if (ignoreGroup && self.moveGroup && self.moveGroup == other.moveGroup && other.next < other.route.size()) continue;
         result.push_back({other.position, other.definition.collisionRadius});
         if (claimDestinations && !other.route.empty()) result.push_back({other.routeDestination, other.definition.collisionRadius});
     }
@@ -56,6 +99,11 @@ bool Simulation::groupArrived(const Unit& u) const {
         (u.currentOrder.kind != OrderKind::Move && u.currentOrder.kind != OrderKind::AttackMove)) return false;
     if (lengthSquared(u.position - center(u.groupTarget)) > (u.groupRadius + .7f) * (u.groupRadius + .7f)) return false;
     if (lengthSquared(u.position - u.routeDestination) < .0025f) return true;
+    // Arrival may relax within a role's band, but must not leave melee behind
+    // archers merely because an archer stopped across its personal destination.
+    const auto [back, front] = roleBand(u, units_);
+    const float current = formationDepth(u, u.position);
+    if (current > front || current < back) return false;
     // A nearby friend that has already arrived is a valid edge of the group.
     // Never finish across a wall, because of an enemy, or inside a choke en route.
     for (const auto& other : units_) {
@@ -68,13 +116,56 @@ bool Simulation::groupArrived(const Unit& u) const {
     }
     return false;
 }
+void Simulation::yieldFormation(Unit& u) {
+    if (u.groupRadius <= 0 || (clock_.elapsedTicks() + u.id) % 12 != 0) return;
+    if (std::none_of(units_.begin(), units_.end(), [&](const Unit& other) {
+        return other.moveGroup == u.moveGroup && other.definition.formationPriority != u.definition.formationPriority;
+    })) return;
+    for (const auto& waiting : units_) {
+        if (waiting.id == u.id || waiting.moveGroup != u.moveGroup || waiting.state != UnitState::Moving || waiting.blockedTicks < 30 ||
+            waiting.definition.formationPriority > u.definition.formationPriority ||
+            airborne(waiting.definition.movement) != airborne(u.definition.movement)) continue;
+        const Vec2 away = u.position - waiting.position;
+        const float separation = std::sqrt(lengthSquared(away));
+        const float radius = u.definition.collisionRadius, clearance = radius + waiting.definition.collisionRadius;
+        if (separation > clearance + .35f || separation < .001f) continue;
+        const auto [back, front] = roleBand(u, units_);
+        const float heading = std::atan2(away.y, away.x), distance = clearance + .2f;
+        // Only members of this movement order volunteer to open a lane. Stop,
+        // Hold, enemies and unrelated friends never get displaced by the crowd.
+        for (int step = 0; step <= 6; ++step) for (float side : {1.0f, -1.0f}) {
+            const float angle = heading + side * step * .261799388f;
+            const Vec2 p = u.position + Vec2{std::cos(angle), std::sin(angle)} * distance;
+            const float d = formationDepth(u, p);
+            if (d < back || d > front || lengthSquared(p - center(u.groupTarget)) > (u.groupRadius + .7f) * (u.groupRadius + .7f)) continue;
+            if (!map().canTraverse(u.position, p, radius, u.definition.movement)) continue;
+            bool clear = true;
+            for (const auto& other : units_) if (other.id != u.id && airborne(other.definition.movement) == airborne(u.definition.movement) &&
+                sweptCircleIntersects(u.position, p, radius, {other.position, other.definition.collisionRadius})) { clear = false; break; }
+            if (!clear) continue;
+            u.blockedTicks = 0;
+            followPath(u, Path{{u.cell, cellAt(p)}, 0, p}, UnitState::Moving);
+            return;
+        }
+    }
+}
 void Simulation::moveUnit(Unit& u) {
     const float speed = u.moveGroup ? std::min(u.definition.movementPerSecond, u.groupSpeed) : u.definition.movementPerSecond;
     const float travel = speed / ticksPerSecond;
     if (groupArrived(u)) { arrived(u); return; }
+    const bool mixedFormation = u.moveGroup && u.state == UnitState::Moving &&
+        std::any_of(units_.begin(), units_.end(), [&](const Unit& other) {
+            return other.moveGroup == u.moveGroup && other.definition.formationPriority != u.definition.formationPriority;
+        });
     // Replan only after sustained lack of progress. Friends still travelling with
     // this group are not a new maze of walls on each frame.
-    if (u.blockedTicks >= 30 && u.blockedTicks % 30 == 0) {
+    if (u.state != UnitState::ToAttack && u.blockedTicks >= 30 && u.blockedTicks % 30 == 0) {
+        if (mixedFormation && lengthSquared(u.position - center(u.groupTarget)) < (u.groupRadius + 1) * (u.groupRadius + 1)) {
+            if (auto path = relaxedFormationPath(*this, u, unitObstacles(u))) {
+                followPath(u, std::move(*path), u.state);
+                if (u.next == u.route.size()) return;
+            }
+        }
         const auto goal = u.routeDestination;
         if (auto path = findUnitPathTo(map(), u.position, goal, unitObstacles(u, false, true),
             u.definition.collisionRadius, u.definition.movement)) {
@@ -88,8 +179,15 @@ void Simulation::moveUnit(Unit& u) {
     // Any-angle steering uses terrain visibility; circular neighbours are handled
     // by the velocity solver, so a moving friend cannot disable path smoothing.
     const auto waypoint = [&](size_t i) { return i + 1 == u.route.size() ? u.routeDestination : center(u.route[i]); };
+    const auto clearCombatShortcut = [&](Vec2 point) {
+        if (u.state != UnitState::ToAttack && !mixedFormation) return true;
+        for (const auto& other : units_) if (other.id != u.id &&
+            airborne(other.definition.movement) == airborne(u.definition.movement) && other.next >= other.route.size() &&
+            sweptCircleIntersects(u.position, point, u.definition.collisionRadius, {other.position, other.definition.collisionRadius})) return false;
+        return true;
+    };
     for (size_t candidate = std::min(u.route.size() - 1, u.next + 8); candidate > u.next; --candidate) {
-        if (map().canTraverse(u.position, waypoint(candidate), u.definition.collisionRadius, u.definition.movement)) {
+        if (clearCombatShortcut(waypoint(candidate)) && map().canTraverse(u.position, waypoint(candidate), u.definition.collisionRadius, u.definition.movement)) {
             u.next = candidate; break;
         }
     }
@@ -138,7 +236,11 @@ void Simulation::moveUnit(Unit& u) {
             const Vec2 relative = other->tickPosition - u.tickPosition;
             const Vec2 otherVelocity = other->next < other->route.size() ? other->tickVelocity : Vec2{};
             const Vec2 approach = velocity - otherVelocity;
-            const float radius = u.definition.collisionRadius + other->definition.collisionRadius + .035f;
+            const float contact = u.definition.collisionRadius + other->definition.collisionRadius;
+            // Prediction padding must not prevent a short-range weapon from
+            // reaching contact. The actual swept bodies remain unchanged.
+            const float padding = other->id == u.targetUnit ? std::clamp(u.definition.attackRange - contact - .015f, 0.0f, .035f) : .035f;
+            const float radius = contact + padding;
             const float a = lengthSquared(approach), b = dot(relative, approach), c = lengthSquared(relative) - radius * radius;
             if (b <= 0 || a < .00001f) continue;
             const float discriminant = b * b - a * c;
@@ -178,7 +280,8 @@ void Simulation::moveUnit(Unit& u) {
     if (best >= 1e9f) { ++u.blockedTicks; return; }
     const auto displacement = velocity * (1.0f / ticksPerSecond);
     const float travelled = std::sqrt(lengthSquared(displacement));
-    if (travelled < travel * .1f || dot(displacement, delta) <= 0) ++u.blockedTicks;
+    const bool tactical = mixedFormation || u.state == UnitState::ToAttack;
+    if (travelled < travel * (tactical ? .25f : .1f) || dot(displacement, delta) <= travel * distance * (tactical ? .25f : 0.0f)) ++u.blockedTicks;
     else u.blockedTicks = 0;
     if (travelled < .00001f) return;
     // This final check protects the movement contract even if the scoring or

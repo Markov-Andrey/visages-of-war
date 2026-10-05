@@ -55,6 +55,8 @@ struct Unit {
     EntityId targetUnit{};
     AttackPhase attackPhase = AttackPhase::Ready;
     int attackTicks{}, chaseTicks{};
+    EntityId unreachableTarget{};
+    int targetRetryTicks{};
     std::optional<HeroProgression> hero;
     int level() const { return hero ? hero->level : definition.level; }
     int maximumHealth() const { return definition.maximumHealth + (hero ? (level() - 1) * definition.hero->healthPerLevel : 0); }
@@ -211,6 +213,7 @@ private:
     void followPath(Unit& unit, Path path, UnitState state);
     void moveUnit(Unit& unit);
     bool groupArrived(const Unit& unit) const;
+    void yieldFormation(Unit& unit);
     bool setRoute(Unit& unit, std::span<const Cell> goals, UnitState state, bool waitForTraffic = true);
     bool seekCrystal(Unit& unit);
     bool returnCargo(Unit& unit);
@@ -223,7 +226,8 @@ private:
     void leaveRemains(const Unit& unit);
     void tickRemains();
     bool targetVisible(const Unit& observer, const Unit& target) const;
-    bool attackReach(const Unit& attacker, const Unit& target, std::optional<Cell> from = {}) const;
+    bool attackReach(const Unit& attacker, const Unit& target, std::optional<Vec2> from = {}) const;
+    void approachCombat(Unit& unit, Vec2 point, const Unit* target);
     void cancelAttack(Unit& unit);
     void resumeOrder(Unit& unit);
     bool groundAttackReach(const Unit& unit, Cell target, std::optional<Cell> from = {}) const;
@@ -257,6 +261,7 @@ private:
     std::vector<Building> buildings_;
     EntityId nextId_ = 10000;
     uint64_t nextMoveGroup_ = 1;
+    int combatSearchBudget_ = 8;
     int stored_{};
     bool heroFallen_{};
     std::uint64_t messageRevision_{};

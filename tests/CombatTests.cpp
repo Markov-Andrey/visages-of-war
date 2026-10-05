@@ -1,7 +1,89 @@
 #include "TestSupport.hpp"
 
 namespace rts::tests {
+namespace {
+void checkCombatMotion(const Simulation& game) {
+    for (size_t i = 0; i < game.units().size(); ++i) {
+        const auto& a = game.units()[i];
+        require(game.map().canTraverse(a.tickPosition, a.position, a.definition.collisionRadius, a.definition.movement), "Combat crossed terrain");
+        require(lengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f, 2), "Combat teleported a unit");
+        for (size_t j = i + 1; j < game.units().size(); ++j) {
+            const auto& b = game.units()[j];
+            if (airborne(a.definition.movement) == airborne(b.definition.movement))
+                require(!sweptCircleIntersects(a.tickPosition - b.tickPosition, a.position - b.position,
+                    a.definition.collisionRadius, {{}, b.definition.collisionRadius}), "Combat bodies crossed during a tick");
+        }
+    }
+}
+}
 void combatTests(TestSuite& test, const TestContext& context) {
+    test("Melee reaches continuous attack positions when no free cell centre is in range", [] {
+        for (float radius : {.1f, .35f, .5f}) for (float reach : {0.0f, .15f}) {
+            Scenario site{Map(24, 20), {1, 1}, {4, 8}, {}};
+            EntityDefinition fighter; fighter.collisionRadius = radius; fighter.attackRange = 2 * radius + reach;
+            fighter.attackDamage = 10; fighter.dayVision = fighter.nightVision = 20;
+            auto victim = fighter; victim.id = "victim"; victim.attackDamage = 0; victim.maximumHealth = 1000;
+            site.units = {{victim.id, 1, {8, 8}}};
+            Simulation game(std::move(site), {}, fighter, {fighter, victim});
+            const auto enemy = game.units().back().id;
+            require(game.attack(std::array{game.worker().id}, enemy), "Continuous attack rejected");
+            for (int tick = 0; tick < 180; ++tick) { game.tick(); checkCombatMotion(game); }
+            require(game.unit(enemy)->health < 1000, "Melee waited for a cell-centred attack slot");
+            if (radius < .5f || reach > 0)
+                require(lengthSquared(game.worker().position - center(game.worker().cell)) > .001f, "Attack still snapped to a cell centre");
+        }
+    });
+    test("Focused attacker preserves its detour around a stationary friendly screen", [] {
+        Scenario site{Map(28, 24), {1, 1}, {6, 10}, {}};
+        EntityDefinition fighter; fighter.attackDamage = 10; fighter.attackRange = 1.1f;
+        fighter.collisionRadius = .45f; fighter.dayVision = fighter.nightVision = 20;
+        auto passive = fighter; passive.id = "passive"; passive.attackDamage = 0; passive.maximumHealth = 1000;
+        site.units = {{passive.id, 0, {9, 9}}, {passive.id, 0, {9, 10}}, {passive.id, 0, {9, 11}}, {passive.id, 1, {12, 10}}};
+        Simulation game(std::move(site), {}, fighter, {fighter, passive});
+        const auto enemy = game.units().back().id;
+        require(game.attack(std::array{game.worker().id}, enemy), "Screen attack rejected");
+        for (int tick = 0; tick < 360; ++tick) {
+            game.tick(); checkCombatMotion(game);
+            require(game.worker().targetUnit == enemy && game.worker().currentOrder.kind == OrderKind::Attack, "Explicit target was replaced");
+        }
+        require(game.unit(enemy)->health < 1000, "Attacker failed to go around a static screen");
+        for (size_t i = 1; i < game.units().size(); ++i)
+            require(game.units()[i].position == center(game.units()[i].cell), "Combat pushed a stationary body");
+    });
+    test("Automatic combat abandons an unreachable nearest target for an accessible enemy", [] {
+        Scenario site{Map(24, 20), {1, 1}, {6, 10}, {}};
+        for (int y = 0; y < 20; ++y) site.map.at({7, y}).blocked = true;
+        EntityDefinition fighter; fighter.attackDamage = 10; fighter.attackRange = 1.1f;
+        fighter.dayVision = fighter.nightVision = 20;
+        auto victim = fighter; victim.id = "victim"; victim.attackDamage = 0; victim.maximumHealth = 1000;
+        site.units = {{victim.id, 1, {8, 10}}, {victim.id, 1, {4, 14}}};
+        Simulation game(std::move(site), {}, fighter, {fighter, victim});
+        for (int tick = 0; tick < 240; ++tick) { game.tick(); checkCombatMotion(game); }
+        require(game.units()[1].health == 1000 && game.units()[2].health < 1000, "Unreachable target pinned automatic combat");
+    });
+    test("Dense opposing squads keep fighting through casualties without losing focused orders", [] {
+        for (bool focused : {false, true}) {
+            Scenario site{Map(48, 40), {1, 1}, {14, 16}, {}};
+            EntityDefinition fighter; fighter.attackDamage = 12; fighter.maximumHealth = 1000;
+            fighter.collisionRadius = .45f; fighter.dayVision = fighter.nightVision = 20;
+            auto enemy = fighter; enemy.id = "enemy"; enemy.attackDamage = 1; enemy.maximumHealth = 36;
+            for (int i = 0; i < 24; ++i) {
+                if (i) site.units.push_back({fighter.id, 0, {14 + i % 4, 16 + i / 4}});
+                site.units.push_back({enemy.id, 1, {24 + i % 4, 16 + i / 4}});
+            }
+            Simulation game(std::move(site), {}, fighter, {fighter, enemy});
+            std::vector<EntityId> own;
+            EntityId target{};
+            for (const auto& u : game.units()) { if (u.owner == 0) own.push_back(u.id); else if (!target) target = u.id; }
+            if (focused) require(game.attack(own, target), "Dense focus rejected");
+            for (int tick = 0; tick < 900; ++tick) { game.tick(); checkCombatMotion(game); }
+            if (game.units().size() != 24) for (const auto& u : game.units())
+                std::cerr << "battle " << focused << " unit " << u.id << " owner=" << u.owner << " hp=" << u.health
+                          << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks << " target=" << u.targetUnit << '\n';
+            require(game.units().size() == 24 && std::all_of(game.units().begin(), game.units().end(), [](const Unit& u) { return u.owner == 0; }),
+                "Dense squad stopped attacking surviving enemies");
+        }
+    });
     test("Untargeted abilities spend mana once, preserve orders and unlock after exactly five simulation seconds", [&] {
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         Scenario site{Map(32, 32), {1, 1}, {4, 6}, {}};

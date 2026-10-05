@@ -127,6 +127,7 @@ void Simulation::updateVision() {
     for (size_t i = 0; i < environment().size(); ++i) if (environmentVisible(i)) knownEnvironment_[i] = environment()[i].active();
 }
 void Simulation::tick() {
+    combatSearchBudget_ = 8;
     const auto phase = clock_.tick();
     if (phase) events_.emplace_back(*phase);
     // Advance the front of each moving group first, so IDs do not make a convoy wait backwards.

@@ -19,21 +19,11 @@ bool Simulation::groundAttackReach(const Unit& u, Cell target, std::optional<Cel
     return delta.x * delta.x + delta.y * delta.y <= u.definition.attackRange * u.definition.attackRange;
 }
 void Simulation::chaseGround(Unit& u) {
-    u.chaseTicks = 15;
     const auto target = u.currentOrder.cell;
     if (groundAttackReach(u, target)) {
         u.route.clear(); u.next = 0; u.blockedTicks = 0; u.state = UnitState::Attacking;
         return;
     }
-    std::vector<Cell> slots;
-    const auto held = occupied(u, true);
-    const int radius = static_cast<int>(std::ceil(u.definition.attackRange));
-    for (int y = std::max(0, target.y - radius); y <= std::min(map().height() - 1, target.y + radius); ++y)
-        for (int x = std::max(0, target.x - radius); x <= std::min(map().width() - 1, target.x + radius); ++x) {
-            const Cell c{x, y};
-            if (map().walkable(c, u.definition.movement) && groundAttackReach(u, target, c) &&
-                std::find(held.begin(), held.end(), c) == held.end()) slots.push_back(c);
-        }
-    if (!setRoute(u, slots, UnitState::ToAttack)) u.state = UnitState::ToAttack;
+    approachCombat(u, center(target), nullptr);
 }
 }

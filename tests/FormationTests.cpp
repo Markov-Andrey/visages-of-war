@@ -26,6 +26,36 @@ bool settled(const Simulation& game) {
 }
 void formationTests(TestSuite& test, const TestContext& context) {
     (void)context;
+    test("Mixed roles actually finish in front-to-back bands after movement and reversal", [] {
+        for (Cell direction : {Cell{1, 0}, {1, 1}, {-1, 0}, {1, -1}, {0, -1}}) {
+            Scenario site{Map(64, 64), {1, 1}, {29, 29}, {}};
+            EntityDefinition melee; melee.formationPriority = 1; melee.collisionRadius = .4f;
+            auto archer = melee; archer.id = "archer"; archer.formationPriority = 2;
+            auto siege = melee; siege.id = "siege"; siege.formationPriority = 3; siege.movementPerSecond = 2;
+            for (int i = 1; i < 12; ++i) site.units.push_back({i % 3 == 0 ? melee.id : i % 3 == 1 ? archer.id : siege.id,
+                0, {29 + i % 4, 29 + i / 4}});
+            Simulation game(std::move(site), {}, melee, {melee, archer, siege});
+            auto ids = selected(game); std::reverse(ids.begin(), ids.end());
+            for (int sign : {1, -1}) {
+                const Cell target{31 + sign * direction.x * 12, 31 + sign * direction.y * 12};
+                require(game.command(ids, target), "Mixed role movement rejected");
+                for (int tick = 0; tick < 900 && !settled(game); ++tick) { game.tick(); checkMotion(game); }
+                if (!settled(game)) for (const auto& u : game.units()) std::cerr << "mixed " << direction.x << ',' << direction.y << " sign=" << sign
+                    << " role=" << u.definition.formationPriority << " pos=" << u.position.x << ',' << u.position.y
+                    << " goal=" << u.routeDestination.x << ',' << u.routeDestination.y << " state=" << int(u.state)
+                    << " blocked=" << u.blockedTicks << " next=" << u.next << '/' << u.route.size() << '\n';
+                require(settled(game), "Mixed group did not finish reforming");
+                for (const auto& a : game.units()) for (const auto& b : game.units()) if (a.definition.formationPriority < b.definition.formationPriority) {
+                    const Vec2 delta = a.position - b.position;
+                    require(delta.x * a.formationForward.x + delta.y * a.formationForward.y >= -.05f, "Rear role finished ahead of front role");
+                }
+                std::vector<Vec2> positions;
+                for (const auto& u : game.units()) positions.push_back(u.position);
+                ticks(game, 60);
+                for (size_t i = 0; i < positions.size(); ++i) require(game.units()[i].position == positions[i], "Settled roles kept yielding");
+            }
+        }
+    });
     test("Circular destinations use body radii and continuous coordinates", [] {
         Map map(64, 64);
         for (float radius : {.1f, .35f, .5f}) {
