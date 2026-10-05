@@ -358,7 +358,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         rts::Simulation game(std::move(scene), {}, worker, {worker, last});
         rts::Selection selection;
         for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
-        for (rts::Vec2 extent : {rts::Vec2{800, 600}, rts::Vec2{1440, 900}, rts::Vec2{1920, 1080}}) {
+        for (rts::Vec2 extent : {rts::Vec2{800, 600}, rts::Vec2{1024, 768}, rts::Vec2{1060, 768}, rts::Vec2{1440, 900}, rts::Vec2{1920, 1080}}) {
             const rts::BattleLayout layout(extent);
             const rts::SelectionPanelLayout panel(layout.info);
             require(layout.minimap.height > layout.info.height && layout.minimap.x + layout.minimap.width < layout.info.x &&
@@ -371,10 +371,22 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             require(panel.content.width >= 200 && panel.portrait.x + panel.portrait.width < panel.content.x,
                 "Portrait overlaps selection content or leaves too little room for stats");
             for (const auto b : layout.controlGroups)
-                require(b.x >= 0 && b.x + b.width <= extent.x && b.y + b.height < extent.y - 238,
+                require(b.x >= 0 && b.x + b.width <= extent.x && b.y + b.height < extent.y - 238 &&
+                    b.y + b.height < layout.commandPanel.y,
                     "Numbered group button escapes the screen or overlaps the hint strip");
-            require(layout.commands.size() == 12 && layout.commands[3].y == layout.commands[0].y &&
-                layout.commands[4].y > layout.commands[3].y && layout.commands[11].y > layout.commands[7].y, "Command grid is not four by three");
+            require(layout.commands.size() == 16 && layout.commands[3].y == layout.commands[0].y &&
+                layout.commands[4].y > layout.commands[3].y && layout.commands[15].y > layout.commands[11].y, "Command grid is not four by four");
+            require(layout.commandPanel.width == layout.minimap.width && layout.commandPanel.height == layout.minimap.height &&
+                layout.commandPanel.y == layout.minimap.y &&
+                std::abs(layout.commands.back().x + layout.commands.back().width - (extent.x - layout.minimap.x)) < .01f &&
+                std::abs(layout.commands.back().y + layout.commands.back().height - (layout.minimap.y + layout.minimap.height)) < .01f,
+                "Command block does not match the minimap size and alignment");
+            const GameplayUi emptyUi;
+            for (const auto button : layout.commands)
+                require(!mouseInBattleWorld(emptyUi, layout, {button.x + 1, button.y + 1}), "Command slot leaked mouse input to the map");
+            require(!mouseInBattleWorld(emptyUi, layout,
+                {layout.commands.front().x + layout.commands.front().width + 3, layout.commands.front().y + 10}),
+                "Gap between command buttons leaked mouse input to the map");
             require(layout.info.x + layout.info.width < layout.commands.front().x, "Command grid overlaps selection info");
             selection.activateGroup(game, game.units().back().id);
             const rts::SelectionCards cards(game, selection, layout.info);

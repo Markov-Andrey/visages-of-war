@@ -144,7 +144,7 @@ inline bool rallyPointLightVisible(const Simulation& game, const Building& build
     return rallyPointVisible(game, building, ui) && game.fog().visible(building.rally);
 }
 struct BattleLayout {
-    UiRect world, minimap, info, menu, army, hero, idleWorker, notification;
+    UiRect world, minimap, commandPanel, info, menu, army, hero, idleWorker, notification;
     std::array<UiRect, commandSlots> commands{};
     std::array<UiRect, controlGroupCount> controlGroups{};
     static constexpr size_t commandCount = commandSlots;
@@ -152,18 +152,22 @@ struct BattleLayout {
         world = {0, 58, size.x, std::max(1.0f, size.y - 262)};
         const float miniSide = size.x < 1060 ? std::clamp(size.x * .23f, 184.f, 224.f) : 240.f;
         minimap = {18, size.y - miniSide - 22, miniSide, miniSide};
-        const float commandSide = size.x < 1000 ? 48.f : 56.f, commandPitch = commandSide + 6;
-        const float commandLeft = size.x - (commandColumns * commandPitch - 6) - 20;
+        commandPanel = {size.x - minimap.x - miniSide, minimap.y, miniSide, miniSide};
+        const float commandGap = 6;
+        const float commandSide = (commandPanel.width - (commandColumns - 1) * commandGap) / commandColumns;
+        const float commandPitch = commandSide + commandGap;
         const float infoLeft = minimap.x + minimap.width + 22;
-        info = {infoLeft, size.y - 186, commandLeft - infoLeft - 16, 164};
+        info = {infoLeft, size.y - 186, commandPanel.x - infoLeft - 16, 164};
         menu = {18, 12, 100, 34};
         army = {18, 72, 164, 40};
         hero = {18, 120, 164, 104};
         idleWorker = {18, minimap.y - 68, 56, 56};
+        const float groupTop = std::min(size.y - 278, commandPanel.y - 40);
         for (size_t i = 0; i < controlGroupCount; ++i)
-            controlGroups[i] = {infoLeft + i * 54.0f, size.y - 278, 48, 32};
+            controlGroups[i] = {infoLeft + i * 54.0f, groupTop, 48, 32};
         for (size_t i = 0; i < commandCount; ++i)
-            commands[i] = {commandLeft + (i % commandColumns) * commandPitch, size.y - 190 + (i / commandColumns) * commandPitch, commandSide, commandSide};
+            commands[i] = {commandPanel.x + (i % commandColumns) * commandPitch,
+                commandPanel.y + (i / commandColumns) * commandPitch, commandSide, commandSide};
         const float messageWidth = std::min(760.f, size.x - 64), messageHeight = 48;
         notification = {(size.x - messageWidth) * .5f, controlGroups.front().y - messageHeight - 12, messageWidth, messageHeight};
     }
@@ -173,7 +177,7 @@ inline bool mouseInBattleWorld(const GameplayUi& ui, const BattleLayout& layout,
     for (size_t i = 0; i < controlGroupCount; ++i)
         if (!ui.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse)) return false;
     return layout.world.contains(mouse) && !layout.army.contains(mouse) && !layout.hero.contains(mouse) &&
-        !layout.idleWorker.contains(mouse) && !layout.minimap.contains(mouse);
+        !layout.idleWorker.contains(mouse) && !layout.minimap.contains(mouse) && !layout.commandPanel.contains(mouse);
 }
 inline EntityId hoveredUnit(const Simulation& game, const WorldView& view, const GameplayUi& ui, const BattleLayout& layout) {
     if (ui.drag || !ui.placement.empty() || ui.rallyMode || ui.orderMode || !mouseInBattleWorld(ui, layout, ui.mouse)) return 0;

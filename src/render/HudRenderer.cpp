@@ -201,6 +201,9 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         buttonKeys[i] = abilityKeys[i - firstAbilitySlot];
         enabled[i] = unit->abilityCooldown(ability->id) == 0 && unit->mana >= ability->manaCost;
     }
+    const auto commandPanel = layout.commandPanel;
+    panel({commandPanel.x - 3, commandPanel.y - 3, commandPanel.width + 6, commandPanel.height + 6}, 0x31464c);
+    panel(commandPanel, 0x101c25);
     for (size_t i = 0; i < layout.commandCount; ++i) {
         const auto b = layout.commands[i];
         if (building || ui.buildMenu) enabled[i] = !labels[i].empty();
@@ -215,8 +218,8 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         if (!labels[i].empty()) {
             worldOpacity_ = enabled[i] ? 1.0f : .3f;
             if (abilities[i]) {
-                centeredText(wide(abilities[i]->displayName).substr(0, 1), {b.x, b.y + 3, b.width, 32},
-                    enabled[i] ? 0xb3d4ff : 0x5a718c, true);
+                centeredText(wide(abilities[i]->displayName).substr(0, 1), {b.x, b.y + 3, b.width, std::min(32.f, b.height - 22)},
+                    enabled[i] ? 0xb3d4ff : 0x5a718c, b.height >= 48);
             } else if (icons[i]) {
                 icon(icons[i], {b.x, b.y}, b.width);
             } else if (const auto* type = commandTypes[i]) {
@@ -238,7 +241,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 brush_->SetColor(D2D1::ColorF(0x07101e, .8f));
                 target_->FillRectangle(rect(b.x, b.y, b.width, b.height * cooldown / ability->cooldownTicks), brush_.Get());
                 centeredText(std::to_wstring((cooldown + Simulation::ticksPerSecond - 1) / Simulation::ticksPerSecond),
-                    {b.x, b.y + 7, b.width, 29}, 0xe2eaff, true);
+                    {b.x, b.y + 3, b.width, b.height - 22}, 0xe2eaff, b.height >= 48);
             }
             text(std::wstring(1, buttonKeys[i]), rect(b.x + 4, b.y + 1, 15, 20), 0xd8dfec);
             centeredText(std::to_wstring(ability->manaCost), {b.x, b.y + b.height - 19, b.width, 19},

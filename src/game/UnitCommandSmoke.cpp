@@ -43,7 +43,9 @@ void GameApplication::exerciseUnitCommands() {
     if (ui_.orderMode || rts::unitOrder(*game_.unit(soldier)) != rts::OrderKind::Move) throw std::runtime_error("Commands: M target failed");
     onMessage(WM_KEYDOWN, 'S', 0);
     if (rts::unitOrder(*game_.unit(soldier)) != rts::OrderKind::Stop) throw std::runtime_error("Commands: S failed");
-    click({layout.commands[3].x + 10, layout.commands[3].y + 10});
+    mouse_ = {layout.commands[3].x + 10, layout.commands[3].y + 10};
+    if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Commands: raised top row did not show its button cursor");
+    click(mouse_);
     if (rts::unitOrder(*game_.unit(soldier)) != rts::OrderKind::Hold) throw std::runtime_error("Commands: hold button failed");
     onMessage(WM_KEYDOWN, 'P', 0);
     const rts::MinimapProjection mini(layout.minimap, game_.map());
@@ -105,9 +107,10 @@ void GameApplication::exerciseUnitCommands() {
     click({abilityButton.x + 10, abilityButton.y + 10});
     if (game_.unit(hero)->mana != manaBefore - ability->manaCost || ui_.orderMode)
         throw std::runtime_error("Abilities: cooldown button repeated the cast");
-    renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-ability-cooldown.png", nullptr, false, &ui_);
+    renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-ability-cooldown.png", nullptr, false, &ui_,
+        rts::MenuPage::Main, 0, nullptr, nullptr, {800, 600});
     onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.peacemaker", 2);
-    for (size_t slot : {size_t{5}, size_t{6}, size_t{7}, size_t{8}, size_t{9}, size_t{10}}) {
+    for (size_t slot = 5; slot < rts::commandSlots; ++slot) {
         mouse_ = {layout.commands[slot].x + 10, layout.commands[slot].y + 10};
         if (cursorKind() != rts::CursorKind::Default) throw std::runtime_error("Commands: hidden slot retained a hand cursor");
         click(mouse_);
@@ -142,7 +145,7 @@ void GameApplication::exerciseUnitCommands() {
         throw std::runtime_error("Commands: active workers did not gather separately");
     onMessage(WM_KEYDOWN, 'B', 0);
     click({layout.commands[rts::backCommandSlot].x + 10, layout.commands[rts::backCommandSlot].y + 10});
-    if (ui_.buildMenu || !ui_.commandGroup.empty()) throw std::runtime_error("Commands: twelfth-slot back button failed");
+    if (ui_.buildMenu || !ui_.commandGroup.empty()) throw std::runtime_error("Commands: last-slot back button failed");
     onMessage(WM_KEYDOWN, 'B', 0); onMessage(WM_KEYDOWN, 'H', 0);
     onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.hero", 1);
     if (!ui_.placement.empty() || ui_.orderMode || ui_.buildMenu || !ui_.commandGroup.empty())
