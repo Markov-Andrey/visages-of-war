@@ -16,7 +16,7 @@
 | F9, дочерний процесс игры, возврат в Forge                 | `src/forge/ForgePlaytest.cpp`                                                     |
 | Строительство, обучение, точки сбора                       | `src/core/Construction.cpp`                                                       |
 | Выбор мест добычи и доставка                               | `src/core/Gathering.cpp`                                                          |
-| Приказы, шаги движения и прибытие                          | `src/core/UnitOrders.cpp`                                                         |
+| Приказы, шаги движения и прибытие                          | `src/core/UnitOrders.cpp`, `src/core/UnitMovement.cpp`                                                         |
 | Рендер: контекст и устройство                              | `src/render/Renderer.cpp`                                                         |
 | Загрузка графики, графические примитивы, снимки            | `RenderResources.cpp`, `RenderPrimitives.cpp`, `RenderSnapshot.cpp`               |
 | Рельеф, материалы, покраска и окружение                    | `TerrainRenderer.cpp`, `WorldRenderer.cpp`                                        |

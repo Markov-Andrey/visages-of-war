@@ -4,6 +4,7 @@
 #include "rts/WorldClock.hpp"
 #include "rts/Projectile.hpp"
 #include "rts/HealthFeedback.hpp"
+#include "rts/UnitFacing.hpp"
 #include <deque>
 #include <string>
 #include <variant>
@@ -14,7 +15,7 @@ inline constexpr int simulationTicksPerSecond = 30;
 enum class EntityKind { Unit, Building };
 enum class UnitState { Idle, Moving, ToCrystal, Harvesting, ToHall, ToBuild, Building, WaitingForCrystal, ToAttack, Attacking };
 enum class OrderKind { Move, Interact, Stop, Build, Gather, Attack, AttackMove, Hold, Patrol, AttackGround };
-struct Order { OrderKind kind; Cell cell{}; EntityId target{}; uint64_t moveGroup{}; };
+struct Order { OrderKind kind; Cell cell{}; EntityId target{}; uint64_t moveGroup{}; std::optional<Vec2> position; };
 struct HeroProgression {
     int level = 1; int experience{};
     std::shared_ptr<const ProgressionRules> rules;
@@ -27,25 +28,29 @@ struct Unit {
     EntityDefinition definition;
     Cell cell;
     Vec2 position;
+    Vec2 tickPosition; // Start of the current fixed tick, for relative collision sweeps.
+    Vec2 velocity, tickVelocity; // Map units per second; prediction reads one common tick snapshot.
     Cell facing{0, 1};
+    MotionFacing motionFacing;
     float walkCycle{};
     uint64_t moveGroup{};
     Vec2 formationForward{0, 1};
     float groupSpeed{};
+    Cell groupTarget{};
+    float groupRadius{};
     UnitState state = UnitState::Idle;
     int health{}, cargo{};
     HealthFeedback healthFeedback;
     std::vector<Cell> route;
     size_t next{};
-    float progress{};
+    Vec2 routeDestination;
     int harvestTicks{}, blockedTicks{};
     int targetCrystal = -1;
     int gatherOriginCrystal = -1; // The clicked deposit remains the anchor across retries and deliveries.
     EntityId targetBuilding{};
     bool repeatGather{};
-    std::optional<Order> pendingOrder;
     Order currentOrder{OrderKind::Stop};
-    Cell patrolOrigin{};
+    Vec2 patrolOrigin;
     EntityId targetUnit{};
     AttackPhase attackPhase = AttackPhase::Ready;
     int attackTicks{}, chaseTicks{};
@@ -187,13 +192,18 @@ private:
     std::vector<Cell> productionExits(const EntityDefinition& building, Cell origin, MovementType movement) const;
     Cell defaultRally(const EntityDefinition& building, Cell origin) const;
     std::vector<Cell> occupied(const Unit& unit, bool claimDestinations = false, bool ignoreGroup = false) const;
-    bool dynamicStep(const Unit& unit, Cell to) const;
+    std::vector<Circle> unitObstacles(const Unit& unit, bool claimDestinations = false, bool ignoreGroup = false) const;
+    bool unitPositionFree(Vec2 position, const EntityDefinition& type, EntityId ignore = 0) const;
+    bool dynamicStep(const Unit& unit, Vec2 to) const;
+    void followPath(Unit& unit, Path path, UnitState state);
+    void moveUnit(Unit& unit);
+    bool groupArrived(const Unit& unit) const;
     bool setRoute(Unit& unit, std::span<const Cell> goals, UnitState state, bool waitForTraffic = true);
     bool seekCrystal(Unit& unit);
     bool returnCargo(Unit& unit);
     void arrived(Unit& unit);
     void issue(Unit& unit, Order order);
-    void applyOrder(Unit& unit, Order order);
+    void applyOrder(Unit& unit, Order order, std::optional<Path> path = {});
     void tickUnit(Unit& unit);
     void tickProduction();
     void tickCombat();

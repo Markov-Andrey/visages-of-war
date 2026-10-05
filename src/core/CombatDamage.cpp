@@ -24,7 +24,6 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
     std::erase_if(units_, [](const Unit& u) { return u.health == 0; });
     if (deaths) {
         for (auto& u : units_) {
-            if (u.pendingOrder && u.pendingOrder->kind == OrderKind::Attack && !unit(u.pendingOrder->target)) u.pendingOrder.reset();
             if (u.targetUnit && !unit(u.targetUnit)) {
                 resumeOrder(u);
             }

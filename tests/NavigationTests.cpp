@@ -82,6 +82,36 @@ void navigationTests(TestSuite& test, const TestContext& context) {
         const auto path = rts::findPath(map, {0, 0}, goals);
         require(path && path->cost == 10 && path->cells.back() == rts::Cell{1, 0}, "Wrong goal selected");
     });
+    test("Shared route fields preserve shortest terrain routes and invalidate blocked edges", [] {
+        auto s = shoreScenario();
+        const std::array<rts::Cell, 2> goals{{{26, 10}, {26, 11}}};
+        for (auto movement : {rts::MovementType::Walking, rts::MovementType::Amphibious, rts::MovementType::Flying}) {
+            const auto field = rts::makeRouteField(s.map, goals, movement);
+            for (rts::Cell start : {rts::Cell{4, 10}, {6, 11}, {9, 9}}) {
+                const auto expected = rts::findPath(s.map, start, goals, {}, movement);
+                require(expected && field.costs[start.y * s.map.width() + start.x] == expected->cost, "Shared field changed terrain reachability/cost");
+                const auto route = rts::fieldPath(s.map, field, rts::center(start), expected->cells.back(), .35f);
+                require(route && route->cost == expected->cost, "Group field extraction missed a ramp");
+                for (size_t i = 1; i < route->cells.size(); ++i) require(s.map.canStep(route->cells[i - 1], route->cells[i], movement), "Field cut a corner");
+            }
+        }
+        rts::Map corridor(8, 3);
+        for (int x = 0; x < 8; ++x) { corridor.at({x, 0}).blocked = true; corridor.at({x, 2}).blocked = true; }
+        const std::array<rts::Cell, 1> end{{{6, 1}}};
+        const auto field = rts::makeRouteField(corridor, end, rts::MovementType::Walking);
+        corridor.occupy({4, 1});
+        require(!rts::fieldPath(corridor, field, {1.5f, 1.5f}, end[0], .35f), "Stale field crossed a newly built wall");
+    });
+    test("Continuous path goals need no free cell centre", [] {
+        rts::Map map(12, 12);
+        const std::array<rts::Circle, 1> held{{{{6.5f, 6.5f}, .1f}}};
+        const auto path = rts::findUnitPathTo(map, {2.5f, 6.5f}, {6.1f, 6.1f}, held, .1f, rts::MovementType::Walking);
+        require(path && path->destination == rts::Vec2{6.1f, 6.1f}, "Fractional endpoint inherited centre occupancy");
+        const auto inside = rts::findUnitPathTo(map, {6.1f, 6.2f}, {6.1f, 6.1f}, held, .1f, rts::MovementType::Walking);
+        require(inside && inside->cells.size() == 1, "Cannot move inside the same grid cell");
+        map.occupy({7, 6});
+        require(!rts::findUnitPathTo(map, {2.5f, 6.5f}, {6.9f, 6.5f}, {}, .35f, rts::MovementType::Walking), "Fractional goal clips square building");
+    });
     test("Projection and picking account for camera, elevation and ramp surface", [] {
         rts::WorldView view{{310, 120}, 1.35f};
         const auto zero = view.project({0, 0}), right = view.project({1, 0}), down = view.project({0, 1});

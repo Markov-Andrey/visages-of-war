@@ -65,18 +65,89 @@ void spriteTests(TestSuite& test, const TestContext& context) {
             unit.facing = directions[row];
             require(unitFrame(unit).row == int(row) && unitFrame(unit).column == 0, "Stand direction does not match logical movement");
         }
-        unit.route = {{1, 1}};
+        unit.route = {{1, 1}}; unit.position = {.1f, 0};
         for (int frame = 0; frame < 4; ++frame) {
             unit.walkCycle = frame / 4.0f;
             require(unitFrame(unit).column == frame + 1, "Four-frame walk lost its order");
         }
-        unit.blockedTicks = 1; require(unitFrame(unit).column == 0, "Blocked unit kept walking");
+        unit.blockedTicks = 20;
+        require(unitFrame(unit).column == 4, "Circle avoidance slid with an idle sprite");
+        unit.tickPosition = unit.position;
+        require(unitFrame(unit).column == 0, "Blocked unit kept walking");
         unit.attackPhase = AttackPhase::Windup; unit.attackTicks = 10;
         require(unitFrame(unit).column == 5, "Attack does not start at preparation");
         unit.attackTicks = 5; require(unitFrame(unit).column == 6, "Raised weapon frame missing");
         unit.attackPhase = AttackPhase::Recovery; unit.attackTicks = 10;
         require(unitFrame(unit).column == 7, "Impact art is not aligned to damage release");
         unit.attackTicks = 5; require(unitFrame(unit).column == 8, "Follow-through frame missing");
+    });
+    test("Motion facing holds sprite sectors through boundary noise and collision microsteps", [] {
+        constexpr std::array<Cell, 8> headings{{{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}}};
+        for (size_t direction = 0; direction < headings.size(); ++direction) for (float step : {.05f, .1f, .3f}) {
+            const float angle = float(direction) * .7853981634f;
+            const auto motion = [&](float offset, float fraction = 1.0f) {
+                return Vec2{std::cos(angle + offset), std::sin(angle + offset)} * (step * fraction);
+            };
+            MotionFacing filter;
+            Cell facing = filter.update({0, 1}, motion(0), step);
+            require(facing == headings[direction], "New movement did not select its first facing");
+            for (int tick = 0; tick < 90; ++tick) {
+                // 21 and 26 degrees straddle the old eight-direction rounding boundary.
+                facing = filter.update(facing, motion(tick % 2 ? .36651914f : .45378560f), step);
+                require(facing == headings[direction], "Sector boundary noise flickered the sprite");
+            }
+            filter.reset(); facing = filter.update(facing, motion(0), step);
+            for (int tick = 0; tick < 90; ++tick) {
+                const Vec2 displacement = tick % 3 == 0 ? motion(3.14159265f, .05f) :
+                    tick % 3 == 1 ? Vec2{} : motion(0);
+                facing = filter.update(facing, displacement, step);
+                require(facing == headings[direction], "Blocked ticks or reverse microsteps flipped the sprite");
+            }
+            for (int tick = 0; tick < 90; ++tick) {
+                facing = filter.update(facing, motion(tick % 2 ? 1.57079633f : -1.57079633f), step);
+                require(facing == headings[direction], "Alternating avoidance directions flickered the sprite");
+            }
+        }
+    });
+    test("Motion facing follows sustained turns promptly and commands discard old steering history", [] {
+        for (const auto turn : {Cell{1, 1}, Cell{0, 1}, Cell{-1, 0}}) {
+            MotionFacing filter;
+            Cell facing = filter.update({0, 1}, {.1f, 0}, .1f);
+            const Vec2 displacement = Vec2{float(turn.x), float(turn.y)} * (.1f / std::hypot(float(turn.x), float(turn.y)));
+            for (int tick = 0; tick < 6; ++tick) facing = filter.update(facing, displacement, .1f);
+            require(facing == turn, "A genuine turn still showed the old facing after 200 ms");
+            for (int tick = 0; tick < 60; ++tick)
+                require(filter.update(facing, displacement, .1f) == turn, "Settled facing oscillated on a straight path");
+            filter.reset();
+            require(filter.update(facing, {-.1f, -.1f}, .1f) == Cell{-1, -1}, "New order retained stale facing history");
+        }
+    });
+    test("Simulation applies stable motion facing without delaying reversal, stop or attack", [] {
+        const Scenario site{Map(24, 18), {1, 1}, {6, 8}, {}};
+        EntityDefinition fighter; fighter.attackDamage = 10; fighter.movementPerSecond = 3; fighter.attackRange = 2;
+        Simulation game(site, {}, fighter);
+        require(game.command({18, 8}), "Initial move rejected");
+        ticks(game, 3);
+        require(game.worker().facing == Cell{1, 0}, "Simulation did not face its movement");
+        require(game.command({4, 8}), "Reverse move rejected"); game.tick();
+        require(game.worker().facing == Cell{-1, 0}, "Reverse order waited on old motion history");
+        game.stop();
+        const auto position = game.worker().position;
+        ticks(game, 10);
+        require(game.worker().position == position && game.worker().facing == Cell{-1, 0}, "Stop changed position or facing");
+
+        auto combatSite = site;
+        auto enemy = fighter; enemy.id = "facing.enemy"; enemy.attackDamage = 0;
+        combatSite.units = {{enemy.id, 1, {6, 7}}};
+        Simulation combat(std::move(combatSite), {}, fighter, {fighter, enemy});
+        const auto id = combat.worker().id, target = combat.units().back().id;
+        require(combat.command({18, 8}), "Combat setup move rejected"); ticks(combat, 3);
+        require(combat.worker().facing == Cell{1, 0}, "Combat setup did not face east");
+        const auto attackPosition = combat.worker().position;
+        require(combat.attack(std::array{id}, target), "Attack rejected"); combat.tick();
+        require(combat.worker().state == UnitState::Attacking && combat.worker().facing == Cell{-1, -1},
+            "Movement smoothing delayed facing the attack target");
+        require(combat.worker().position == attackPosition, "Facing the attack target changed collision position");
     });
     test("Slower walk animation follows travelled distance without slowing straight or diagonal movement", [] {
         for (const auto destination : {Cell{12, 4}, Cell{12, 12}}) {

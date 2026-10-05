@@ -44,6 +44,8 @@ add_library(rts_core
     src/core/Remains.cpp
     src/core/HeroProgression.cpp
     src/core/Projectiles.cpp
+    src/core/UnitMovement.cpp
+    src/core/UnitFacing.cpp
     src/core/UnitOrders.cpp
     src/core/TacticalOrders.cpp
     src/core/CommandUi.cpp
@@ -184,7 +186,7 @@ if(BUILD_TESTING)
     add_test(NAME rts_title_snapshot COMMAND RTS --snapshot-title "${CMAKE_BINARY_DIR}/title-preview.png")
     add_test(NAME rts_native_gameplay_ui COMMAND RTS --smoke-test)
     # Includes software snapshots with cold sprite/lighting caches; this is not a performance gate.
-    set_tests_properties(rts_native_gameplay_ui PROPERTIES TIMEOUT 60 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    set_tests_properties(rts_native_gameplay_ui PROPERTIES TIMEOUT 120 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME forge_assets_from_other_cwd COMMAND VisagesForge --verify-assets)
     set_tests_properties(forge_assets_from_other_cwd PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME forge_render_snapshot COMMAND VisagesForge --snapshot "${CMAKE_BINARY_DIR}/forge-preview.png")

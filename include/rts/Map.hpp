@@ -35,6 +35,7 @@ public:
     Tile& at(Cell c);
     const Tile& at(Cell c) const;
     bool canStep(Cell from, Cell to, MovementType movement = MovementType::Walking) const;
+    bool canTraverse(Vec2 from, Vec2 to, float radius, MovementType movement = MovementType::Walking) const;
     // The same sloped surface is used by rendering, picking and unit placement.
     float surfaceHeight(Cell c, Vec2 world) const;
     std::array<Vec2, 4> surfaceCorners(Cell c, const WorldView& view) const;

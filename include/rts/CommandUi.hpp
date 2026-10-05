@@ -35,7 +35,6 @@ inline const UnitCommandInfo* unitCommandAt(size_t slot) {
     return nullptr;
 }
 inline OrderKind unitOrder(const Unit& unit) {
-    if (unit.pendingOrder) return unit.pendingOrder->kind;
     const auto kind = unit.currentOrder.kind;
     if (kind == OrderKind::Hold || kind == OrderKind::Patrol || kind == OrderKind::AttackMove || kind == OrderKind::AttackGround) return kind;
     if (unit.targetUnit) return OrderKind::Attack;
@@ -68,7 +67,7 @@ inline bool commandCapable(const Unit& unit, UnitCommand command) {
 }
 inline bool idleWorker(const Simulation& game, const Unit& unit) {
     return unit.owner == game.player().id && unit.health > 0 && unit.definition.isWorker() &&
-        unit.state == UnitState::Idle && !unit.pendingOrder && !unit.targetUnit && unit.progress == 0 && unitOrder(unit) == OrderKind::Stop;
+        unit.state == UnitState::Idle && !unit.targetUnit && unitOrder(unit) == OrderKind::Stop;
 }
 std::map<std::string, IconAsset> loadCommandIcons(const Paths& paths);
 }

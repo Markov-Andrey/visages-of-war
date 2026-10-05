@@ -95,14 +95,14 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.worker().position == stopped && rts::unitOrder(game.worker()) == rts::OrderKind::Stop, "Patrol resumed after stop");
         require(!game.order(std::array{id}, rts::OrderKind::Patrol, game.worker().cell), "Zero-length patrol was accepted");
     });
-    test("Hold issued during movement finishes the reserved step without teleporting", [] {
+    test("Hold issued during movement stops at the actual position without teleporting", [] {
         rts::Simulation game(flatScenario()); const auto id = game.worker().id;
         require(game.order(std::array{id}, rts::OrderKind::Move, {8, 3}), "Move rejected");
         game.tick(); const auto position = game.worker().position;
         require(game.order(std::array{id}, rts::OrderKind::Hold), "Moving hold rejected");
-        require(game.worker().position == position && game.worker().pendingOrder.has_value(), "Hold teleported a moving unit");
+        require(game.worker().position == position && game.worker().state == rts::UnitState::Idle, "Hold teleported a moving unit");
         ticks(game, 30);
-        require(game.worker().cell == rts::Cell{5, 3} && rts::unitOrder(game.worker()) == rts::OrderKind::Hold, "Hold lost the reserved step");
+        require(game.worker().position == position && rts::unitOrder(game.worker()) == rts::OrderKind::Hold, "Hold drifted to a grid centre");
     });
     const auto& assets=context.assets;
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
@@ -338,7 +338,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.command(own, {4, 8}), "Move rejected"); ticks(game, 2);
         const auto position = game.worker().position;
         require(game.attack(own, enemy), "Attack rejected");
-        require(game.worker().position.x == position.x && game.worker().position.y == position.y && game.worker().pendingOrder.has_value(), "Attack teleported mid-step");
+        require(game.worker().position == position && game.worker().currentOrder.kind == rts::OrderKind::Attack, "Attack teleported mid-step");
         ticks(game, 500);
         require(!game.unit(enemy) && game.units().size() == 1, "Pursuit failed to kill target");
         require(game.armySupply().used() == soldier.cost.supply, "Enemy death changed player supply");
@@ -364,7 +364,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         for (int t = 0; t < 1800; ++t) {
             game.tick();
             for (size_t i = 0; i < game.units().size(); ++i) for (size_t j = i + 1; j < game.units().size(); ++j)
-                require(game.units()[i].cell != game.units()[j].cell, "Combat units overlapped");
+                require(separated(game.units()[i], game.units()[j]), "Combat units overlapped");
         }
         require(game.units().size() == 6 && std::all_of(game.units().begin(), game.units().end(), [](const auto& u) { return u.owner == 0; }), "Squad stalled after focused target death");
     });

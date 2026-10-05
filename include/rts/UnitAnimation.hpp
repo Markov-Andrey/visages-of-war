@@ -16,7 +16,7 @@ inline SpriteFrame locomotionFrame(const Unit& unit) {
     constexpr std::array<Cell, 8> facings{{{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}}};
     int row = 0;
     for (size_t i = 0; i < facings.size(); ++i) if (unit.facing == facings[i]) row = static_cast<int>(i);
-    const bool walking = unit.next < unit.route.size() && unit.blockedTicks == 0;
+    const bool walking = unit.next < unit.route.size() && unit.position != unit.tickPosition;
     const auto& sprite = unit.definition.sprite;
     return {walking ? sprite.walk[static_cast<size_t>(unit.walkCycle * sprite.walk.size()) % sprite.walk.size()] : sprite.idle, sprite.rows[row]};
 }

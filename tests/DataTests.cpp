@@ -4,6 +4,16 @@
 
 namespace rts::tests {
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Unit collision radius is catalog data with strict physical bounds", [&] {
+        CatalogFixture fixture(context.assets);
+        auto& motion = fixture.entities["entities"][0]["mobility"];
+        motion["collisionRadius"] = .2f;
+        require(std::abs(fixture.load().entity("human.worker").collisionRadius - .2f) < .00001f, "Radius not loaded");
+        for (const auto& invalid : {Json(0), Json(-.1), Json(.501), Json("0.35"), Json(true), Json(nullptr)}) {
+            motion["collisionRadius"] = invalid; mustThrow([&] { fixture.load(); });
+        }
+        motion.erase("collisionRadius"); mustThrow([&] { fixture.load(); });
+    });
     test("Decomposition is a strict independent unit capability with a non-decomposing hero", [&] {
         const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
         for (const auto& unit : definitions.entities()) if (unit.mobile)
@@ -287,7 +297,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(!demo.crystals.empty() && std::all_of(demo.crystals.begin(), demo.crystals.end(), [](const auto& c) { return c.remaining == c.capacity; }), "Demo deposits are not full");
     });
     test("Crystal kinds round trip with catalog capacities and full footprints", [&] {
-        const auto world = WorldAssets::load(Paths::discover());
+        const auto& world = context.worldAssets;
         const auto file = Paths::executable().parent_path() / L"test-crystal-kinds.rtsmap";
         struct Kind { const char* id; int size, capacity; };
         for (const auto kind : {Kind{"crystal.small", 1, 1000}, Kind{"crystal.medium", 2, 5500}, Kind{"crystal.big", 3, 15000}}) {

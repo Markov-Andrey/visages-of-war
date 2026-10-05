@@ -7,8 +7,8 @@
 - Water depth is a surface type independent of elevation. Thread unit movement types through navigation, interactions, production and rally checks; air has separate dynamic occupancy.
 - Shallow and deep water share a flat elevation of -1 in the demo. Coastal ramps are dry lower land tiles pointing uphill; crossing a shore cliff without a ramp is forbidden for ground movement.
 - Author map ramps at least two cells wide (normally 2–3); wide ramps allow lateral movement between matching adjacent lanes. Keep isolated one-cell ramps available for navigation tests.
-- Group orders use two units per rank, oriented from group centre to target; lower unit formation priorities go in front. Keep ranks independent of selection order and IDs.
-- Formation slots occupy adjacent cells without empty-cell spacing; diagonal ranks form a connected staircase. Preserve collision checks when following a moving neighbour.
+- Group orders form compact circular crowds in continuous map coordinates, with spacing derived from collision radii, never cell-centre slots. Lower formation priorities prefer the front; arrival may relax personal destinations to avoid circling settled friends. Keep matching independent of selection order; IDs only break geometric ties.
+- Unit collision remains solid for allies and enemies, including moving neighbours. Never push, teleport or phase units through a closed surround. Buildings and blocking environment footprints stay square.
 - Resources are crystals: workers harvest finite nodes and carry cargo to the town hall before crediting the balance.
 - Explicit gathering retains the clicked deposit as its origin across traffic retries and deliveries. Fallback nodes must stay near that origin, never be chosen globally by distance from the worker.
 - Resolve files through `Paths`. Assets are relative to the executable, never the working directory or source checkout.

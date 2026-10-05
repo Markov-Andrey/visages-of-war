@@ -1,4 +1,5 @@
 #include "rts/Map.hpp"
+#include "rts/Collision.hpp"
 #include <algorithm>
 #include <array>
 #include <fstream>
@@ -84,6 +85,45 @@ bool Map::canStep(Cell from, Cell to, MovementType movement) const {
     return cardinalStep(from, sideX, movement) && cardinalStep(from, sideY, movement) &&
            cardinalStep(sideX, to, movement) && cardinalStep(sideY, to, movement) &&
            at(from).height == at(to).height && at(from).ramp == Cell{} && at(to).ramp == Cell{};
+}
+bool Map::canTraverse(Vec2 from, Vec2 to, float radius, MovementType movement) const {
+    if (!std::isfinite(radius) || radius <= 0 || !std::isfinite(from.x) || !std::isfinite(from.y) ||
+        !std::isfinite(to.x) || !std::isfinite(to.y)) return false;
+    for (Vec2 p : {from, to}) if (p.x < radius || p.y < radius || p.x > width_ - radius || p.y > height_ - radius) return false;
+    if (airborne(movement)) return true;
+    // Trace every centre crossing through the same ramp/corner rules as grid navigation.
+    Cell current = cellAt(from);
+    const Cell finish = cellAt(to);
+    if (!walkable(current, movement)) return false;
+    const Vec2 delta = to - from;
+    const Cell direction{delta.x > 0 ? 1 : -1, delta.y > 0 ? 1 : -1};
+    while (current != finish) {
+        const float tx = current.x == finish.x ? 2.0f : (current.x + (direction.x > 0 ? 1.0f : 0.0f) - from.x) / delta.x;
+        const float ty = current.y == finish.y ? 2.0f : (current.y + (direction.y > 0 ? 1.0f : 0.0f) - from.y) / delta.y;
+        Cell next = current;
+        if (tx <= ty + 1e-6f) next.x += direction.x;
+        if (ty <= tx + 1e-6f) next.y += direction.y;
+        if (!canStep(current, next, movement)) return false;
+        current = next;
+    }
+    const int left = std::max(0, int(std::floor(std::min(from.x, to.x) - radius)));
+    const int right = std::min(width_ - 1, int(std::floor(std::max(from.x, to.x) + radius)));
+    const int top = std::max(0, int(std::floor(std::min(from.y, to.y) - radius)));
+    const int bottom = std::min(height_ - 1, int(std::floor(std::max(from.y, to.y) + radius)));
+    for (int y = top; y <= bottom; ++y) for (int x = left; x <= right; ++x) {
+        const Cell c{x, y};
+        if (!walkable(c, movement)) {
+            if (sweptCircleIntersectsCell(from, to, radius, c)) return false;
+            continue;
+        }
+        // Impassable terrain edges remain walls, including ramp sides and shore cliffs.
+        for (Cell d : {Cell{1, 0}, Cell{0, 1}}) if (!canStep(c, c + d, movement)) {
+            const Vec2 a{float(x + d.x), float(y + d.y)};
+            const Vec2 b = a + Vec2{float(d.y), float(d.x)};
+            if (segmentDistanceSquared(from, to, a, b) < radius * radius - 1e-6f) return false;
+        }
+    }
+    return true;
 }
 float Map::surfaceHeight(Cell c, Vec2 world) const {
     const auto& t = at(c);

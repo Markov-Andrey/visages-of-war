@@ -42,8 +42,11 @@ EntityDefinition parseEntity(const Json& j) {
     data::parseWeapon(e, j.at("attack"), j.at("sprite"));
     e.level = number(stats.at("level"), 1, 100);
     e.dayVision = number(stats.at("dayVision"), 1, 32); e.nightVision = number(stats.at("nightVision"), 1, 32);
-    const auto& motion = j.at("mobility"); fields(motion, {"enabled", "type", "speed", "formationPriority"});
+    const auto& motion = j.at("mobility"); fields(motion, {"enabled", "type", "speed", "formationPriority", "collisionRadius"});
     e.mobile = motion.at("enabled").get<bool>();
+    e.collisionRadius = motion.at("collisionRadius").get<float>();
+    if (!motion.at("collisionRadius").is_number() || !std::isfinite(e.collisionRadius) || e.collisionRadius < .05f || e.collisionRadius > .5f)
+        throw std::runtime_error("Collision radius must be in [0.05, 0.5] map units");
     e.movementPerSecond = motion.at("speed").get<float>();
     if (!std::isfinite(e.movementPerSecond) || e.movementPerSecond < 0 || e.movementPerSecond > 15 ||
         (e.mobile && e.movementPerSecond <= 0)) throw std::runtime_error("Invalid movement speed");

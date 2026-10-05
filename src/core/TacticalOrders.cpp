@@ -6,12 +6,6 @@ namespace rts {
 void Simulation::resumeOrder(Unit& u) {
     u.targetUnit = 0;
     cancelAttack(u);
-    if (u.pendingOrder) return;
-    if (u.progress > 0) {
-        // Finish the reserved step before resuming the original destination.
-        u.route.resize(u.next + 1);
-        return;
-    }
     if (u.currentOrder.kind == OrderKind::AttackMove || u.currentOrder.kind == OrderKind::Patrol) {
         const Cell goal = u.currentOrder.cell;
         setRoute(u, std::span<const Cell>(&goal, 1), UnitState::Moving);
@@ -25,7 +19,6 @@ bool Simulation::groundAttackReach(const Unit& u, Cell target, std::optional<Cel
     return delta.x * delta.x + delta.y * delta.y <= u.definition.attackRange * u.definition.attackRange;
 }
 void Simulation::chaseGround(Unit& u) {
-    if (u.progress > 0) return;
     u.chaseTicks = 15;
     const auto target = u.currentOrder.cell;
     if (groundAttackReach(u, target)) {

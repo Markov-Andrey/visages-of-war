@@ -63,6 +63,10 @@ inline rts::Scenario shoreScenario() {
     }
     return s;
 }
+inline bool separated(const rts::Unit& a, const rts::Unit& b) {
+    const auto delta = a.position - b.position;
+    return std::hypot(delta.x, delta.y) + .00001f >= a.definition.collisionRadius + b.definition.collisionRadius;
+}
 inline void ticks(rts::Simulation& game, int count) { for (int i = 0; i < count; ++i) game.tick(); }
 
 using Json = nlohmann::json;

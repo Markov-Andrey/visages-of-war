@@ -212,7 +212,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         const rts::SelectionCards single(game, selection, rts::BattleLayout({800, 600}).info);
         require(single.total == 1 && single.cards.empty(), "Single-unit stats retained an invisible clickable card");
     });
-    test("Idle worker cycling uses live free workers and skips holds, pending orders and other owners", [] {
+    test("Idle worker cycling uses live free workers and skips holds, active orders and other owners", [] {
         auto scene = flatScenario(); scene.extraWorkers = {{5, 3}, {6, 3}};
         rts::EntityDefinition worker;
         auto soldier = worker; soldier.id = "soldier"; soldier.canBuild = false; soldier.carryCapacity = 0;
@@ -227,7 +227,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(selection.idleWorker(game, c) && selection.ids == std::vector{a}, "Idle cycle did not wrap");
         game.order(std::array{a, c}, rts::OrderKind::Move, {8, 5}); game.tick();
         game.stop(std::array{a, c});
-        require(!selection.idleWorker(game, a), "Moving workers with pending stop entered idle pool");
+        require(selection.idleWorker(game, a), "Immediately stopped worker did not enter idle pool");
         ticks(game, 30);
         require(selection.idleWorker(game, b) && selection.ids == std::vector{c}, "Stopped worker did not return to the pool");
     });

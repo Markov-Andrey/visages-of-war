@@ -30,7 +30,7 @@ bool Simulation::canPlace(const std::string& typeId, Cell origin) const {
         const Cell c = origin + Cell{x, y};
         if (!map().walkable(c) || map().at(c).surface != Surface::Land || !fog_.visible(c) || map().at(c).height != level || map().at(c).ramp != Cell{}) return false;
         for (const auto& u : units_) if (!airborne(u.definition.movement) &&
-            (u.cell == c || (u.progress > 0 && u.next < u.route.size() && u.route[u.next] == c))) return false;
+            sweptCircleIntersectsCell(u.position, u.position, u.definition.collisionRadius, c)) return false;
     }
     return true;
 }
@@ -44,8 +44,8 @@ std::optional<EntityId> Simulation::construct(std::span<const EntityId> builders
     for (EntityId id : builders) {
         auto* u = mutableUnit(id);
         if (!u || u->owner != player_.id || !u->definition.canBuild) continue;
-        const Cell start = u->progress > 0 ? u->route[u->next] : u->cell;
-        if (findPath(preview, start, perimeter(preview, origin, type.width, type.height, u->definition.movement), {}, u->definition.movement)) { builder = u; break; }
+        const Vec2 start = u->position;
+        if (findUnitPath(preview, start, perimeter(preview, origin, type.width, type.height, u->definition.movement), {}, u->definition.collisionRadius, u->definition.movement)) { builder = u; break; }
     }
     if (!builder) { message_ = L"Выберите рабочего, который может подойти к площадке."; return std::nullopt; }
     if (!supply_.reserve(type.cost.supply)) { message_ = L"Достигнут лимит армии: 100."; return std::nullopt; }
@@ -64,7 +64,7 @@ bool Simulation::cancelConstruction(EntityId id) {
     for (int y = 0; y < it->definition.height; ++y) for (int x = 0; x < it->definition.width; ++x)
         scenario_.map.release(it->origin + Cell{x, y});
     stored_ += it->definition.cost.crystals; supply_.release(it->definition.cost.supply);
-    for (auto& u : units_) if (u.targetBuilding == id || (u.pendingOrder && u.pendingOrder->target == id)) issue(u, {OrderKind::Stop});
+    for (auto& u : units_) if (u.targetBuilding == id) issue(u, {OrderKind::Stop});
     buildings_.erase(it); updateVision();
     message_ = L"Строительство отменено. Кристаллы возвращены.";
     return true;
@@ -116,10 +116,7 @@ void Simulation::tickProduction() {
         const auto exits = productionExits(b.definition, b.origin, type.movement);
         std::optional<Cell> spawnCell;
         for (Cell c : exits) {
-            bool held = false;
-            for (const auto& u : units_) if (airborne(u.definition.movement) == airborne(type.movement) &&
-                (u.cell == c || (u.progress > 0 && u.route[u.next] == c))) held = true;
-            if (!held) { spawnCell = c; break; }
+            if (unitPositionFree(center(c), type)) { spawnCell = c; break; }
         }
         if (!spawnCell) continue; // Completed job waits for an exit; supply stays reserved.
         const EntityId id = spawn(type, *spawnCell, true);

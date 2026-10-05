@@ -396,7 +396,10 @@ void GameApplication::exerciseInterface() {
     if (game_.unit(enemy)->health == game_.unit(enemy)->definition.maximumHealth) throw std::runtime_error("Smoke: ordered attack caused no damage");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"combat-preview.png");
     const auto combatUnitCount = game_.units().size();
-    for (int tick = 0; tick < 600 && game_.units().size() == combatUnitCount; ++tick) game_.tick();
+    const auto& fighterType = game_.unit(fighter)->definition;
+    const int hitsToKill = (game_.unit(enemy)->maximumHealth() + fighterType.attackDamage - 1) / fighterType.attackDamage;
+    const int duelTicks = hitsToKill * (fighterType.attackWindupTicks + fighterType.attackRecoveryTicks + fighterType.attackCooldownTicks + 1) + 60;
+    for (int tick = 0; tick < duelTicks && game_.units().size() == combatUnitCount; ++tick) game_.tick();
     ui_.selection.prune(game_);
     if (game_.units().size() == combatUnitCount || game_.corpses().empty()) throw std::runtime_error("Smoke: no unit died in combat");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"death-preview.png");

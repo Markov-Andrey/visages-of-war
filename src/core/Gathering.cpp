@@ -7,8 +7,8 @@ bool Simulation::returnCargo(Unit& u) {
     EntityId depot{};
     for (const auto& b : buildings_) {
         if (!b.complete() || !b.definition.acceptsCargo || b.owner != u.owner) continue;
-        auto path = findPath(map(), u.cell, perimeter(map(), b.origin, b.definition.width, b.definition.height, u.definition.movement), occupied(u, true), u.definition.movement);
-        if (!path) path = findPath(map(), u.cell, perimeter(map(), b.origin, b.definition.width, b.definition.height, u.definition.movement), {}, u.definition.movement);
+        auto path = findUnitPath(map(), u.position, perimeter(map(), b.origin, b.definition.width, b.definition.height, u.definition.movement), unitObstacles(u, true), u.definition.collisionRadius, u.definition.movement);
+        if (!path) path = findUnitPath(map(), u.position, perimeter(map(), b.origin, b.definition.width, b.definition.height, u.definition.movement), {}, u.definition.collisionRadius, u.definition.movement);
         if (path && (!best || path->cost < best->cost)) { best = std::move(path); depot = b.id; }
     }
     if (!best) { u.state = UnitState::Idle; u.route.clear(); message_ = L"Нет пути к ратуше. Груз сохранён."; return false; }
@@ -17,7 +17,7 @@ bool Simulation::returnCargo(Unit& u) {
     return setRoute(u, std::span<const Cell>(&goal, 1), UnitState::ToHall);
 }
 bool Simulation::seekCrystal(Unit& u) {
-    u.route.clear(); u.next = 0; u.progress = 0; u.blockedTicks = 0;
+    u.route.clear(); u.next = 0; u.blockedTicks = 0;
     if (!u.repeatGather || u.gatherOriginCrystal < 0) { u.state = UnitState::Idle; return false; }
     const auto& origin = crystals()[u.gatherOriginCrystal];
     // Never move this search origin to a fallback deposit: repeated exhaustion must
@@ -45,22 +45,21 @@ bool Simulation::seekCrystal(Unit& u) {
     int waitingTarget = -1;
     const auto follow = [&](size_t target, Path path) {
         u.targetCrystal = static_cast<int>(target);
-        u.route = std::move(path.cells); u.next = 1; u.state = UnitState::ToCrystal;
-        if (u.next == u.route.size()) arrived(u);
+        followPath(u, std::move(path), UnitState::ToCrystal);
         return true;
     };
     for (size_t target : candidates) {
         const auto& node = crystals()[target];
         auto slots = perimeter(map(), node.cell, node.width, node.height, u.definition.movement);
         if (!waitingPath) {
-            waitingPath = findPath(map(), u.cell, slots, {}, u.definition.movement);
+            waitingPath = findUnitPath(map(), u.position, slots, {}, u.definition.collisionRadius, u.definition.movement);
             if (waitingPath) waitingTarget = static_cast<int>(target);
         }
         // A busy approach is different from a busy harvesting slot. Reserve a free
         // destination even when temporary traffic prevents reaching it right now.
         std::erase_if(slots, [&](Cell c) { return std::find(held.begin(), held.end(), c) != held.end(); });
-        auto path = findPath(map(), u.cell, slots, held, u.definition.movement);
-        if (!path) path = findPath(map(), u.cell, slots, {}, u.definition.movement);
+        auto path = findUnitPath(map(), u.position, slots, unitObstacles(u, true), u.definition.collisionRadius, u.definition.movement);
+        if (!path) path = findUnitPath(map(), u.position, slots, {}, u.definition.collisionRadius, u.definition.movement);
         if (path) return follow(target, std::move(*path));
     }
     // All local slots are occupied: approach this field and wait, preserving the

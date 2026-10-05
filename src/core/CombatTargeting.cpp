@@ -24,7 +24,7 @@ bool Simulation::attackReach(const Unit& attacker, const Unit& target, std::opti
     // Direct melee cannot reach across a cliff or through a static obstacle.
     const Cell from = origin.value_or(attacker.cell), d = target.cell - from;
     const int steps = std::max(std::abs(d.x), std::abs(d.y));
-    if (steps == 0) return false;
+    if (steps == 0) return map().walkable(from, attacker.definition.movement);
     Cell previous = from;
     for (int i = 1; i <= steps; ++i) {
         const Cell next{from.x + int(std::lround(float(d.x) * i / steps)), from.y + int(std::lround(float(d.y) * i / steps))};
@@ -46,7 +46,6 @@ bool Simulation::attack(std::span<const EntityId> ids, EntityId targetId) {
     return any;
 }
 void Simulation::chase(Unit& u, const Unit& target) {
-    if (u.progress > 0) return;
     u.chaseTicks = 15;
     if (attackReach(u, target)) {
         u.route.clear(); u.next = 0; u.blockedTicks = 0; u.state = UnitState::Attacking;

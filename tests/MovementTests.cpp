@@ -3,6 +3,71 @@
 namespace rts::tests {
 void movementTests(TestSuite& test, const TestContext& context) {
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
+    test("Circle sweeps preserve walls, corners, shore ramps and the air layer", [] {
+        rts::Map map(12, 12);
+        map.occupy({5, 5});
+        require(!map.canTraverse({2.5f, 5.5f}, {9.5f, 5.5f}, .2f), "Sweep tunnelled through a building");
+        require(map.canTraverse({2.5f, 4.75f}, {9.5f, 4.75f}, .2f), "Small circle could not pass beside building");
+        require(!map.canTraverse({2.5f, 4.75f}, {9.5f, 4.75f}, .3f), "Radius ignored beside building");
+        require(map.canTraverse({2.5f, 5.5f}, {9.5f, 5.5f}, .5f, rts::MovementType::Flying), "Building blocked air");
+        require(!map.canTraverse({.5f, .5f}, {.1f, .5f}, .2f, rts::MovementType::Flying), "Flying circle escaped map");
+        require(!map.canTraverse({4.5f, 5.5f}, {5.5f, 4.5f}, .2f), "Circle cut a blocked corner");
+        auto shore = shoreScenario();
+        require(shore.map.canTraverse({10.5f, 10.5f}, {13.5f, 10.5f}, .5f), "Circle cannot use shore ramp");
+        require(!shore.map.canTraverse({10.5f, 5.5f}, {13.5f, 5.5f}, .2f), "Circle bypassed shore cliff");
+        require(!shore.map.canTraverse({10.5f, 10.5f}, {11.5f, 11.5f}, .2f), "Smoothing cut ramp corner");
+    });
+    test("Circular path obstacles allow diagonal clearance and account for different sizes", [] {
+        rts::Map map(12, 12);
+        const std::array<rts::Cell, 1> goal{{{6, 6}}};
+        std::array<rts::Circle, 1> obstacle{{{{5.5f, 4.5f}, .2f}}};
+        const auto small = rts::findUnitPath(map, {4.5f, 4.5f}, goal, obstacle, .2f, rts::MovementType::Walking);
+        obstacle[0].radius = .5f;
+        const auto large = rts::findUnitPath(map, {4.5f, 4.5f}, goal, obstacle, .5f, rts::MovementType::Walking);
+        require(small && large && small->cost == 28 && large->cost > small->cost, "Path still uses square unit occupancy");
+        require(rts::sweptCircleIntersects({0, 0}, {5, 0}, .1f, {{2.5f, 0}, .1f}), "Fast circle tunnelled through unit");
+        require(!rts::sweptCircleIntersects({0, 0}, {5, 0}, .1f, {{2.5f, .3f}, .1f}), "Broad phase replaced circular collision");
+    });
+    test("A moving circle may share a grid cell without intersecting a stationary circle", [] {
+        rts::Scenario s{rts::Map(20, 16), {1, 1}, {5, 5}, {}};
+        s.extraWorkers = {{7, 6}};
+        rts::EntityDefinition type; type.collisionRadius = .1f;
+        rts::Simulation game(std::move(s), {}, type);
+        const auto id = game.worker().id;
+        require(game.order(std::span<const rts::EntityId>(&id, 1), rts::OrderKind::Move, {12, 7}), "Order rejected");
+        bool shared = false;
+        for (int tick = 0; tick < 250; ++tick) {
+            game.tick();
+            require(separated(game.units()[0], game.units()[1]), "Circles overlapped");
+            shared |= game.units()[0].cell == game.units()[1].cell;
+        }
+        require(shared, "Units still reserve entire grid cells");
+        require(game.worker().cell == rts::Cell{12, 7} && game.worker().state == rts::UnitState::Idle, "Circle failed to reach goal");
+    });
+    test("Different circle sizes remain separated through crossing and replacement orders", [] {
+        rts::Scenario s{rts::Map(24, 20), {1, 1}, {5, 8}, {}};
+        rts::EntityDefinition large; large.id = "test.large"; large.collisionRadius = .5f; large.movementPerSecond = 15;
+        s.units = {{large.id, 0, {12, 8}}};
+        rts::Simulation game(std::move(s), {}, {}, {large});
+        const auto a = game.units()[0].id, b = game.units()[1].id;
+        game.order(std::span<const rts::EntityId>(&a, 1), rts::OrderKind::Move, {18, 8});
+        game.order(std::span<const rts::EntityId>(&b, 1), rts::OrderKind::Move, {4, 8});
+        for (int tick = 0; tick < 600; ++tick) {
+            if (tick == 20) game.stop(std::span<const rts::EntityId>(&a, 1));
+            if (tick == 25) game.order(std::span<const rts::EntityId>(&a, 1), rts::OrderKind::Move, {18, 8});
+            const auto beforeA = game.unit(a)->position, beforeB = game.unit(b)->position;
+            game.tick();
+            require(separated(game.units()[0], game.units()[1]), "Different-size circles intersected");
+            for (float t : {.25f, .5f, .75f}) {
+                const auto pa = beforeA + (game.unit(a)->position - beforeA) * t;
+                const auto pb = beforeB + (game.unit(b)->position - beforeB) * t;
+                require(std::hypot(pa.x - pb.x, pa.y - pb.y) + .00001f >=
+                    game.unit(a)->definition.collisionRadius + game.unit(b)->definition.collisionRadius,
+                    "Moving circles intersected between simulation ticks");
+            }
+        }
+        require(game.unit(a)->cell == rts::Cell{18, 8} && game.unit(b)->cell == rts::Cell{4, 8}, "Crossing traffic stalled");
+    });
     test("Mid-step replacement orders and stop do not teleport", [] {
         rts::Simulation game(flatScenario());
         game.command({8, 3});
@@ -58,11 +123,11 @@ void movementTests(TestSuite& test, const TestContext& context) {
             for (size_t i = 0; i < game.units().size(); ++i) {
                 const auto& u = game.units()[i];
                 if (game.map().at(u.cell).surface == rts::Surface::ShallowWater && std::find(crossed.begin(), crossed.end(), u.id) == crossed.end()) crossed.push_back(u.id);
-                for (size_t j = i + 1; j < game.units().size(); ++j) require(u.cell != game.units()[j].cell, "Ford traffic overlapped");
+                for (size_t j = i + 1; j < game.units().size(); ++j) require(separated(u, game.units()[j]), "Ford traffic overlapped");
             }
         }
         require(crossed.size() == ids.size(), "Some units bypassed the lowered ford");
-        for (const auto& slot : expected) require(game.unit(slot.id)->cell == slot.cell && game.unit(slot.id)->state == rts::UnitState::Idle, "Squad stalled at shore or failed to reform");
+        for (const auto& slot : expected) require(rts::lengthSquared(game.unit(slot.id)->position - rts::center({26, 10})) < 9 && game.unit(slot.id)->state == rts::UnitState::Idle, "Squad stalled at shore or failed to reform");
     });
     test("Negative water elevation loads independently and rejects submerged ramps", [&] {
         const auto file = rts::Paths::executable().parent_path() / L"test-shore.rtsmap";
@@ -164,13 +229,13 @@ void movementTests(TestSuite& test, const TestContext& context) {
                 const auto* a = game.unit(ids[i]);
                 crossedGround |= a->cell == game.worker().cell;
                 for (size_t j = i + 1; j < ids.size(); ++j) {
-                    const auto* b = game.unit(ids[j]); const auto d = a->position - b->position;
-                    require(a->cell != b->cell && std::hypot(d.x, d.y) >= .7f, "Flying group collided within its own layer");
+                    const auto* b = game.unit(ids[j]);
+                    require(separated(*a, *b), "Flying group collided within its own layer");
                 }
             }
         }
         require(expected.size() == 12 && crossedGround, "Air units avoided ground occupancy");
-        for (const auto& slot : expected) require(game.unit(slot.id)->cell == slot.cell && game.unit(slot.id)->state == rts::UnitState::Idle, "Flyers did not reform in their assigned slots");
+        for (const auto& slot : expected) require(rts::lengthSquared(game.unit(slot.id)->position - slot.position) < 16 && game.unit(slot.id)->state == rts::UnitState::Idle, "Flyers did not reform near their destination");
         const auto* first = game.unit(ids.front());
         const rts::WorldView view{{100, 150}, 1};
         const auto flyingPoint = rts::unitScreenAnchor(view, first->position, game.unitHeight(*first)) + rts::Vec2{0, -25};
@@ -185,7 +250,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         game.train(game.buildings()[0].id); ticks(game, 300);
         require(game.units().size() == 2 && game.units()[1].cell == game.worker().cell, "Ground unit blocked air");
         game.train(game.buildings()[0].id); ticks(game, 300);
-        require(game.units().size() == 3 && game.units()[1].cell != game.units()[2].cell, "Air units overlapped");
+        require(game.units().size() == 3 && separated(game.units()[1], game.units()[2]), "Air units overlapped");
     });
 }
 }

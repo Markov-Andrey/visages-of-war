@@ -64,15 +64,13 @@ const EntityDefinition& Simulation::entityType(const std::string& id) const {
 }
 EntityId Simulation::spawn(const EntityDefinition& type, Cell cell, bool reserved, PlayerId owner) {
     if (!type.mobile || type.width != 1 || type.height != 1) throw std::invalid_argument("Mobile runtime currently requires a one-cell footprint");
-    if (!map().walkable(cell, type.movement) || std::any_of(units_.begin(), units_.end(), [&](const Unit& u) {
-        return airborne(u.definition.movement) == airborne(type.movement) &&
-            (u.cell == cell || (u.progress > 0 && u.next < u.route.size() && u.route[u.next] == cell));
-    }))
-        throw std::invalid_argument("Unit spawn is occupied");
+    if (!std::isfinite(type.collisionRadius) || type.collisionRadius < .05f || type.collisionRadius > .5f)
+        throw std::invalid_argument("Collision radius must be in [0.05, 0.5] map units");
+    if (!unitPositionFree(center(cell), type)) throw std::invalid_argument("Unit spawn is occupied");
     if (owner == player_.id && !reserved && !supply_.reserve(type.cost.supply)) throw std::invalid_argument("Initial army exceeds supply cap");
     Unit u;
     u.id = nextId_++; u.owner = owner; u.definitionId = type.id; u.definition = type;
-    u.cell = cell; u.position = center(cell); u.health = type.maximumHealth;
+    u.cell = cell; u.position = u.tickPosition = center(cell); u.health = type.maximumHealth;
     if (type.hero) u.hero = HeroProgression{1, 0, progression_};
     units_.push_back(std::move(u));
     return units_.back().id;
@@ -133,7 +131,7 @@ void Simulation::tick() {
     if (phase) events_.emplace_back(*phase);
     // Advance the front of each moving group first, so IDs do not make a convoy wait backwards.
     std::vector<Unit*> updateOrder;
-    for (auto& u : units_) updateOrder.push_back(&u);
+    for (auto& u : units_) { u.tickPosition = u.position; u.tickVelocity = u.velocity; u.velocity = {}; updateOrder.push_back(&u); }
     std::stable_sort(updateOrder.begin(), updateOrder.end(), [](const Unit* a, const Unit* b) {
         if (a->moveGroup != b->moveGroup) return a->moveGroup < b->moveGroup;
         if (!a->moveGroup) return a->id < b->id;
@@ -142,7 +140,16 @@ void Simulation::tick() {
         const float db = b->position.x * f.x + b->position.y * f.y;
         return da != db ? da > db : a->id < b->id;
     });
-    for (auto* u : updateOrder) tickUnit(*u);
+    for (auto* u : updateOrder) {
+        tickUnit(*u);
+        if (u->next >= u->route.size() || u->state == UnitState::Attacking ||
+            u->attackPhase == AttackPhase::Windup || u->attackPhase == AttackPhase::Recovery) {
+            u->motionFacing.reset(); // Preserve explicit arrival and combat orientations.
+        } else {
+            const float speed = u->moveGroup ? std::min(u->definition.movementPerSecond, u->groupSpeed) : u->definition.movementPerSecond;
+            u->facing = u->motionFacing.update(u->facing, u->position - u->tickPosition, speed / ticksPerSecond);
+        }
+    }
     tickCombat(); // Damage is simultaneous; removals happen after all movement pointers are no longer used.
     tickProduction();
     if (phase || clock_.elapsedTicks() % 5 == 0) updateVision();

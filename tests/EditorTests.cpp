@@ -128,7 +128,11 @@ void editorTests(TestSuite& test, const TestContext& context) {
         const auto root=worldPaths.writable(L"catalog-test/world/catalog.json").parent_path().parent_path();
         const rts::Paths fixture(root,root/"user");
         std::filesystem::copy_file(assets/"sprites/tree.png",root/"image.png",std::filesystem::copy_options::overwrite_existing);
-        writeMap(root/"world/catalog.json",{{"materialFiles",{"world/materials.json"}},{"objectFiles",{"world/objects.json"}},{"remainsFile","world/remains.json"}});
+        writeMap(root/"world/catalog.json",{{"materialFiles",{"world/materials.json"}},{"objectFiles",{"world/objects.json"}},{"remainsFile","world/remains.json"},{"resourcesFile","world/resources.json"}});
+        std::ifstream resourceFile(assets/"world/resources.json"); auto resources=Json::parse(resourceFile);
+        for (auto& icon : resources["icons"]) icon="image.png";
+        for (auto& crystal : resources["crystals"]) crystal["image"]="image.png";
+        writeMap(root/"world/resources.json",resources);
         Json bones={{"image","image.png"},{"scale",.5},{"variants",Json::array({{{"source",{0,0,16,16}},{"anchor",{8,12}}}})}};
         writeMap(root/"world/remains.json",{{"bones",bones}});
         nlohmann::json materials={{{"id","custom"},{"name","Своя текстура"},{"image","image.png"},{"repeatCells",8}}};

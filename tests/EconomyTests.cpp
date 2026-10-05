@@ -3,6 +3,16 @@
 namespace rts::tests {
 void economyTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
+    test("Construction rejects a neighbouring circle crossing its square footprint", [] {
+        rts::Scenario s{rts::Map(20, 16), {1, 1}, {6, 6}, {}};
+        rts::Simulation game(std::move(s));
+        game.command({9, 6});
+        for (int tick = 0; tick < 60 && game.worker().position.x < 7.75f; ++tick) game.tick();
+        game.stop();
+        require(game.worker().cell == rts::Cell{7, 6}, "Test worker entered the construction cell");
+        require(!game.canPlace("human.hall", {8, 6}), "Building overlapped the edge of a neighbouring circle");
+        require(game.canPlace("human.hall", {9, 6}), "Non-overlapping circle blocked construction");
+    });
     test("Crystals are credited only at hall; last partial load is returned", [] {
         rts::Simulation game(flatScenario());
         game.command({7, 7});
@@ -13,8 +23,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.crystals()[0].remaining == 0 && game.map().walkable({7, 7}), "Exhausted node still blocking");
         require(game.worker().state == rts::UnitState::Idle, "Worker did not finish");
     });
-    test("Large crystals accept clicks on every cell and release the entire footprint after harvesting", [] {
-        const auto world = WorldAssets::load(Paths::discover());
+    test("Large crystals accept clicks on every cell and release the entire footprint after harvesting", [&] {
+        const auto& world = context.worldAssets;
         for (const auto* kind : {"crystal.medium", "crystal.big"}) {
             Scenario s{Map(24, 24), {1, 1}, {17, 14}, {world.instantiateCrystal(kind, {13, 13})}};
             s.crystals.front().remaining = 2;
@@ -120,7 +130,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         }
         require(game.storedCrystals() > 0 && game.crystals()[1].remaining == 1000, "Group failed to deliver from selected field");
     });
-    test("Gather ordered mid-step retains the clicked area if the crystal depletes before execution", [] {
+    test("Gather ordered mid-step retains the clicked area when the crystal depletes", [] {
         auto s = gatheringScenario();
         s.worker = {14, 10}; s.extraWorkers = {{15, 7}}; s.crystals[0].remaining = 1;
         auto type = gatheringWorker(); type.movementPerSecond = .5f;
@@ -128,13 +138,13 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto other = game.units()[1].id;
         game.command(std::span<const rts::EntityId>(&other, 1), {15, 8});
         game.command({14, 9}); ticks(game, 1);
-        require(game.worker().progress > 0, "Test did not begin a movement step");
+        require(!game.worker().route.empty() && game.worker().position != rts::center(game.worker().cell), "Test did not begin a movement step");
         game.command({15, 8});
-        require(game.worker().pendingOrder.has_value(), "Gather did not wait for current step");
+        require(game.worker().gatherOriginCrystal == 0, "Gather did not retain the clicked origin");
         ticks(game, 350);
         require(game.crystals()[0].remaining == 0, "Other worker did not deplete clicked deposit");
-        require(game.worker().gatherOriginCrystal == 0 && game.worker().targetCrystal == 2, "Deferred gather lost depleted target's area");
-        require(game.crystals()[1].remaining == 1000 && game.crystals()[2].remaining < 1000, "Deferred gather selected wrong field");
+        require(game.worker().gatherOriginCrystal == 0 && game.worker().targetCrystal == 2, "Replacement gather lost depleted target's area");
+        require(game.crystals()[1].remaining == 1000 && game.crystals()[2].remaining < 1000, "Replacement gather selected wrong field");
     });
     test("Unreachable deposit preserves carried resources", [] {
         auto scenario = flatScenario(4); scenario.worker = {5, 3};
@@ -265,7 +275,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
                 game.building(hall)->production.front().remainingTicks == 0, "Full perimeter did not hold the completed job");
             require(game.armySupply().used() == supply, "Blocked production lost reserved supply");
             for (size_t a = 0; a < count; ++a) for (size_t b = a + 1; b < count; ++b)
-                require(game.units()[a].cell != game.units()[b].cell, "Production overlapped units");
+                require(separated(game.units()[a], game.units()[b]), "Production overlapped units");
             require(game.command(std::array<rts::EntityId, 1>{first}, {2, 7}), "Could not clear the first exit");
             ticks(game, 60);
             require(game.units().size() == count + 1 && game.building(hall)->production.empty(), "Production did not resume after clearing an exit");
@@ -287,16 +297,16 @@ void economyTests(TestSuite& test, const TestContext& context) {
         game.tick();
         require(game.units().size() == 2 && game.units().back().cell == rts::Cell{3, 0}, "Production selected forbidden terrain or skipped perimeter order");
     });
-    test("Production skips an exit reserved by a moving unit", [] {
+    test("Production skips an exit intersecting a moving circle", [] {
         auto s = flatScenario(); s.startingCrystals = 100; s.worker = {1, 4};
         rts::EntityDefinition worker; worker.trainingTicks = 1;
         rts::Simulation game(std::move(s), {}, worker);
         require(game.command({1, 3}), "Could not move worker into preferred exit");
-        game.tick();
-        require(game.worker().progress > 0 && game.worker().cell == rts::Cell{1, 4}, "Worker did not reserve its next step");
+        ticks(game, 4);
+        require(!game.worker().route.empty() && game.worker().position != rts::center(game.worker().cell) && game.worker().cell == rts::Cell{1, 4}, "Worker did not approach the exit");
         require(game.train(game.buildings().front().id), "Could not train near moving worker");
         game.tick();
-        require(game.units().size() == 2 && game.units().back().cell == rts::Cell{2, 3}, "Production ignored movement reservation or skipped lower edge");
+        require(game.units().size() == 2 && game.units().back().cell == rts::Cell{2, 3}, "Production ignored circular clearance or skipped lower edge");
     });
     test("Production reserves supply, refunds cancellation and follows per-building rally", [&] {
         auto definitions = rts::Definitions::load(assets / "data/catalog.json");

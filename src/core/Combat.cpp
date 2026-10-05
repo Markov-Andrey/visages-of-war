@@ -28,10 +28,10 @@ void Simulation::tickCombat() {
         }
         if (u.attackDamage() <= 0) continue;
         const bool ground = u.currentOrder.kind == OrderKind::AttackGround;
-        if (!u.targetUnit && !ground && u.state == UnitState::Attacking && !u.pendingOrder) resumeOrder(u);
+        if (!u.targetUnit && !ground && u.state == UnitState::Attacking) resumeOrder(u);
         const bool scanning = u.state == UnitState::Idle || u.currentOrder.kind == OrderKind::AttackMove ||
             u.currentOrder.kind == OrderKind::Patrol;
-        if (!u.targetUnit && !ground && scanning && u.progress == 0 && !u.pendingOrder) {
+        if (!u.targetUnit && !ground && scanning) {
             const Unit* best = nullptr;
             int bestDistance = std::numeric_limits<int>::max();
             const int vision = clock_.phase() == DayPhase::Day ? u.definition.dayVision : u.definition.nightVision;
@@ -53,7 +53,7 @@ void Simulation::tickCombat() {
             resumeOrder(u);
             continue;
         }
-        const bool inReach = u.progress == 0 && (ground ? groundAttackReach(u, u.currentOrder.cell) : attackReach(u, *target));
+        const bool inReach = (ground ? groundAttackReach(u, u.currentOrder.cell) : attackReach(u, *target));
         const auto release = [&] { if (ground) releaseGroundAttack(u); else releaseAttack(u, *target, hits); };
         if (u.attackPhase == AttackPhase::Windup) {
             if (--u.attackTicks <= 0) {
@@ -71,7 +71,7 @@ void Simulation::tickCombat() {
                 u.attackPhase = AttackPhase::Windup; u.attackTicks = u.definition.attackWindupTicks;
                 if (u.attackTicks == 0) { release(); combat::recover(u); }
             }
-        } else if (u.progress == 0 && u.chaseTicks == 0 && !u.pendingOrder) {
+        } else if (u.chaseTicks == 0) {
             if (ground) chaseGround(u); else chase(u, *target);
         }
     }

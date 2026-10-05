@@ -75,6 +75,7 @@ struct EntityDefinition {
     bool mobile = true;
     bool canDecompose = true;
     float movementPerSecond = 2.8f;
+    float collisionRadius = .35f; // Logical map units, independent of sprite size.
     int carryCapacity = 10;
     int trainingTicks = 90;
     int dayVision = 8, nightVision = 6;

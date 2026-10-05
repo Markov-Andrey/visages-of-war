@@ -4,57 +4,29 @@
 #include <array>
 
 namespace rts {
-std::vector<Cell> Simulation::occupied(const Unit& self, bool claimDestinations, bool ignoreGroup) const {
-    std::vector<Cell> cells;
-    for (const auto& u : units_) {
-        if (u.id == self.id) continue;
-        if (airborne(u.definition.movement) != airborne(self.definition.movement)) continue;
-        if (ignoreGroup && self.moveGroup && self.moveGroup == u.moveGroup) continue;
-        cells.push_back(u.cell);
-        if (u.progress > 0 && u.next < u.route.size()) cells.push_back(u.route[u.next]);
-        if (claimDestinations && !u.route.empty()) cells.push_back(u.route.back());
-    }
-    return cells;
-}
-bool Simulation::dynamicStep(const Unit& u, Cell to) const {
-    if (!map().canStep(u.cell, to, u.definition.movement)) return false;
-    const Cell d = to - u.cell;
-    const float speed = u.moveGroup ? std::min(u.definition.movementPerSecond, u.groupSpeed) : u.definition.movementPerSecond;
-    const float stepProgress = speed / ticksPerSecond / (d.x && d.y ? 1.41421356f : 1.0f);
-    const auto onStep = [&](Cell c) {
-        return c == to || (d.x && d.y && (c == Cell{u.cell.x + d.x, u.cell.y} || c == Cell{u.cell.x, u.cell.y + d.y}));
-    };
-    for (const auto& other : units_) {
-        if (other.id == u.id || airborne(other.definition.movement) != airborne(u.definition.movement)) continue;
-        const bool advancing = other.progress > 0 && other.next < other.route.size();
-        if (!onStep(other.cell) && !(advancing && onStep(other.route[other.next]))) continue;
-        // Following an already moving group neighbour is safe when both steps
-        // are parallel and the leader will vacate its cell before we reach it.
-        const float otherSpeed = other.moveGroup ? std::min(other.definition.movementPerSecond, other.groupSpeed) : other.definition.movementPerSecond;
-        const bool parallel = u.moveGroup && u.moveGroup == other.moveGroup && advancing &&
-            other.route[other.next] - other.cell == d && otherSpeed >= speed &&
-            other.progress + .00001f >= stepProgress;
-        if (!parallel || other.route[other.next] == to) return false;
-    }
-    return true;
-}
 bool Simulation::setRoute(Unit& u, std::span<const Cell> goals, UnitState state, bool waitForTraffic) {
-    auto path = findPath(map(), u.cell, goals, occupied(u, true, true), u.definition.movement);
-    if (!path && waitForTraffic) path = findPath(map(), u.cell, goals, {}, u.definition.movement);
-    u.route.clear(); u.next = 0; u.progress = 0; u.blockedTicks = 0;
+    const bool precise = goals.size() == 1 && u.currentOrder.position && goals.front() == u.currentOrder.cell && state == UnitState::Moving;
+    const auto search = [&](std::span<const Circle> obstacles) {
+        return precise ? findUnitPathTo(map(), u.position, *u.currentOrder.position, obstacles, u.definition.collisionRadius, u.definition.movement) :
+            findUnitPath(map(), u.position, goals, obstacles, u.definition.collisionRadius, u.definition.movement);
+    };
+    auto path = search(unitObstacles(u, true, true));
+    if (!path && waitForTraffic) path = search({});
+    u.route.clear(); u.next = 0; u.blockedTicks = 0;
     if (!path) { u.state = UnitState::Idle; return false; }
-    u.route = std::move(path->cells); u.next = 1; u.state = state;
-    if (u.next == u.route.size()) arrived(u);
+    followPath(u, std::move(*path), state);
     return true;
 }
 void Simulation::issue(Unit& u, Order order) {
-    if (u.progress > 0) u.pendingOrder = order;
-    else applyOrder(u, order);
+    applyOrder(u, order);
 }
-void Simulation::applyOrder(Unit& u, Order order) {
+void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     u.currentOrder = order;
-    if (order.kind == OrderKind::Patrol) u.patrolOrigin = u.cell;
+    if (order.kind == OrderKind::Patrol) u.patrolOrigin = u.position;
     u.moveGroup = order.moveGroup;
+    if (!u.moveGroup) u.groupRadius = 0;
+    u.velocity = {};
+    u.motionFacing.reset();
     u.targetUnit = 0; cancelAttack(u); u.chaseTicks = 0;
     u.repeatGather = false; u.targetCrystal = -1; u.gatherOriginCrystal = -1; u.targetBuilding = 0; u.harvestTicks = 0;
     if (order.kind == OrderKind::Attack) {
@@ -85,15 +57,15 @@ void Simulation::applyOrder(Unit& u, Order order) {
     }
     if (order.kind == OrderKind::Gather && u.definition.carryCapacity > 0) {
         for (size_t i = 0; i < crystals().size(); ++i) {
-            // The command was validated when issued. It may be applied after a step,
-            // when this deposit has already depleted or left current vision.
+            // Keep the clicked deposit as the origin throughout this gathering order.
             if (!crystals()[i].contains(order.cell)) continue;
             u.targetCrystal = u.gatherOriginCrystal = static_cast<int>(i); u.repeatGather = true;
             if (u.cargo >= u.definition.carryCapacity) returnCargo(u); else seekCrystal(u);
             return;
         }
     }
-    if (!setRoute(u, std::span<const Cell>(&order.cell, 1), UnitState::Moving)) message_ = L"Нет доступного пути.";
+    if (path) { u.blockedTicks = 0; followPath(u, std::move(*path), UnitState::Moving); }
+    else if (!setRoute(u, std::span<const Cell>(&order.cell, 1), UnitState::Moving)) message_ = L"Нет доступного пути.";
 }
 bool Simulation::command(Cell c) { if (units_.empty()) return false; const EntityId id = worker().id; return command(std::span<const EntityId>(&id, 1), c); }
 bool Simulation::command(std::span<const EntityId> ids, Cell c) {
@@ -115,17 +87,19 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
         if (kind == OrderKind::Gather && u->definition.carryCapacity <= 0) continue;
         if (kind == OrderKind::AttackGround && (u->attackDamage() <= 0 || !u->definition.projectile ||
             u->definition.projectile->targeting != ProjectileTargeting::Point || u->definition.projectile->splashRadius <= 0)) continue;
-        members.push_back({id, u->progress > 0 ? u->route[u->next] : u->cell,
-            u->definition.movement, u->definition.formationPriority, u->formationForward});
+        members.push_back({id, u->cell,
+            u->definition.movement, u->definition.formationPriority, u->formationForward, u->definition.collisionRadius, u->position});
     }
+    // The public click target is a tile. A solo patrol needs another tile;
+    // grouped endpoints may share tiles but retain distinct continuous positions.
+    if (kind == OrderKind::Patrol && members.size() == 1 && members.front().start == c) return false;
     bool any = false;
     if (kind != OrderKind::Move && kind != OrderKind::AttackMove && kind != OrderKind::Patrol) {
         for (const auto& member : members) { issue(*mutableUnit(member.id), {kind, c}); any = true; }
     } else {
         std::vector<FormationObstacle> held;
         for (const auto& u : units_) if (std::none_of(members.begin(), members.end(), [&](const auto& m) { return m.id == u.id; })) {
-            held.push_back({u.cell, airborne(u.definition.movement)});
-            if (u.progress > 0 && u.next < u.route.size()) held.push_back({u.route[u.next], airborne(u.definition.movement)});
+            held.push_back({u.cell, airborne(u.definition.movement), u.position, u.definition.collisionRadius});
         }
         const auto destinations = planFormation(map(), members, c, held);
         const auto group = nextMoveGroup_++;
@@ -136,12 +110,33 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
         for (const auto& destination : destinations) {
             auto* u = mutableUnit(destination.id);
             u->moveGroup = group; u->formationForward = destination.forward; u->groupSpeed = speed;
+            u->groupTarget = c;
+            u->groupRadius = 0;
+            if (destinations.size() > 1) for (const auto& d : destinations)
+                u->groupRadius = std::max(u->groupRadius, 1.75f * std::sqrt(lengthSquared(d.position - center(c))));
         }
+        std::array<std::optional<RouteField>, 4> fields;
         for (const auto& destination : destinations) {
             auto* u = mutableUnit(destination.id);
-            const Cell start = u->progress > 0 ? u->route[u->next] : u->cell;
-            if (kind == OrderKind::Patrol && destination.cell == start) continue;
-            issue(*u, {kind, destination.cell, 0, group});
+            if (kind == OrderKind::Patrol && lengthSquared(destination.position - u->position) < 1e-8f) continue;
+            // Shared terrain guidance is enough for a moving crowd. Other units
+            // are handled locally; their changing positions never invalidate this field.
+            std::optional<Path> path;
+            if (map().canTraverse(u->position, destination.position, u->definition.collisionRadius, u->definition.movement)) {
+                // Preserve separate approach lines on open ground. Following a
+                // multi-source field here would funnel everyone into its first slot.
+                path = Path{{u->cell, destination.cell}, 0, destination.position};
+            } else if (destinations.size() > 1) {
+                auto& field = fields[static_cast<size_t>(u->definition.movement)];
+                if (!field) {
+                    std::vector<Cell> goals;
+                    for (const auto& d : destinations) if (unit(d.id)->definition.movement == u->definition.movement) goals.push_back(d.cell);
+                    field = makeRouteField(map(), goals, u->definition.movement);
+                }
+                path = fieldPath(map(), *field, u->position, destination.cell, u->definition.collisionRadius);
+                if (path) { path->cells.push_back(destination.cell); path->destination = destination.position; }
+            }
+            applyOrder(*u, {kind, destination.cell, 0, group, destination.position}, std::move(path));
             any = true;
         }
     }
@@ -173,71 +168,30 @@ void Simulation::arrived(Unit& u) {
     }
     default:
         u.state = UnitState::Idle;
-        if (u.currentOrder.kind == OrderKind::Patrol && u.currentOrder.cell != u.patrolOrigin) {
-            std::swap(u.currentOrder.cell, u.patrolOrigin);
+        if (u.currentOrder.kind == OrderKind::Patrol &&
+            lengthSquared(u.currentOrder.position.value_or(center(u.currentOrder.cell)) - u.patrolOrigin) > 1e-8f) {
+            const Vec2 destination = u.currentOrder.position.value_or(center(u.currentOrder.cell));
+            u.currentOrder.position = u.patrolOrigin; u.currentOrder.cell = cellAt(u.patrolOrigin);
+            u.patrolOrigin = destination;
             resumeOrder(u);
         } else if (u.currentOrder.kind == OrderKind::AttackMove) u.currentOrder = {OrderKind::Stop};
         break;
     }
 }
 void Simulation::tickUnit(Unit& u) {
-    if (u.state == UnitState::Idle && !u.targetUnit && !u.pendingOrder &&
+    if (u.state == UnitState::Idle && !u.targetUnit &&
         (u.currentOrder.kind == OrderKind::Patrol || u.currentOrder.kind == OrderKind::AttackMove) && ++u.blockedTicks >= 15)
         resumeOrder(u);
     if (u.state == UnitState::WaitingForCrystal) {
         if (++u.blockedTicks >= ticksPerSecond) seekCrystal(u);
         return;
     }
-    if (u.state == UnitState::ToCrystal && u.progress == 0 && u.targetCrystal >= 0 && crystals()[u.targetCrystal].remaining == 0) {
+    if (u.state == UnitState::ToCrystal && u.targetCrystal >= 0 && crystals()[u.targetCrystal].remaining == 0) {
         seekCrystal(u);
         return;
     }
     if (u.next < u.route.size()) {
-        const Cell destination = u.route[u.next];
-        if (u.progress == 0 && !dynamicStep(u, destination)) {
-            ++u.blockedTicks;
-            const Cell step = destination - u.cell;
-            const auto inWay = [&](Cell c) {
-                return c == destination || (step.x && step.y && (c == Cell{u.cell.x + step.x, u.cell.y} || c == Cell{u.cell.x, u.cell.y + step.y}));
-            };
-            const bool waitingForGroup = u.moveGroup && std::any_of(units_.begin(), units_.end(), [&](const Unit& other) {
-                return other.id != u.id && other.moveGroup == u.moveGroup && other.next < other.route.size() &&
-                    (inWay(other.cell) || (other.progress > 0 && inWay(other.route[other.next])));
-            });
-            // Let a travelling neighbour clear its reserved step before taking a detour.
-            if (u.blockedTicks >= (waitingForGroup ? 120 : 24) && u.blockedTicks % 15 == 9) {
-                const Cell goal = u.route.back();
-                if (auto path = findPath(map(), u.cell, std::span<const Cell>(&goal, 1), occupied(u), u.definition.movement)) {
-                    u.route = std::move(path->cells); u.next = 1;
-                    if (u.next == u.route.size()) { arrived(u); return; }
-                }
-            }
-            if (u.blockedTicks >= (waitingForGroup ? 360 : 90)) {
-                // A formation order keeps its slot while traffic clears. Losing the order
-                // here would leave a stopped member blocking the rest of the column.
-                if (u.moveGroup && u.state == UnitState::Moving && map().walkable(u.route.back(), u.definition.movement)) return;
-                const auto state = u.state;
-                u.route.clear(); u.next = 0; u.blockedTicks = 0;
-                if (state == UnitState::ToHall) returnCargo(u);
-                else if (state == UnitState::ToCrystal) seekCrystal(u);
-                else u.state = UnitState::Idle;
-            }
-            return;
-        }
-        u.blockedTicks = 0;
-        const Cell d = destination - u.cell;
-        const float length = (d.x && d.y) ? 1.41421356f : 1.0f;
-        const float oldProgress = u.progress;
-        const float speed = u.moveGroup ? std::min(u.definition.movementPerSecond, u.groupSpeed) : u.definition.movementPerSecond;
-        u.progress = std::min(1.0f, u.progress + speed / ticksPerSecond / length);
-        u.facing = d;
-        u.walkCycle = std::fmod(u.walkCycle + (u.progress - oldProgress) * length / u.definition.sprite.walkCycleDistance, 1.0f);
-        u.position = center(u.cell) + (center(destination) - center(u.cell)) * u.progress;
-        if (u.progress >= 1.0f) {
-            u.cell = destination; u.progress = 0; ++u.next;
-            if (u.pendingOrder) { const auto order = *u.pendingOrder; u.pendingOrder.reset(); applyOrder(u, order); }
-            else if (u.next == u.route.size()) arrived(u);
-        }
+        moveUnit(u);
         return;
     }
     if (u.state == UnitState::Building) {
