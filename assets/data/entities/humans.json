@@ -152,6 +152,7 @@
         "portrait": "sprites/units/peacemaker/peacemaker-portrait.png",
         "icon": "sprites/units/peacemaker/peacemaker-icon.png",
         "directionRecipe": "sprites/units/peacemaker/directions.json",
+        "healthBarOffset": 12,
         "walkCycleDistance": 2,
         "pixelArt": false,
         "frameSize": [

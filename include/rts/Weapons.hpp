@@ -30,6 +30,7 @@ struct UnitSpriteDefinition {
     bool pixelArt = true;
     int frameWidth = 32, frameHeight = 32;
     Vec2 size{80, 80}, anchor{.5f, .7125f};
+    float healthBarOffset{}; // Vertical screen pixels at zoom 1; positive lowers both overhead bars.
     std::array<int, 8> rows{0, 1, 2, 3, 4, 5, 6, 7}; // S, SE, E, NE, N, NW, W, SW.
     std::vector<int> walk{0, 2, 1, 3}, windup{4, 5}, recovery{6, 7};
     float walkCycleDistance = 1; // Logical cells travelled per full walk animation cycle.

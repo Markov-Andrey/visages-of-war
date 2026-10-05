@@ -149,9 +149,10 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
         target_->FillEllipse(D2D1::Ellipse(point(p + Vec2{16, -25} * view.zoom), 5 * view.zoom, 7 * view.zoom), brush_.Get());
     }
     if (selected || u.hero || u.owner != game.player().id || u.health < u.maximumHealth() || u.mana < u.maximumMana()) {
-        // Taller authored art needs its bar above the same bounds used for picking.
+        // Default to picking bounds; authored offsets account for transparent frame padding.
         const float barHeight = std::max(4.0f, 6 * view.zoom);
-        const float barY = std::min(p.y - 59 * view.zoom, unitBounds(game, u, view).y - std::max(7 * view.zoom, barHeight * .5f + 2));
+        const float barY = std::min(p.y - 59 * view.zoom, unitBounds(game, u, view).y - std::max(7 * view.zoom, barHeight * .5f + 2)) +
+            u.definition.sprite.healthBarOffset * view.zoom;
         const float manaHeight = std::max(2.f, barHeight * .7f);
         const float top = barY - barHeight * .5f - (u.maximumMana() > 0 ? manaHeight + 2 : 0);
         drawHealthBar(u, {p.x - 21 * view.zoom, top, 42 * view.zoom, barHeight},

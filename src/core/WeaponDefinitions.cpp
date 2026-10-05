@@ -178,7 +178,7 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
             throw std::runtime_error("Point projectiles require a splash radius; unit projectiles have single-target damage");
     }
     if (sprite.is_null()) return;
-    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance"});
+    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance", "healthBarOffset"});
     auto& s = e.sprite;
     s.image = imagePath(sprite.at("image"));
     if (sprite.contains("portrait") && !sprite.at("portrait").is_null()) s.portrait = imagePath(sprite.at("portrait"));
@@ -193,6 +193,7 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
     if (!frameSize.is_array() || frameSize.size() != 2) throw std::runtime_error("Sprite frame needs width and height");
     s.frameWidth = number(frameSize[0], 1, 1024); s.frameHeight = number(frameSize[1], 1, 1024);
     s.size = pair(sprite.at("size"), 1, 1024); s.anchor = pair(sprite.at("anchor"), 0, 1);
+    if (sprite.contains("healthBarOffset")) s.healthBarOffset = real(sprite.at("healthBarOffset"), -1024, 1024);
     const auto& rows = sprite.at("rows");
     if (!rows.is_array() || rows.size() != 8) throw std::runtime_error("Sprite requires eight facing rows");
     for (size_t i = 0; i < 8; ++i) s.rows[i] = number(rows[i], 0, 255);
