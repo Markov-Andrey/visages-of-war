@@ -121,14 +121,14 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
     }
 }
 
-void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView& view, bool selected) {
+void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView& view, bool selected, bool hovered, float commandAge) {
     const auto p = unitScreenAnchor(view, u.position, game.unitHeight(u));
     const Cell groundCell{int(std::floor(u.position.x)), int(std::floor(u.position.y))};
     const auto shadow = unitScreenAnchor(view, u.position, game.map().surfaceHeight(groundCell, u.position));
     brush_->SetColor(D2D1::ColorF(0, .35f));
     target_->FillEllipse(D2D1::Ellipse(point(shadow), 16 * view.zoom, 7 * view.zoom), brush_.Get());
     if (u.hero) {
-        if (!selected) drawSelectionRing(p, 27, 13, view.zoom, 0xe0c276);
+        if (!selected && !hovered) drawSelectionRing(p, 27, 13, view.zoom, 0xe0c276);
         text(L"" + std::to_wstring(u.level()), rect(p.x + 27 * view.zoom, p.y - 57 * view.zoom, 38, 24), 0xe0c276);
     }
     if (selected) {
@@ -139,7 +139,9 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
             target_->FillEllipse(D2D1::Ellipse(point(shadow), 2.5f * view.zoom, 2.5f * view.zoom), brush_.Get());
         }
         drawSelectionRing(p, u.hero ? 27 : 23, u.hero ? 13 : 11, view.zoom, color);
-    }
+    } else if (hovered) drawSelectionRing(p, u.hero ? 27 : 23, u.hero ? 13 : 11, view.zoom,
+        selectionColor(u.owner, game.player().id), .5f);
+    drawCommandPulse(p, u.hero ? 27 : 23, u.hero ? 13 : 11, view.zoom, selectionColor(u.owner, game.player().id), commandAge);
     const auto frame = unitFrame(u);
     unitImage(u.definition.sprite, frame.column, frame.row, p, view.zoom, u.owner == game.player().id ? teamColor_ : enemyColor_);
     if (u.cargo > 0) {

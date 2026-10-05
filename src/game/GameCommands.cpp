@@ -133,7 +133,16 @@ void GameApplication::rightClick(std::optional<rts::Cell> target) {
     if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu) { clearCommandMode(); return; }
     if (!target || selectedCrystal()) return;
     if (const auto* b = selectedBuilding()) game_.setRally(b->id, *target);
-    else if (ui_.selection.activeUnit(game_)) game_.command(ui_.selection.ids, *target);
+    else if (ui_.selection.activeUnit(game_) && game_.command(ui_.selection.ids, *target)) {
+        // Match Simulation::command's target precedence. In a mixed selection,
+        // ineligible members retain old orders and must not confirm their old target.
+        for (const auto& unit : game_.units()) if (unit.owner != game_.player().id && unit.cell == *target && game_.fog().visible(unit.cell)) {
+            ui_.commandFeedback.confirm(unit.id); return;
+        }
+        for (const auto& node : game_.crystals()) if (node.contains(*target) && node.remaining > 0 && game_.crystalVisible(node)) {
+            ui_.commandFeedback.confirm(node.id); return;
+        }
+    }
 }
 
 std::optional<rts::Cell> GameApplication::pickCommandTarget() const {

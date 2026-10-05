@@ -78,9 +78,24 @@ private:
     std::optional<std::uint64_t> revision_;
     Clock::time_point expires_{};
 };
+struct CommandFeedback {
+    using Clock = std::chrono::steady_clock;
+    static constexpr float pulseSeconds = .42f, pulseDelay = .20f;
+    EntityId target{};
+    mutable std::optional<Clock::time_point> began;
+    void confirm(EntityId id) { target = id; began.reset(); }
+    float age(Clock::time_point now = Clock::now()) const {
+        if (!target) return -1;
+        // Start with the first presented frame, including a paused match.
+        if (!began) began = now;
+        const float seconds = std::chrono::duration<float>(now - *began).count();
+        return seconds >= 0 && seconds < pulseSeconds + pulseDelay ? seconds : -1;
+    }
+};
 struct GameplayUi {
     // Presentation cache: notification lifetime continues while the simulation is paused.
     mutable GameplayNotification notification;
+    CommandFeedback commandFeedback;
     Selection selection;
     ControlGroups controlGroups;
     std::optional<UiRect> drag;
@@ -154,6 +169,17 @@ struct BattleLayout {
     }
     std::optional<Cell> minimapCell(Vec2 p, const Map& map) const { return MinimapProjection(minimap, map).pick(p); }
 };
+inline bool mouseInBattleWorld(const GameplayUi& ui, const BattleLayout& layout, Vec2 mouse) {
+    for (size_t i = 0; i < controlGroupCount; ++i)
+        if (!ui.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse)) return false;
+    return layout.world.contains(mouse) && !layout.army.contains(mouse) && !layout.hero.contains(mouse) &&
+        !layout.idleWorker.contains(mouse) && !layout.minimap.contains(mouse);
+}
+inline EntityId hoveredUnit(const Simulation& game, const WorldView& view, const GameplayUi& ui, const BattleLayout& layout) {
+    if (ui.drag || !ui.placement.empty() || ui.rallyMode || ui.orderMode || !mouseInBattleWorld(ui, layout, ui.mouse)) return 0;
+    const auto id = pickEntity(game, view, ui.mouse);
+    return id && game.unit(*id) ? *id : 0;
+}
 struct SelectionPanelLayout {
     UiRect portrait, health, mana, content;
     explicit SelectionPanelLayout(UiRect info) {

@@ -86,7 +86,8 @@ private:
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
     void hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid);
     void drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info);
-    void drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color);
+    void drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color, float opacity = 1, bool dashed = false);
+    void drawCommandPulse(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color, float age);
     void drawPortraitBackdrop(UiRect bounds, unsigned color);
     void drawUnitStats(const Unit& unit, UiRect bounds);
     void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14, bool beveled = false);
@@ -96,7 +97,7 @@ private:
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
     void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected);
     void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row);
-    void unitSprite(const Simulation& game, const Unit& unit, const WorldView& view, bool selected);
+    void unitSprite(const Simulation& game, const Unit& unit, const WorldView& view, bool selected, bool hovered = false, float commandAge = -1);
     void prepareLandscape(const Landscape& landscape, const Map& map);
     void paintedTile(Cell cell);
     void decoration(const Decoration& object, const Map& map, const WorldView& view);
@@ -112,7 +113,7 @@ private:
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitUiImages_;
     std::map<unsigned, ComPtr<ID2D1RadialGradientBrush>> portraitGradients_;
-    std::map<std::tuple<unsigned, int, int>, ComPtr<ID2D1Bitmap>> selectionRings_;
+    std::map<std::tuple<unsigned, int, int, bool>, ComPtr<ID2D1Bitmap>> selectionRings_;
     std::array<ComPtr<ID2D1LinearGradientBrush>, 3> healthBarGradients_, manaBarGradients_;
     // CPU atlases survive target recreation; cleared on explicit asset reload.
     std::map<std::pair<std::string, unsigned>, SpritePixels> directionalSheets_;

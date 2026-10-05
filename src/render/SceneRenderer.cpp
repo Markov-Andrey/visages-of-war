@@ -15,6 +15,9 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     target_->Clear(D2D1::ColorF(0x081119));
     const auto extent = size();
     const BattleLayout layout(extent);
+    const auto hoverUnit = hoveredUnit(game, view, ui, layout);
+    const float commandAge = ui.commandFeedback.age();
+    const auto feedbackAge = [&](EntityId id) { return id == ui.commandFeedback.target ? commandAge : -1.f; };
     prepareNightLighting(game, view, extent, ui);
     const auto& map = game.map();
     target_->PushAxisAlignedClip(rect(layout.world.x, layout.world.y, layout.world.width, layout.world.height), D2D1_ANTIALIAS_MODE_ALIASED);
@@ -75,6 +78,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                     drawSelectionRing(p, 28 * crystal.width, 13 * crystal.height, view.zoom,
                         selectionColor(crystal.owner, game.player().id));
                 }
+                if (game.crystalVisible(crystal)) drawCommandPulse(p, 28 * crystal.width, 13 * crystal.height, view.zoom,
+                    selectionColor(crystal.owner, game.player().id), feedbackAge(crystal.id));
                 drawCrystal(crystal, p, view.zoom, game.crystalVisible(crystal), game.clock().elapsedTicks());
                 break;
             }
@@ -106,7 +111,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             }
             case Kind::Unit: {
                 const auto& u = game.units()[item.index];
-                if (onScreen(unitScreenAnchor(view, u.position, game.unitHeight(u)))) unitSprite(game, u, view, ui.selection.contains(u.id));
+                if (onScreen(unitScreenAnchor(view, u.position, game.unitHeight(u))))
+                    unitSprite(game, u, view, ui.selection.contains(u.id), hoverUnit == u.id, feedbackAge(u.id));
                 break;
             }
             }
@@ -116,7 +122,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     std::vector<const Unit*> flyers;
     for (const auto& u : game.units()) if (airborne(u.definition.movement) && game.fog().visible(u.cell)) flyers.push_back(&u);
     std::stable_sort(flyers.begin(), flyers.end(), [](const Unit* a, const Unit* b) { return a->position.y < b->position.y; });
-    for (const auto* u : flyers) unitSprite(game, *u, view, ui.selection.contains(u->id));
+    for (const auto* u : flyers) unitSprite(game, *u, view, ui.selection.contains(u->id), hoverUnit == u->id, feedbackAge(u->id));
     drawProjectiles(game, view);
     if (grid) for (size_t i = 0; i < game.environment().size(); ++i) {
         const auto& object = game.environment()[i];

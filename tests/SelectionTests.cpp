@@ -3,6 +3,35 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Hover previews the visible click target for every owner without selecting through UI or fog", [] {
+        EntityDefinition worker; worker.dayVision = worker.nightVision = 20;
+        Scenario scene{Map(40, 32), {1, 1}, {8, 8}, {}};
+        scene.units = {{worker.id, 1, {12, 8}}, {worker.id, neutralPlayer, {16, 8}}};
+        Simulation game(std::move(scene), {}, worker, {worker});
+        GameplayUi ui; ui.selection.ids = {game.worker().id};
+        const auto selection = ui.selection.ids;
+        const BattleLayout layout({1280, 900});
+        WorldView view{{}, .8f};
+        for (const auto& unit : game.units()) {
+            view.origin = Vec2{650, 350} - view.project(unit.position, game.unitHeight(unit));
+            const auto b = unitBounds(game, unit, view);
+            ui.mouse = {b.x + b.width * .5f, b.y + b.height * .5f};
+            require(hoveredUnit(game, view, ui, layout) == unit.id && pickEntity(game, view, ui.mouse) == unit.id,
+                "Hover did not match the visible unit under left click");
+            require(ui.selection.ids == selection, "Hover changed actual selection");
+            ui.drag = UiRect{0, 0, 20, 20};
+            require(!hoveredUnit(game, view, ui, layout), "Selection drag retained a hover ring"); ui.drag.reset();
+            ui.orderMode = OrderKind::AttackMove;
+            require(!hoveredUnit(game, view, ui, layout), "Targeting cursor previewed a left-click selection"); ui.orderMode.reset();
+        }
+        const Vec2 minimap{layout.minimap.x + 40, layout.minimap.y + 40};
+        view.origin = view.origin + minimap - ui.mouse; ui.mouse = minimap;
+        require(pickEntity(game, view, ui.mouse).has_value() && !hoveredUnit(game, view, ui, layout), "Hovered through the raised minimap");
+        const Vec2 world{650, 300}; view.origin = view.origin + world - ui.mouse; ui.mouse = world;
+        require(hoveredUnit(game, view, ui, layout) != 0, "Hover did not resume outside the HUD");
+        const_cast<FogOfWar&>(game.fog()).update(game.map(), {});
+        require(!hoveredUnit(game, view, ui, layout), "Hover revealed a unit in logical fog");
+    });
     test("Enemy and neutral units can only be inspected singly and never become command recipients", [] {
         rts::EntityDefinition worker;
         worker.dayVision = worker.nightVision = 12;

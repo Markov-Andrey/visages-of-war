@@ -76,7 +76,7 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
             }
             if (menu_.page == rts::MenuPage::Playing) {
                 const auto hover = !ui_.placement.empty() && mouseInWorld() ? game_.map().pick(mouse_, view_) : std::nullopt;
-                ui_.mouse = mouse_;
+                ui_.mouse = panning_ || minimapDragging_ ? rts::Vec2{-1, -1} : mouse_;
                 ui_.selection.prune(game_);
                 ui_.controlGroups.prune(game_);
                 if (!ui_.commandGroup.empty() && ui_.commandGroup != ui_.selection.activeGroup(game_).type) clearCommandMode();

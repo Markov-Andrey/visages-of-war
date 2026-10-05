@@ -9,13 +9,13 @@ float smoothFade(float value) {
 }
 }
 
-void Renderer::drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color) {
+void Renderer::drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color, float opacity, bool dashed) {
     if (radiusX <= 0 || radiusY <= 0 || zoom <= 0) return;
     // Generated once per shape/colour, at four samples per world-render pixel.
     // Camera zoom only scales the cached image; no external ring artwork is used.
     constexpr int samples = 4, padding = 8;
     const int width = (radiusX + padding) * 2, height = (radiusY + padding) * 2;
-    auto& bitmap = selectionRings_[{color, radiusX, radiusY}];
+    auto& bitmap = selectionRings_[{color, radiusX, radiusY, dashed}];
     if (!bitmap) {
         const int pixelWidth = width * samples, pixelHeight = height * samples;
         std::vector<BYTE> pixels(size_t(pixelWidth) * pixelHeight * 4);
@@ -32,7 +32,12 @@ void Renderer::drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zo
             const float gradient = std::sqrt(nx * nx / (rx * rx) + ny * ny / (ry * ry)) / radius;
             const float distance = (radius - 1.f) / gradient;
             // Fade both rear arms smoothly to nothing before they meet at the top.
-            const float rear = smoothFade((ny / radius + .96f) / .74f);
+            float rear = smoothFade((ny / radius + .96f) / .74f);
+            if (dashed) {
+                const float phase = (std::atan2(ny, nx) + 3.141592654f) * (20.f / 6.283185307f);
+                const float segment = phase - std::floor(phase);
+                rear *= smoothFade(segment / .06f) * smoothFade((.70f - segment) / .06f);
+            }
             if (rear == 0.f || std::abs(distance) >= 6.f) continue;
 
             const float halo = .56f * smoothFade(1.f - std::abs(distance) / 6.f);
@@ -59,6 +64,17 @@ void Renderer::drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zo
     const Vec2 extent{width * zoom, height * zoom};
     const auto source = bitmap->GetSize();
     // Selection stays readable at night but retains scene occlusion and fog visibility.
-    sprite(bitmap.Get(), rect(0, 0, source.width, source.height), center - extent * .5f, extent, false, 0);
+    target_->DrawBitmap(bitmap.Get(), rect(center.x - extent.x * .5f, center.y - extent.y * .5f, extent.x, extent.y),
+        worldOpacity_ * std::clamp(opacity, 0.f, 1.f), D2D1_BITMAP_INTERPOLATION_MODE_LINEAR, rect(0, 0, source.width, source.height));
+}
+void Renderer::drawCommandPulse(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color, float age) {
+    if (age < 0) return;
+    for (int pulse = 0; pulse < 2; ++pulse) {
+        const float phase = (age - pulse * CommandFeedback::pulseDelay) / CommandFeedback::pulseSeconds;
+        if (phase < 0 || phase >= 1) continue;
+        // Scale a cached outer ring; animation never creates per-frame bitmaps.
+        drawSelectionRing(center, radiusX + 5, radiusY + 3, zoom * (1 + .22f * phase), color,
+            .85f * (1 - phase), true);
+    }
 }
 }

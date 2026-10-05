@@ -106,10 +106,7 @@ void GameApplication::refreshCursor() {
 }
 
 bool GameApplication::mouseInWorld() const {
-    const rts::BattleLayout layout(renderer_.size());
-    for (size_t i = 0; i < rts::controlGroupCount; ++i)
-        if (!ui_.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse_)) return false;
-    return layout.world.contains(mouse_) && !layout.army.contains(mouse_) && !layout.hero.contains(mouse_) && !layout.idleWorker.contains(mouse_) && !layout.minimap.contains(mouse_);
+    return rts::mouseInBattleWorld(ui_, rts::BattleLayout(renderer_.size()), mouse_);
 }
 
 rts::Vec2 GameApplication::mousePosition(LPARAM lParam) const {
@@ -137,12 +134,14 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         return 0;
     case WM_ACTIVATEAPP: {
         if (wParam && !IsIconic(window_)) fitToMonitor(MonitorFromWindow(window_, MONITOR_DEFAULTTONEAREST));
-        if (!wParam) camera_.stop(view_);
+        if (!wParam) { camera_.stop(view_); mouse_ = ui_.mouse = {-1, -1}; }
         if (!wParam && GetCapture() == window_) ReleaseCapture();
         return 0;
     }
     case WM_MOUSEMOVE: {
         mouse_ = mousePosition(lParam);
+        TRACKMOUSEEVENT tracking{sizeof(TRACKMOUSEEVENT), TME_LEAVE, window_, 0};
+        TrackMouseEvent(&tracking);
         if (panning_) { view_.origin = view_.origin + mouse_ - panStart_; panStart_ = mouse_; constrainCamera(); }
         if (minimapDragging_) if (const auto c = rts::BattleLayout(renderer_.size()).minimapCell(mouse_, game_.map())) focus(rts::center(*c));
         if (dragging_ && (std::abs(mouse_.x - dragStart_.x) > 5 || std::abs(mouse_.y - dragStart_.y) > 5))
@@ -151,6 +150,9 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         refreshCursor();
         return 0;
     }
+    case WM_MOUSELEAVE:
+        if (GetCapture() != window_) mouse_ = ui_.mouse = {-1, -1};
+        return 0;
     case WM_CAPTURECHANGED:
         dragging_ = false; panning_ = false; minimapDragging_ = false; ui_.drag.reset(); return 0;
     case WM_MBUTTONDOWN:
