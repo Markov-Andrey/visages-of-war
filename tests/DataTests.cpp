@@ -330,22 +330,24 @@ void dataTests(TestSuite& test, const TestContext& context) {
     test("Crystal kinds round trip with catalog capacities and full footprints", [&] {
         const auto& world = context.worldAssets;
         const auto file = Paths::executable().parent_path() / L"test-crystal-kinds.rtsmap";
-        struct Kind { const char* id; int size, capacity; };
-        for (const auto kind : {Kind{"crystal.small", 1, 1000}, Kind{"crystal.medium", 2, 5500}, Kind{"crystal.big", 3, 15000}}) {
+        struct Kind { const char* id; int width, height, capacity; };
+        for (const auto kind : {Kind{"crystal.small", 1, 1, 1000}, Kind{"crystal.medium", 2, 1, 5500}, Kind{"crystal.big", 3, 2, 15000}}) {
             auto j = mapJson(12, 12);
             j["resources"] = {{{"asset", kind.id}, {"cell", {4, 4}}, {"remaining", kind.capacity}}};
             writeMap(file, j);
             const auto loaded = rts::loadScenario(file, world, {3, 2});
             const auto& node = loaded.crystals.front();
-            require(node.width == kind.size && node.height == kind.size && node.capacity == kind.capacity, "Crystal definition lost");
-            for (int y = 0; y < kind.size; ++y) for (int x = 0; x < kind.size; ++x)
+            require(node.width == kind.width && node.height == kind.height && node.capacity == kind.capacity, "Crystal definition lost");
+            for (int y = 0; y < kind.height; ++y) for (int x = 0; x < kind.width; ++x)
                 require(!loaded.map.walkable({4 + x, 4 + y}), "Crystal footprint is partially walkable");
+            require(loaded.map.walkable({4 + kind.width, 4}) && loaded.map.walkable({4, 4 + kind.height}),
+                "Crystal blocks cells outside its rectangular footprint");
             saveScenario(loaded, file);
             require(rts::loadScenario(file, world, {3, 2}).crystals.front().definitionId == kind.id, "Saved crystal changed type");
             j["resources"][0]["remaining"] = kind.capacity + 1; writeMap(file, j);
             mustThrow([&] { rts::loadScenario(file, world, {3, 2}); });
             j["resources"][0]["remaining"] = kind.capacity;
-            j["resources"].push_back({{"asset", "crystal.small"}, {"cell", {3 + kind.size, 3 + kind.size}}, {"remaining", 1000}});
+            j["resources"].push_back({{"asset", "crystal.small"}, {"cell", {3 + kind.width, 3 + kind.height}}, {"remaining", 1000}});
             writeMap(file, j); mustThrow([&] { rts::loadScenario(file, world, {3, 2}); });
         }
     });

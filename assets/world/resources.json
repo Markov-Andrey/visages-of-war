@@ -27,7 +27,7 @@
     {
       "id": "crystal.medium",
       "name": "Средняя жила",
-      "footprint": [2, 2],
+      "footprint": [2, 1],
       "capacity": 5500,
       "image": "sprites/resources/crystal/medium.png",
       "scale": 0.35,
@@ -50,7 +50,7 @@
     {
       "id": "crystal.big",
       "name": "Большая жила",
-      "footprint": [3, 3],
+      "footprint": [3, 2],
       "capacity": 15000,
       "image": "sprites/resources/crystal/big.png",
       "scale": 0.26,

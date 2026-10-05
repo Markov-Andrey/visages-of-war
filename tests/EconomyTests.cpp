@@ -26,7 +26,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Large crystals accept clicks on every cell and release the entire footprint after harvesting", [&] {
         const auto& world = context.worldAssets;
         for (const auto* kind : {"crystal.medium", "crystal.big"}) {
-            Scenario s{Map(24, 24), {1, 1}, {17, 14}, {world.instantiateCrystal(kind, {13, 13})}};
+            Scenario s{Map(24, 24), {1, 1}, {17, 13}, {world.instantiateCrystal(kind, {13, 13})}};
             s.crystals.front().remaining = 2;
             const auto node = s.crystals.front();
             rebuildScenario(s, {3, 2});

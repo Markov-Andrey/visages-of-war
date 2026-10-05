@@ -58,11 +58,11 @@ PNG не перерисовывались и не обрезались: нужн
 `supply` и каталог жил `crystals`. Для каждой жилы заданы ID, название, площадь,
 ёмкость, PNG, прямоугольники вариантов, точки опоры, масштаб и цвет свечения.
 
-| Жила | ID | Клетки | Запас | PNG / варианты |
+| Жила | ID | Клетки (ширина × высота) | Запас | PNG / варианты |
 | --- | --- | --- | --- | --- |
 | Малая | `crystal.small` | 1×1 | 1000 | `sprites/resources/crystal/variants.png`, 12 |
-| Средняя | `crystal.medium` | 2×2 | 5500 | `sprites/resources/crystal/medium.png`, 12 |
-| Большая | `crystal.big` | 3×3 | 15000 | `sprites/resources/crystal/big.png`, 4 |
+| Средняя | `crystal.medium` | 2×1 | 5500 | `sprites/resources/crystal/medium.png`, 12 |
+| Большая | `crystal.big` | 3×2 | 15000 | `sprites/resources/crystal/big.png`, 4 |
 
 Исходные PNG сохранены без перезаписи. Основания выровнены относительно центра
 занятой площади; масштаб малой / средней / большой жилы — 0,24 / 0,35 / 0,26.
