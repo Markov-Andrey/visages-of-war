@@ -129,16 +129,17 @@ void combatTests(TestSuite& test, const TestContext& context) {
         ticks(game, 60 * rts::Simulation::ticksPerSecond - 1);
         require(game.corpses().size() == 2 && game.corpses().front().remainingTicks == 1, "Corpse disappeared before 60 seconds");
         game.tick();
-        require(game.corpses().front().phase == rts::CorpsePhase::Fading && game.bones().empty(), "Body did not begin fading after sixty seconds");
+        require(game.corpses().front().phase == rts::CorpsePhase::Fading && game.bones().size() == 2,
+            "Bones did not appear when bodies began fading after sixty seconds");
         ticks(game, rts::Corpse::fadeTicks);
         require(game.corpses().empty() && game.bones().size() == 2, "Bodies did not become bones");
         const auto pile = game.bones().front();
-        require(pile.owner == rts::neutralPlayer && pile.remainingTicks == rts::Bones::lifetimeTicks && game.bones(pile.id),
-            "Bones did not receive neutral ownership, a fresh lifetime or an ID");
+        require(pile.owner == rts::neutralPlayer && pile.remainingTicks == rts::Bones::lifetimeTicks - rts::Corpse::fadeTicks && game.bones(pile.id),
+            "Bones lost neutral ownership, their lifetime or an ID");
         const auto transitions = game.takeEvents();
         require(std::count_if(transitions.begin(), transitions.end(), [](const auto& e) { return std::holds_alternative<rts::BonesCreated>(e); }) == 2,
             "Bones creation events missing");
-        ticks(game, rts::Bones::lifetimeTicks - 1);
+        ticks(game, pile.remainingTicks - 1);
         require(game.bones(pile.id)->remainingTicks == 1 && !game.bones(pile.id)->fading && game.bones(pile.id)->variation == pile.variation,
             "Bones changed art, ID or expired before five minutes");
         game.tick();

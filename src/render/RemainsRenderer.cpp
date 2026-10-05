@@ -59,7 +59,7 @@ void Renderer::bonesSprite(const Bones& bones, const WorldView& view) {
     const Vec2 extent = Vec2{float(r[2]), float(r[3])} * scale;
     const float opacity = worldOpacity_;
     worldOpacity_ *= bones.fading ? ease(float(bones.remainingTicks) / Bones::fadeTicks)
-                                 : ease(float(Bones::lifetimeTicks - bones.remainingTicks) / 12);
+                                 : ease(float(Bones::lifetimeTicks - bones.remainingTicks) / Corpse::fadeTicks);
     sprite(bitmap.Get(), rect(float(r[0]), float(r[1]), float(r[2]), float(r[3])), start, extent, definition.pixelArt, .5f);
     worldOpacity_ = opacity;
 }

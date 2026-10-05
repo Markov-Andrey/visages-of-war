@@ -48,15 +48,14 @@ void Simulation::tickRemains() {
         if (--body.remainingTicks > 0) continue;
         if (body.phase == CorpsePhase::Body) {
             body.phase = CorpsePhase::Fading; body.remainingTicks = Corpse::fadeTicks;
-            continue;
-        }
-        if (body.phase == CorpsePhase::Fading) {
+            // Bones fade in while their source body fades out.
             Bones pile;
             pile.id = nextId_++; pile.sourceUnit = body.sourceUnit; pile.sourceCorpse = body.id;
             pile.position = body.position; pile.cell = body.cell; pile.height = body.height;
             pile.variation = variation(pile.id, clock_.elapsedTicks());
             bones_.push_back(pile);
             events_.emplace_back(BonesCreated{pile.id, body.id});
+            continue;
         }
         if (body.phase != CorpsePhase::Vanishing) events_.emplace_back(RemainsRemoved{body.id});
     }
