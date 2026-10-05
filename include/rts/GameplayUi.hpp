@@ -150,10 +150,13 @@ struct BattleLayout {
     static constexpr size_t commandCount = commandSlots;
     explicit BattleLayout(Vec2 size) {
         world = {0, 58, size.x, std::max(1.0f, size.y - 262)};
-        const float miniSide = size.x < 1060 ? std::clamp(size.x * .23f, 184.f, 224.f) : 240.f;
+        constexpr float commandGap = 6, baseCommandSide = 64;
+        constexpr float fullPanelSide = commandColumns * baseCommandSide + (commandColumns - 1) * commandGap;
+        const float preferredPanelSide = size.x < 1060 ? std::clamp(size.x * .23f, 184.f, 224.f) : fullPanelSide;
+        // Keep room above both blocks for notifications, groups and the hero shortcut in short windows.
+        const float miniSide = std::min(preferredPanelSide, std::max(184.f, size.y - 360));
         minimap = {18, size.y - miniSide - 22, miniSide, miniSide};
         commandPanel = {size.x - minimap.x - miniSide, minimap.y, miniSide, miniSide};
-        const float commandGap = 6;
         const float commandSide = (commandPanel.width - (commandColumns - 1) * commandGap) / commandColumns;
         const float commandPitch = commandSide + commandGap;
         const float infoLeft = minimap.x + minimap.width + 22;
