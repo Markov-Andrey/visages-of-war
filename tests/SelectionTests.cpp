@@ -286,7 +286,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(selection.activeUnit(game)->hero.has_value(), "Tab did not wrap to hero");
         require(selection.cycleGroup(game, true) && selection.activeGroup(game).type == "human.worker", "Reverse Tab failed");
         const auto soldier = groups[1].ids.front();
-        require(selection.activateGroup(game, soldier), "Portrait did not activate its type");
+        require(selection.activateGroup(game, soldier), "Member did not activate its type");
         selection.ids.erase(std::find(selection.ids.begin(), selection.ids.end(), soldier));
         selection.prune(game);
         require(selection.activeGroup(game).type == "human.peacemaker" && selection.activeGroup(game).ids.size() == 1,
@@ -297,6 +297,38 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(selection.groups(game).empty() && !selection.cycleGroup(game) && !selection.activeUnit(game), "Building entered unit groups");
         selection.ids.clear(); selection.prune(game);
         require(!selection.cycleGroup(game), "Empty selection cycled");
+    });
+    test("Selecting a group icon isolates that exact unit and preserves numbered groups", [&] {
+        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
+        rts::Scenario scene{rts::Map(24, 24), {1, 1}, {4, 3}, {}};
+        scene.extraWorkers = {{5, 3}};
+        scene.units = {{"human.peacemaker", 0, {6, 4}}, {"human.peacemaker", 1, {7, 4}}};
+        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities());
+        const auto first = game.worker().id, second = game.units()[1].id;
+        const auto soldier = game.units()[2].id, enemy = game.units()[3].id;
+        const std::vector whole{first, second, soldier};
+        rts::GameplayUi ui; ui.selection.ids = whole;
+        ui.controlGroups.bind(0, game, ui.selection);
+        const auto saved = ui.controlGroups.members(0);
+        for (const auto clicked : {second, soldier}) {
+            ui.selection.ids = whole;
+            ui.selection.activateGroup(game, first);
+            require(ui.selection.selectMember(game, clicked) && ui.selection.ids == std::vector{clicked},
+                "Icon retained other units, including members of the same type");
+            require(ui.selection.activeUnit(game)->id == clicked && ui.selection.inspectedUnit(game)->id == clicked,
+                "Single selection shows another unit's stats");
+            require(rts::SelectionCards(game, ui.selection, rts::BattleLayout({800, 600}).info).cards.empty(),
+                "Single selection retained the group grid");
+            require(rts::commandRecipients(game, ui, rts::OrderKind::Move) == std::vector{clicked},
+                "Commands still reach the previous group");
+            require(ui.controlGroups.members(0) == saved && ui.controlGroups.recall(0, game, ui.selection) &&
+                std::is_permutation(ui.selection.ids.begin(), ui.selection.ids.end(), whole.begin(), whole.end()),
+                "Icon click changed the stored numbered group");
+        }
+        ui.selection.ids = whole;
+        for (const auto invalid : {enemy, game.buildings().front().id, rts::EntityId{99999}}) {
+            require(!ui.selection.selectMember(game, invalid) && ui.selection.ids == whole, "Invalid icon changed selection");
+        }
     });
     test("Active type controls visible commands while general orders retain every selected unit", [&] {
         const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");

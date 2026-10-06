@@ -89,7 +89,9 @@ void GameApplication::exerciseUnitCommands() {
     const auto expectGroup = [&](const char* type, size_t members) {
         const auto group = ui_.selection.activeGroup(game_);
         if (group.type != type || group.ids.size() != members || ui_.selection.ids != wholeSelection)
-            throw std::runtime_error("Commands: Tab changed selection or chose the wrong type");
+            throw std::runtime_error("Commands: expected " + std::string(type) + "/" + std::to_string(members) +
+                ", got " + group.type + "/" + std::to_string(group.ids.size()) +
+                "; selected=" + std::to_string(ui_.selection.ids.size()) + "/" + std::to_string(wholeSelection.size()));
     };
     expectGroup("human.hero", 1);
     const auto portraits = rts::SelectionCards(game_, ui_.selection, layout.info);
@@ -150,10 +152,20 @@ void GameApplication::exerciseUnitCommands() {
     onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.hero", 1);
     if (!ui_.placement.empty() || ui_.orderMode || ui_.buildMenu || !ui_.commandGroup.empty())
         throw std::runtime_error("Commands: Tab retained the previous group's targeted command");
-    const auto soldierCards = rts::SelectionCards(game_, ui_.selection, layout.info);
-    for (const auto& card : soldierCards.cards) if (card.id == soldier) {
-        click({card.bounds.x + 10, card.bounds.y + 10}); break;
+    for (const auto selected : {soldier, otherSoldier}) {
+        ui_.selection = {}; ui_.selection.ids = wholeSelection;
+        if (selected == otherSoldier) ui_.selection.activateGroup(game_, soldier);
+        onMessage(WM_KEYDOWN, 'M', 0);
+        const auto cards = rts::SelectionCards(game_, ui_.selection, layout.info);
+        for (const auto& card : cards.cards) if (card.id == selected) {
+            click({card.bounds.x + 10, card.bounds.y + 10}); break;
+        }
+        if (ui_.selection.ids != std::vector{selected} || ui_.selection.activeUnit(game_)->id != selected ||
+            ui_.orderMode || !ui_.commandGroup.empty() || ui_.drag || mouseInWorld())
+            throw std::runtime_error("Selection: icon did not isolate its unit or leaked a pending target click");
     }
+    ui_.selection.ids = wholeSelection;
+    ui_.selection.activateGroup(game_, soldier);
     expectGroup("human.peacemaker", 2);
     // SetKeyboardState only changes this UI thread's key state, without injecting system input.
     const auto numberKey = [&](unsigned key, bool control) {

@@ -51,6 +51,14 @@ bool Selection::activateGroup(const Simulation& game, EntityId member) {
     return true;
 }
 
+bool Selection::selectMember(const Simulation& game, EntityId member) {
+    const auto* unit = game.unit(member);
+    if (!contains(member) || !unit || unit->owner != game.player().id || !selectableEntity(game, member)) return false;
+    ids = {member};
+    activeType_.clear();
+    return true;
+}
+
 SelectionCards::SelectionCards(const Simulation& game, const Selection& selection, UiRect info) {
     const auto groups = selection.groups(game);
     const auto active = selection.activeGroup(game);

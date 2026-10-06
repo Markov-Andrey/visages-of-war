@@ -186,7 +186,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) { action(i); return 0; }
         for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards) if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_) ||
                 (game_.unit(card.id)->maximumMana() > 0 && card.manaBar().contains(mouse_))) {
-            if (ui_.selection.activateGroup(game_, card.id)) clearCommandMode();
+            if (ui_.selection.selectMember(game_, card.id)) clearCommandMode();
             return 0;
         }
         if (!mouseInWorld()) return 0;

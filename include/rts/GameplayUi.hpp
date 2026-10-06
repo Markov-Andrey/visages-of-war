@@ -49,6 +49,7 @@ struct Selection {
     const Unit* inspectedUnit(const Simulation& game) const;
     bool cycleGroup(const Simulation& game, bool reverse = false);
     bool activateGroup(const Simulation& game, EntityId member);
+    bool selectMember(const Simulation& game, EntityId member);
 private:
     std::string activeType_;
 };
