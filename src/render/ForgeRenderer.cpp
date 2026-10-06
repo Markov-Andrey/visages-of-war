@@ -102,7 +102,9 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     constexpr std::array<const wchar_t*,11> tools{L"Текстура",L"Ластик",L"Декор",L"Игровой объект",L"Юниты",L"Высота",L"Поверхность",L"Рампа ×3",L"Удалить",L"Точка старта",L"Подложка"};
     for(size_t i=0;i<tools.size();++i) button(layout.tools[i],tools[i],static_cast<size_t>(editor.tool)==i);
     button(layout.previous,L"◀ Предыдущие"); button(layout.next,L"Следующие ▶");
-    const auto choices=editor.choices(); const size_t first=editor.choice/8*8;
+    button(layout.previousGroup,L"<"); button(layout.nextGroup,L">");
+    text(wide(editor.paletteGroup.empty()?"All assets":editor.paletteGroup),rect(layout.panel.x+43,285,202,24),0xe7cf9d);
+    const auto choices=editor.choices(); const size_t first=editor.choice/layout.choices.size()*layout.choices.size();
     for(size_t i=0;i<layout.choices.size();++i) if(first+i<choices.size()) button(layout.choices[i],wide(choices[first+i].name),first+i==editor.choice);
     button(layout.radiusMinus,L"−"); button(layout.radiusPlus,L"+");
     button(layout.opacityMinus,L"−"); button(layout.opacityPlus,L"+");
@@ -115,19 +117,20 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     if(editor.tool==EditorTool::Unit) value=editor.owner==0?L"Свой игрок":L"Противник";
     if(editor.tool==EditorTool::Ramp) { constexpr std::array<const wchar_t*,4> directions{L"вправо",L"вниз",L"влево",L"вверх"}; value=L"Подъём "+std::wstring(directions[editor.direction%4]); }
     text(value,rect(layout.panel.x+52,641,180,25),0xe7cf9d);
-    text(L"R — поворот декора / рампы\n[ ] — размер кисти\nG — сетка, F5 — перечитать ассеты\nCtrl+Z / Y — отмена / повтор\nF9 — тест, F10 — назад в редактор",
+    text(L"End / Home - overview / start\nR - rotate; [ ] - brush size\nG - grid; F5 - reload assets\nCtrl+Z / Y - undo / redo\nF9 - play; F10 - return",
         rect(layout.panel.x+12,682,264,112),0x8ca9ae);
     panel({0,extent.y-34,layout.world.width,34},0x15272f);
     text(editor.message,rect(12,extent.y-28,layout.world.width-24,26),0xc1d9d0);
     text(L"VISAGES FORGE  /  "+std::wstring(editor.dirty?L"* ":L"")+wide(s.name),rect(910,18,std::max(0.0f,extent.x-920),30),0xe7cf9d);
     const auto hr=target_->EndDraw(); if(hr==D2DERR_RECREATE_TARGET) discardTarget(); else check(hr);
 }
-void Renderer::snapshotEditor(const WorldEditor& editor,const std::filesystem::path& output) {
+void Renderer::snapshotEditor(const WorldEditor& editor,const std::filesystem::path& output,bool overview) {
     discardTarget(); offscreenSize_={1440,900};
     ComPtr<IWICBitmap> bitmap; check(wic_->CreateBitmap(1440,900,GUID_WICPixelFormat32bppPBGRA,WICBitmapCacheOnLoad,bitmap.GetAddressOf()));
     auto properties=D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE); properties.dpiX=properties.dpiY=96;
     check(factory_->CreateWicBitmapRenderTarget(bitmap.Get(),properties,target_.GetAddressOf())); loadResources();
     WorldView view{{0,0},.75f}; view.origin=Vec2{560,300}-view.project(center(editor.scenario().hall)+Vec2{1,2},0);
-    drawEditor(editor,view,{600,510},false); writeSnapshot(bitmap.Get(),output); discardTarget(); offscreenSize_={};
+    if(overview) view=editorOverview(editor.scenario().map,EditorLayout({1440,900}).world);
+    drawEditor(editor,view,{-1,-1},false); writeSnapshot(bitmap.Get(),output); discardTarget(); offscreenSize_={};
 }
 }

@@ -43,7 +43,7 @@
     "crystals": 300
   },
   "terrain": {
-    "base": "vineyard.grass",
+    "base": "sunny_hills.meadow",
     "heights": [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -403,7 +403,7 @@
   },
   "paint": [
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         10.8,
         7.1
@@ -414,7 +414,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         11.46,
         7.1
@@ -425,7 +425,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         12.12,
         7.1
@@ -436,7 +436,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         12.78,
         7.1
@@ -447,7 +447,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         13.44,
         7.1
@@ -458,7 +458,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         14.1,
         7.1
@@ -469,7 +469,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         14.76,
         7.1
@@ -480,7 +480,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         15.42,
         7.1
@@ -491,7 +491,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         16.08,
         7.1
@@ -502,7 +502,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         16.74,
         7.1
@@ -513,7 +513,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         17.4,
         7.1
@@ -524,7 +524,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         10.8,
         10.1
@@ -535,7 +535,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         11.46,
         10.1
@@ -546,7 +546,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         12.12,
         10.1
@@ -557,7 +557,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         12.78,
         10.1
@@ -568,7 +568,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         13.44,
         10.1
@@ -579,7 +579,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         14.1,
         10.1
@@ -590,7 +590,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         14.76,
         10.1
@@ -601,7 +601,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         15.42,
         10.1
@@ -612,7 +612,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         16.08,
         10.1
@@ -623,7 +623,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         16.74,
         10.1
@@ -634,7 +634,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         17.4,
         10.1
@@ -645,7 +645,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         13.8,
         28.1
@@ -656,7 +656,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         14.4,
         28.1
@@ -667,7 +667,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         15.0,
         28.1
@@ -678,7 +678,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         15.6,
         28.1
@@ -689,7 +689,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         16.2,
         28.1
@@ -700,7 +700,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         16.8,
         28.1
@@ -711,7 +711,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         17.4,
         28.1
@@ -722,7 +722,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         13.8,
         31.1
@@ -733,7 +733,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         14.4,
         31.1
@@ -744,7 +744,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         15.0,
         31.1
@@ -755,7 +755,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         15.6,
         31.1
@@ -766,7 +766,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         16.2,
         31.1
@@ -777,7 +777,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         16.8,
         31.1
@@ -788,7 +788,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         17.4,
         31.1
@@ -799,7 +799,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         23.8,
         21.0
@@ -810,7 +810,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         24.4,
         21.0
@@ -821,7 +821,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         25.0,
         21.0
@@ -832,7 +832,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         25.6,
         21.0
@@ -843,7 +843,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         26.2,
         21.0
@@ -854,7 +854,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         26.8,
         21.0
@@ -865,7 +865,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         27.4,
         21
@@ -876,7 +876,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         9.6,
         11.6
@@ -887,7 +887,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         14,
         16
@@ -898,7 +898,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         12.8,
         25.6
@@ -909,7 +909,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.dirt",
+      "material": "sunny_hills.dirt",
       "position": [
         9,
         28
@@ -920,7 +920,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         8.7,
         8.5
@@ -931,7 +931,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         8.78,
         9.14
@@ -942,7 +942,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         8.86,
         9.78
@@ -953,7 +953,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         8.94,
         10.42
@@ -964,7 +964,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         9.02,
         11.06
@@ -975,7 +975,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         9.1,
         11.7
@@ -986,7 +986,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         9.7,
         11.825
@@ -997,7 +997,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         10.3,
         11.95
@@ -1008,7 +1008,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         10.9,
         12.075
@@ -1019,7 +1019,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.5,
         12.2
@@ -1030,7 +1030,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.129,
         12.214
@@ -1041,7 +1041,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.757,
         12.229
@@ -1052,7 +1052,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         13.386,
         12.243
@@ -1063,7 +1063,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         14.014,
         12.257
@@ -1074,7 +1074,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         14.643,
         12.271
@@ -1085,7 +1085,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.271,
         12.286
@@ -1096,7 +1096,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.9,
         12.3
@@ -1107,7 +1107,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         16.16,
         12.82
@@ -1118,7 +1118,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         16.42,
         13.34
@@ -1129,7 +1129,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         16.68,
         13.86
@@ -1140,7 +1140,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         16.94,
         14.38
@@ -1151,7 +1151,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         17.2,
         14.9
@@ -1162,7 +1162,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         17.775,
         15.05
@@ -1173,7 +1173,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         18.35,
         15.2
@@ -1184,7 +1184,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         18.925,
         15.35
@@ -1195,7 +1195,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         19.5,
         15.5
@@ -1206,7 +1206,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         20.083,
         15.667
@@ -1217,7 +1217,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         20.667,
         15.833
@@ -1228,7 +1228,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         21.25,
         16.0
@@ -1239,7 +1239,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         21.833,
         16.167
@@ -1250,7 +1250,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         22.417,
         16.333
@@ -1261,7 +1261,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         23,
         16.5
@@ -1272,7 +1272,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.9,
         14.8
@@ -1283,7 +1283,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.88,
         15.44
@@ -1294,7 +1294,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.86,
         16.08
@@ -1305,7 +1305,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.84,
         16.72
@@ -1316,7 +1316,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.82,
         17.36
@@ -1327,7 +1327,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.8,
         18.0
@@ -1338,7 +1338,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.6,
         18.643
@@ -1349,7 +1349,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.4,
         19.286
@@ -1360,7 +1360,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.2,
         19.929
@@ -1371,7 +1371,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.0,
         20.571
@@ -1382,7 +1382,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         14.8,
         21.214
@@ -1393,7 +1393,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         14.6,
         21.857
@@ -1404,7 +1404,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         14.4,
         22.5
@@ -1415,7 +1415,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         13.92,
         23.0
@@ -1426,7 +1426,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         13.44,
         23.5
@@ -1437,7 +1437,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.96,
         24.0
@@ -1448,7 +1448,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.48,
         24.5
@@ -1459,7 +1459,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.0,
         25.0
@@ -1470,7 +1470,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.96,
         25.6
@@ -1481,7 +1481,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.92,
         26.2
@@ -1492,7 +1492,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.88,
         26.8
@@ -1503,7 +1503,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.84,
         27.4
@@ -1514,7 +1514,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.8,
         28.0
@@ -1525,7 +1525,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.829,
         28.671
@@ -1536,7 +1536,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.857,
         29.343
@@ -1547,7 +1547,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.886,
         30.014
@@ -1558,7 +1558,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.914,
         30.686
@@ -1569,7 +1569,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.943,
         31.357
@@ -1580,7 +1580,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         11.971,
         32.029
@@ -1591,7 +1591,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.0,
         32.7
@@ -1602,7 +1602,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.627,
         32.864
@@ -1613,7 +1613,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         13.255,
         33.027
@@ -1624,7 +1624,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         13.882,
         33.191
@@ -1635,7 +1635,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         14.509,
         33.355
@@ -1646,7 +1646,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.136,
         33.518
@@ -1657,7 +1657,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.764,
         33.682
@@ -1668,7 +1668,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         16.391,
         33.845
@@ -1679,7 +1679,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         17.018,
         34.009
@@ -1690,7 +1690,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         17.645,
         34.173
@@ -1701,7 +1701,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         18.273,
         34.336
@@ -1712,7 +1712,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         18.9,
         34.5
@@ -1723,7 +1723,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.0,
         25.0
@@ -1734,7 +1734,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         12.6,
         25.143
@@ -1745,7 +1745,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         13.2,
         25.286
@@ -1756,7 +1756,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         13.8,
         25.429
@@ -1767,7 +1767,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         14.4,
         25.571
@@ -1778,7 +1778,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.0,
         25.714
@@ -1789,7 +1789,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         15.6,
         25.857
@@ -1800,7 +1800,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         16.2,
         26.0
@@ -1811,7 +1811,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         16.671,
         26.429
@@ -1822,7 +1822,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         17.143,
         26.857
@@ -1833,7 +1833,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         17.614,
         27.286
@@ -1844,7 +1844,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         18.086,
         27.714
@@ -1855,7 +1855,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         18.557,
         28.143
@@ -1866,7 +1866,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         19.029,
         28.571
@@ -1877,7 +1877,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         19.5,
         29.0
@@ -1888,7 +1888,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         20.143,
         29.0
@@ -1899,7 +1899,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         20.786,
         29.0
@@ -1910,7 +1910,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         21.429,
         29.0
@@ -1921,7 +1921,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         22.071,
         29.0
@@ -1932,7 +1932,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         22.714,
         29.0
@@ -1943,7 +1943,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         23.357,
         29.0
@@ -1954,7 +1954,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         24.0,
         29.0
@@ -1965,7 +1965,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         24.55,
         28.63
@@ -1976,7 +1976,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         25.1,
         28.26
@@ -1987,7 +1987,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         25.65,
         27.89
@@ -1998,7 +1998,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         26.2,
         27.52
@@ -2009,7 +2009,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         26.75,
         27.15
@@ -2020,7 +2020,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         27.3,
         26.78
@@ -2031,7 +2031,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         27.85,
         26.41
@@ -2042,7 +2042,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         28.4,
         26.04
@@ -2053,7 +2053,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         28.95,
         25.67
@@ -2064,7 +2064,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.road",
+      "material": "sunny_hills.dirt",
       "position": [
         29.5,
         25.3
@@ -2075,7 +2075,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.stone",
+      "material": "sunny_hills.cobblestone",
       "position": [
         10,
         18.8
@@ -2086,7 +2086,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.stone",
+      "material": "sunny_hills.cobblestone",
       "position": [
         10.8,
         22
@@ -2097,7 +2097,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.stone",
+      "material": "sunny_hills.cobblestone",
       "position": [
         23.8,
         11.7
@@ -2108,7 +2108,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.stone",
+      "material": "sunny_hills.cobblestone",
       "position": [
         30.8,
         15.6
@@ -2119,7 +2119,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.stone",
+      "material": "sunny_hills.cobblestone",
       "position": [
         19.8,
         20.8
@@ -2130,7 +2130,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.stone",
+      "material": "sunny_hills.cobblestone",
       "position": [
         6.4,
         25.8
@@ -2141,7 +2141,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.stone",
+      "material": "sunny_hills.cobblestone",
       "position": [
         33.8,
         29.6
@@ -2152,7 +2152,7 @@
       "erase": false
     },
     {
-      "material": "vineyard.stone",
+      "material": "sunny_hills.cobblestone",
       "position": [
         45.7,
         39.5
@@ -2169,7 +2169,7 @@
         6,
         11
       ],
-      "asset": "vineyard.tree_cypress",
+      "asset": "sunny_hills.tree.cypress_1",
       "id": 1000,
       "health": 100
     },
@@ -2178,7 +2178,7 @@
         7,
         10
       ],
-      "asset": "vineyard.tree_pine",
+      "asset": "sunny_hills.tree.stone_pine_1",
       "id": 1001,
       "health": 100
     },
@@ -2187,7 +2187,7 @@
         7,
         12
       ],
-      "asset": "vineyard.tree_olive",
+      "asset": "sunny_hills.tree.olive_1",
       "id": 1002,
       "health": 100
     },
@@ -2196,7 +2196,7 @@
         8,
         9
       ],
-      "asset": "vineyard.tree_cypress",
+      "asset": "sunny_hills.tree.cypress_1",
       "id": 1003,
       "health": 100
     },
@@ -2205,7 +2205,7 @@
         5,
         13
       ],
-      "asset": "vineyard.tree_olive",
+      "asset": "sunny_hills.tree.olive_1",
       "id": 1004,
       "health": 100
     },
@@ -2214,7 +2214,7 @@
         18,
         9
       ],
-      "asset": "vineyard.tree_cypress",
+      "asset": "sunny_hills.tree.cypress_1",
       "id": 1005,
       "health": 100
     },
@@ -2223,7 +2223,7 @@
         19,
         9
       ],
-      "asset": "vineyard.tree_cypress",
+      "asset": "sunny_hills.tree.cypress_1",
       "id": 1006,
       "health": 100
     },
@@ -2232,7 +2232,7 @@
         18,
         10
       ],
-      "asset": "vineyard.tree_pine",
+      "asset": "sunny_hills.tree.stone_pine_1",
       "id": 1007,
       "health": 100
     },
@@ -2241,7 +2241,7 @@
         19,
         8
       ],
-      "asset": "vineyard.tree_olive",
+      "asset": "sunny_hills.tree.olive_1",
       "id": 1008,
       "health": 100
     },
@@ -2250,7 +2250,7 @@
         17,
         23
       ],
-      "asset": "vineyard.tree_olive",
+      "asset": "sunny_hills.tree.olive_1",
       "id": 1009,
       "health": 100
     },
@@ -2259,7 +2259,7 @@
         18,
         24
       ],
-      "asset": "vineyard.tree_olive",
+      "asset": "sunny_hills.tree.olive_1",
       "id": 1010,
       "health": 100
     },
@@ -2268,7 +2268,7 @@
         19,
         24
       ],
-      "asset": "vineyard.tree_citrus",
+      "asset": "sunny_hills.tree.orange_1",
       "id": 1011,
       "health": 100
     },
@@ -2277,7 +2277,7 @@
         18,
         25
       ],
-      "asset": "vineyard.tree_citrus",
+      "asset": "sunny_hills.tree.orange_1",
       "id": 1012,
       "health": 100
     },
@@ -2286,7 +2286,7 @@
         25,
         33
       ],
-      "asset": "vineyard.tree_oak",
+      "asset": "sunny_hills.tree.oak_1",
       "id": 1013,
       "health": 100
     },
@@ -2295,7 +2295,7 @@
         26,
         34
       ],
-      "asset": "vineyard.tree_pine",
+      "asset": "sunny_hills.tree.stone_pine_1",
       "id": 1014,
       "health": 100
     },
@@ -2304,7 +2304,7 @@
         28,
         32
       ],
-      "asset": "vineyard.tree_oak",
+      "asset": "sunny_hills.tree.oak_1",
       "id": 1015,
       "health": 100
     },
@@ -2313,7 +2313,7 @@
         45,
         22
       ],
-      "asset": "vineyard.tree_cypress",
+      "asset": "sunny_hills.tree.cypress_1",
       "id": 1016,
       "health": 100
     },
@@ -2322,7 +2322,7 @@
         46,
         21
       ],
-      "asset": "vineyard.tree_pine",
+      "asset": "sunny_hills.tree.stone_pine_1",
       "id": 1017,
       "health": 100
     },
@@ -2331,7 +2331,7 @@
         47,
         22
       ],
-      "asset": "vineyard.tree_olive",
+      "asset": "sunny_hills.tree.olive_1",
       "id": 1018,
       "health": 100
     },
@@ -2340,7 +2340,7 @@
         48,
         23
       ],
-      "asset": "vineyard.tree_cypress",
+      "asset": "sunny_hills.tree.cypress_1",
       "id": 1019,
       "health": 100
     },
@@ -2349,7 +2349,7 @@
         53,
         51
       ],
-      "asset": "vineyard.tree_pine",
+      "asset": "sunny_hills.tree.stone_pine_1",
       "id": 1020,
       "health": 100
     },
@@ -2358,7 +2358,7 @@
         54,
         50
       ],
-      "asset": "vineyard.tree_pine",
+      "asset": "sunny_hills.tree.stone_pine_1",
       "id": 1021,
       "health": 100
     },
@@ -2367,7 +2367,7 @@
         55,
         49
       ],
-      "asset": "vineyard.tree_oak",
+      "asset": "sunny_hills.tree.oak_1",
       "id": 1022,
       "health": 100
     },
@@ -2376,7 +2376,7 @@
         38,
         53
       ],
-      "asset": "vineyard.tree_oak",
+      "asset": "sunny_hills.tree.oak_1",
       "id": 1023,
       "health": 100
     },
@@ -2385,7 +2385,7 @@
         39,
         54
       ],
-      "asset": "vineyard.tree_olive",
+      "asset": "sunny_hills.tree.olive_1",
       "id": 1024,
       "health": 100
     },
@@ -2394,7 +2394,7 @@
         8,
         39
       ],
-      "asset": "vineyard.tree_citrus",
+      "asset": "sunny_hills.tree.orange_1",
       "id": 1025,
       "health": 100
     },
@@ -2403,7 +2403,7 @@
         9,
         38
       ],
-      "asset": "vineyard.tree_olive",
+      "asset": "sunny_hills.tree.olive_1",
       "id": 1026,
       "health": 100
     },
@@ -2412,7 +2412,7 @@
         10,
         40
       ],
-      "asset": "vineyard.tree_citrus",
+      "asset": "sunny_hills.tree.orange_1",
       "id": 1027,
       "health": 100
     },
@@ -2466,7 +2466,7 @@
         18,
         14
       ],
-      "asset": "vineyard.arch",
+      "asset": "sunny_hills.vineyard.arch",
       "id": 1033,
       "health": 500
     },
@@ -2490,7 +2490,7 @@
     },
     {
       "id": 2000,
-      "asset": "vineyard.vine_b",
+      "asset": "sunny_hills.vineyard.vine_b",
       "cell": [
         10,
         6
@@ -2499,7 +2499,7 @@
     },
     {
       "id": 2001,
-      "asset": "vineyard.vine_a",
+      "asset": "sunny_hills.vineyard.vine_a",
       "cell": [
         13,
         6
@@ -2508,7 +2508,7 @@
     },
     {
       "id": 2002,
-      "asset": "vineyard.vine_b",
+      "asset": "sunny_hills.vineyard.vine_b",
       "cell": [
         16,
         6
@@ -2517,7 +2517,7 @@
     },
     {
       "id": 2003,
-      "asset": "vineyard.vine_a",
+      "asset": "sunny_hills.vineyard.vine_a",
       "cell": [
         10,
         9
@@ -2526,7 +2526,7 @@
     },
     {
       "id": 2004,
-      "asset": "vineyard.vine_b",
+      "asset": "sunny_hills.vineyard.vine_b",
       "cell": [
         13,
         9
@@ -2535,7 +2535,7 @@
     },
     {
       "id": 2005,
-      "asset": "vineyard.vine_a",
+      "asset": "sunny_hills.vineyard.vine_a",
       "cell": [
         16,
         9
@@ -2544,7 +2544,7 @@
     },
     {
       "id": 2006,
-      "asset": "vineyard.vine_b",
+      "asset": "sunny_hills.vineyard.vine_b",
       "cell": [
         13,
         27
@@ -2553,7 +2553,7 @@
     },
     {
       "id": 2007,
-      "asset": "vineyard.vine_a",
+      "asset": "sunny_hills.vineyard.vine_a",
       "cell": [
         16,
         27
@@ -2562,7 +2562,7 @@
     },
     {
       "id": 2008,
-      "asset": "vineyard.vine_b",
+      "asset": "sunny_hills.vineyard.vine_b",
       "cell": [
         13,
         30
@@ -2571,7 +2571,7 @@
     },
     {
       "id": 2009,
-      "asset": "vineyard.vine_a",
+      "asset": "sunny_hills.vineyard.vine_a",
       "cell": [
         16,
         30
@@ -2580,7 +2580,7 @@
     },
     {
       "id": 2010,
-      "asset": "vineyard.vine_b",
+      "asset": "sunny_hills.vineyard.vine_b",
       "cell": [
         23,
         20
@@ -2589,7 +2589,7 @@
     },
     {
       "id": 2011,
-      "asset": "vineyard.vine_b",
+      "asset": "sunny_hills.vineyard.vine_b",
       "cell": [
         26,
         20
@@ -2598,7 +2598,7 @@
     },
     {
       "id": 2012,
-      "asset": "vineyard.winery",
+      "asset": "sunny_hills.vineyard.winery",
       "cell": [
         6,
         6
@@ -2607,7 +2607,7 @@
     },
     {
       "id": 2013,
-      "asset": "vineyard.cellar",
+      "asset": "sunny_hills.vineyard.cellar",
       "cell": [
         9,
         26
@@ -2616,7 +2616,7 @@
     },
     {
       "id": 2014,
-      "asset": "vineyard.well",
+      "asset": "sunny_hills.vineyard.well",
       "cell": [
         8,
         12
@@ -2625,7 +2625,7 @@
     },
     {
       "id": 2015,
-      "asset": "vineyard.press",
+      "asset": "sunny_hills.vineyard.press",
       "cell": [
         9,
         10
@@ -2634,7 +2634,7 @@
     },
     {
       "id": 2016,
-      "asset": "vineyard.barrel",
+      "asset": "sunny_hills.vineyard.barrel",
       "cell": [
         16,
         12
@@ -2643,7 +2643,7 @@
     },
     {
       "id": 2017,
-      "asset": "vineyard.crate",
+      "asset": "sunny_hills.vineyard.crate",
       "cell": [
         17,
         12
@@ -2652,7 +2652,7 @@
     },
     {
       "id": 2018,
-      "asset": "vineyard.barrels",
+      "asset": "sunny_hills.vineyard.barrels",
       "cell": [
         9,
         9
@@ -2661,7 +2661,7 @@
     },
     {
       "id": 2019,
-      "asset": "vineyard.cart",
+      "asset": "sunny_hills.vineyard.cart",
       "cell": [
         13,
         24
@@ -2670,7 +2670,7 @@
     },
     {
       "id": 2020,
-      "asset": "vineyard.hay",
+      "asset": "sunny_hills.vineyard.hay",
       "cell": [
         9,
         29
@@ -2679,7 +2679,7 @@
     },
     {
       "id": 2021,
-      "asset": "vineyard.ruin",
+      "asset": "sunny_hills.vineyard.ruin",
       "cell": [
         6,
         26
@@ -2688,7 +2688,7 @@
     },
     {
       "id": 2022,
-      "asset": "vineyard.vine_post",
+      "asset": "sunny_hills.vineyard.vine_post",
       "cell": [
         19,
         12
@@ -2697,7 +2697,7 @@
     },
     {
       "id": 2023,
-      "asset": "vineyard.fence",
+      "asset": "sunny_hills.vineyard.fence",
       "cell": [
         13,
         33
@@ -2706,7 +2706,7 @@
     },
     {
       "id": 2024,
-      "asset": "vineyard.fence",
+      "asset": "sunny_hills.vineyard.fence",
       "cell": [
         16,
         33
@@ -2717,7 +2717,7 @@
   "decorations": [
     {
       "id": 2025,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         8.117,
         4.826
@@ -2727,7 +2727,7 @@
     },
     {
       "id": 2026,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         9.49,
         4.763
@@ -2737,7 +2737,7 @@
     },
     {
       "id": 2027,
-      "asset": "vineyard.daisies",
+      "asset": "sunny_hills.vineyard.daisies",
       "position": [
         8.076,
         6.15
@@ -2747,7 +2747,7 @@
     },
     {
       "id": 2028,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         9.234,
         5.815
@@ -2757,7 +2757,7 @@
     },
     {
       "id": 2029,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         8.222,
         4.22
@@ -2767,7 +2767,7 @@
     },
     {
       "id": 2030,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         9.054,
         5.671
@@ -2777,7 +2777,7 @@
     },
     {
       "id": 2031,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         10.583,
         5.725
@@ -2787,7 +2787,7 @@
     },
     {
       "id": 2032,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         9.87,
         5.654
@@ -2797,7 +2797,7 @@
     },
     {
       "id": 2033,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         8.267,
         5.296
@@ -2807,7 +2807,7 @@
     },
     {
       "id": 2034,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         19.298,
         5.558
@@ -2817,7 +2817,7 @@
     },
     {
       "id": 2035,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         16.591,
         5.056
@@ -2827,7 +2827,7 @@
     },
     {
       "id": 2036,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         18.934,
         5.242
@@ -2837,7 +2837,7 @@
     },
     {
       "id": 2037,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         16.508,
         6.555
@@ -2847,7 +2847,7 @@
     },
     {
       "id": 2038,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         16.759,
         6.142
@@ -2857,7 +2857,7 @@
     },
     {
       "id": 2039,
-      "asset": "vineyard.daisies",
+      "asset": "sunny_hills.vineyard.daisies",
       "position": [
         17.12,
         5.605
@@ -2867,7 +2867,7 @@
     },
     {
       "id": 2040,
-      "asset": "vineyard.daisies",
+      "asset": "sunny_hills.vineyard.daisies",
       "position": [
         16.418,
         5.071
@@ -2877,7 +2877,7 @@
     },
     {
       "id": 2041,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         17.325,
         5.72
@@ -2887,7 +2887,7 @@
     },
     {
       "id": 2042,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         7.724,
         12.118
@@ -2897,7 +2897,7 @@
     },
     {
       "id": 2043,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         9.437,
         12.945
@@ -2907,7 +2907,7 @@
     },
     {
       "id": 2044,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         10.402,
         12.033
@@ -2917,7 +2917,7 @@
     },
     {
       "id": 2045,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         10.351,
         13.842
@@ -2927,7 +2927,7 @@
     },
     {
       "id": 2046,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         8.173,
         12.795
@@ -2937,7 +2937,7 @@
     },
     {
       "id": 2047,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         8.353,
         13.182
@@ -2947,7 +2947,7 @@
     },
     {
       "id": 2048,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         8.185,
         13.942
@@ -2957,7 +2957,7 @@
     },
     {
       "id": 2049,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         15.777,
         11.616
@@ -2967,7 +2967,7 @@
     },
     {
       "id": 2050,
-      "asset": "vineyard.shrub",
+      "asset": "sunny_hills.vineyard.shrub",
       "position": [
         16.659,
         11.738
@@ -2977,7 +2977,7 @@
     },
     {
       "id": 2051,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         17.883,
         11.01
@@ -2987,7 +2987,7 @@
     },
     {
       "id": 2052,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         17.95,
         11.619
@@ -2997,7 +2997,7 @@
     },
     {
       "id": 2053,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         17.889,
         10.829
@@ -3007,7 +3007,7 @@
     },
     {
       "id": 2054,
-      "asset": "vineyard.daisies",
+      "asset": "sunny_hills.vineyard.daisies",
       "position": [
         16.667,
         11.285
@@ -3017,7 +3017,7 @@
     },
     {
       "id": 2055,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         17.32,
         11.541
@@ -3027,7 +3027,7 @@
     },
     {
       "id": 2056,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         13.188,
         22.874
@@ -3037,7 +3037,7 @@
     },
     {
       "id": 2057,
-      "asset": "vineyard.daisies",
+      "asset": "sunny_hills.vineyard.daisies",
       "position": [
         13.41,
         21.862
@@ -3047,7 +3047,7 @@
     },
     {
       "id": 2058,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         11.874,
         23.199
@@ -3057,7 +3057,7 @@
     },
     {
       "id": 2059,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         12.909,
         22.017
@@ -3067,7 +3067,7 @@
     },
     {
       "id": 2060,
-      "asset": "vineyard.shrub",
+      "asset": "sunny_hills.vineyard.shrub",
       "position": [
         10.744,
         22.055
@@ -3077,7 +3077,7 @@
     },
     {
       "id": 2061,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         10.768,
         22.514
@@ -3087,7 +3087,7 @@
     },
     {
       "id": 2062,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         12.427,
         22.683
@@ -3097,7 +3097,7 @@
     },
     {
       "id": 2063,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         11.25,
         22.234
@@ -3107,7 +3107,7 @@
     },
     {
       "id": 2064,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         16.572,
         26.914
@@ -3117,7 +3117,7 @@
     },
     {
       "id": 2065,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         16.96,
         27.409
@@ -3127,7 +3127,7 @@
     },
     {
       "id": 2066,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         16.331,
         25.957
@@ -3137,7 +3137,7 @@
     },
     {
       "id": 2067,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         18.48,
         25.901
@@ -3147,7 +3147,7 @@
     },
     {
       "id": 2068,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         15.867,
         27.321
@@ -3157,7 +3157,7 @@
     },
     {
       "id": 2069,
-      "asset": "vineyard.daisies",
+      "asset": "sunny_hills.vineyard.daisies",
       "position": [
         17.315,
         26.707
@@ -3167,7 +3167,7 @@
     },
     {
       "id": 2070,
-      "asset": "vineyard.daisies",
+      "asset": "sunny_hills.vineyard.daisies",
       "position": [
         17.237,
         27.446
@@ -3177,7 +3177,7 @@
     },
     {
       "id": 2071,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         16.932,
         27.578
@@ -3187,7 +3187,7 @@
     },
     {
       "id": 2072,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         18.403,
         27.978
@@ -3197,7 +3197,7 @@
     },
     {
       "id": 2073,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         18.267,
         25.902
@@ -3207,7 +3207,7 @@
     },
     {
       "id": 2074,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         17.861,
         27.556
@@ -3217,7 +3217,7 @@
     },
     {
       "id": 2075,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         11.521,
         29.897
@@ -3227,7 +3227,7 @@
     },
     {
       "id": 2076,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         8.638,
         30.445
@@ -3237,7 +3237,7 @@
     },
     {
       "id": 2077,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         9.087,
         29.331
@@ -3247,7 +3247,7 @@
     },
     {
       "id": 2078,
-      "asset": "vineyard.shrub",
+      "asset": "sunny_hills.vineyard.shrub",
       "position": [
         10.969,
         29.98
@@ -3257,7 +3257,7 @@
     },
     {
       "id": 2079,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         11.049,
         30.666
@@ -3267,7 +3267,7 @@
     },
     {
       "id": 2080,
-      "asset": "vineyard.shrub",
+      "asset": "sunny_hills.vineyard.shrub",
       "position": [
         11.272,
         31.166
@@ -3277,7 +3277,7 @@
     },
     {
       "id": 2081,
-      "asset": "vineyard.daisies",
+      "asset": "sunny_hills.vineyard.daisies",
       "position": [
         10.004,
         29.053
@@ -3287,7 +3287,7 @@
     },
     {
       "id": 2082,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         10.374,
         30.361
@@ -3297,7 +3297,7 @@
     },
     {
       "id": 2083,
-      "asset": "vineyard.grass_a",
+      "asset": "sunny_hills.vineyard.grass_a",
       "position": [
         9.13,
         30.762
@@ -3307,7 +3307,7 @@
     },
     {
       "id": 2084,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         19.479,
         32.68
@@ -3317,7 +3317,7 @@
     },
     {
       "id": 2085,
-      "asset": "vineyard.poppies",
+      "asset": "sunny_hills.vineyard.poppies",
       "position": [
         19.232,
         33.962
@@ -3327,7 +3327,7 @@
     },
     {
       "id": 2086,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         17.594,
         32.287
@@ -3337,7 +3337,7 @@
     },
     {
       "id": 2087,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         18.984,
         33.938
@@ -3347,7 +3347,7 @@
     },
     {
       "id": 2088,
-      "asset": "vineyard.lavender",
+      "asset": "sunny_hills.vineyard.lavender",
       "position": [
         20.354,
         33.678
@@ -3357,7 +3357,7 @@
     },
     {
       "id": 2089,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         20.261,
         32.432
@@ -3367,7 +3367,7 @@
     },
     {
       "id": 2090,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         17.606,
         33.484
@@ -3377,7 +3377,7 @@
     },
     {
       "id": 2091,
-      "asset": "vineyard.grass_b",
+      "asset": "sunny_hills.vineyard.grass_b",
       "position": [
         20.345,
         32.067

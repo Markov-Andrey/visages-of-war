@@ -143,6 +143,8 @@ public:
     const ArmySupply& armySupply() const { return supply_; }
     const WorldClock& clock() const { return clock_; }
     const FogOfWar& fog() const { return fog_; }
+    void revealMap();
+    const std::string& mapName() const { return scenario_.name; }
     const std::vector<EnvironmentObject>& environment() const { return scenario_.environment; }
     using WorldEvent = std::variant<DayPhaseChanged, ObjectDestroyed, ObjectRestored, ConstructionFinished, UnitProduced, UnitDied, HeroLevelChanged,
         CorpseCreated, BonesCreated, RemainsRemoved>;

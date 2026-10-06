@@ -11,7 +11,7 @@ public:
     explicit ForgeApplication(rts::Paths paths,const std::filesystem::path& mapFile={});
     ~ForgeApplication();
     void verify();
-    void snapshot(const std::filesystem::path& output);
+    void snapshot(const std::filesystem::path& output, bool overview = false);
     int run(HINSTANCE instance,bool smoke);
 private:
     static RECT monitorBounds(HMONITOR monitor);

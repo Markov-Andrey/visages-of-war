@@ -94,6 +94,7 @@ WorldAssets WorldAssets::load(const Paths& paths) {
     for (const auto& file : index.at("materialFiles")) for (const auto& j : read(paths.asset(utf8Path(file.get<std::string>())))) {
         TerrainMaterial m;
         m.id = identifier(j.at("id"), ids); m.name = j.at("name").get<std::string>();
+        m.group = j.value("group", std::string("Core"));
         m.image = utf8Path(j.at("image").get<std::string>()); paths.asset(m.image);
         m.repeatCells = number(j.at("repeatCells"), .25f, 128);
         const auto tint = j.value("tint", std::string("ffffff"));
@@ -105,6 +106,7 @@ WorldAssets WorldAssets::load(const Paths& paths) {
     for (const auto& file : index.at("objectFiles")) for (const auto& j : read(paths.asset(utf8Path(file.get<std::string>())))) {
         WorldObjectDefinition d;
         d.id = identifier(j.at("id"), ids); d.name = j.at("name").get<std::string>();
+        d.group = j.value("group", std::string("Core"));
         d.gameplay = j.at("gameplay").get<bool>();
         const auto kind = j.at("kind").get<std::string>();
         if (kind == "tree") d.kind = EnvironmentKind::Tree;
@@ -127,6 +129,18 @@ WorldAssets WorldAssets::load(const Paths& paths) {
         d.size = {number(s.at("size").at(0), 1, 2048), number(s.at("size").at(1), 1, 2048)};
         d.anchor = {number(s.at("anchor").at(0), 0, 1), number(s.at("anchor").at(1), 0, 1)};
         d.pixelArt = s.value("pixelArt", false);
+        if (s.contains("islandSeed")) {
+            const auto& seed = s.at("islandSeed");
+            if (!seed.is_array() || seed.size() != 2 || !seed[0].is_number_integer() || !seed[1].is_number_integer())
+                throw std::runtime_error("Sprite island seed must be two integer source pixels");
+            d.islandSeed = Cell{seed[0].get<int>(), seed[1].get<int>()};
+            for (float component : d.source) if (component != std::floor(component))
+                throw std::runtime_error("Sprite island source must use integer pixels");
+            if (d.image.empty() || d.source[2] <= 0 || d.source[3] <= 0 ||
+                d.islandSeed->x < d.source[0] || d.islandSeed->y < d.source[1] ||
+                d.islandSeed->x >= d.source[0] + d.source[2] || d.islandSeed->y >= d.source[1] + d.source[3])
+                throw std::runtime_error("Sprite island seed outside source rectangle");
+        }
         result.objects_.push_back(std::move(d));
     }
     if (result.materials_.empty() || result.objects_.empty()) throw std::runtime_error("Empty world asset catalog");

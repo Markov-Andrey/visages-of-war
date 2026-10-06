@@ -1,0 +1,1094 @@
+[
+  {
+    "id": "sunny_hills.rock.small_1",
+    "name": "Rock / Small 1",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        28,
+        132,
+        284,
+        209
+      ],
+      "islandSeed": [
+        165,
+        134
+      ],
+      "size": [
+        65.22,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_2",
+    "name": "Rock / Small 2",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        351,
+        128,
+        287,
+        212
+      ],
+      "islandSeed": [
+        522,
+        130
+      ],
+      "size": [
+        64.98,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_3",
+    "name": "Rock / Small 3",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        664,
+        177,
+        296,
+        165
+      ],
+      "islandSeed": [
+        837,
+        179
+      ],
+      "size": [
+        76,
+        42.36
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_4",
+    "name": "Rock / Small 4",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        990,
+        142,
+        279,
+        205
+      ],
+      "islandSeed": [
+        1183,
+        144
+      ],
+      "size": [
+        65.33,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_5",
+    "name": "Rock / Small 5",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        1310,
+        131,
+        288,
+        208
+      ],
+      "islandSeed": [
+        1512,
+        133
+      ],
+      "size": [
+        66.46,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_6",
+    "name": "Rock / Small 6",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        16,
+        406,
+        297,
+        196
+      ],
+      "islandSeed": [
+        245,
+        408
+      ],
+      "size": [
+        72.73,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_7",
+    "name": "Rock / Small 7",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        343,
+        406,
+        300,
+        206
+      ],
+      "islandSeed": [
+        447,
+        408
+      ],
+      "size": [
+        69.9,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_8",
+    "name": "Rock / Small 8",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        666,
+        386,
+        294,
+        235
+      ],
+      "islandSeed": [
+        830,
+        388
+      ],
+      "size": [
+        60.05,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_9",
+    "name": "Rock / Small 9",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        988,
+        425,
+        290,
+        188
+      ],
+      "islandSeed": [
+        1141,
+        427
+      ],
+      "size": [
+        74.04,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_10",
+    "name": "Rock / Small 10",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        1306,
+        423,
+        298,
+        183
+      ],
+      "islandSeed": [
+        1439,
+        425
+      ],
+      "size": [
+        76,
+        46.67
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_11",
+    "name": "Rock / Small 11",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        17,
+        635,
+        295,
+        265
+      ],
+      "islandSeed": [
+        94,
+        637
+      ],
+      "size": [
+        53.43,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_12",
+    "name": "Rock / Small 12",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        332,
+        686,
+        296,
+        217
+      ],
+      "islandSeed": [
+        409,
+        688
+      ],
+      "size": [
+        65.47,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_13",
+    "name": "Rock / Small 13",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        659,
+        720,
+        302,
+        182
+      ],
+      "islandSeed": [
+        807,
+        722
+      ],
+      "size": [
+        76,
+        45.8
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_14",
+    "name": "Rock / Small 14",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        994,
+        684,
+        283,
+        221
+      ],
+      "islandSeed": [
+        1105,
+        686
+      ],
+      "size": [
+        61.47,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.small_15",
+    "name": "Rock / Small 15",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": false,
+    "kind": "rock",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "source": [
+        1304,
+        689,
+        298,
+        210
+      ],
+      "islandSeed": [
+        1500,
+        691
+      ],
+      "size": [
+        68.11,
+        48
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.medium_1",
+    "name": "Rock / Medium 1",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-medium.png",
+      "source": [
+        77,
+        5,
+        500,
+        412
+      ],
+      "islandSeed": [
+        373,
+        7
+      ],
+      "size": [
+        152,
+        125.25
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.medium_2",
+    "name": "Rock / Medium 2",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-medium.png",
+      "source": [
+        656,
+        2,
+        542,
+        430
+      ],
+      "islandSeed": [
+        925,
+        4
+      ],
+      "size": [
+        152,
+        120.59
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.medium_3",
+    "name": "Rock / Medium 3",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-medium.png",
+      "source": [
+        65,
+        420,
+        521,
+        406
+      ],
+      "islandSeed": [
+        383,
+        422
+      ],
+      "size": [
+        152,
+        118.45
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.medium_4",
+    "name": "Rock / Medium 4",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-medium.png",
+      "source": [
+        659,
+        432,
+        526,
+        393
+      ],
+      "islandSeed": [
+        1014,
+        434
+      ],
+      "size": [
+        152,
+        113.56
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.medium_5",
+    "name": "Rock / Medium 5",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-medium.png",
+      "source": [
+        79,
+        824,
+        534,
+        430
+      ],
+      "islandSeed": [
+        380,
+        826
+      ],
+      "size": [
+        152,
+        122.39
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.medium_6",
+    "name": "Rock / Medium 6",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-medium.png",
+      "source": [
+        658,
+        821,
+        512,
+        439
+      ],
+      "islandSeed": [
+        892,
+        823
+      ],
+      "size": [
+        152,
+        130.33
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.large_1",
+    "name": "Rock / Large 1",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-large.png",
+      "source": [
+        5,
+        43,
+        484,
+        466
+      ],
+      "islandSeed": [
+        229,
+        45
+      ],
+      "size": [
+        228,
+        219.52
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.large_2",
+    "name": "Rock / Large 2",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-large.png",
+      "source": [
+        502,
+        4,
+        547,
+        512
+      ],
+      "islandSeed": [
+        729,
+        6
+      ],
+      "size": [
+        228,
+        213.41
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.large_3",
+    "name": "Rock / Large 3",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-large.png",
+      "source": [
+        1060,
+        38,
+        471,
+        479
+      ],
+      "islandSeed": [
+        1313,
+        40
+      ],
+      "size": [
+        224.19,
+        228
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.large_4",
+    "name": "Rock / Large 4",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-large.png",
+      "source": [
+        7,
+        520,
+        506,
+        492
+      ],
+      "islandSeed": [
+        337,
+        522
+      ],
+      "size": [
+        228,
+        221.69
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.large_5",
+    "name": "Rock / Large 5",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-large.png",
+      "source": [
+        518,
+        525,
+        514,
+        476
+      ],
+      "islandSeed": [
+        777,
+        527
+      ],
+      "size": [
+        228,
+        211.15
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.rock.large_6",
+    "name": "Rock / Large 6",
+    "group": "Sunny Hills / Rocks",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-large.png",
+      "source": [
+        1032,
+        533,
+        503,
+        472
+      ],
+      "islandSeed": [
+        1337,
+        535
+      ],
+      "size": [
+        228,
+        213.95
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  }
+]

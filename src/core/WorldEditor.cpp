@@ -4,6 +4,11 @@
 #include <stdexcept>
 
 namespace rts {
+WorldView editorOverview(const Map& map, UiRect area) {
+    const float zoom=std::min((area.width-40)/(WorldView::tileSize*map.width()),(area.height-40)/(WorldView::tileSize*map.height()));
+    return {{area.x+(area.width-WorldView::tileSize*map.width()*zoom)*.5f,
+             area.y+(area.height-WorldView::tileSize*map.height()*zoom)*.5f},zoom};
+}
 EditorLayout::EditorLayout(Vec2 size) {
     const float width=286;
     world={0,60,std::max(1.0f,size.x-width),std::max(1.0f,size.y-94)};
@@ -11,8 +16,9 @@ EditorLayout::EditorLayout(Vec2 size) {
     const float actionStep=std::min(111.0f,(size.x-16)/actions.size());
     for(size_t i=0;i<actions.size();++i) actions[i]={8+i*actionStep,10,actionStep-7,38};
     for(size_t i=0;i<tools.size();++i) tools[i]={panel.x+10+(i%2)*134.0f,74+(i/2)*35.0f,128,30};
-    for(size_t i=0;i<choices.size();++i) choices[i]={panel.x+10,310+i*30.0f,266,27};
-    previous={panel.x+10,280,128,24}; next={panel.x+148,280,128,24};
+    previousGroup={panel.x+10,280,28,24}; nextGroup={panel.x+248,280,28,24};
+    for(size_t i=0;i<choices.size();++i) choices[i]={panel.x+10,340+i*30.0f,266,27};
+    previous={panel.x+10,310,128,24}; next={panel.x+148,310,128,24};
     radiusMinus={panel.x+12,560,32,28}; radiusPlus={panel.x+242,560,32,28};
     opacityMinus={panel.x+12,598,32,28}; opacityPlus={panel.x+242,598,32,28};
     valueMinus={panel.x+12,636,32,28}; valuePlus={panel.x+242,636,32,28};
@@ -40,21 +46,39 @@ void WorldEditor::reloadDefinitions(const WorldAssets& assets, const Definitions
     const auto& depot=definitions.startingDepot(definitions.commanders().front().factionId);
     rebuildScenario(candidate,{depot.width,depot.height});
     scenario_=std::move(candidate); assets_=&assets; definitions_=&definitions;
-    undo_.clear(); redo_.clear(); before_.reset(); last_.reset(); choice=0;
+    undo_.clear(); redo_.clear(); before_.reset(); last_.reset(); choice=0; paletteGroup.clear();
 }
-std::vector<EditorChoice> WorldEditor::choices() const {
+std::vector<EditorChoice> WorldEditor::allChoices() const {
     std::vector<EditorChoice> result;
     if(tool==EditorTool::Paint || tool==EditorTool::ErasePaint || tool==EditorTool::Base)
-        for(const auto& m:assets_->materials()) result.push_back({m.id,m.name});
+        for(const auto& m:assets_->materials()) result.push_back({m.id,m.name,m.group});
     if(tool==EditorTool::Decoration || tool==EditorTool::Environment) {
-        for(const auto& d:assets_->objects()) if(d.gameplay==(tool==EditorTool::Environment)) result.push_back({d.id,d.name});
+        for(const auto& d:assets_->objects()) if(d.gameplay==(tool==EditorTool::Environment)) result.push_back({d.id,d.name,d.group});
         if(tool==EditorTool::Environment) for(const auto& d:assets_->crystalSprites())
-            result.push_back({"$"+d.id,d.name+" / "+std::to_string(d.capacity)});
+            result.push_back({"$"+d.id,d.name+" / "+std::to_string(d.capacity),"Resources"});
     }
     if(tool==EditorTool::Unit) for(const auto& d:definitions_->entities()) if(d.mobile && d.width==1 && d.height==1) result.push_back({d.id,d.displayName});
     if(tool==EditorTool::Surface) result={{"land","Суша"},{"shallow","Мелководье"},{"deep","Глубокая вода"}};
     if(tool==EditorTool::Start) result={{"hall","Стартовая ратуша"},{"worker","Стартовый рабочий"},{"hero","Герой командира"}};
     return result;
+}
+std::vector<EditorChoice> WorldEditor::choices() const {
+    auto result=allChoices();
+    if(!paletteGroup.empty()) std::erase_if(result,[&](const auto& item) { return item.group!=paletteGroup; });
+    return result;
+}
+std::vector<std::string> WorldEditor::groups() const {
+    std::vector<std::string> result{std::string{}};
+    for(const auto& item:allChoices())
+        if(std::find(result.begin(),result.end(),item.group)==result.end()) result.push_back(item.group);
+    return result;
+}
+void WorldEditor::cycleGroup(int step) {
+    endStroke();
+    const auto list=groups();
+    const auto at=std::find(list.begin(),list.end(),paletteGroup);
+    const int index=at==list.end()?0:int(at-list.begin());
+    paletteGroup=list[(index+(step<0?-1:1)+int(list.size()))%list.size()]; choice=0;
 }
 std::string WorldEditor::selected() const { const auto list=choices(); return list.empty()?std::string{}:list[std::min(choice,list.size()-1)].id; }
 void WorldEditor::beginStroke() {

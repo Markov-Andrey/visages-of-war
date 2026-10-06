@@ -6,6 +6,8 @@ namespace rts {
 using namespace render;
 
 void Renderer::reloadWorldAssets(const WorldAssets& assets) {
+    for (const auto& [id, bitmap] : worldIslands_) spriteLights_.erase(bitmap.Get());
+    worldIslands_.clear(); worldSourcePixels_.clear();
     directionalSheets_.clear();
     for (const auto& [path, bitmap] : worldSprites_) spriteLights_.erase(bitmap.Get());
     for (const auto& [key, bitmap] : unitSheets_) spriteLights_.erase(bitmap.Get());
@@ -14,12 +16,14 @@ void Renderer::reloadWorldAssets(const WorldAssets& assets) {
     worldAssets_=assets; materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); unitUiImages_.clear(); maskedImages_.clear(); paintResources_.clear(); terrainPaint_.reset();
 }
 void Renderer::validateWorldAssets(const WorldAssets& assets) {
+    std::map<std::filesystem::path, Vec2> dimensionsCache;
     const auto dimensions=[&](const std::filesystem::path& file) {
+        if (const auto found = dimensionsCache.find(file); found != dimensionsCache.end()) return found->second;
         ComPtr<IWICBitmapDecoder> decoder; ComPtr<IWICBitmapFrameDecode> frame;
         check(wic_->CreateDecoderFromFilename(paths_.asset(file).c_str(),nullptr,GENERIC_READ,WICDecodeMetadataCacheOnLoad,decoder.GetAddressOf()));
         check(decoder->GetFrame(0,frame.GetAddressOf())); UINT w{},h{}; check(frame->GetSize(&w,&h));
         if(!w||!h||w>8192||h>8192) throw std::runtime_error("World asset dimensions must be within 8192 pixels");
-        return Vec2{float(w),float(h)};
+        const Vec2 size{float(w),float(h)}; dimensionsCache.emplace(file, size); return size;
     };
     for(const auto& m:assets.materials()) dimensions(m.image);
     for(const auto& d:assets.objects()) if(!d.image.empty()) {
@@ -86,17 +90,17 @@ void Renderer::paintedTile(Cell c) {
 void Renderer::worldSprite(const WorldObjectDefinition& d,Vec2 position,float scale,float rotation,const Map& map,const WorldView& view) {
     if(d.image.empty()) return;
     const Cell cell{int(position.x),int(position.y)}; if(!map.contains(cell)) return;
-    auto& bitmap=worldSprites_[d.image]; if(!bitmap) loadBitmap(paths_.asset(d.image),bitmap,0,SpriteTeamMask::None,{},true);
-    const auto imageSize=bitmap->GetSize();
-    const auto source=d.source[2]>0&&d.source[3]>0?rect(d.source[0],d.source[1],d.source[2],d.source[3]):rect(0,0,imageSize.width,imageSize.height);
-    if(source.right>imageSize.width||source.bottom>imageSize.height) throw std::runtime_error("Object sprite rectangle outside image");
     const auto p=view.project(position,map.surfaceHeight(cell,position));
     const auto extent=d.size*(view.zoom*scale); const Vec2 start=p-Vec2{extent.x*d.anchor.x,extent.y*d.anchor.y};
     const float reach=std::max(extent.x,extent.y);
     if(p.x+reach<0||p.y+reach<0||p.x-reach>size().x||p.y-reach>size().y) return;
+    auto* bitmap = worldBitmap(d);
+    const auto imageSize=bitmap->GetSize();
+    const auto source=!d.islandSeed&&d.source[2]>0&&d.source[3]>0?rect(d.source[0],d.source[1],d.source[2],d.source[3]):rect(0,0,imageSize.width,imageSize.height);
+    if(source.right>imageSize.width||source.bottom>imageSize.height) throw std::runtime_error("Object sprite rectangle outside image");
     D2D1_MATRIX_3X2_F previous; target_->GetTransform(&previous);
     if(rotation!=0) target_->SetTransform(D2D1::Matrix3x2F::Rotation(rotation,point(p))*previous);
-    sprite(bitmap.Get(),source,start,extent,d.pixelArt); target_->SetTransform(previous);
+    sprite(bitmap,source,start,extent,d.pixelArt); target_->SetTransform(previous);
 }
 void Renderer::decoration(const Decoration& d,const Map& map,const WorldView& view) { worldSprite(worldAssets_.object(d.definitionId),d.position,d.scale,d.rotation,map,view); }
 }

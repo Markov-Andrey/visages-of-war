@@ -8,6 +8,7 @@
 namespace rts::game {
 rts::CursorKind GameApplication::cursorKind() const {
     using rts::CursorKind;
+    if (ui_.consoleOpen) return CursorKind::Default;
     if (menu_.page == rts::MenuPage::Library) return libraryLinkAt(mouse_) ? CursorKind::Hand : CursorKind::Default;
     if (menu_.page != rts::MenuPage::Playing) {
         const rts::MenuLayout layout(renderer_.size(), menu_.canResume);
@@ -115,7 +116,14 @@ rts::Vec2 GameApplication::mousePosition(LPARAM lParam) const {
 }
 
 LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
+    // The console owns input while open; clicking must not issue world orders.
+    if (ui_.consoleOpen && (message == WM_LBUTTONDOWN || message == WM_LBUTTONDBLCLK ||
+        message == WM_RBUTTONDOWN || message == WM_RBUTTONDBLCLK || message == WM_MBUTTONDOWN ||
+        message == WM_MBUTTONDBLCLK || message == WM_MOUSEWHEEL)) return 0;
     switch (message) {
+    case WM_CHAR:
+        if (ui_.consoleOpen) consoleCharacter(static_cast<wchar_t>(wParam));
+        return 0;
     case WM_CLOSE: DestroyWindow(window_); return 0;
     case WM_DESTROY: PostQuitMessage(0); return 0;
     case WM_SETCURSOR:
@@ -262,6 +270,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     case WM_KEYDOWN:
         if (lParam & (1LL << 30)) return 0;
         if (wParam == VK_F10 && forgeTest_) { testExitRequested_=true; DestroyWindow(window_); return 0; }
+        if (consoleKey(wParam)) return 0;
         if ((menu_.page == rts::MenuPage::Library || menu_.page == rts::MenuPage::BattleSetup) && colorSelectKey(wParam)) return 0;
         if (wParam == VK_ESCAPE) {
             if (menu_.page == rts::MenuPage::Playing) {

@@ -1,0 +1,185 @@
+{
+  "id": "sunny-hills",
+  "name": "Sunny Hills",
+  "imported": "2026-10-06",
+  "source": "Raw AI-generated artwork supplied by the project owner. Original PNG bytes preserved; no resampling or atlas repacking.",
+  "author": "Not specified by supplier",
+  "license": "Not specified by supplier; no third-party license inferred.",
+  "files": [
+    {
+      "original": "grass.png",
+      "path": "world/tilesets/sunny-hills/textures/meadow.png",
+      "sha256": "E8DE6BC790B2E8DAE6FAC802B6404490C4F514263B8C82FF20C44662FB9693C5"
+    },
+    {
+      "original": "grass-yellow.png",
+      "path": "world/tilesets/sunny-hills/textures/dry-grass.png",
+      "sha256": "BD15F8C7A3BF89AF238CF04EA67F9DE21BA9CAAD847924F2E2442160BB433003"
+    },
+    {
+      "original": "dirt.png",
+      "path": "world/tilesets/sunny-hills/textures/dirt.png",
+      "sha256": "2C832718279C8A26F3146DFEEC47D5332E20C57E18B55EA2D99EF02EF2704532"
+    },
+    {
+      "original": "sand.png",
+      "path": "world/tilesets/sunny-hills/textures/sand.png",
+      "sha256": "EC4BEA543FDAE680527448A6738FD3C9FDDEDEEB29481C685DA12DB38B35A743"
+    },
+    {
+      "original": "street.png",
+      "path": "world/tilesets/sunny-hills/textures/cobblestone.png",
+      "sha256": "63FC32B4560F6AD04932D8E1433A5599CFDD7880EC5FFCAED4A748E08FA86624"
+    },
+    {
+      "original": "ruini.png",
+      "path": "world/tilesets/sunny-hills/textures/ancient-paving.png",
+      "sha256": "3B071A4F46A9B4B20D387194F1B64621379DFE81CB1EA0FFF5B81675F2F0995C"
+    },
+    {
+      "original": "forest-apelsin.png",
+      "path": "world/tilesets/sunny-hills/sprites/trees/orange.png",
+      "sha256": "6EA68E89157B25CA1831D9E7661AD50B749E26B1BEA8512DADF2C0FD68541955"
+    },
+    {
+      "original": "forest-dub.png",
+      "path": "world/tilesets/sunny-hills/sprites/trees/oak.png",
+      "sha256": "3F3DA585BAC9D05D12D512DDE70EDAE3C5589395EA3BD5086088F78F4FA3E524"
+    },
+    {
+      "original": "forest-granat.png",
+      "path": "world/tilesets/sunny-hills/sprites/trees/pomegranate.png",
+      "sha256": "FEC24EB1C71FED6BD9E98FB672D2DDF887F2228DC596847D79196698263582FB"
+    },
+    {
+      "original": "forest-inchir.png",
+      "path": "world/tilesets/sunny-hills/sprites/trees/fig.png",
+      "sha256": "779451D276ACAFF31E6AED5684A04477497A1D2C173A6F9DF5EC63B2CA4C82C9"
+    },
+    {
+      "original": "forest-kiparis.png",
+      "path": "world/tilesets/sunny-hills/sprites/trees/cypress.png",
+      "sha256": "F415EE777536A0AC2E335C6958425949083C635259958C3A25F13D28C66B9E32"
+    },
+    {
+      "original": "forest-limon.png",
+      "path": "world/tilesets/sunny-hills/sprites/trees/lemon.png",
+      "sha256": "E06B1366ADC80ADCF2EF39847A02AF4F4FDBE4E19A343CB438216DD83A51F304"
+    },
+    {
+      "original": "forest-olivia.png",
+      "path": "world/tilesets/sunny-hills/sprites/trees/olive.png",
+      "sha256": "4D3BD31C14DD365DC0ABBCB365D512262AB7A5CCDFAC83CCB2B9DC7A414DC6CC"
+    },
+    {
+      "original": "forest-pinia.png",
+      "path": "world/tilesets/sunny-hills/sprites/trees/stone-pine.png",
+      "sha256": "140CA4A655F28D6FD4D284211EF51C7F26EC19BB9F1363456624EB7B4F5B0628"
+    },
+    {
+      "original": "forest-bushes.png",
+      "path": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "sha256": "A5F7A5A4EAF74EF3763F63633B875A0B9030C1A4483C9039C5467F03757176C1"
+    },
+    {
+      "original": "kamni-decor.png",
+      "path": "world/tilesets/sunny-hills/sprites/rocks-small.png",
+      "sha256": "6B30A9684EFEDCBF3331A9148F3EAD87C5AAE86BB9BD891A170E3D55B55955CE"
+    },
+    {
+      "original": "skala-2x2.png",
+      "path": "world/tilesets/sunny-hills/sprites/rocks-medium.png",
+      "sha256": "39E7348B7837BC09635456C99BA3A5C8B456B27E42ACCE13759B0D12A74C6776"
+    },
+    {
+      "original": "skala-3x3.png",
+      "path": "world/tilesets/sunny-hills/sprites/rocks-large.png",
+      "sha256": "522424D4AB435BE3D72E7E7DE6C76A6D87C56979F8732203800FD2E202DCA06C"
+    },
+    {
+      "original": "dekor-poberechie.png",
+      "path": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "sha256": "8EA5E7B6B66F25A9F021AD4FE73100E1989F3BDF2C556AC10009D300D7BFBB1F"
+    },
+    {
+      "original": "dekor-ruini.png",
+      "path": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "sha256": "10E99781C973C78205B4984F61436546A8B4C9994D4CD45FE28438B64B2F0B14"
+    },
+    {
+      "original": "dekor-ruini-1.png",
+      "path": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "sha256": "19BC211679FEF9646CFA0DB6762C404419B825CAD8B6B3EA8ADA109B227C1960"
+    },
+    {
+      "original": "dekor-ruini-2.png",
+      "path": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "sha256": "DC936B44D234F9E78EF302AF084DEBB43EDF3C7E94514D8C763D8B571604C28C"
+    },
+    {
+      "original": "dekor-ruini-2x2.png",
+      "path": "world/tilesets/sunny-hills/sprites/ruins-medium.png",
+      "sha256": "B7ED7F8758537907B824B65E5A2813F82C7EC3F6364D352F85607E2556128D80"
+    },
+    {
+      "original": "dekor-ruini-3x3.png",
+      "path": "world/tilesets/sunny-hills/sprites/ruins-large.png",
+      "sha256": "6BA9AA95E1DEDE63C9D967DAF9E4BC2697B80B9FADF18C5AAEAFE2E1A8F2F80B"
+    },
+    {
+      "original": "decor_1.png",
+      "path": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
+      "sha256": "C29778D4A63DE0A5E6200949755B5C122BDAB18BCAEDBE4C9F017404ACDED1E6"
+    },
+    {
+      "original": "decor_2.png",
+      "path": "world/tilesets/sunny-hills/sprites/vineyard-villas.png",
+      "sha256": "911E46F7D8EC940235C40043DD09B2BE57990071EBD7EFCF68BBB500D21B0257"
+    },
+    {
+      "original": "grass_decor.png",
+      "path": "world/tilesets/sunny-hills/sprites/vineyard-groundcover.png",
+      "sha256": "6012F3B62CC484B17296266B46A9BE061931F2710F88266996EC30DA7EDDBE31"
+    },
+    {
+      "original": "vine_decor.png",
+      "path": "world/tilesets/sunny-hills/sprites/grapevines.png",
+      "sha256": "82016BB8C28AF68F4940C2AD628F355127C1078F2FA9D49CB7319A0723C18E10"
+    }
+  ],
+  "retired": [
+    {
+      "original": "grass.png",
+      "path": "textures/vineyard/grass.png",
+      "sha256": "80E9027AB05A3EE6B8CD85052999204BA98C20127443A910373BB38C52AFFAC1"
+    },
+    {
+      "original": "dirt.png",
+      "path": "textures/vineyard/dirt.png",
+      "sha256": "577B10E05277DC5A6D5B2D7EF455FEA2F38932C13910856A91765FC73FB8EFAC"
+    },
+    {
+      "original": "dirt_road.png",
+      "path": "textures/vineyard/dirt_road.png",
+      "sha256": "0000D4A08C379ABD3C32A74A18CF904DEC4238AC7504B4F3AF2DEA544904BE58"
+    },
+    {
+      "original": "stone.png",
+      "path": "textures/vineyard/stone.png",
+      "sha256": "5969F13ED6E4233D9CEC1A0E9DCBF4E3C832E961385CA8573E89522D5A4CD672"
+    },
+    {
+      "original": "trees-1.png",
+      "path": "sprites/vineyard/trees.png",
+      "sha256": "C90CD5FAF0F2BE7F2EAE83107B3A6110648CE7DC36D7C91B4479C58E76D313ED",
+      "selection": "Six isolated trees without painted ground: cypress, olive, stone pine, broadleaf, citrus and blossom. Multi-tree groups and mixed tree/bush compositions excluded. Original PNG bytes and alpha preserved."
+    }
+  ],
+  "review": [
+    "Tree silhouettes have transparent backgrounds; connected-island crops exclude neighboring crowns.",
+    "Shrub sheet contains text labels. Only the 25 plant silhouettes are exposed. A touching pair is separated by crop bounds at row 787.",
+    "Ruins and rocks include painted ground/vegetation around their bases; the showroom deliberately exposes these edges.",
+    "Shell, starfish, coral and seaweed are included in the coastal gallery; stylized scale should be judged in-game.",
+    "Terrain textures are imported as supplied. Visible repeating patterns and seams remain for evaluation."
+  ]
+}

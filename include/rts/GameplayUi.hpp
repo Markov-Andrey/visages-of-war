@@ -101,6 +101,8 @@ struct GameplayUi {
     ControlGroups controlGroups;
     std::optional<UiRect> drag;
     std::string placement;
+    bool consoleOpen{};
+    std::wstring consoleInput, consoleReply;
     bool rallyMode{};
     bool buildMenu{};
     std::optional<OrderKind> orderMode;

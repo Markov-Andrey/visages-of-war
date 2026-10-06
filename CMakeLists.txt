@@ -33,6 +33,7 @@ add_library(rts_core
     src/render/NightLighting.cpp
     src/render/MinimapRaster.cpp
     src/render/DirectionalSprite.cpp
+    src/render/SpriteIsland.cpp
     src/core/Navigation.cpp
     src/core/Formation.cpp
     src/core/Simulation.cpp
@@ -71,6 +72,7 @@ add_library(rts_render
     src/render/RenderSnapshot.cpp
     src/render/TerrainRenderer.cpp
     src/render/WorldRenderer.cpp
+    src/render/WorldSpriteAssets.cpp
     src/render/UnitSpriteRenderer.cpp
     src/render/RemainsRenderer.cpp
     src/render/ResourceRenderer.cpp
@@ -126,6 +128,7 @@ add_visages_app(RTS "Visages of War" "Visages.Game"
     src/game/GameUnitCommands.cpp
     src/game/GameLibrary.cpp
     src/game/GameInput.cpp
+    src/game/GameConsole.cpp
     src/game/GameSmoke.cpp
     src/game/RangedSmoke.cpp
     src/game/UnitCommandSmoke.cpp
@@ -190,13 +193,13 @@ if(BUILD_TESTING)
     add_test(NAME rts_grid_snapshot COMMAND RTS --snapshot-grid "${CMAKE_BINARY_DIR}/grid-preview.png")
     add_test(NAME rts_menu_snapshot COMMAND RTS --snapshot-menu "${CMAKE_BINARY_DIR}/menu-preview.png")
     add_test(NAME rts_title_snapshot COMMAND RTS --snapshot-title "${CMAKE_BINARY_DIR}/title-preview.png")
-    add_test(NAME rts_native_gameplay_ui COMMAND RTS --smoke-test)
+    add_test(NAME rts_native_gameplay_ui COMMAND RTS --smoke-test --map "${CMAKE_CURRENT_SOURCE_DIR}/assets/maps/demo.rtsmap")
     # Includes software snapshots with cold sprite/lighting caches; this is not a performance gate.
     set_tests_properties(rts_native_gameplay_ui PROPERTIES TIMEOUT 120 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME forge_assets_from_other_cwd COMMAND VisagesForge --verify-assets)
     set_tests_properties(forge_assets_from_other_cwd PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME forge_render_snapshot COMMAND VisagesForge --snapshot "${CMAKE_BINARY_DIR}/forge-preview.png")
-    add_test(NAME forge_native_editor_ui COMMAND VisagesForge --smoke-test)
+    add_test(NAME forge_native_editor_ui COMMAND VisagesForge --smoke-test --map "${CMAKE_CURRENT_SOURCE_DIR}/assets/maps/demo.rtsmap")
     set_tests_properties(forge_native_editor_ui PROPERTIES TIMEOUT 40 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     add_test(NAME rts_relocated_unicode_paths COMMAND ${CMAKE_COMMAND}
         "-DFORGE=$<TARGET_FILE:VisagesForge>" "-DAPP=$<TARGET_FILE:RTS>" "-DWORK=${CMAKE_BINARY_DIR}/relocation-test"

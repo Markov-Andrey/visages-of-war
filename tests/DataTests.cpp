@@ -190,7 +190,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
             require(scenario.map.walkable(c) == bare.map.walkable(c) &&
                 scenario.map.blocksVision(c) == bare.map.blocksVision(c), "Vineyard cosmetics changed navigation or sight");
         }
-        for (const auto& d : world.objects()) if (d.id.starts_with("vineyard.")) {
+        for (const auto& d : world.objects()) if (d.id.starts_with("sunny_hills.vineyard.")) {
             if (!d.gameplay) {
                 require(!d.blocksVision && std::none_of(d.collision.begin(), d.collision.end(), [](bool b) { return b; }),
                     "Grass or flowers became a blocker");
@@ -198,7 +198,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
                 require(std::any_of(d.collision.begin(), d.collision.end(), [](bool b) { return b; }), "Solid prop has no collision");
             }
         }
-        for (const auto& object : scenario.environment) if (object.definitionId.starts_with("vineyard.")) {
+        for (const auto& object : scenario.environment) if (object.definitionId.starts_with("sunny_hills.vineyard.")) {
             for (int y = 0; y < object.height; ++y) for (int x = 0; x < object.width; ++x) if (object.blocks(x, y)) {
                 const auto c = object.origin + rts::Cell{x, y};
                 require(!scenario.map.walkable(c) && scenario.map.walkable(c, rts::MovementType::Flying), "Solid vineyard prop lost ground-only collision");
@@ -208,7 +208,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
                 rts::Cell{12, 28}, rts::Cell{15, 29}, rts::Cell{19, 14}, rts::Cell{21, 16}, rts::Cell{10, 18}})
             require(rts::findPath(scenario.map, scenario.worker, goal).has_value(), "Vineyard blocked an aisle, arch, ramp or resource approach");
         auto restored = scenario;
-        const auto vineAt = std::find_if(restored.environment.begin(), restored.environment.end(), [](const auto& o) { return o.definitionId == "vineyard.vine_a"; });
+        const auto vineAt = std::find_if(restored.environment.begin(), restored.environment.end(), [](const auto& o) { return o.definitionId == "sunny_hills.vineyard.vine_a"; });
         require(vineAt != restored.environment.end(), "Demo has no vineyard rows");
         auto& vine = *vineAt;
         const auto id = vine.id; const auto origin = vine.origin;
@@ -216,6 +216,37 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(restored.map.walkable(origin) && !restored.map.blocksVision(origin), "Destroyed vine retained collision or sight");
         vine.hitPoints = vine.maximumHitPoints; rts::rebuildScenario(restored);
         require(vine.id == id && !restored.map.walkable(origin) && restored.map.blocksVision(origin), "Vine restoration lost identity or blockers");
+    });
+    test("Sunny Hills showcases every asset and connects its asymmetric landscape through wide ramps", [&] {
+        const auto& world=context.worldAssets;
+        const auto s=rts::loadScenario(assets/"maps/sunny-hills.rtsmap",world,context.hallFootprint);
+        require(s.map.width()==96&&s.map.height()==96,"Showcase must be 96 by 96");
+        size_t objectCount=0,materialCount=0;
+        for(const auto& d:world.objects()) if(d.id.starts_with("sunny_hills.")) {
+            ++objectCount; int galleryCount=0;
+            for(const auto& o:s.environment) if(o.definitionId==d.id&&o.origin.x>=69) ++galleryCount;
+            for(const auto& o:s.landscape.decorations) if(o.definitionId==d.id&&o.position.x>=69) ++galleryCount;
+            require(galleryCount==1,"Gallery must include exactly one of every object variant");
+            if(!d.gameplay) require(!d.blocksVision&&std::none_of(d.collision.begin(),d.collision.end(),[](bool v){return v;}),"Cosmetic art affects traversal");
+        }
+        for(const auto& m:world.materials()) if(m.id.starts_with("sunny_hills.")) {
+            ++materialCount;
+            require(std::any_of(s.landscape.paint.begin(),s.landscape.paint.end(),[&](const auto& p){return p.material==m.id&&p.position.x>=69;}),"Material missing from gallery");
+        }
+        require(objectCount==185&&materialCount==6,"Imported variant count changed without updating the showcase");
+        for(const rts::Cell goal: {rts::Cell{14,65},{24,24},{44,48},{34,10},{43,78},{67,60},{67,90}})
+            require(rts::findPath(s.map,s.worker,goal).has_value(),"Showcase road, sanctuary, beach or gallery is unreachable");
+        for(int y=0;y<96;++y) for(int x=0;x<96;++x) {
+            const rts::Cell c{x,y};const auto& t=s.map.at(c);
+            if(t.surface!=rts::Surface::Land) require(t.height==-1,"Sea must share one flat surface");
+            if(t.ramp==rts::Cell{}) continue;
+            const rts::Cell across{-t.ramp.y,t.ramp.x}; int width=1;
+            const auto lane=[&](rts::Cell at){return s.map.contains(at)&&s.map.at(at).ramp==t.ramp&&s.map.at(at).height==t.height;};
+            for(auto at=c+across;lane(at);at=at+across) ++width;
+            for(auto at=c-across;lane(at);at=at-across) ++width;
+            require(width==3&&s.map.canStep(c-t.ramp,c)&&s.map.canStep(c,c+t.ramp),"Showcase ramp narrowed or obstructed");
+        }
+        require(!s.map.canStep({40,53},{40,54})&&!s.map.walkable({26,43}),"Cliffs and dense groves no longer constrain movement");
     });
     test("Large demo: workers, friendly army, hostile camp and reachable plateaus", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");

@@ -114,6 +114,11 @@ float Simulation::unitHeight(const Unit& u) const {
     if (airborne(u.definition.movement)) return 5.0f; // Fixed flight plane above the highest supported terrain.
     return map().surfaceHeight({static_cast<int>(std::floor(u.position.x)), static_cast<int>(std::floor(u.position.y))}, u.position);
 }
+void Simulation::revealMap() {
+    fog_.revealAll();
+    updateVision();
+    setMessage(L"Вся карта открыта до конца матча.");
+}
 void Simulation::updateVision() {
     std::vector<VisionSource> sources;
     const bool day = clock_.phase() == DayPhase::Day;

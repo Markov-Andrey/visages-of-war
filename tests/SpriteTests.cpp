@@ -2,11 +2,36 @@
 #include "rts/DirectionalSprite.hpp"
 #include "rts/Renderer.hpp"
 #include "rts/TeamColor.hpp"
+#include "rts/SpriteIsland.hpp"
 #include "render/DirectionalSpriteAssets.hpp"
 #include "platform/WindowsSupport.hpp"
 
 namespace rts::tests {
 void spriteTests(TestSuite& test, const TestContext& context) {
+    test("Raw sheet island crops exclude interleaved neighboring sprites without changing source pixels", [] {
+        SpritePixels sheet{8, 5, std::vector<std::uint8_t>(8 * 5 * 4)};
+        const auto set=[&](int x,int y,std::uint8_t alpha) {
+            auto* p=sheet.bgra.data()+(y*8+x)*4; p[0]=alpha; p[1]=alpha/2; p[3]=alpha;
+        };
+        for(int y=1;y<4;++y) set(2,y,255);
+        set(3,1,120); set(4,1,255); // Selected crown overlaps the neighbor's bounding rectangle.
+        set(4,3,255); // Neighbor does not connect through the transparent gap.
+        set(5,3,255); set(5,2,255);
+        set(1,2,5); // Original low-alpha edge is retained.
+        const auto original=sheet.bgra;
+        const auto island=extractSpriteIsland(sheet,{1,0,6,5},{2,1});
+        require(island.width==6&&island.height==5&&sheet.bgra==original,"Island changed the source or crop dimensions");
+        require(island.bgra[(2*6+0)*4+3]==5&&island.bgra[(1*6+2)*4+3]==120,"Island lost original edge alpha");
+        require(island.bgra[(3*6+3)*4+3]==0,"Interleaved neighbor leaked into crop");
+        // Use a separate disconnected component in the upper-right corner.
+        set(6,0,255);
+        const auto clean=extractSpriteIsland(sheet,{1,0,6,5},{2,1});
+        require(clean.bgra[(0*6+5)*4+3]==0,"Neighbor leaked into selected sprite");
+        mustThrow([&] { extractSpriteIsland(sheet,{1,0,6,5},{0,1}); });
+        mustThrow([&] { extractSpriteIsland(sheet,{1,0,6,5},{1,0}); });
+        mustThrow([&] { extractSpriteIsland(sheet,{7,0,6,5},{7,1}); });
+    });
+
     test("Identity and horizontal mirror preserve every source pixel including alpha", [&] {
         SpritePixels input{7, 13, std::vector<std::uint8_t>(7 * 13 * 4)};
         for (size_t i = 0; i < input.bgra.size(); ++i) input.bgra[i] = std::uint8_t(i % 251);

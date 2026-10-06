@@ -8,7 +8,7 @@
 namespace rts::game {
 GameApplication::GameApplication(rts::Paths paths, std::filesystem::path mapFile, bool forgeTest) : paths_(std::move(paths)),
     definitions_(rts::platform::loadDefinitions(paths_)), worldAssets_(rts::WorldAssets::load(paths_)),
-    mapFile_(mapFile.empty() ? paths_.asset(L"maps/demo.rtsmap") : std::filesystem::absolute(mapFile)), customMap_(!mapFile.empty()), forgeTest_(forgeTest),
+    mapFile_(mapFile.empty() ? paths_.asset(L"maps/sunny-hills.rtsmap") : std::filesystem::absolute(mapFile)), customMap_(!mapFile.empty()), forgeTest_(forgeTest),
     game_(makeMatch()), renderer_(paths_), cursor_(paths_) {
     menu_.player.commanderId = definitions_.commanders().front().id;
 }
@@ -36,7 +36,7 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
         nullptr, nullptr, instance, this);
     if (!window_) throw std::runtime_error("Window creation failed");
     fitToMonitor(monitor);
-    if (customMap_) { menu_.page=rts::MenuPage::Playing; menu_.canResume=true; ui_.selection.army(game_); }
+    if (customMap_ && (!smoke || smokeMap)) { menu_.page=rts::MenuPage::Playing; menu_.canResume=true; ui_.selection.army(game_); }
     resetCamera();
     ShowWindow(window_, smoke ? SW_HIDE : SW_SHOW);
     if (smokeMap) {

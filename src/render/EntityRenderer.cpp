@@ -17,7 +17,7 @@ void Renderer::environmentObject(const EnvironmentObject& object, const Map& map
         float(map.at(object.origin).height));
     const auto shifted = [&](Vec2 offset) { return p + offset * view.zoom; };
     if (object.kind == EnvironmentKind::Tree) {
-        sprite(tree_.Get(), rect(0, 0, 16, 16), shifted({-55, -100}), Vec2{110, 110} * view.zoom, true);
+        worldSprite(worldAssets_.object("tree"), center(object.origin), 1, 0, map, view);
     } else if (object.kind == EnvironmentKind::Rock) {
         const std::array<Vec2, 5> rock{{shifted({-45, 2}), shifted({-30, -51}), shifted({15, -69}), shifted({55, -2}), shifted({20, 35})}};
         polygon(rock, 0x737772);

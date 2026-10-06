@@ -8,7 +8,7 @@
 namespace rts::forge {
 ForgeApplication::ForgeApplication(rts::Paths paths,const std::filesystem::path& mapFile) : paths_(std::move(paths)),
     definitions_(rts::platform::loadDefinitions(paths_)),worldAssets_(rts::WorldAssets::load(paths_)),renderer_(paths_),cursor_(paths_) {
-    const auto source=mapFile.empty()?paths_.asset(L"maps/demo.rtsmap"):std::filesystem::absolute(mapFile);
+    const auto source=mapFile.empty()?paths_.asset(L"maps/sunny-hills.rtsmap"):std::filesystem::absolute(mapFile);
     const auto& depot=definitions_.startingDepot(definitions_.commanders().front().factionId);
     editor_=std::make_unique<rts::WorldEditor>(rts::loadScenario(source,worldAssets_,{depot.width,depot.height}),worldAssets_,definitions_);
     if(!mapFile.empty()) editor_->file=source;
@@ -21,7 +21,7 @@ void ForgeApplication::verify() {
     if(!FindResourceW(GetModuleHandleW(nullptr),MAKEINTRESOURCEW(101),RT_GROUP_ICON)) throw std::runtime_error("Missing Forge icon");
 }
 
-void ForgeApplication::snapshot(const std::filesystem::path& output) { renderer_.snapshotEditor(*editor_,output); }
+void ForgeApplication::snapshot(const std::filesystem::path& output,bool overview) { renderer_.snapshotEditor(*editor_,output,overview); }
 
 int ForgeApplication::run(HINSTANCE instance,bool smoke) {
     smoke_=smoke; verify();

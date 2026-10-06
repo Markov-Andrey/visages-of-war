@@ -1,0 +1,2234 @@
+[
+  {
+    "id": "sunny_hills.ruin.masonry.column",
+    "name": "Masonry: Column",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        28,
+        25,
+        249,
+        307
+      ],
+      "islandSeed": [
+        161,
+        27
+      ],
+      "size": [
+        76,
+        93.7
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.column_stump",
+    "name": "Masonry: Column stump",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        345,
+        106,
+        248,
+        215
+      ],
+      "islandSeed": [
+        490,
+        108
+      ],
+      "size": [
+        76,
+        65.89
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.altar",
+    "name": "Masonry: Altar",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        692,
+        82,
+        226,
+        233
+      ],
+      "islandSeed": [
+        804,
+        84
+      ],
+      "size": [
+        76,
+        78.35
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.arch",
+    "name": "Masonry: Arch",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        973,
+        24,
+        292,
+        306
+      ],
+      "islandSeed": [
+        1098,
+        26
+      ],
+      "size": [
+        76,
+        79.65
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.broken_wall",
+    "name": "Masonry: Broken wall",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        1297,
+        47,
+        307,
+        282
+      ],
+      "islandSeed": [
+        1390,
+        49
+      ],
+      "size": [
+        76,
+        69.81
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.rubble",
+    "name": "Masonry: Rubble",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        12,
+        415,
+        319,
+        208
+      ],
+      "islandSeed": [
+        227,
+        417
+      ],
+      "size": [
+        76,
+        49.55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.open_arch",
+    "name": "Masonry: Open arch",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        351,
+        327,
+        254,
+        301
+      ],
+      "islandSeed": [
+        493,
+        329
+      ],
+      "size": [
+        76,
+        90.06
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.wall_corner",
+    "name": "Masonry: Wall corner",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        659,
+        355,
+        304,
+        265
+      ],
+      "islandSeed": [
+        760,
+        357
+      ],
+      "size": [
+        76,
+        66.25
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.balustrade",
+    "name": "Masonry: Balustrade",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        992,
+        387,
+        263,
+        240
+      ],
+      "islandSeed": [
+        1035,
+        389
+      ],
+      "size": [
+        76,
+        69.36
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.steps",
+    "name": "Masonry: Steps",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        1299,
+        383,
+        309,
+        244
+      ],
+      "islandSeed": [
+        1467,
+        385
+      ],
+      "size": [
+        76,
+        60.01
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.collapsed_arch",
+    "name": "Masonry: Collapsed arch",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        25,
+        663,
+        298,
+        255
+      ],
+      "islandSeed": [
+        177,
+        665
+      ],
+      "size": [
+        76,
+        65.04
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.paving",
+    "name": "Masonry: Paving",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        347,
+        701,
+        302,
+        200
+      ],
+      "islandSeed": [
+        502,
+        703
+      ],
+      "size": [
+        76,
+        50.33
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.stone_block",
+    "name": "Masonry: Stone block",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        699,
+        690,
+        226,
+        228
+      ],
+      "islandSeed": [
+        798,
+        692
+      ],
+      "size": [
+        76,
+        76.67
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.wall_fragment",
+    "name": "Masonry: Wall fragment",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        985,
+        632,
+        267,
+        310
+      ],
+      "islandSeed": [
+        1083,
+        634
+      ],
+      "size": [
+        76,
+        88.24
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.masonry.fallen_column",
+    "name": "Masonry: Fallen column",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-masonry.png",
+      "source": [
+        1300,
+        685,
+        294,
+        233
+      ],
+      "islandSeed": [
+        1534,
+        687
+      ],
+      "size": [
+        76,
+        60.23
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.amphora",
+    "name": "Pottery: Amphora",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        43,
+        30,
+        222,
+        310
+      ],
+      "islandSeed": [
+        164,
+        32
+      ],
+      "size": [
+        71.61,
+        100
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.fallen_amphora",
+    "name": "Pottery: Fallen amphora",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        346,
+        134,
+        286,
+        191
+      ],
+      "islandSeed": [
+        510,
+        136
+      ],
+      "size": [
+        76,
+        50.75
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.vine_amphora",
+    "name": "Pottery: Vine amphora",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        676,
+        29,
+        256,
+        304
+      ],
+      "islandSeed": [
+        799,
+        31
+      ],
+      "size": [
+        76,
+        90.25
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.shattered_amphora",
+    "name": "Pottery: Shattered amphora",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        973,
+        128,
+        303,
+        218
+      ],
+      "islandSeed": [
+        1073,
+        130
+      ],
+      "size": [
+        76,
+        54.68
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.round_well",
+    "name": "Pottery: Round well",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        1308,
+        94,
+        286,
+        246
+      ],
+      "islandSeed": [
+        1386,
+        96
+      ],
+      "size": [
+        76,
+        65.37
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.trough",
+    "name": "Pottery: Trough",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        28,
+        384,
+        278,
+        246
+      ],
+      "islandSeed": [
+        216,
+        386
+      ],
+      "size": [
+        76,
+        67.25
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.broken_trough",
+    "name": "Pottery: Broken trough",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        345,
+        427,
+        305,
+        202
+      ],
+      "islandSeed": [
+        536,
+        429
+      ],
+      "size": [
+        76,
+        50.33
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.column_stump",
+    "name": "Pottery: Column stump",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        692,
+        369,
+        233,
+        252
+      ],
+      "islandSeed": [
+        808,
+        371
+      ],
+      "size": [
+        76,
+        82.2
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.fallen_column",
+    "name": "Pottery: Fallen column",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        990,
+        386,
+        279,
+        247
+      ],
+      "islandSeed": [
+        1101,
+        388
+      ],
+      "size": [
+        76,
+        67.28
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.broken_basin",
+    "name": "Pottery: Broken basin",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        1323,
+        436,
+        267,
+        197
+      ],
+      "islandSeed": [
+        1383,
+        438
+      ],
+      "size": [
+        76,
+        56.08
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.jars",
+    "name": "Pottery: Jars",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        29,
+        677,
+        283,
+        256
+      ],
+      "islandSeed": [
+        145,
+        679
+      ],
+      "size": [
+        76,
+        68.75
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.pottery_shards",
+    "name": "Pottery: Pottery shards",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        350,
+        709,
+        264,
+        195
+      ],
+      "islandSeed": [
+        481,
+        711
+      ],
+      "size": [
+        76,
+        56.14
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.rubble_pier",
+    "name": "Pottery: Rubble pier",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        659,
+        666,
+        295,
+        267
+      ],
+      "islandSeed": [
+        820,
+        668
+      ],
+      "size": [
+        76,
+        68.78
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.rubble_blocks",
+    "name": "Pottery: Rubble blocks",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        970,
+        669,
+        318,
+        257
+      ],
+      "islandSeed": [
+        1081,
+        671
+      ],
+      "size": [
+        76,
+        61.42
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.pottery.leaning_slab",
+    "name": "Pottery: Leaning slab",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-pottery.png",
+      "source": [
+        1312,
+        674,
+        291,
+        254
+      ],
+      "islandSeed": [
+        1460,
+        676
+      ],
+      "size": [
+        76,
+        66.33
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.ivy_arch",
+    "name": "Monuments: Ivy arch",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        11,
+        12,
+        308,
+        332
+      ],
+      "islandSeed": [
+        162,
+        14
+      ],
+      "size": [
+        76,
+        81.92
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.fallen_column",
+    "name": "Monuments: Fallen column",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        348,
+        143,
+        291,
+        187
+      ],
+      "islandSeed": [
+        592,
+        145
+      ],
+      "size": [
+        76,
+        48.84
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.broken_arch",
+    "name": "Monuments: Broken arch",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        683,
+        18,
+        286,
+        319
+      ],
+      "islandSeed": [
+        775,
+        20
+      ],
+      "size": [
+        76,
+        84.76
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.well",
+    "name": "Monuments: Well",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        997,
+        131,
+        281,
+        186
+      ],
+      "islandSeed": [
+        1138,
+        133
+      ],
+      "size": [
+        76,
+        50.3
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.split_pillar",
+    "name": "Monuments: Split pillar",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        1308,
+        17,
+        273,
+        313
+      ],
+      "islandSeed": [
+        1461,
+        19
+      ],
+      "size": [
+        76,
+        87.14
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.obelisk",
+    "name": "Monuments: Obelisk",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        16,
+        359,
+        296,
+        273
+      ],
+      "islandSeed": [
+        143,
+        361
+      ],
+      "size": [
+        76,
+        70.1
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.lintel",
+    "name": "Monuments: Lintel",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        356,
+        341,
+        293,
+        305
+      ],
+      "islandSeed": [
+        446,
+        343
+      ],
+      "size": [
+        76,
+        79.11
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.rubble",
+    "name": "Monuments: Rubble",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        670,
+        401,
+        336,
+        236
+      ],
+      "islandSeed": [
+        877,
+        403
+      ],
+      "size": [
+        76,
+        53.38
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.statue",
+    "name": "Monuments: Statue",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        1020,
+        352,
+        266,
+        280
+      ],
+      "islandSeed": [
+        1159,
+        354
+      ],
+      "size": [
+        76,
+        80.0
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.walled_niche",
+    "name": "Monuments: Walled niche",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        1316,
+        358,
+        293,
+        286
+      ],
+      "islandSeed": [
+        1446,
+        360
+      ],
+      "size": [
+        76,
+        74.18
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.steps",
+    "name": "Monuments: Steps",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        13,
+        643,
+        309,
+        306
+      ],
+      "islandSeed": [
+        106,
+        645
+      ],
+      "size": [
+        76,
+        75.26
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.balustrade",
+    "name": "Monuments: Balustrade",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        351,
+        677,
+        302,
+        264
+      ],
+      "islandSeed": [
+        410,
+        679
+      ],
+      "size": [
+        76,
+        66.44
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.paving",
+    "name": "Monuments: Paving",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        676,
+        718,
+        315,
+        210
+      ],
+      "islandSeed": [
+        819,
+        720
+      ],
+      "size": [
+        76,
+        50.67
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.column",
+    "name": "Monuments: Column",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        1012,
+        635,
+        270,
+        308
+      ],
+      "islandSeed": [
+        1150,
+        637
+      ],
+      "size": [
+        76,
+        86.7
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.monuments.slab",
+    "name": "Monuments: Slab",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-monuments.png",
+      "source": [
+        1309,
+        713,
+        300,
+        225
+      ],
+      "islandSeed": [
+        1457,
+        715
+      ],
+      "size": [
+        76,
+        57.0
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.portico",
+    "name": "Portico",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-medium.png",
+      "source": [
+        15,
+        7,
+        512,
+        500
+      ],
+      "islandSeed": [
+        357,
+        9
+      ],
+      "size": [
+        152,
+        148.44
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.gable",
+    "name": "Gable",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-medium.png",
+      "source": [
+        548,
+        23,
+        466,
+        485
+      ],
+      "islandSeed": [
+        771,
+        25
+      ],
+      "size": [
+        152,
+        158.2
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.dais",
+    "name": "Dais",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-medium.png",
+      "source": [
+        1035,
+        36,
+        484,
+        441
+      ],
+      "islandSeed": [
+        1160,
+        38
+      ],
+      "size": [
+        152,
+        138.5
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.arcade",
+    "name": "Arcade",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-medium.png",
+      "source": [
+        17,
+        532,
+        514,
+        436
+      ],
+      "islandSeed": [
+        441,
+        534
+      ],
+      "size": [
+        152,
+        128.93
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.stairway",
+    "name": "Stairway",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-medium.png",
+      "source": [
+        562,
+        515,
+        460,
+        457
+      ],
+      "islandSeed": [
+        684,
+        517
+      ],
+      "size": [
+        152,
+        151.01
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.ivy_gate",
+    "name": "Ivy gate",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-medium.png",
+      "source": [
+        1043,
+        504,
+        480,
+        464
+      ],
+      "islandSeed": [
+        1213,
+        506
+      ],
+      "size": [
+        152,
+        146.94
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.theatre",
+    "name": "Theatre",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-large.png",
+      "source": [
+        19,
+        24,
+        507,
+        473
+      ],
+      "islandSeed": [
+        287,
+        26
+      ],
+      "size": [
+        228,
+        212.71
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.temple",
+    "name": "Temple",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-large.png",
+      "source": [
+        534,
+        7,
+        491,
+        496
+      ],
+      "islandSeed": [
+        798,
+        9
+      ],
+      "size": [
+        215.8,
+        218
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.villa",
+    "name": "Villa",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-large.png",
+      "source": [
+        1041,
+        10,
+        484,
+        493
+      ],
+      "islandSeed": [
+        1416,
+        12
+      ],
+      "size": [
+        214.02,
+        218
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.rotunda",
+    "name": "Rotunda",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-large.png",
+      "source": [
+        13,
+        496,
+        514,
+        506
+      ],
+      "islandSeed": [
+        307,
+        498
+      ],
+      "size": [
+        221.45,
+        218
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.fountain",
+    "name": "Fountain",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-large.png",
+      "source": [
+        534,
+        504,
+        489,
+        492
+      ],
+      "islandSeed": [
+        669,
+        506
+      ],
+      "size": [
+        216.67,
+        218
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.ruin.gateway",
+    "name": "Gateway",
+    "group": "Sunny Hills / Ruins",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      3
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/ruins-large.png",
+      "source": [
+        1031,
+        497,
+        501,
+        500
+      ],
+      "islandSeed": [
+        1195,
+        499
+      ],
+      "size": [
+        218.44,
+        218
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  }
+]

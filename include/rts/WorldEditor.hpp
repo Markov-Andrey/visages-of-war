@@ -6,15 +6,17 @@
 
 namespace rts {
 enum class EditorTool { Paint, ErasePaint, Decoration, Environment, Unit, Height, Surface, Ramp, Remove, Start, Base };
-struct EditorChoice { std::string id, name; };
+struct EditorChoice { std::string id, name, group = "Core"; };
 struct EditorLayout {
     UiRect world, panel;
     std::array<UiRect, 8> actions;
     std::array<UiRect, 11> tools;
-    std::array<UiRect, 8> choices;
+    std::array<UiRect, 7> choices;
+    UiRect previousGroup, nextGroup;
     UiRect previous, next, radiusMinus, radiusPlus, opacityMinus, opacityPlus, valueMinus, valuePlus;
     explicit EditorLayout(Vec2 size);
 };
+WorldView editorOverview(const Map& map, UiRect area);
 class WorldEditor {
 public:
     WorldEditor(Scenario scenario, const WorldAssets& assets, const Definitions& definitions);
@@ -31,7 +33,10 @@ public:
     bool redo();
     void validateForPlay() const;
     std::vector<EditorChoice> choices() const;
-    void setTool(EditorTool value) { endStroke(); tool=value; choice=0; }
+    std::vector<std::string> groups() const;
+    void cycleGroup(int step);
+    void setTool(EditorTool value) { endStroke(); tool=value; choice=0; paletteGroup.clear(); }
+    std::string paletteGroup;
     std::string selected() const;
     EditorTool tool = EditorTool::Paint;
     size_t choice{};
@@ -41,6 +46,7 @@ public:
     std::wstring message = L"Кисть: ЛКМ и движение. Камера: WASD / средняя кнопка. Колесо: масштаб.";
     std::filesystem::path file;
 private:
+    std::vector<EditorChoice> allChoices() const;
     void rebuild(Scenario& scenario) const;
     bool applyOne(Vec2 point);
     EntityId nextId() const;

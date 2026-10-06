@@ -7,13 +7,14 @@
 #include <string_view>
 
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
-    bool verify=false,smoke=false;std::filesystem::path snapshot,mapFile;
+    bool verify=false,smoke=false,overview=false;std::filesystem::path snapshot,mapFile;
     int count{};auto* args=CommandLineToArgvW(GetCommandLineW(),&count);if(!args) return 1;
     for(int i=1;i<count;++i) {
         const std::wstring_view arg=args[i];
         if(arg==L"--verify-assets") verify=true;
         else if(arg==L"--smoke-test") smoke=true;
         else if(arg==L"--snapshot"&&i+1<count) snapshot=args[++i];
+        else if(arg==L"--snapshot-overview"&&i+1<count) { snapshot=args[++i]; overview=true; }
         else if(arg==L"--map"&&i+1<count) mapFile=args[++i];
         else {LocalFree(args);return 2;}
     }
@@ -22,7 +23,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
         rts::platform::ComApartment apartment;SetCurrentProcessExplicitAppUserModelID(L"Visages.Forge");
         rts::forge::ForgeApplication app(rts::Paths::discover(),mapFile);
         if(verify) {app.verify();return 0;}
-        if(!snapshot.empty()) {app.snapshot(snapshot);return 0;}
+        if(!snapshot.empty()) {app.snapshot(snapshot,overview);return 0;}
         return app.run(instance,smoke);
     } catch(const std::exception& e) {
         std::cerr<<"Visages Forge: "<<e.what()<<'\n';OutputDebugStringA(e.what());

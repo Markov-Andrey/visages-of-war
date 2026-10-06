@@ -1,7 +1,7 @@
 [
   {
-    "id": "vineyard.vine_a",
-    "name": "Лоза — ряд A",
+    "id": "sunny_hills.vineyard.vine_a",
+    "name": "Vine A",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -17,7 +17,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/vine_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/grapevines.png",
       "source": [
         204,
         8,
@@ -33,11 +33,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.vine_b",
-    "name": "Лоза — ряд B",
+    "id": "sunny_hills.vineyard.vine_b",
+    "name": "Vine B",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -53,7 +54,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/vine_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/grapevines.png",
       "source": [
         440,
         8,
@@ -69,11 +70,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.vine_post",
-    "name": "Лоза — отдельный куст",
+    "id": "sunny_hills.vineyard.vine_post",
+    "name": "Vine Post",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -86,7 +88,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/vine_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/grapevines.png",
       "source": [
         160,
         211,
@@ -102,11 +104,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.barrel",
-    "name": "Бочка с виноградом",
+    "id": "sunny_hills.vineyard.barrel",
+    "name": "Barrel",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -119,7 +122,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_1.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
       "source": [
         1246,
         10,
@@ -135,11 +138,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.barrels",
-    "name": "Штабель бочек",
+    "id": "sunny_hills.vineyard.barrels",
+    "name": "Barrels",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -152,7 +156,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_1.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
       "source": [
         457,
         10,
@@ -168,11 +172,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.crate",
-    "name": "Ящик винограда",
+    "id": "sunny_hills.vineyard.crate",
+    "name": "Crate",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -185,7 +190,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_1.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
       "source": [
         151,
         162,
@@ -201,11 +206,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.cart",
-    "name": "Телега с виноградом",
+    "id": "sunny_hills.vineyard.cart",
+    "name": "Cart",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -219,7 +225,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_1.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
       "source": [
         180,
         303,
@@ -235,11 +241,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.press",
-    "name": "Виноградный пресс",
+    "id": "sunny_hills.vineyard.press",
+    "name": "Press",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -252,7 +259,7 @@
     "health": 250,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_1.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
       "source": [
         1201,
         280,
@@ -268,11 +275,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.well",
-    "name": "Колодец виноградника",
+    "id": "sunny_hills.vineyard.well",
+    "name": "Well",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -288,7 +296,7 @@
     "health": 350,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_1.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
       "source": [
         1360,
         278,
@@ -304,11 +312,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.fence",
-    "name": "Деревянная ограда",
+    "id": "sunny_hills.vineyard.fence",
+    "name": "Fence",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -322,7 +331,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_1.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
       "source": [
         11,
         459,
@@ -338,11 +347,12 @@
         0.85
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.hay",
-    "name": "Сложенное сено",
+    "id": "sunny_hills.vineyard.hay",
+    "name": "Hay",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -356,7 +366,7 @@
     "health": 150,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_1.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-props.png",
       "source": [
         1328,
         466,
@@ -372,11 +382,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.winery",
-    "name": "Дом винодела",
+    "id": "sunny_hills.vineyard.winery",
+    "name": "Vineyard villa",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -394,7 +405,7 @@
     "health": 650,
     "blocksVision": false,
     "sprite": {
-      "image": "sprites/vineyard/decor_2.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-villas.png",
       "source": [
         242,
         5,
@@ -410,11 +421,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.cellar",
-    "name": "Винный погреб",
+    "id": "sunny_hills.vineyard.cellar",
+    "name": "Wine cellar",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -432,7 +444,7 @@
     "health": 500,
     "blocksVision": false,
     "sprite": {
-      "image": "sprites/vineyard/decor_2.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-villas.png",
       "source": [
         7,
         632,
@@ -448,11 +460,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.arch",
-    "name": "Каменная арка с лозой",
+    "id": "sunny_hills.vineyard.arch",
+    "name": "Arch",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -467,7 +480,7 @@
     "health": 500,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_2.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-villas.png",
       "source": [
         1311,
         418,
@@ -483,11 +496,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.ruin",
-    "name": "Обвитая лозой стена",
+    "id": "sunny_hills.vineyard.ruin",
+    "name": "Ruin",
     "gameplay": true,
     "kind": "decoration",
     "footprint": [
@@ -501,7 +515,7 @@
     "health": 400,
     "blocksVision": true,
     "sprite": {
-      "image": "sprites/vineyard/decor_2.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-villas.png",
       "source": [
         454,
         830,
@@ -517,11 +531,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.grass_a",
-    "name": "Трава — низкий пучок",
+    "id": "sunny_hills.vineyard.grass_a",
+    "name": "Grass A",
     "gameplay": false,
     "kind": "decoration",
     "footprint": [
@@ -534,7 +549,7 @@
     "health": 1,
     "blocksVision": false,
     "sprite": {
-      "image": "sprites/vineyard/grass_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-groundcover.png",
       "source": [
         8,
         7,
@@ -550,11 +565,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.grass_b",
-    "name": "Трава — широкий пучок",
+    "id": "sunny_hills.vineyard.grass_b",
+    "name": "Grass B",
     "gameplay": false,
     "kind": "decoration",
     "footprint": [
@@ -567,7 +583,7 @@
     "health": 1,
     "blocksVision": false,
     "sprite": {
-      "image": "sprites/vineyard/grass_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-groundcover.png",
       "source": [
         927,
         9,
@@ -583,11 +599,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.daisies",
-    "name": "Цветы — ромашки",
+    "id": "sunny_hills.vineyard.daisies",
+    "name": "Daisies",
     "gameplay": false,
     "kind": "decoration",
     "footprint": [
@@ -600,7 +617,7 @@
     "health": 1,
     "blocksVision": false,
     "sprite": {
-      "image": "sprites/vineyard/grass_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-groundcover.png",
       "source": [
         162,
         155,
@@ -616,11 +633,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.lavender",
-    "name": "Цветы — лаванда",
+    "id": "sunny_hills.vineyard.lavender",
+    "name": "Lavender",
     "gameplay": false,
     "kind": "decoration",
     "footprint": [
@@ -633,7 +651,7 @@
     "health": 1,
     "blocksVision": false,
     "sprite": {
-      "image": "sprites/vineyard/grass_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-groundcover.png",
       "source": [
         777,
         155,
@@ -649,11 +667,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.poppies",
-    "name": "Цветы — маки",
+    "id": "sunny_hills.vineyard.poppies",
+    "name": "Poppies",
     "gameplay": false,
     "kind": "decoration",
     "footprint": [
@@ -666,7 +685,7 @@
     "health": 1,
     "blocksVision": false,
     "sprite": {
-      "image": "sprites/vineyard/grass_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-groundcover.png",
       "source": [
         1240,
         156,
@@ -682,11 +701,12 @@
         0.9
       ],
       "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   },
   {
-    "id": "vineyard.shrub",
-    "name": "Куст — низкий",
+    "id": "sunny_hills.vineyard.shrub",
+    "name": "Shrub",
     "gameplay": false,
     "kind": "decoration",
     "footprint": [
@@ -699,7 +719,7 @@
     "health": 1,
     "blocksVision": false,
     "sprite": {
-      "image": "sprites/vineyard/grass_decor.png",
+      "image": "world/tilesets/sunny-hills/sprites/vineyard-groundcover.png",
       "source": [
         619,
         309,
@@ -715,204 +735,7 @@
         0.9
       ],
       "pixelArt": false
-    }
-  },
-  {
-    "id": "vineyard.tree_cypress",
-    "name": "Кипарис",
-    "gameplay": true,
-    "kind": "tree",
-    "footprint": [
-      1,
-      1
-    ],
-    "collision": [
-      true
-    ],
-    "health": 100,
-    "blocksVision": true,
-    "sprite": {
-      "image": "sprites/vineyard/trees.png",
-      "source": [
-        20,
-        4,
-        113,
-        215
-      ],
-      "size": [
-        61,
-        116
-      ],
-      "anchor": [
-        0.5,
-        0.97
-      ],
-      "pixelArt": false
-    }
-  },
-  {
-    "id": "vineyard.tree_olive",
-    "name": "Олива",
-    "gameplay": true,
-    "kind": "tree",
-    "footprint": [
-      1,
-      1
-    ],
-    "collision": [
-      true
-    ],
-    "health": 100,
-    "blocksVision": true,
-    "sprite": {
-      "image": "sprites/vineyard/trees.png",
-      "source": [
-        464,
-        228,
-        146,
-        169
-      ],
-      "size": [
-        105,
-        122
-      ],
-      "anchor": [
-        0.5,
-        0.97
-      ],
-      "pixelArt": false
-    }
-  },
-  {
-    "id": "vineyard.tree_pine",
-    "name": "Пиния",
-    "gameplay": true,
-    "kind": "tree",
-    "footprint": [
-      1,
-      1
-    ],
-    "collision": [
-      true
-    ],
-    "health": 100,
-    "blocksVision": true,
-    "sprite": {
-      "image": "sprites/vineyard/trees.png",
-      "source": [
-        408,
-        406,
-        167,
-        187
-      ],
-      "size": [
-        118,
-        132
-      ],
-      "anchor": [
-        0.5,
-        0.97
-      ],
-      "pixelArt": false
-    }
-  },
-  {
-    "id": "vineyard.tree_oak",
-    "name": "Лиственное дерево",
-    "gameplay": true,
-    "kind": "tree",
-    "footprint": [
-      1,
-      1
-    ],
-    "collision": [
-      true
-    ],
-    "health": 100,
-    "blocksVision": true,
-    "sprite": {
-      "image": "sprites/vineyard/trees.png",
-      "source": [
-        8,
-        602,
-        188,
-        192
-      ],
-      "size": [
-        112,
-        114
-      ],
-      "anchor": [
-        0.5,
-        0.97
-      ],
-      "pixelArt": false
-    }
-  },
-  {
-    "id": "vineyard.tree_citrus",
-    "name": "Цитрусовое дерево",
-    "gameplay": true,
-    "kind": "tree",
-    "footprint": [
-      1,
-      1
-    ],
-    "collision": [
-      true
-    ],
-    "health": 100,
-    "blocksVision": true,
-    "sprite": {
-      "image": "sprites/vineyard/trees.png",
-      "source": [
-        12,
-        803,
-        135,
-        180
-      ],
-      "size": [
-        88,
-        117
-      ],
-      "anchor": [
-        0.5,
-        0.97
-      ],
-      "pixelArt": false
-    }
-  },
-  {
-    "id": "vineyard.tree_blossom",
-    "name": "Цветущее дерево",
-    "gameplay": true,
-    "kind": "tree",
-    "footprint": [
-      1,
-      1
-    ],
-    "collision": [
-      true
-    ],
-    "health": 100,
-    "blocksVision": true,
-    "sprite": {
-      "image": "sprites/vineyard/trees.png",
-      "source": [
-        774,
-        805,
-        140,
-        188
-      ],
-      "size": [
-        97,
-        130
-      ],
-      "anchor": [
-        0.5,
-        0.97
-      ],
-      "pixelArt": false
-    }
+    },
+    "group": "Sunny Hills / Vineyards"
   }
 ]

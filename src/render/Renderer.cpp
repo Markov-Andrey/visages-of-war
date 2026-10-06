@@ -31,6 +31,7 @@ void Renderer::ensureTarget() {
 }
 
 void Renderer::discardTarget() {
+    worldIslands_.clear();
     occlusionLayer_.Reset();
     commandIcons_.clear();
     portraitGradients_.clear();
@@ -45,7 +46,7 @@ void Renderer::discardTarget() {
     glowBrushes_.clear(); glowVisibilityBrush_.Reset(); glowVisibility_.Reset();
     groundBrush_.Reset();
     menuBackground_.Reset(); menuForeground_.Reset(); logo_.Reset(); buttonFrame_.Reset();
-    minimap_.Reset(); tree_.Reset(); enemy_.Reset(); worker_.Reset(); hall_.Reset(); brush_.Reset(); target_.Reset(); windowTarget_.Reset();
+    minimap_.Reset(); enemy_.Reset(); worker_.Reset(); hall_.Reset(); brush_.Reset(); target_.Reset(); windowTarget_.Reset();
 }
 
 void Renderer::resize(unsigned width, unsigned height) {

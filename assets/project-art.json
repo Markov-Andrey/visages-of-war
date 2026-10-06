@@ -3,7 +3,7 @@
     "source":  "Artwork supplied by the project owner",
     "rights":  "Project artwork; not part of the third-party CC0 asset catalog",
     "collections": [
-        {"manifest": "world/vineyard-art.json", "description": "Vineyard artwork supplied in the repository root; unchanged PNGs, source filenames and SHA-256 checksums."}
+        {"manifest": "world/tilesets/sunny-hills/manifest.json", "description": "Sunny Hills terrain, trees, shrubs, rocks, ruins, coast and retained vineyard artwork; original PNGs and SHA-256 checksums."}
     ],
     "files":  [
         {
@@ -71,7 +71,8 @@
                   },
                   {
                       "original":  "tile-grass.png",
-                      "path":  "textures/grass-ground.png",
+                      "retiredPath":  "textures/grass-ground.png",
+                      "status": "Replaced by Sunny Hills meadow",
                       "sha256":  "ADE6589B390DA0B34726894A43A15A105AF96EF800B49AD6677CBC3C69EEDDFB"
                   },
                   {

@@ -4,6 +4,7 @@
 #include <windowsx.h>
 #include <algorithm>
 #include <chrono>
+#include <cwctype>
 #include <stdexcept>
 
 namespace rts::game {
@@ -433,5 +434,29 @@ void GameApplication::exerciseInterface() {
     exerciseRangedCombat();
     exerciseUnitCommands();
     exerciseInspection();
+    // Exercise the real Enter / WM_CHAR route, including accidental hotkeys and new-match reset.
+    startBattle();
+    const rts::Cell revealProbe{game_.map().width()-1,game_.map().height()-1};
+    const auto selected=ui_.selection.ids; const bool wasGrid=grid_;
+    onMessage(WM_KEYDOWN,VK_RETURN,0); onMessage(WM_CHAR,L'\r',0);
+    if(!ui_.consoleOpen||cameraInputAllowed()) throw std::runtime_error("Console did not capture input");
+    for(wchar_t c:std::wstring(L"unknown")) onMessage(WM_CHAR,c,0);
+    onMessage(WM_KEYDOWN,VK_RETURN,0);
+    if(!ui_.consoleOpen||ui_.consoleReply.empty()||game_.fog().visible(revealProbe)) throw std::runtime_error("Unknown console command changed fog");
+    onMessage(WM_KEYDOWN,VK_ESCAPE,0);
+    if(ui_.consoleOpen||menu_.page!=rts::MenuPage::Playing) throw std::runtime_error("Console Escape opened the menu");
+    onMessage(WM_KEYDOWN,VK_RETURN,0); onMessage(WM_CHAR,L'\r',0);
+    for(wchar_t c:std::wstring(L"iseedeadpeoplex")) { onMessage(WM_KEYDOWN,std::towupper(c),0); onMessage(WM_CHAR,c,0); }
+    onMessage(WM_CHAR,L'\b',0); onMessage(WM_KEYDOWN,VK_F3,0);
+    if(ui_.consoleInput!=L"iseedeadpeople"||grid_!=wasGrid||ui_.selection.ids!=selected||ui_.orderMode||!ui_.placement.empty())
+        throw std::runtime_error("Console typing triggered gameplay hotkeys");
+    renderer_.snapshot(game_,rts::Paths::executable().parent_path()/L"console-input-preview.png",nullptr,false,&ui_);
+    onMessage(WM_KEYDOWN,VK_RETURN,0); onMessage(WM_CHAR,L'\r',0);
+    for(int i=0;i<10;++i) game_.tick();
+    if(ui_.consoleOpen||!game_.fog().visible(revealProbe)) throw std::runtime_error("Console reveal did not persist");
+    renderer_.snapshot(game_,rts::Paths::executable().parent_path()/L"console-reveal-preview.png",nullptr,false,&ui_);
+    startBattle();
+    if(game_.fog().explored(revealProbe)) throw std::runtime_error("New match retained console reveal");
+
 }
 }

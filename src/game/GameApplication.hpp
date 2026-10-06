@@ -43,6 +43,8 @@ private:
     rts::CursorKind cursorKind() const;
     void refreshCursor();
     void exerciseInterface();
+    bool consoleKey(WPARAM key);
+    void consoleCharacter(wchar_t character);
     void exerciseRangedCombat();
     static LRESULT CALLBACK windowProcedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) noexcept;
     bool mouseInWorld() const;

@@ -306,5 +306,13 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         text(L"Лимит армии: " + std::to_wstring(cost.supply),
             rect(x + 44, y + 193, width - 58, 23), game.armySupply().canReserve(cost.supply) ? 0xe4d4a5 : 0xed8b80);
     }
+    if (ui.consoleOpen) {
+        const float width = std::min(720.0f, extent.x - 40);
+        const float y = layout.world.y + layout.world.height - 86;
+        panel({20, y, width, 76}, 0x101c25);
+        text(ui.consoleReply.empty() ? L"Консоль / Enter — выполнить, Esc — закрыть" : ui.consoleReply,
+            rect(32, y + 9, width - 24, 25), 0xaac8be);
+        text(L"> " + ui.consoleInput + L"|", rect(32, y + 40, width - 24, 30), 0xe5e8d7);
+    }
 }
 }

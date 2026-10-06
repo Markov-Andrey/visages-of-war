@@ -45,14 +45,16 @@ void ForgeApplication::editorClick() {
     const rts::EditorLayout layout(renderer_.size());
     for(size_t i=0;i<layout.actions.size();++i) if(layout.actions[i].contains(mouse_)) {editorAction(i);return;}
     for(size_t i=0;i<layout.tools.size();++i) if(layout.tools[i].contains(mouse_)) {editor_->setTool(static_cast<rts::EditorTool>(i));return;}
-    const auto list=editor_->choices(); const size_t first=editor_->choice/8*8;
+    if(layout.previousGroup.contains(mouse_)) { editor_->cycleGroup(-1); return; }
+    if(layout.nextGroup.contains(mouse_)) { editor_->cycleGroup(1); return; }
+    const auto list=editor_->choices(); const auto count=layout.choices.size(); const size_t first=editor_->choice/count*count;
     for(size_t i=0;i<layout.choices.size();++i) if(layout.choices[i].contains(mouse_)&&first+i<list.size()) {
         editor_->choice=first+i;
         if(editor_->tool==rts::EditorTool::Base) { editor_->beginStroke(); editor_->apply(rts::center(editor_->scenario().worker)); editor_->endStroke(); }
         return;
     }
-    if(layout.previous.contains(mouse_)&&first>=8) editor_->choice=first-8;
-    if(layout.next.contains(mouse_)&&first+8<list.size()) editor_->choice=first+8;
+    if(layout.previous.contains(mouse_)&&first>=count) editor_->choice=first-count;
+    if(layout.next.contains(mouse_)&&first+count<list.size()) editor_->choice=first+count;
     if(layout.radiusMinus.contains(mouse_)) editor_->radius=std::max(.25f,editor_->radius-.25f);
     if(layout.radiusPlus.contains(mouse_)) editor_->radius=std::min(16.0f,editor_->radius+.25f);
     if(layout.opacityMinus.contains(mouse_)) editor_->opacity=std::max(.05f,editor_->opacity-.05f);
@@ -76,6 +78,7 @@ void ForgeApplication::editorKey(WPARAM key) {
     }
     if(key==VK_ESCAPE) {editor_->endStroke();ReleaseCapture();}
     if(key==VK_HOME) resetCamera();
+    if(key==VK_END) view_=rts::editorOverview(editor_->scenario().map,rts::EditorLayout(renderer_.size()).world);
     if(key=='G') grid_=!grid_;
     if(key==VK_F9) editorAction(5);
     if(key==VK_DELETE) editor_->setTool(rts::EditorTool::Remove);
@@ -121,7 +124,7 @@ LRESULT ForgeApplication::onMessage(UINT message,WPARAM wParam,LPARAM lParam) {
         POINT p{GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam)};ScreenToClient(window_,&p);
         const float dpi=96.0f/GetDpiForWindow(window_); mouse_={p.x*dpi,p.y*dpi};
         if(!mouseInWorld()) return 0;
-        const float previous=view_.zoom;view_.zoom=std::clamp(previous*std::pow(1.15f,GET_WHEEL_DELTA_WPARAM(wParam)/120.0f),.35f,2.0f);
+        const float previous=view_.zoom;view_.zoom=std::clamp(previous*std::pow(1.15f,GET_WHEEL_DELTA_WPARAM(wParam)/120.0f),.08f,2.0f);
         view_.origin=mouse_-(mouse_-view_.origin)*(view_.zoom/previous);return 0;
     }
     case WM_KEYDOWN: if(!(lParam&(1LL<<30))) editorKey(wParam);return 0;

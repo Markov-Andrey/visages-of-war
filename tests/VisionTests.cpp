@@ -3,6 +3,32 @@
 
 namespace rts::tests {
 void visionTests(TestSuite& test, const TestContext& context) {
+    test("Full map reveal persists without observers and resets for a new match", [&] {
+        const auto definitions=Definitions::load(context.assets/"data/catalog.json");
+        Scenario scenario{Map(32,32),{1,1},{4,3},{}};
+        scenario.environment={context.worldAssets.instantiate("tree",1000,{25,25})};
+        scenario.crystals={context.worldAssets.instantiateCrystal("crystal.small",{26,26})};
+        scenario.units={{"human.peacemaker",1,{30,30}}};
+        rebuildScenario(scenario,context.hallFootprint);
+        Simulation game(scenario,{},definitions.entity("human.worker"),definitions.entities());
+        FogMask mask; mask.update(game.fog(),32,32);
+        const auto revision=mask.revision();
+        require(!game.fog().explored({30,30})&&!game.knownEnvironment(0)&&game.knownCrystal(0)==0,"Reveal fixture already explored");
+        game.revealMap();
+        require(mask.update(game.fog(),32,32)&&mask.revision()>revision&&mask.lightAt({28.5f,28.5f})==1,
+            "Full reveal did not refresh the presentation mask");
+        require(game.knownEnvironment(0)&&game.knownCrystal(0)>0&&game.environmentVisible(0),"Full reveal left hidden world records");
+        game.revealMap();
+        game.setEnvironmentHealth(1000,0); game.setEnvironmentHealth(1000,100);
+        for(int i=0;i<30;++i) game.tick();
+        for(int y=0;y<32;++y) for(int x=0;x<32;++x)
+            require(game.fog().at({x,y})==Visibility::Visible,"Fog returned after a tick or blocker refresh");
+        Simulation fresh(scenario,{},definitions.entity("human.worker"),definitions.entities());
+        require(!fresh.fog().explored({30,30}),"Reveal leaked into a new match");
+        FogOfWar fog(32,32); fog.revealAll(); fog.update(scenario.map,{});
+        require(fog.visible({31,31})&&fog.explored({0,0})&&!fog.visible({32,32}),"Observer-free reveal or map boundaries failed");
+    });
+
     test("Emission masks retain authored alpha and crystal highlights exclude dark stone", [] {
         require(rts::emissionCoverage(0xffffffff) == 255 && rts::emissionCoverage(0) == 0 &&
             rts::emissionCoverage(0x80808080) == 128 && rts::emissionCoverage(0xff000000) == 0,
@@ -221,8 +247,8 @@ void visionTests(TestSuite& test, const TestContext& context) {
     });
     test("Vineyard prop faces remain visible from every side while houses let sight through", [&] {
         for (const auto& definition : context.worldAssets.objects()) {
-            if (!definition.id.starts_with("vineyard.") || !definition.gameplay) continue;
-            const bool house = definition.id == "vineyard.winery" || definition.id == "vineyard.cellar";
+            if (!definition.id.starts_with("sunny_hills.vineyard.") || !definition.gameplay) continue;
+            const bool house = definition.id == "sunny_hills.vineyard.winery" || definition.id == "sunny_hills.vineyard.cellar";
             require(definition.blocksVision == !house, "Vineyard sight policy differs from the catalog requirement");
             const auto object = context.worldAssets.instantiate(definition.id, 1000, {8, 8});
             Map map(24, 24); map.rebuildVisionBlockers(std::array{object});
@@ -239,15 +265,15 @@ void visionTests(TestSuite& test, const TestContext& context) {
             }
         }
         Map map(24, 24);
-        map.rebuildVisionBlockers(std::array{context.worldAssets.instantiate("vineyard.arch", 1000, {8, 8})});
+        map.rebuildVisionBlockers(std::array{context.worldAssets.instantiate("sunny_hills.vineyard.arch", 1000, {8, 8})});
         require(map.blocksVision({8, 8}) && !map.blocksVision({9, 8}) && map.blocksVision({10, 8}),
             "Arch sight mask does not match its pillars and open centre");
         require(visionReaches(map, {{9, 4}, 16}, {9, 12}), "The open arch blocks sight");
     });
     test("Visible vineyard obstacle hides live entities behind it and respects memory and other observers", [&] {
         Scenario scene{Map(24, 24), {1, 1}, {4, 8}, {}};
-        scene.environment = {context.worldAssets.instantiate("vineyard.vine_a", 1000, {8, 8}),
-            context.worldAssets.instantiate("vineyard.barrel", 1001, {12, 8})};
+        scene.environment = {context.worldAssets.instantiate("sunny_hills.vineyard.vine_a", 1000, {8, 8}),
+            context.worldAssets.instantiate("sunny_hills.vineyard.barrel", 1001, {12, 8})};
         scene.crystals = {context.worldAssets.instantiateCrystal("crystal.small", {11, 9})};
         EntityDefinition worker; worker.dayVision = worker.nightVision = 18; worker.attackDamage = 10;
         auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;

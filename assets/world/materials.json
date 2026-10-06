@@ -1,5 +1,26 @@
 [
-  {"id":"grass", "name":"Трава — подложка", "image":"textures/grass-ground.png", "repeatCells":16, "tint":"ffffff"},
-  {"id":"earth", "name":"Земля (временная)", "image":"textures/grass-ground.png", "repeatCells":12, "tint":"bd7954"},
-  {"id":"dark_grass", "name":"Тёмная трава", "image":"textures/grass-ground.png", "repeatCells":16, "tint":"648968"}
+  {
+    "id": "grass",
+    "name": "Grass (core)",
+    "image": "world/tilesets/sunny-hills/textures/meadow.png",
+    "repeatCells": 12,
+    "tint": "ffffff",
+    "group": "Core"
+  },
+  {
+    "id": "earth",
+    "name": "Earth (core)",
+    "image": "world/tilesets/sunny-hills/textures/dirt.png",
+    "repeatCells": 10,
+    "tint": "ffffff",
+    "group": "Core"
+  },
+  {
+    "id": "dark_grass",
+    "name": "Dark Grass (core)",
+    "image": "world/tilesets/sunny-hills/textures/meadow.png",
+    "repeatCells": 12,
+    "tint": "92a57e",
+    "group": "Core"
+  }
 ]

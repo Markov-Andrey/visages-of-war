@@ -53,8 +53,8 @@ void Renderer::drawMenu(const Simulation& game, const MenuState& menu, const Def
             const auto p = preview.project(crystal.center(), float(game.map().at(crystal.cell).height));
             crystalMapMarker(target_.Get(), brush_.Get(), worldAssets_, crystal, p);
         }
-        text(L"Тестовая долина", rect(layout.map.x + 22, layout.map.y + 217, 380, 34), 0xe5e8d7, true);
-        text(L"1 игрок   •   64 × 64   •   Высоты −1, 0, 1, 2", rect(layout.map.x + 22, layout.map.y + 260, 380, 26), 0x91aba5);
+        text(wide(game.mapName()), rect(layout.map.x + 22, layout.map.y + 217, 380, 34), 0xe5e8d7, true);
+        text(L"1 игрок   •   " + std::to_wstring(game.map().width()) + L" × " + std::to_wstring(game.map().height()), rect(layout.map.x + 22, layout.map.y + 260, 380, 26), 0x91aba5);
         text(L"Выбрана", rect(layout.map.x + 22, layout.map.y + 286, 380, 25), 0xa0c789);
         const auto& commander = definitions.commanders().at(menu.commanderIndex);
         text(L"Игрок 1", rect(layout.commander.x, layout.map.y + 4, 390, 40), 0xe5e8d7, true);

@@ -1,5 +1,6 @@
 #include "RenderSupport.hpp"
 #include "rts/TeamColor.hpp"
+#include "rts/SpriteIsland.hpp"
 
 namespace { constexpr auto buttonFrameAsset = L"ui/button-frame.png"; }
 
@@ -28,7 +29,7 @@ void Renderer::verifyAssets() {
     const auto definitions = Definitions::load(paths_.asset(L"data/catalog.json"));
     validateCombatAssets(definitions);
     // Decode all files, including on --verify-assets, without creating a window.
-    std::vector<std::filesystem::path> images{L"sprites/hall.png", L"sprites/worker.png", L"sprites/tree.png",
+    std::vector<std::filesystem::path> images{L"sprites/hall.png", L"sprites/worker.png",
         L"ui/menu/background.png", L"ui/menu/valeri.png", L"ui/logo.png", L"ui/project-icon.png"};
     if (std::filesystem::exists(paths_.assetRoot() / buttonFrameAsset)) images.emplace_back(buttonFrameAsset);
     for (const auto& [id, path] : worldAssets_.resourceIcons()) images.push_back(path);
@@ -72,6 +73,7 @@ void Renderer::verifyAssets() {
     for (const auto& name : images) {
         ComPtr<IWICBitmapDecoder> decoder;
         const auto path = paths_.asset(name);
+        if (imageSizes.contains(path)) continue;
         check(wic_->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ, WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf()));
         ComPtr<IWICBitmapFrameDecode> frame;
         check(decoder->GetFrame(0, frame.GetAddressOf()));
@@ -84,6 +86,10 @@ void Renderer::verifyAssets() {
         imageSizes[path] = {width, height};
         std::vector<BYTE> data(static_cast<size_t>(width) * height * 4);
         check(converter->CopyPixels(nullptr, width * 4, static_cast<UINT>(data.size()), data.data()));
+        // Verify every raw-sheet selection, even if it is outside the initial camera.
+        const SpritePixels sheet{int(width), int(height), std::move(data)};
+        for (const auto& object : worldAssets_.objects()) if (object.image == name && object.islandSeed)
+            extractSpriteIsland(sheet, {int(object.source[0]), int(object.source[1]), int(object.source[2]), int(object.source[3])}, *object.islandSeed);
     }
     for (const auto& [id, icon] : commandIcons) if (!icon.mask.empty() && imageSizes.at(icon.image) != imageSizes.at(icon.mask))
         throw std::runtime_error("Command icon team mask dimensions must match image: " + id);
@@ -148,7 +154,6 @@ void Renderer::loadResources() {
     loadBitmap(paths_.asset(L"sprites/hall.png"), hall_, 0, SpriteTeamMask::None, {}, true);
     loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_, SpriteTeamMask::Blue);
     loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_, SpriteTeamMask::Blue);
-    loadBitmap(paths_.asset(L"sprites/tree.png"), tree_, 0, SpriteTeamMask::None, {}, true);
     loadBitmap(paths_.asset(L"ui/menu/background.png"), menuBackground_);
     loadBitmap(paths_.asset(L"ui/menu/valeri.png"), menuForeground_);
     loadBitmap(paths_.asset(L"ui/logo.png"), logo_);

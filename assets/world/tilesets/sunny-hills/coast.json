@@ -1,0 +1,572 @@
+[
+  {
+    "id": "sunny_hills.coast.boulders",
+    "name": "Boulders",
+    "group": "Sunny Hills / Coast",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        24,
+        93,
+        316,
+        233
+      ],
+      "islandSeed": [
+        187,
+        95
+      ],
+      "size": [
+        76,
+        56.04
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.scrub_rock",
+    "name": "Scrub rock",
+    "group": "Sunny Hills / Coast",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        367,
+        73,
+        290,
+        277
+      ],
+      "islandSeed": [
+        505,
+        75
+      ],
+      "size": [
+        76,
+        72.59
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.boat",
+    "name": "Boat",
+    "group": "Sunny Hills / Coast",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        673,
+        84,
+        334,
+        262
+      ],
+      "islandSeed": [
+        686,
+        86
+      ],
+      "size": [
+        76,
+        59.61
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.mooring",
+    "name": "Mooring",
+    "group": "Sunny Hills / Coast",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        1022,
+        59,
+        236,
+        279
+      ],
+      "islandSeed": [
+        1157,
+        61
+      ],
+      "size": [
+        64.29,
+        76
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.cargo",
+    "name": "Cargo",
+    "group": "Sunny Hills / Coast",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        1311,
+        89,
+        284,
+        251
+      ],
+      "islandSeed": [
+        1376,
+        91
+      ],
+      "size": [
+        76,
+        67.17
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.fishing_nets",
+    "name": "Fishing nets",
+    "group": "Sunny Hills / Coast",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        24,
+        366,
+        302,
+        269
+      ],
+      "islandSeed": [
+        141,
+        368
+      ],
+      "size": [
+        76,
+        67.7
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.broken_amphora",
+    "name": "Broken amphora",
+    "group": "Sunny Hills / Coast",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        382,
+        427,
+        247,
+        218
+      ],
+      "islandSeed": [
+        472,
+        429
+      ],
+      "size": [
+        76,
+        67.08
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.driftwood",
+    "name": "Driftwood",
+    "group": "Sunny Hills / Coast",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        662,
+        429,
+        316,
+        209
+      ],
+      "islandSeed": [
+        957,
+        431
+      ],
+      "size": [
+        76,
+        50.27
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.cairn",
+    "name": "Cairn",
+    "group": "Sunny Hills / Coast",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        1008,
+        390,
+        245,
+        245
+      ],
+      "islandSeed": [
+        1136,
+        392
+      ],
+      "size": [
+        76.0,
+        76
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.dune_grass",
+    "name": "Dune grass",
+    "group": "Sunny Hills / Coast",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        1292,
+        347,
+        300,
+        285
+      ],
+      "islandSeed": [
+        1411,
+        349
+      ],
+      "size": [
+        76,
+        72.2
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.shell",
+    "name": "Shell",
+    "group": "Sunny Hills / Coast",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        57,
+        706,
+        199,
+        202
+      ],
+      "islandSeed": [
+        153,
+        708
+      ],
+      "size": [
+        74.87,
+        76
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.starfish",
+    "name": "Starfish",
+    "group": "Sunny Hills / Coast",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        354,
+        726,
+        238,
+        193
+      ],
+      "islandSeed": [
+        437,
+        728
+      ],
+      "size": [
+        76,
+        61.63
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.coral",
+    "name": "Coral",
+    "group": "Sunny Hills / Coast",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        667,
+        680,
+        259,
+        239
+      ],
+      "islandSeed": [
+        772,
+        682
+      ],
+      "size": [
+        76,
+        70.13
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.kelp",
+    "name": "Kelp",
+    "group": "Sunny Hills / Coast",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        972,
+        655,
+        286,
+        274
+      ],
+      "islandSeed": [
+        1079,
+        657
+      ],
+      "size": [
+        76,
+        72.81
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.coast.mossy_rock",
+    "name": "Mossy rock",
+    "group": "Sunny Hills / Coast",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/coast-props.png",
+      "source": [
+        1283,
+        691,
+        310,
+        239
+      ],
+      "islandSeed": [
+        1404,
+        693
+      ],
+      "size": [
+        76,
+        58.59
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  }
+]

@@ -8,14 +8,20 @@ foreach ($name in $applications) {
         throw "Package is missing $name.exe. Run scripts/build.ps1 -Configuration Release -Package first."
     }
 }
+$entries = @(
+    @{ Name = 'Visages of War'; App = 'Visages of War'; Arguments = '' },
+    @{ Name = 'Visages Forge'; App = 'Visages Forge'; Arguments = '' }
+)
 $shortcutShell = New-Object -ComObject WScript.Shell
 try {
-    foreach ($name in $applications) {
-        $target = (Resolve-Path -LiteralPath (Join-Path $packageDirectory "$name.exe")).Path
+    foreach ($entry in $entries) {
+        $name = $entry.Name
+        $app = $entry.App
+        $target = (Resolve-Path -LiteralPath (Join-Path $packageDirectory "$app.exe")).Path
         $shortcut = $shortcutShell.CreateShortcut((Join-Path $repoRoot "$name.lnk"))
         try {
             $shortcut.TargetPath = $target
-            $shortcut.Arguments = ''
+            $shortcut.Arguments = $entry.Arguments
             $shortcut.WorkingDirectory = $packageDirectory
             $shortcut.IconLocation = "$target,0"
             $shortcut.Description = $name

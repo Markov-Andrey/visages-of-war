@@ -1,0 +1,952 @@
+[
+  {
+    "id": "sunny_hills.shrub.laurel_1",
+    "name": "Laurel 1",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        266,
+        56,
+        202,
+        150
+      ],
+      "islandSeed": [
+        336,
+        56
+      ],
+      "size": [
+        74.07,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.laurel_2",
+    "name": "Laurel 2",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        517,
+        5,
+        201,
+        209
+      ],
+      "islandSeed": [
+        632,
+        5
+      ],
+      "size": [
+        52.89,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.laurel_3",
+    "name": "Laurel 3",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        777,
+        32,
+        228,
+        176
+      ],
+      "islandSeed": [
+        864,
+        32
+      ],
+      "size": [
+        71.25,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.laurel_4",
+    "name": "Laurel 4",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1074,
+        30,
+        225,
+        176
+      ],
+      "islandSeed": [
+        1189,
+        30
+      ],
+      "size": [
+        70.31,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.laurel_5",
+    "name": "Laurel 5",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1380,
+        8,
+        157,
+        212
+      ],
+      "islandSeed": [
+        1452,
+        8
+      ],
+      "size": [
+        40.73,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.myrtle_1",
+    "name": "Myrtle 1",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        261,
+        258,
+        214,
+        132
+      ],
+      "islandSeed": [
+        355,
+        258
+      ],
+      "size": [
+        76,
+        46.88
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.myrtle_2",
+    "name": "Myrtle 2",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        529,
+        222,
+        193,
+        178
+      ],
+      "islandSeed": [
+        613,
+        222
+      ],
+      "size": [
+        59.63,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.myrtle_3",
+    "name": "Myrtle 3",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        779,
+        225,
+        217,
+        170
+      ],
+      "islandSeed": [
+        892,
+        225
+      ],
+      "size": [
+        70.21,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.myrtle_4",
+    "name": "Myrtle 4",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1054,
+        226,
+        256,
+        170
+      ],
+      "islandSeed": [
+        1179,
+        226
+      ],
+      "size": [
+        76,
+        50.47
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.myrtle_5",
+    "name": "Myrtle 5",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1364,
+        228,
+        196,
+        172
+      ],
+      "islandSeed": [
+        1476,
+        228
+      ],
+      "size": [
+        62.67,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.rosemary_1",
+    "name": "Rosemary 1",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        278,
+        455,
+        203,
+        132
+      ],
+      "islandSeed": [
+        397,
+        455
+      ],
+      "size": [
+        76,
+        49.42
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.rosemary_2",
+    "name": "Rosemary 2",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        534,
+        403,
+        188,
+        191
+      ],
+      "islandSeed": [
+        609,
+        403
+      ],
+      "size": [
+        54.14,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.rosemary_3",
+    "name": "Rosemary 3",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        784,
+        412,
+        222,
+        178
+      ],
+      "islandSeed": [
+        890,
+        412
+      ],
+      "size": [
+        68.6,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.rosemary_4",
+    "name": "Rosemary 4",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1052,
+        422,
+        258,
+        177
+      ],
+      "islandSeed": [
+        1180,
+        422
+      ],
+      "size": [
+        76,
+        52.14
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.rosemary_5",
+    "name": "Rosemary 5",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1377,
+        405,
+        167,
+        198
+      ],
+      "islandSeed": [
+        1487,
+        405
+      ],
+      "size": [
+        46.39,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.juniper_1",
+    "name": "Juniper 1",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        271,
+        636,
+        214,
+        137
+      ],
+      "islandSeed": [
+        400,
+        636
+      ],
+      "size": [
+        76,
+        48.66
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.juniper_2",
+    "name": "Juniper 2",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        531,
+        596,
+        190,
+        191
+      ],
+      "islandSeed": [
+        646,
+        596
+      ],
+      "size": [
+        54.71,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.juniper_3",
+    "name": "Juniper 3",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        765,
+        598,
+        249,
+        184
+      ],
+      "islandSeed": [
+        906,
+        598
+      ],
+      "size": [
+        74.43,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.juniper_4",
+    "name": "Juniper 4",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1048,
+        634,
+        276,
+        144
+      ],
+      "islandSeed": [
+        1143,
+        634
+      ],
+      "size": [
+        76,
+        39.65
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.juniper_5",
+    "name": "Juniper 5",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1371,
+        601,
+        201,
+        185
+      ],
+      "islandSeed": [
+        1473,
+        601
+      ],
+      "size": [
+        59.76,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.oleander_1",
+    "name": "Oleander 1",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        276,
+        806,
+        203,
+        146
+      ],
+      "islandSeed": [
+        378,
+        806
+      ],
+      "size": [
+        76,
+        54.66
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.oleander_2",
+    "name": "Oleander 2",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        533,
+        788,
+        190,
+        167
+      ],
+      "islandSeed": [
+        628,
+        788
+      ],
+      "size": [
+        62.57,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.oleander_3",
+    "name": "Oleander 3",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        774,
+        791,
+        229,
+        170
+      ],
+      "islandSeed": [
+        932,
+        791
+      ],
+      "size": [
+        74.09,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.oleander_4",
+    "name": "Oleander 4",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1041,
+        802,
+        287,
+        156
+      ],
+      "islandSeed": [
+        1197,
+        802
+      ],
+      "size": [
+        76,
+        41.31
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.shrub.oleander_5",
+    "name": "Oleander 5",
+    "group": "Sunny Hills / Shrubs",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        1376,
+        790,
+        196,
+        172
+      ],
+      "islandSeed": [
+        1436,
+        790
+      ],
+      "size": [
+        62.67,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  }
+]

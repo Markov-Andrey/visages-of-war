@@ -37,7 +37,7 @@ public:
     void reloadWorldAssets(const WorldAssets& assets);
     void validateWorldAssets(const WorldAssets& assets);
     void validateCombatAssets(const Definitions& definitions);
-    void snapshotEditor(const WorldEditor& editor, const std::filesystem::path& output);
+    void snapshotEditor(const WorldEditor& editor, const std::filesystem::path& output, bool overview = false);
     void snapshotUnitDirections(const UnitSpriteDefinition& sprite, const std::filesystem::path& output);
     Vec2 size() const;
 private:
@@ -63,6 +63,7 @@ private:
     void drawCrystal(const Crystal& crystal, Vec2 ground, float zoom, bool glowing = false, std::uint64_t tick = 0);
     void drawResourceIcon(const std::string& id, UiRect bounds);
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
+    ID2D1Bitmap* worldBitmap(const WorldObjectDefinition& definition);
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);
     void corpseSprite(const Corpse& corpse, const WorldView& view, unsigned color);
     void bonesSprite(const Bones& bones, const WorldView& view);
@@ -112,6 +113,8 @@ private:
     WorldAssets worldAssets_;
     std::map<std::string,MaterialResource> materialResources_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> worldSprites_;
+    std::map<std::string, ComPtr<ID2D1Bitmap>> worldIslands_;
+    std::map<std::filesystem::path, SpritePixels> worldSourcePixels_;
     std::map<std::tuple<std::filesystem::path,unsigned,SpriteTeamMask>,ComPtr<ID2D1Bitmap>> unitSheets_;
     std::map<std::filesystem::path,ComPtr<ID2D1Bitmap>> unitUiImages_;
     std::map<unsigned, ComPtr<ID2D1RadialGradientBrush>> portraitGradients_;
@@ -158,7 +161,7 @@ private:
     MinimapRaster minimapRaster_;
     ComPtr<ID2D1Bitmap> fogBitmap_;
     ComPtr<ID2D1BitmapBrush> fogBrush_;
-    ComPtr<ID2D1Bitmap> hall_, worker_, enemy_, tree_, minimap_;
+    ComPtr<ID2D1Bitmap> hall_, worker_, enemy_, minimap_;
     ComPtr<ID2D1Bitmap> menuBackground_, menuForeground_, logo_, buttonFrame_;
     unsigned teamColor_ = teamRgb(TeamColor::Blue);
     unsigned enemyColor_ = teamRgb(TeamColor::Red);

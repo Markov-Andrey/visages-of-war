@@ -24,7 +24,7 @@ void GameApplication::resetCamera(bool immediate) {
     focus(center(game_.hall()) + Vec2{1, 2}, immediate);
 }
 bool GameApplication::cameraInputAllowed() const {
-    return menu_.page == MenuPage::Playing && !panning_ && !minimapDragging_ && !dragging_ &&
+    return menu_.page == MenuPage::Playing && !ui_.consoleOpen && !panning_ && !minimapDragging_ && !dragging_ &&
         !(GetAsyncKeyState(VK_CONTROL) & 0x8000);
 }
 Vec2 GameApplication::cameraEdgeDirection() const {

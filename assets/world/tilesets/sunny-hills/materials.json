@@ -1,0 +1,50 @@
+[
+  {
+    "id": "sunny_hills.meadow",
+    "name": "Meadow",
+    "image": "world/tilesets/sunny-hills/textures/meadow.png",
+    "repeatCells": 12,
+    "tint": "ffffff",
+    "group": "Sunny Hills / Ground"
+  },
+  {
+    "id": "sunny_hills.dry_grass",
+    "name": "Dry grass",
+    "image": "world/tilesets/sunny-hills/textures/dry-grass.png",
+    "repeatCells": 12,
+    "tint": "ffffff",
+    "group": "Sunny Hills / Ground"
+  },
+  {
+    "id": "sunny_hills.dirt",
+    "name": "Dirt",
+    "image": "world/tilesets/sunny-hills/textures/dirt.png",
+    "repeatCells": 10,
+    "tint": "ffffff",
+    "group": "Sunny Hills / Ground"
+  },
+  {
+    "id": "sunny_hills.sand",
+    "name": "Sand",
+    "image": "world/tilesets/sunny-hills/textures/sand.png",
+    "repeatCells": 12,
+    "tint": "ffffff",
+    "group": "Sunny Hills / Ground"
+  },
+  {
+    "id": "sunny_hills.cobblestone",
+    "name": "Cobblestone",
+    "image": "world/tilesets/sunny-hills/textures/cobblestone.png",
+    "repeatCells": 8,
+    "tint": "ffffff",
+    "group": "Sunny Hills / Ground"
+  },
+  {
+    "id": "sunny_hills.ancient_paving",
+    "name": "Ancient paving",
+    "image": "world/tilesets/sunny-hills/textures/ancient-paving.png",
+    "repeatCells": 8,
+    "tint": "ffffff",
+    "group": "Sunny Hills / Ground"
+  }
+]

@@ -3,6 +3,7 @@
 #include "rts/Paths.hpp"
 #include <array>
 #include <map>
+#include <optional>
 
 namespace rts {
 struct TerrainMaterial {
@@ -10,6 +11,7 @@ struct TerrainMaterial {
     std::filesystem::path image;
     float repeatCells = 16;
     unsigned tint = 0xffffff;
+    std::string group = "Core";
 };
 struct WorldObjectDefinition {
     std::string id, name;
@@ -22,6 +24,8 @@ struct WorldObjectDefinition {
     std::array<float, 4> source{}; // Pixel rectangle; zero width/height means the whole image.
     Vec2 size{64, 64}, anchor{.5f, 1};
     bool pixelArt{};
+    std::string group = "Core";
+    std::optional<Cell> islandSeed; // Source-image pixel selecting one disconnected silhouette in a raw sheet.
 };
 struct BonesSpriteDefinition {
     std::filesystem::path image;

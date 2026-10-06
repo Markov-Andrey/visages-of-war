@@ -6,6 +6,24 @@ void editorTests(TestSuite& test, const TestContext& context) {
     const auto& worldPaths=context.worldPaths;
     const auto& worldAssets=context.worldAssets;
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
+    test("Palette groups expose every Sunny Hills category and preserve authored state", [&] {
+        const auto definitions=rts::Definitions::load(assets/"data/catalog.json");
+        rts::WorldEditor editor(loadScenario(assets/"maps/demo.rtsmap"),worldAssets,definitions);
+        editor.setTool(rts::EditorTool::Environment);
+        const auto all=editor.choices(); const auto groups=editor.groups();
+        require(groups.size()>=7,"Sunny Hills categories missing from palette");
+        size_t count=0;
+        for(size_t i=1;i<groups.size();++i) {
+            editor.cycleGroup(1); const auto choices=editor.choices();
+            require(!choices.empty()&&editor.choice==0,"Group change retained an invalid selection");
+            for(const auto& item:choices) require(item.group==editor.paletteGroup,"Unrelated asset leaked into group");
+            count+=choices.size();
+        }
+        require(count==all.size()&&!editor.dirty&&!editor.undo(),"Filtering lost assets or mutated the document");
+        editor.cycleGroup(1); require(editor.paletteGroup.empty()&&editor.choices().size()==all.size(),"All assets group did not wrap");
+        editor.cycleGroup(-1); editor.setTool(rts::EditorTool::Decoration);
+        require(editor.paletteGroup.empty(),"Changing tools retained a stale group filter");
+    });
     test("Authored map round trips all landscape layers and preserves files on invalid save", [&] {
         rts::Scenario s{rts::Map(24,24),{1,1},{4,3},{}}; s.name="Поляна — тест"; s.heroSpawn=rts::Cell{5,3}; s.startingCrystals=300;
         for(int y=0;y<24;++y) for(int x=16;x<24;++x) s.map.at({x,y}).height=1;
@@ -171,7 +189,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
     test("World asset catalog can grow and rejects escaping paths and cosmetic collision", [&] {
         const auto root=worldPaths.writable(L"catalog-test/world/catalog.json").parent_path().parent_path();
         const rts::Paths fixture(root,root/"user");
-        std::filesystem::copy_file(assets/"sprites/tree.png",root/"image.png",std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::copy_file(assets/"sprites/worker.png",root/"image.png",std::filesystem::copy_options::overwrite_existing);
         writeMap(root/"world/catalog.json",{{"materialFiles",{"world/materials.json"}},{"objectFiles",{"world/objects.json"}},{"remainsFile","world/remains.json"},{"resourcesFile","world/resources.json"}});
         std::ifstream resourceFile(assets/"world/resources.json"); auto resources=Json::parse(resourceFile);
         for (auto& icon : resources["icons"]) icon="image.png";

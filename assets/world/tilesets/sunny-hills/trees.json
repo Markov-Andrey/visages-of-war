@@ -1,0 +1,1522 @@
+[
+  {
+    "id": "sunny_hills.tree.orange_1",
+    "name": "Orange 1",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/orange.png",
+      "source": [
+        22,
+        130,
+        393,
+        490
+      ],
+      "islandSeed": [
+        218,
+        132
+      ],
+      "size": [
+        93.92,
+        117.1
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.orange_2",
+    "name": "Orange 2",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/orange.png",
+      "source": [
+        431,
+        73,
+        426,
+        548
+      ],
+      "islandSeed": [
+        600,
+        75
+      ],
+      "size": [
+        101.8,
+        130.96
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.orange_3",
+    "name": "Orange 3",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/orange.png",
+      "source": [
+        870,
+        96,
+        436,
+        538
+      ],
+      "islandSeed": [
+        1080,
+        98
+      ],
+      "size": [
+        104.19,
+        128.57
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.orange_4",
+    "name": "Orange 4",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/orange.png",
+      "source": [
+        1326,
+        91,
+        377,
+        538
+      ],
+      "islandSeed": [
+        1518,
+        93
+      ],
+      "size": [
+        90.09,
+        128.57
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.orange_5",
+    "name": "Orange 5",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/orange.png",
+      "source": [
+        1713,
+        209,
+        441,
+        414
+      ],
+      "islandSeed": [
+        1907,
+        211
+      ],
+      "size": [
+        105.38,
+        98.93
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.oak_1",
+    "name": "Oak 1",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/oak.png",
+      "source": [
+        9,
+        140,
+        405,
+        502
+      ],
+      "islandSeed": [
+        194,
+        142
+      ],
+      "size": [
+        124.25,
+        154.01
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.oak_2",
+    "name": "Oak 2",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/oak.png",
+      "source": [
+        363,
+        43,
+        472,
+        607
+      ],
+      "islandSeed": [
+        591,
+        45
+      ],
+      "size": [
+        144.81,
+        186.23
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.oak_3",
+    "name": "Oak 3",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/oak.png",
+      "source": [
+        769,
+        71,
+        558,
+        585
+      ],
+      "islandSeed": [
+        1059,
+        73
+      ],
+      "size": [
+        171.2,
+        179.48
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.oak_4",
+    "name": "Oak 4",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/oak.png",
+      "source": [
+        1312,
+        68,
+        461,
+        573
+      ],
+      "islandSeed": [
+        1551,
+        70
+      ],
+      "size": [
+        141.44,
+        175.8
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.oak_5",
+    "name": "Oak 5",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/oak.png",
+      "source": [
+        1711,
+        177,
+        451,
+        479
+      ],
+      "islandSeed": [
+        1964,
+        179
+      ],
+      "size": [
+        138.37,
+        146.96
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.pomegranate_1",
+    "name": "Pomegranate 1",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/pomegranate.png",
+      "source": [
+        22,
+        154,
+        351,
+        487
+      ],
+      "islandSeed": [
+        183,
+        156
+      ],
+      "size": [
+        77.47,
+        107.49
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.pomegranate_2",
+    "name": "Pomegranate 2",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/pomegranate.png",
+      "source": [
+        380,
+        168,
+        470,
+        478
+      ],
+      "islandSeed": [
+        568,
+        170
+      ],
+      "size": [
+        103.73,
+        105.5
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.pomegranate_3",
+    "name": "Pomegranate 3",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/pomegranate.png",
+      "source": [
+        845,
+        54,
+        427,
+        593
+      ],
+      "islandSeed": [
+        989,
+        56
+      ],
+      "size": [
+        94.24,
+        130.88
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.pomegranate_4",
+    "name": "Pomegranate 4",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/pomegranate.png",
+      "source": [
+        1266,
+        97,
+        461,
+        554
+      ],
+      "islandSeed": [
+        1468,
+        99
+      ],
+      "size": [
+        101.75,
+        122.28
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.pomegranate_5",
+    "name": "Pomegranate 5",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/pomegranate.png",
+      "source": [
+        1738,
+        173,
+        407,
+        474
+      ],
+      "islandSeed": [
+        1985,
+        175
+      ],
+      "size": [
+        89.83,
+        104.62
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.fig_1",
+    "name": "Fig 1",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/fig.png",
+      "source": [
+        22,
+        147,
+        319,
+        490
+      ],
+      "islandSeed": [
+        160,
+        149
+      ],
+      "size": [
+        88.93,
+        136.6
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.fig_2",
+    "name": "Fig 2",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/fig.png",
+      "source": [
+        352,
+        208,
+        501,
+        440
+      ],
+      "islandSeed": [
+        521,
+        210
+      ],
+      "size": [
+        139.67,
+        122.66
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.fig_3",
+    "name": "Fig 3",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/fig.png",
+      "source": [
+        820,
+        88,
+        467,
+        560
+      ],
+      "islandSeed": [
+        1023,
+        90
+      ],
+      "size": [
+        130.19,
+        156.12
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.fig_4",
+    "name": "Fig 4",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/fig.png",
+      "source": [
+        1278,
+        157,
+        458,
+        496
+      ],
+      "islandSeed": [
+        1541,
+        159
+      ],
+      "size": [
+        127.68,
+        138.27
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.fig_5",
+    "name": "Fig 5",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/fig.png",
+      "source": [
+        1748,
+        208,
+        404,
+        429
+      ],
+      "islandSeed": [
+        1993,
+        210
+      ],
+      "size": [
+        112.63,
+        119.6
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.cypress_1",
+    "name": "Cypress 1",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/cypress.png",
+      "source": [
+        168,
+        45,
+        161,
+        652
+      ],
+      "islandSeed": [
+        248,
+        47
+      ],
+      "size": [
+        45.37,
+        183.73
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.cypress_2",
+    "name": "Cypress 2",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/cypress.png",
+      "source": [
+        533,
+        13,
+        247,
+        685
+      ],
+      "islandSeed": [
+        687,
+        15
+      ],
+      "size": [
+        69.6,
+        193.03
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.cypress_3",
+    "name": "Cypress 3",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/cypress.png",
+      "source": [
+        941,
+        11,
+        318,
+        691
+      ],
+      "islandSeed": [
+        1105,
+        13
+      ],
+      "size": [
+        89.61,
+        194.72
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.cypress_4",
+    "name": "Cypress 4",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/cypress.png",
+      "source": [
+        1450,
+        18,
+        216,
+        682
+      ],
+      "islandSeed": [
+        1545,
+        20
+      ],
+      "size": [
+        60.87,
+        192.18
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.cypress_5",
+    "name": "Cypress 5",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/cypress.png",
+      "source": [
+        1814,
+        3,
+        261,
+        696
+      ],
+      "islandSeed": [
+        1897,
+        5
+      ],
+      "size": [
+        73.55,
+        196.13
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.lemon_1",
+    "name": "Lemon 1",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/lemon.png",
+      "source": [
+        24,
+        167,
+        396,
+        439
+      ],
+      "islandSeed": [
+        259,
+        169
+      ],
+      "size": [
+        93.57,
+        103.73
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.lemon_2",
+    "name": "Lemon 2",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/lemon.png",
+      "source": [
+        438,
+        107,
+        406,
+        504
+      ],
+      "islandSeed": [
+        570,
+        109
+      ],
+      "size": [
+        95.93,
+        119.09
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.lemon_3",
+    "name": "Lemon 3",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/lemon.png",
+      "source": [
+        875,
+        159,
+        412,
+        447
+      ],
+      "islandSeed": [
+        1085,
+        161
+      ],
+      "size": [
+        97.35,
+        105.62
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.lemon_4",
+    "name": "Lemon 4",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/lemon.png",
+      "source": [
+        1320,
+        89,
+        410,
+        533
+      ],
+      "islandSeed": [
+        1478,
+        91
+      ],
+      "size": [
+        96.88,
+        125.95
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.lemon_5",
+    "name": "Lemon 5",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/lemon.png",
+      "source": [
+        1733,
+        242,
+        415,
+        364
+      ],
+      "islandSeed": [
+        1899,
+        244
+      ],
+      "size": [
+        98.06,
+        86.01
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.olive_1",
+    "name": "Olive 1",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/olive.png",
+      "source": [
+        23,
+        168,
+        386,
+        434
+      ],
+      "islandSeed": [
+        248,
+        170
+      ],
+      "size": [
+        109.25,
+        122.83
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.olive_2",
+    "name": "Olive 2",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/olive.png",
+      "source": [
+        430,
+        155,
+        455,
+        447
+      ],
+      "islandSeed": [
+        604,
+        157
+      ],
+      "size": [
+        128.77,
+        126.51
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.olive_3",
+    "name": "Olive 3",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/olive.png",
+      "source": [
+        899,
+        73,
+        379,
+        534
+      ],
+      "islandSeed": [
+        1110,
+        75
+      ],
+      "size": [
+        107.26,
+        151.13
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.olive_4",
+    "name": "Olive 4",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/olive.png",
+      "source": [
+        1296,
+        133,
+        438,
+        479
+      ],
+      "islandSeed": [
+        1477,
+        135
+      ],
+      "size": [
+        123.97,
+        135.57
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.olive_5",
+    "name": "Olive 5",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/olive.png",
+      "source": [
+        1751,
+        141,
+        408,
+        461
+      ],
+      "islandSeed": [
+        1955,
+        143
+      ],
+      "size": [
+        115.47,
+        130.47
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.stone_pine_1",
+    "name": "Stone pine 1",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/stone-pine.png",
+      "source": [
+        10,
+        127,
+        412,
+        481
+      ],
+      "islandSeed": [
+        201,
+        129
+      ],
+      "size": [
+        166.68,
+        194.6
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.stone_pine_2",
+    "name": "Stone pine 2",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/stone-pine.png",
+      "source": [
+        419,
+        138,
+        449,
+        465
+      ],
+      "islandSeed": [
+        600,
+        140
+      ],
+      "size": [
+        181.65,
+        188.12
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.stone_pine_3",
+    "name": "Stone pine 3",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/stone-pine.png",
+      "source": [
+        815,
+        127,
+        484,
+        480
+      ],
+      "islandSeed": [
+        1061,
+        129
+      ],
+      "size": [
+        195.81,
+        194.19
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.stone_pine_4",
+    "name": "Stone pine 4",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/stone-pine.png",
+      "source": [
+        1272,
+        148,
+        439,
+        455
+      ],
+      "islandSeed": [
+        1615,
+        150
+      ],
+      "size": [
+        177.61,
+        184.08
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills.tree.stone_pine_5",
+    "name": "Stone pine 5",
+    "group": "Sunny Hills / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/stone-pine.png",
+      "source": [
+        1713,
+        120,
+        450,
+        486
+      ],
+      "islandSeed": [
+        1897,
+        122
+      ],
+      "size": [
+        182.06,
+        196.62
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  }
+]

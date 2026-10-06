@@ -35,7 +35,12 @@ Visibility FogOfWar::at(Cell cell) const {
     if (cell.x < 0 || cell.y < 0 || cell.x >= width_ || cell.y >= height_) return Visibility::Unexplored;
     return cells_[static_cast<size_t>(cell.y) * width_ + cell.x];
 }
+void FogOfWar::revealAll() {
+    revealed_ = true;
+    std::fill(cells_.begin(), cells_.end(), Visibility::Visible);
+}
 void FogOfWar::update(const Map& map, std::span<const VisionSource> sources) {
+    if (revealed_) return;
     for (auto& cell : cells_) if (cell == Visibility::Visible) cell = Visibility::Explored;
     for (const auto& source : sources) {
         if (!map.contains(source.cell)) continue;

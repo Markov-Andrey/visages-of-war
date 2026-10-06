@@ -10,11 +10,13 @@ class FogOfWar {
 public:
     FogOfWar(int width, int height);
     void update(const Map& map, std::span<const VisionSource> sources);
+    void revealAll();
     Visibility at(Cell cell) const;
     bool visible(Cell cell) const { return at(cell) == Visibility::Visible; }
     bool explored(Cell cell) const { return at(cell) != Visibility::Unexplored; }
 private:
     int width_, height_;
+    bool revealed_{};
     std::vector<Visibility> cells_;
 };
 }

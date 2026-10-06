@@ -1,10 +1,150 @@
 [
-  {"id":"tree", "name":"Дерево", "gameplay":true, "kind":"tree", "footprint":[1,1], "collision":[true], "health":100, "blocksVision":true,
-   "sprite":{"image":"sprites/tree.png", "source":[0,0,16,16], "size":[110,110], "anchor":[0.5,0.909091], "pixelArt":true}},
-  {"id":"rock", "name":"Скала", "gameplay":true, "kind":"rock", "footprint":[2,2], "collision":[true,true,true,false], "health":300, "blocksVision":true,
-   "sprite":{"image":"", "source":[0,0,0,0], "size":[100,104], "anchor":[0.5,0.7]}},
-  {"id":"arch", "name":"Арка", "gameplay":true, "kind":"arch", "footprint":[3,1], "collision":[true,false,true], "health":500, "blocksVision":false,
-   "sprite":{"image":"", "source":[0,0,0,0], "size":[164,110], "anchor":[0.5,1]}},
-  {"id":"small_bush", "name":"Кустик (декор)", "gameplay":false, "kind":"decoration", "footprint":[1,1], "collision":[false], "health":1, "blocksVision":false,
-   "sprite":{"image":"sprites/tree.png", "source":[0,0,16,12], "size":[34,26], "anchor":[0.5,0.85], "pixelArt":true}}
+  {
+    "id": "tree",
+    "name": "Oak (core)",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/trees/oak.png",
+      "source": [
+        9,
+        140,
+        405,
+        502
+      ],
+      "islandSeed": [
+        194,
+        142
+      ],
+      "size": [
+        124.25,
+        154.01
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "rock",
+    "name": "Rock (partial footprint)",
+    "gameplay": true,
+    "kind": "rock",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      false
+    ],
+    "health": 300,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/rocks-medium.png",
+      "source": [
+        77,
+        5,
+        500,
+        412
+      ],
+      "islandSeed": [
+        373,
+        7
+      ],
+      "size": [
+        152,
+        125.25
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "arch",
+    "name": "Arch (open passage)",
+    "gameplay": true,
+    "kind": "arch",
+    "footprint": [
+      3,
+      1
+    ],
+    "collision": [
+      true,
+      false,
+      true
+    ],
+    "health": 500,
+    "blocksVision": false,
+    "sprite": {
+      "image": "",
+      "source": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "size": [
+        164,
+        110
+      ],
+      "anchor": [
+        0.5,
+        1
+      ]
+    }
+  },
+  {
+    "id": "small_bush",
+    "name": "Laurel (core)",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills/sprites/shrubs.png",
+      "source": [
+        266,
+        56,
+        202,
+        150
+      ],
+      "islandSeed": [
+        336,
+        56
+      ],
+      "size": [
+        74.07,
+        55
+      ],
+      "anchor": [
+        0.5,
+        0.86
+      ],
+      "pixelArt": false
+    }
+  }
 ]
