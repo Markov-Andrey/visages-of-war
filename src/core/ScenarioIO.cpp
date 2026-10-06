@@ -44,6 +44,14 @@ void reserveScenarioHall(Scenario& s, Cell footprint) {
     occupyHall(map, s.hall, footprint);
     s.map = std::move(map); s.hallFootprint = footprint;
 }
+void validatePaintStamp(const Map& map, const PaintStamp& p) {
+    if (!inside(map,p.position) || !range(p.radius,.1f,16) || !range(p.opacity,.01f,1) || !range(p.hardness,0,1))
+        throw std::runtime_error("Invalid paint brush data");
+}
+void validateDecoration(const Map& map, const Decoration& d) {
+    if (d.id == 0 || d.id >= 100000000 || !inside(map,d.position) || !range(d.scale,.1f,8) || !range(d.rotation,-360,360))
+        throw std::runtime_error("Invalid decoration placement");
+}
 void rebuildScenario(Scenario& s, Cell hallFootprint) {
     if (hallFootprint != Cell{}) s.hallFootprint = hallFootprint;
     auto& m = s.map;
@@ -75,12 +83,12 @@ void rebuildScenario(Scenario& s, Cell hallFootprint) {
         if (!m.walkable(c, MovementType::Amphibious) || !workers.insert({c.x,c.y}).second) throw std::runtime_error("Invalid worker spawn");
     if (s.heroSpawn && !m.contains(*s.heroSpawn)) throw std::runtime_error("Hero spawn outside map");
     for (const auto& u : s.units) if (!m.contains(u.cell) || u.owner >= neutralPlayer || u.definitionId.empty()) throw std::runtime_error("Invalid unit spawn");
-    for (const auto& d : s.landscape.decorations)
-        if (d.id == 0 || d.id >= 100000000 || !ids.insert(d.id).second || !inside(m,d.position) || !range(d.scale,.1f,8) || !range(d.rotation,-360,360))
-            throw std::runtime_error("Invalid decoration placement");
-    if (s.landscape.paint.size() > 200000) throw std::runtime_error("Too many paint stamps");
-    for (const auto& p : s.landscape.paint)
-        if (!inside(m,p.position) || !range(p.radius,.1f,16) || !range(p.opacity,.01f,1) || !range(p.hardness,0,1)) throw std::runtime_error("Invalid paint brush data");
+    for (const auto& d : s.landscape.decorations) {
+        validateDecoration(m,d);
+        if (!ids.insert(d.id).second) throw std::runtime_error("Invalid decoration placement");
+    }
+    if (s.landscape.paint.size() > Landscape::maximumPaintStamps) throw std::runtime_error("Too many paint stamps");
+    for (const auto& p : s.landscape.paint) validatePaintStamp(m,p);
     m.rebuildVisionBlockers(s.environment);
 }
 Scenario loadScenario(const std::filesystem::path& path) {

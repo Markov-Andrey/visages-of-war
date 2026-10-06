@@ -39,7 +39,7 @@ try {
     if ($Benchmark) {
         & $cmakeExe --build --preset $Configuration.ToLowerInvariant() --target rts_benchmarks --parallel
         if ($LASTEXITCODE -ne 0) { throw 'Benchmark build failed.' }
-        & (Join-Path $repoRoot "out/build/windows-x64/$Configuration/rts_benchmarks.exe") |
+        & (Join-Path $repoRoot "out/build/windows-x64/bin/$Configuration/rts_benchmarks.exe") |
             Tee-Object -FilePath (Join-Path $repoRoot "out/build/windows-x64/performance-$Configuration.txt")
         if ($LASTEXITCODE -ne 0) { throw 'Benchmark failed.' }
     }

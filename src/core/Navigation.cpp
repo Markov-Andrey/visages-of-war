@@ -1,21 +1,53 @@
 #include "rts/Navigation.hpp"
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <limits>
 #include <queue>
 
 namespace rts {
 namespace {
+struct SearchWorkspace {
+    std::vector<int> cost, parent;
+    std::vector<std::uint32_t> visited, blocked;
+    std::uint32_t generation{};
+    bool inUse{};
+
+    void begin(size_t count) {
+        cost.resize(count); parent.resize(count);
+        visited.resize(count); blocked.resize(count);
+        if (++generation == 0) {
+            std::fill(visited.begin(), visited.end(), 0);
+            std::fill(blocked.begin(), blocked.end(), 0);
+            generation = 1;
+        }
+    }
+};
+struct SearchLease {
+    SearchWorkspace& workspace;
+    explicit SearchLease(SearchWorkspace& value) : workspace(value) { workspace.inUse = true; }
+    ~SearchLease() { workspace.inUse = false; }
+    SearchLease(const SearchLease&) = delete;
+    SearchLease& operator=(const SearchLease&) = delete;
+};
 std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell> goals, std::span<const Cell> occupied,
     MovementType movement, Vec2 position, float radius, std::span<const Circle> obstacles, std::optional<Vec2> destination = {}, int expansionLimit = 0) {
     if (!map.walkable(start, movement) || goals.empty()) return std::nullopt;
-    std::vector<bool> blocked(static_cast<size_t>(map.width()) * map.height());
-    for (Cell c : occupied) if (map.contains(c) && c != start) blocked[static_cast<size_t>(c.y) * map.width() + c.x] = true;
+    // Each thread owns its scratch memory. A nested search gets independent
+    // storage, and generation tags discard previous searches without a map-wide fill.
+    thread_local SearchWorkspace cached;
+    SearchWorkspace nested;
+    auto& workspace = cached.inUse ? nested : cached;
+    const SearchLease lease(workspace);
+    workspace.begin(static_cast<size_t>(map.width()) * map.height());
+    const auto generation = workspace.generation;
+    auto& blocked = workspace.blocked;
+    for (Cell c : occupied) if (map.contains(c) && c != start) blocked[static_cast<size_t>(c.y) * map.width() + c.x] = generation;
     const auto clear = [&](Vec2 from, Vec2 to) {
         return std::none_of(obstacles.begin(), obstacles.end(), [&](Circle other) { return sweptCircleIntersects(from, to, radius, other); });
     };
     const auto point = [&](Cell c) { return destination && c == goals.front() ? *destination : center(c); };
-    const auto free = [&](Cell c) { return map.walkable(c, movement) && !blocked[static_cast<size_t>(c.y) * map.width() + c.x] &&
+    const auto free = [&](Cell c) { return map.walkable(c, movement) && blocked[static_cast<size_t>(c.y) * map.width() + c.x] != generation &&
         (radius == 0 || clear(point(c), point(c))); };
     std::vector<Cell> validGoals;
     for (Cell goal : goals) if (free(goal) && (radius == 0 || goal != start ||
@@ -23,7 +55,7 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
     if (validGoals.empty()) return std::nullopt;
     const auto index = [&](Cell c) { return c.y * map.width() + c.x; };
     const auto cell = [&](int i) { return Cell{i % map.width(), i / map.width()}; };
-    const auto unoccupied = [&](Cell c) { return !blocked[index(c)]; };
+    const auto unoccupied = [&](Cell c) { return blocked[index(c)] != generation; };
     const auto heuristic = [&](Cell c) {
         int best = std::numeric_limits<int>::max();
         for (Cell g : validGoals) {
@@ -46,9 +78,12 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
         return a.id > b.id; // Stable tie breaking for repeatable simulation.
     };
     std::priority_queue<Entry, std::vector<Entry>, decltype(compare)> open(compare);
-    const auto count = static_cast<size_t>(map.width()) * map.height();
-    std::vector<int> cost(count, std::numeric_limits<int>::max()), parent(count, -1);
+    auto& cost = workspace.cost;
+    auto& parent = workspace.parent;
+    auto& visited = workspace.visited;
     cost[index(start)] = 0;
+    parent[index(start)] = -1;
+    visited[index(start)] = generation;
     open.push({heuristic(start), 0, index(start), 0});
     constexpr std::array<Cell, 8> directions{{{1, 0}, {0, 1}, {-1, 0}, {0, -1}, {1, 1}, {-1, 1}, {-1, -1}, {1, -1}}};
     int expanded = 0;
@@ -77,7 +112,8 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
             }
             const int newCost = current.g + ((d.x && d.y) ? 14 : 10);
             const int next = index(to);
-            if (newCost >= cost[next]) continue;
+            if (visited[next] == generation && newCost >= cost[next]) continue;
+            visited[next] = generation;
             cost[next] = newCost;
             parent[next] = current.id;
             open.push({newCost + heuristic(to), newCost, next, deviation(to)});

@@ -107,19 +107,27 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
         const auto group = nextMoveGroup_++;
         // Publish membership together before calculating any routes. Unit iteration order
         // must not turn the other selected members into stationary obstacles.
-        float speed = 15;
-        for (const auto& destination : destinations) speed = std::min(speed, unit(destination.id)->definition.movementPerSecond);
+        float speed = 15, groupRadius = 0;
+        std::vector<Unit*> participants;
+        participants.reserve(destinations.size());
         for (const auto& destination : destinations) {
             auto* u = mutableUnit(destination.id);
+            participants.push_back(u);
+            speed = std::min(speed, u->definition.movementPerSecond);
+            if (destinations.size() > 1)
+                groupRadius = std::max(groupRadius, 1.75f * std::sqrt(lengthSquared(destination.position - center(c))));
+        }
+        for (size_t i = 0; i < destinations.size(); ++i) {
+            const auto& destination = destinations[i];
+            auto* u = participants[i];
             u->moveGroup = group; u->formationForward = destination.forward; u->groupSpeed = speed;
             u->groupTarget = c;
-            u->groupRadius = 0;
-            if (destinations.size() > 1) for (const auto& d : destinations)
-                u->groupRadius = std::max(u->groupRadius, 1.75f * std::sqrt(lengthSquared(d.position - center(c))));
+            u->groupRadius = groupRadius;
         }
         std::array<std::optional<RouteField>, 4> fields;
-        for (const auto& destination : destinations) {
-            auto* u = mutableUnit(destination.id);
+        for (size_t i = 0; i < destinations.size(); ++i) {
+            const auto& destination = destinations[i];
+            auto* u = participants[i];
             if (kind == OrderKind::Patrol && lengthSquared(destination.position - u->position) < 1e-8f) continue;
             // Shared terrain guidance is enough for a moving crowd. Other units
             // are handled locally; their changing positions never invalidate this field.
@@ -132,7 +140,8 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
                 auto& field = fields[static_cast<size_t>(u->definition.movement)];
                 if (!field) {
                     std::vector<Cell> goals;
-                    for (const auto& d : destinations) if (unit(d.id)->definition.movement == u->definition.movement) goals.push_back(d.cell);
+                    for (size_t j = 0; j < destinations.size(); ++j)
+                        if (participants[j]->definition.movement == u->definition.movement) goals.push_back(destinations[j].cell);
                     field = makeRouteField(map(), goals, u->definition.movement);
                 }
                 path = fieldPath(map(), *field, u->position, destination.cell, u->definition.collisionRadius);

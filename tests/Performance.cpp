@@ -2,6 +2,7 @@
 #include "rts/Navigation.hpp"
 #include "rts/Formation.hpp"
 #include "rts/Simulation.hpp"
+#include "rts/WorldEditor.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -62,6 +63,25 @@ void combatBenchmark() {
                   << " ms; p50=" << samples[150] << " ms; p95=" << samples[285]
                   << " ms; max=" << samples.back() << " ms; damage=" << damage << "; engaged=" << engaged << std::endl;
     }
+}
+void editorBenchmark() {
+    const auto paths = rts::Paths::discover();
+    const auto assets = rts::WorldAssets::load(paths);
+    const auto definitions = rts::Definitions::load(paths.asset(L"data/catalog.json"));
+    rts::Scenario scenario{rts::Map(256, 256), {1, 1}, {4, 3}, {}};
+    for (int y = 20; y < 240; y += 8) for (int x = 20; x < 240; x += 8)
+        scenario.environment.push_back(assets.instantiate("tree", 1000 + static_cast<rts::EntityId>(scenario.environment.size()), {x, y}));
+    scenario.landscape.paint.resize(2000, {"earth", {8.5f, 8.5f}, 1.5f, .65f, .4f, false});
+    rts::WorldEditor editor(std::move(scenario), assets, definitions);
+    editor.radius = .75f;
+    measure("editor: 256x256 / 784 trees / 2000 stamps / stroke+undo+redo", [&] {
+        editor.beginStroke();
+        editor.apply({8.5f, 9.5f}); editor.apply({72.5f, 9.5f}); editor.endStroke();
+        const auto count = editor.scenario().landscape.paint.size();
+        const bool undone = editor.undo(), redone = editor.redo();
+        editor.undo(); // Each sample starts with the same authored document.
+        return static_cast<std::uint64_t>(count * (undone && redone));
+    });
 }
 }
 
@@ -180,4 +200,15 @@ int main(int argc, char** argv) {
         }
         return checksum;
     });
+    rts::Map large(512, 512);
+    measure("navigation: 512 short routes on 512x512 / limit 192", [&] {
+        std::uint64_t checksum = 0;
+        for (int i = 0; i < 512; ++i) {
+            const float y = 2.5f + i % 500;
+            const auto path = rts::findUnitPathTo(large, {2.5f, y}, {10.5f, y}, {}, .35f, rts::MovementType::Walking, 192);
+            if (path) checksum += path->cost + path->cells.size();
+        }
+        return checksum;
+    });
+    editorBenchmark();
 }

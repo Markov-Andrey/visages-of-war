@@ -19,6 +19,7 @@ struct Decoration {
     float scale = 1, rotation{};
 };
 struct Landscape {
+    static constexpr size_t maximumPaintStamps = 200000;
     std::string baseMaterial = "grass";
     std::vector<PaintStamp> paint;
     std::vector<Decoration> decorations;

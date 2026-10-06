@@ -97,17 +97,30 @@ bool WorldEditor::apply(Vec2 p) {
     last_=p; strokeChanged_=strokeChanged_||changed; return changed;
 }
 bool WorldEditor::applyOne(Vec2 p) {
-    auto s=scenario_; const Cell c{int(std::floor(p.x)),int(std::floor(p.y))};
+    const Cell c{int(std::floor(p.x)),int(std::floor(p.y))};
     const auto id=selected(); bool changed=false;
     try {
+        // Cosmetic edits validate only the new data. beginStroke already owns
+        // the single full snapshot needed for undo; existing derived maps stay valid.
         if(tool==EditorTool::Paint || tool==EditorTool::ErasePaint) {
             assets_->material(id);
-            s.landscape.paint.push_back({id,p,radius,opacity,hardness,tool==EditorTool::ErasePaint}); changed=true;
-        } else if(tool==EditorTool::Base) { s.landscape.baseMaterial=id; changed=true; }
+            const PaintStamp stamp{id,p,radius,opacity,hardness,tool==EditorTool::ErasePaint};
+            validatePaintStamp(scenario_.map,stamp);
+            if(scenario_.landscape.paint.size()>=Landscape::maximumPaintStamps) throw std::runtime_error("Too many paint stamps");
+            scenario_.landscape.paint.push_back(stamp); changed=true;
+        } else if(tool==EditorTool::Base) {
+            assets_->material(id); scenario_.landscape.baseMaterial=id; changed=true;
+        }
         else if(tool==EditorTool::Decoration) {
             if(assets_->object(id).gameplay) throw std::runtime_error("Expected cosmetic asset");
-            s.landscape.decorations.push_back({nextId(),id,p,scale,rotation}); changed=true;
-        } else if(tool==EditorTool::Environment) {
+            const Decoration decoration{nextId(),id,p,scale,rotation};
+            validateDecoration(scenario_.map,decoration);
+            scenario_.landscape.decorations.push_back(decoration); changed=true;
+        }
+        if(changed) { message=L"Изменение применено. Ctrl+Z — отмена, Ctrl+S — сохранить."; return true; }
+        // Gameplay edits remain transactional: publish only after full validation.
+        auto s=scenario_;
+        if(tool==EditorTool::Environment) {
             if(id.starts_with("$")) s.crystals.push_back(assets_->instantiateCrystal(id.substr(1),c));
             else s.environment.push_back(assets_->instantiate(id,nextId(),c));
             changed=true;
@@ -154,7 +167,7 @@ bool WorldEditor::applyOne(Vec2 p) {
         if(!changed) return false;
         rebuild(s);
         // Simulation is the authority for spawn movement layers, duplicate slots and supply.
-        if(tool!=EditorTool::Paint&&tool!=EditorTool::ErasePaint&&tool!=EditorTool::Decoration&&tool!=EditorTool::Base) {
+        {
             const auto& commander=definitions_->commanders().front();
             Simulation check(s,{},definitions_->entity(commander.startingWorker),definitions_->entities(),s.heroSpawn?commander.startingHero:std::string{},definitions_->progression());
         }

@@ -82,6 +82,9 @@ class WorldAssets;
 Scenario loadScenario(const std::filesystem::path& path);
 Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& assets, Cell hallFootprint);
 void saveScenario(const Scenario& scenario, const std::filesystem::path& path);
+// Validate individual cosmetic edits without rebuilding navigation or vision.
+void validatePaintStamp(const Map& map, const PaintStamp& stamp);
+void validateDecoration(const Map& map, const Decoration& decoration);
 // Rebuild derived occupancy after loading/editing; no state from a running match is serialized.
 void rebuildScenario(Scenario& scenario, Cell hallFootprint = {});
 // Reserve/rebind only the starting depot, keeping all other map occupancy intact.

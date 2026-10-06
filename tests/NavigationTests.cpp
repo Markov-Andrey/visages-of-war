@@ -1,4 +1,5 @@
 #include "TestSupport.hpp"
+#include <future>
 
 namespace rts::tests {
 void navigationTests(TestSuite& test, const TestContext& context) {
@@ -29,6 +30,41 @@ void navigationTests(TestSuite& test, const TestContext& context) {
             if (actual) for (size_t i = 1; i < actual->cells.size(); ++i)
                 require(map.canStep(actual->cells[i - 1], actual->cells[i]), "Invalid path edge");
         }
+    });
+    test("Repeated searches isolate occupancy terrain dimensions movement and early exits", [] {
+        for (int size : {32, 5, 48, 5, 32}) {
+            rts::Map map(size, size);
+            const rts::Cell goal{size - 2, 1};
+            const std::array<rts::Cell, 1> goals{{goal}}, occupied{{goal}};
+            const auto expected = rts::findPath(map, {1, 1}, goal);
+            require(expected && expected->cost == (size - 3) * 10, "Unexpected open route");
+            require(!rts::findPath(map, {1, 1}, goals, occupied), "Occupied target accepted");
+            const auto afterOccupied = rts::findPath(map, {1, 1}, goal);
+            require(afterOccupied && afterOccupied->cells == expected->cells, "Previous occupancy leaked into search");
+            require(!rts::findUnitPathTo(map, {1.5f, 1.5f}, rts::center(goal), {}, .35f, rts::MovementType::Walking, 1), "Search ignored expansion limit");
+            const auto afterLimited = rts::findPath(map, {1, 1}, goal);
+            require(afterLimited && afterLimited->cells == expected->cells, "Limited search leaked costs or parents");
+            for (int y = 0; y < size; ++y) map.at({size / 2, y}).blocked = true;
+            require(!rts::findPath(map, {1, 1}, goal), "Changed terrain was ignored");
+            require(rts::findPath(map, {1, 1}, goal, rts::MovementType::Flying).has_value(), "Ground search blocked air route");
+            require(!rts::findPath(map, {1, 1}, goal), "Air search opened ground route");
+            map.at({size / 2, 1}).blocked = false;
+            const auto reopened = rts::findPath(map, {1, 1}, goal);
+            require(reopened && reopened->cells == expected->cells, "Unreachable search poisoned later route");
+        }
+    });
+    test("Concurrent path searches keep independent scratch state", [] {
+        const auto search = [](int size) {
+            rts::Map map(size, size);
+            for (int i = 0; i < 80; ++i) {
+                const auto path = rts::findPath(map, {0, 0}, {size - 1, size - 1});
+                if (!path || path->cost != (size - 1) * 14 || path->cells.size() != static_cast<size_t>(size)) return false;
+            }
+            return true;
+        };
+        auto first = std::async(std::launch::async, search, 24);
+        auto second = std::async(std::launch::async, search, 37);
+        require(first.get() && second.get(), "Parallel searches shared mutable buffers");
     });
     test("Cliffs are impassable; ramps work both ways without side entry", [] {
         rts::Map map(7, 5);

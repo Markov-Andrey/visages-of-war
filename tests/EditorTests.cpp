@@ -70,6 +70,50 @@ void editorTests(TestSuite& test, const TestContext& context) {
         e.setTool(rts::EditorTool::ErasePaint); e.apply({9.31f,9.51f}); e.endStroke();
         require(e.scenario().landscape.paint.back().erase&&e.scenario().map.walkable({9,9})&&!e.scenario().map.blocksVision({9,9}),"Paint altered gameplay");
     });
+    test("Cosmetic edits preserve authored blockers and undo all interpolated stamps", [&] {
+        const auto defs=rts::Definitions::load(assets/"data/catalog.json");
+        rts::Scenario s{rts::Map(24,24),{1,1},{4,3},{}};
+        s.environment={worldAssets.instantiate("tree",1500,{8,8})};
+        rts::WorldEditor e(s,worldAssets,defs);
+        const auto original=e.scenario().map;
+        const auto unchanged=[&] {
+            for(int y=0;y<24;++y) for(int x=0;x<24;++x) {
+                const rts::Cell c{x,y};
+                require(e.scenario().map.occupancy(c)==original.occupancy(c) &&
+                    e.scenario().map.blocksVision(c)==original.blocksVision(c),"Cosmetic edit changed derived blockers");
+            }
+        };
+        for(auto tool:{rts::EditorTool::Paint,rts::EditorTool::ErasePaint,rts::EditorTool::Base,rts::EditorTool::Decoration}) {
+            e.setTool(tool); require(e.apply({8.5f,8.5f}),"Cosmetic edit on blocker rejected");
+            if(tool==rts::EditorTool::Paint || tool==rts::EditorTool::ErasePaint) require(e.apply({12.5f,8.5f}),"Stroke rejected");
+            e.endStroke(); unchanged();
+            const auto count=e.scenario().landscape.paint.size();
+            require(e.undo(),"Cosmetic undo failed"); unchanged();
+            require(e.redo() && e.scenario().landscape.paint.size()==count,"Cosmetic redo changed stroke"); unchanged();
+        }
+        require(e.scenario().landscape.decorations.front().id>1500,"Decoration ID collided with environment");
+        e.validateForPlay();
+    });
+    test("Cosmetic fast path rejects invalid data without modifying document or history", [&] {
+        const auto defs=rts::Definitions::load(assets/"data/catalog.json");
+        rts::WorldEditor e({rts::Map(24,24),{1,1},{4,3},{}},worldAssets,defs);
+        for(float invalid:{0.0f,17.0f,std::numeric_limits<float>::quiet_NaN()}) {
+            e.radius=invalid; require(!e.apply({8.5f,8.5f}),"Invalid brush radius accepted"); e.endStroke();
+        }
+        e.radius=1; e.opacity=0; require(!e.apply({8.5f,8.5f}),"Invalid opacity accepted"); e.endStroke();
+        e.opacity=1; e.hardness=2; require(!e.apply({8.5f,8.5f}),"Invalid hardness accepted"); e.endStroke();
+        e.setTool(rts::EditorTool::Decoration); e.scale=0;
+        require(!e.apply({8.5f,8.5f}),"Invalid decoration scale accepted"); e.endStroke();
+        e.scale=1; e.rotation=361;
+        require(!e.apply({8.5f,8.5f}),"Invalid decoration rotation accepted"); e.endStroke();
+        require(e.scenario().landscape.paint.empty() && e.scenario().landscape.decorations.empty() && !e.undo() && !e.dirty,
+            "Rejected cosmetic edit mutated document or history");
+        auto full=e.scenario();
+        full.landscape.paint.resize(rts::Landscape::maximumPaintStamps,{"earth",{8.5f,8.5f},1,.5f,.5f,false});
+        e.replace(std::move(full)); e.setTool(rts::EditorTool::Paint); e.hardness=.5f;
+        require(!e.apply({8.5f,8.5f}),"Paint stamp limit was bypassed"); e.endStroke();
+        require(e.scenario().landscape.paint.size()==rts::Landscape::maximumPaintStamps && !e.undo(),"Rejected stamp changed history");
+    });
     test("Editor separates cosmetic placement and ground-air spawn occupancy", [&] {
         const auto defs=rts::Definitions::load(assets/"data/catalog.json");
         rts::WorldEditor e({rts::Map(24,24),{1,1},{4,3},{}},worldAssets,defs);

@@ -157,7 +157,9 @@ include(CTest)
 if(BUILD_TESTING)
     # Opt-in diagnostic; timings are not correctness gates and do not run in CTest.
     add_executable(rts_benchmarks EXCLUDE_FROM_ALL tests/Performance.cpp)
-    target_link_libraries(rts_benchmarks PRIVATE rts_core)
+    target_link_libraries(rts_benchmarks PRIVATE rts_editor_core)
+    set_target_properties(rts_benchmarks PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+    add_dependencies(rts_benchmarks rts_assets)
     add_executable(rts_tests
         tests/CoreTests.cpp
         tests/NavigationTests.cpp
