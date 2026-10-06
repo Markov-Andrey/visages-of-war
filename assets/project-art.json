@@ -2,6 +2,9 @@
     "imported":  "2026-09-25",
     "source":  "Artwork supplied by the project owner",
     "rights":  "Project artwork; not part of the third-party CC0 asset catalog",
+    "collections": [
+        {"manifest": "world/vineyard-art.json", "description": "Vineyard artwork supplied in the repository root; unchanged PNGs, source filenames and SHA-256 checksums."}
+    ],
     "files":  [
         {
           "original": "crysal-medium.png",

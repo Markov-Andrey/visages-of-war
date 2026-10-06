@@ -1,6 +1,6 @@
 {
   "format": "rts-world",
-  "name": "Тестовая долина",
+  "name": "Виноградная долина",
   "size": [
     64,
     64
@@ -43,7 +43,7 @@
     "crystals": 300
   },
   "terrain": {
-    "base": "grass",
+    "base": "vineyard.grass",
     "heights": [
       "0000000000000000000000000000000000000000000000000000000000000000",
       "0000000000000000000000000000000000000000000000000000000000000000",
@@ -401,7 +401,1768 @@
       "0000000000000000000000000000000000000000000000000000000000000000"
     ]
   },
-  "paint": [],
+  "paint": [
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        10.8,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        11.46,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        12.12,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        12.78,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        13.44,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        14.1,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        14.76,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        15.42,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        16.08,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        16.74,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        17.4,
+        7.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        10.8,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        11.46,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        12.12,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        12.78,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        13.44,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        14.1,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        14.76,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        15.42,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        16.08,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        16.74,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        17.4,
+        10.1
+      ],
+      "radius": 1.25,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        13.8,
+        28.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        14.4,
+        28.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        15.0,
+        28.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        15.6,
+        28.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        16.2,
+        28.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        16.8,
+        28.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        17.4,
+        28.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        13.8,
+        31.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        14.4,
+        31.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        15.0,
+        31.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        15.6,
+        31.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        16.2,
+        31.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        16.8,
+        31.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        17.4,
+        31.1
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        23.8,
+        21.0
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        24.4,
+        21.0
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        25.0,
+        21.0
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        25.6,
+        21.0
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        26.2,
+        21.0
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        26.8,
+        21.0
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        27.4,
+        21
+      ],
+      "radius": 1.2,
+      "opacity": 0.52,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        9.6,
+        11.6
+      ],
+      "radius": 2,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        14,
+        16
+      ],
+      "radius": 2.8,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        12.8,
+        25.6
+      ],
+      "radius": 2.4,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.dirt",
+      "position": [
+        9,
+        28
+      ],
+      "radius": 1.7,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        8.7,
+        8.5
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        8.78,
+        9.14
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        8.86,
+        9.78
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        8.94,
+        10.42
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        9.02,
+        11.06
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        9.1,
+        11.7
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        9.7,
+        11.825
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        10.3,
+        11.95
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        10.9,
+        12.075
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.5,
+        12.2
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.129,
+        12.214
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.757,
+        12.229
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        13.386,
+        12.243
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        14.014,
+        12.257
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        14.643,
+        12.271
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.271,
+        12.286
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.9,
+        12.3
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        16.16,
+        12.82
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        16.42,
+        13.34
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        16.68,
+        13.86
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        16.94,
+        14.38
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        17.2,
+        14.9
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        17.775,
+        15.05
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        18.35,
+        15.2
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        18.925,
+        15.35
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        19.5,
+        15.5
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        20.083,
+        15.667
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        20.667,
+        15.833
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        21.25,
+        16.0
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        21.833,
+        16.167
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        22.417,
+        16.333
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        23,
+        16.5
+      ],
+      "radius": 1.12,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.9,
+        14.8
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.88,
+        15.44
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.86,
+        16.08
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.84,
+        16.72
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.82,
+        17.36
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.8,
+        18.0
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.6,
+        18.643
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.4,
+        19.286
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.2,
+        19.929
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.0,
+        20.571
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        14.8,
+        21.214
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        14.6,
+        21.857
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        14.4,
+        22.5
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        13.92,
+        23.0
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        13.44,
+        23.5
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.96,
+        24.0
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.48,
+        24.5
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.0,
+        25.0
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.96,
+        25.6
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.92,
+        26.2
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.88,
+        26.8
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.84,
+        27.4
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.8,
+        28.0
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.829,
+        28.671
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.857,
+        29.343
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.886,
+        30.014
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.914,
+        30.686
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.943,
+        31.357
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        11.971,
+        32.029
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.0,
+        32.7
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.627,
+        32.864
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        13.255,
+        33.027
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        13.882,
+        33.191
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        14.509,
+        33.355
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.136,
+        33.518
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.764,
+        33.682
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        16.391,
+        33.845
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        17.018,
+        34.009
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        17.645,
+        34.173
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        18.273,
+        34.336
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        18.9,
+        34.5
+      ],
+      "radius": 1.35,
+      "opacity": 0.7,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.0,
+        25.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        12.6,
+        25.143
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        13.2,
+        25.286
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        13.8,
+        25.429
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        14.4,
+        25.571
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.0,
+        25.714
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        15.6,
+        25.857
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        16.2,
+        26.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        16.671,
+        26.429
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        17.143,
+        26.857
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        17.614,
+        27.286
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        18.086,
+        27.714
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        18.557,
+        28.143
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        19.029,
+        28.571
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        19.5,
+        29.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        20.143,
+        29.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        20.786,
+        29.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        21.429,
+        29.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        22.071,
+        29.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        22.714,
+        29.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        23.357,
+        29.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        24.0,
+        29.0
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        24.55,
+        28.63
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        25.1,
+        28.26
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        25.65,
+        27.89
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        26.2,
+        27.52
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        26.75,
+        27.15
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        27.3,
+        26.78
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        27.85,
+        26.41
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        28.4,
+        26.04
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        28.95,
+        25.67
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.road",
+      "position": [
+        29.5,
+        25.3
+      ],
+      "radius": 1.0,
+      "opacity": 0.58,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.stone",
+      "position": [
+        10,
+        18.8
+      ],
+      "radius": 1.6,
+      "opacity": 0.8,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.stone",
+      "position": [
+        10.8,
+        22
+      ],
+      "radius": 1.5,
+      "opacity": 0.8,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.stone",
+      "position": [
+        23.8,
+        11.7
+      ],
+      "radius": 1.3,
+      "opacity": 0.8,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.stone",
+      "position": [
+        30.8,
+        15.6
+      ],
+      "radius": 1.3,
+      "opacity": 0.8,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.stone",
+      "position": [
+        19.8,
+        20.8
+      ],
+      "radius": 1.2,
+      "opacity": 0.8,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.stone",
+      "position": [
+        6.4,
+        25.8
+      ],
+      "radius": 1.3,
+      "opacity": 0.8,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.stone",
+      "position": [
+        33.8,
+        29.6
+      ],
+      "radius": 1.4,
+      "opacity": 0.8,
+      "hardness": 0.35,
+      "erase": false
+    },
+    {
+      "material": "vineyard.stone",
+      "position": [
+        45.7,
+        39.5
+      ],
+      "radius": 1.6,
+      "opacity": 0.8,
+      "hardness": 0.35,
+      "erase": false
+    }
+  ],
   "environment": [
     {
       "cell": [
@@ -705,7 +2466,7 @@
         18,
         14
       ],
-      "asset": "arch",
+      "asset": "vineyard.arch",
       "id": 1033,
       "health": 500
     },
@@ -726,9 +2487,905 @@
       "asset": "arch",
       "id": 1035,
       "health": 500
+    },
+    {
+      "id": 2000,
+      "asset": "vineyard.vine_b",
+      "cell": [
+        10,
+        6
+      ],
+      "health": 150
+    },
+    {
+      "id": 2001,
+      "asset": "vineyard.vine_a",
+      "cell": [
+        13,
+        6
+      ],
+      "health": 150
+    },
+    {
+      "id": 2002,
+      "asset": "vineyard.vine_b",
+      "cell": [
+        16,
+        6
+      ],
+      "health": 150
+    },
+    {
+      "id": 2003,
+      "asset": "vineyard.vine_a",
+      "cell": [
+        10,
+        9
+      ],
+      "health": 150
+    },
+    {
+      "id": 2004,
+      "asset": "vineyard.vine_b",
+      "cell": [
+        13,
+        9
+      ],
+      "health": 150
+    },
+    {
+      "id": 2005,
+      "asset": "vineyard.vine_a",
+      "cell": [
+        16,
+        9
+      ],
+      "health": 150
+    },
+    {
+      "id": 2006,
+      "asset": "vineyard.vine_b",
+      "cell": [
+        13,
+        27
+      ],
+      "health": 150
+    },
+    {
+      "id": 2007,
+      "asset": "vineyard.vine_a",
+      "cell": [
+        16,
+        27
+      ],
+      "health": 150
+    },
+    {
+      "id": 2008,
+      "asset": "vineyard.vine_b",
+      "cell": [
+        13,
+        30
+      ],
+      "health": 150
+    },
+    {
+      "id": 2009,
+      "asset": "vineyard.vine_a",
+      "cell": [
+        16,
+        30
+      ],
+      "health": 150
+    },
+    {
+      "id": 2010,
+      "asset": "vineyard.vine_b",
+      "cell": [
+        23,
+        20
+      ],
+      "health": 150
+    },
+    {
+      "id": 2011,
+      "asset": "vineyard.vine_b",
+      "cell": [
+        26,
+        20
+      ],
+      "health": 150
+    },
+    {
+      "id": 2012,
+      "asset": "vineyard.winery",
+      "cell": [
+        6,
+        6
+      ],
+      "health": 650
+    },
+    {
+      "id": 2013,
+      "asset": "vineyard.cellar",
+      "cell": [
+        9,
+        26
+      ],
+      "health": 500
+    },
+    {
+      "id": 2014,
+      "asset": "vineyard.well",
+      "cell": [
+        8,
+        12
+      ],
+      "health": 350
+    },
+    {
+      "id": 2015,
+      "asset": "vineyard.press",
+      "cell": [
+        9,
+        10
+      ],
+      "health": 250
+    },
+    {
+      "id": 2016,
+      "asset": "vineyard.barrel",
+      "cell": [
+        16,
+        12
+      ],
+      "health": 150
+    },
+    {
+      "id": 2017,
+      "asset": "vineyard.crate",
+      "cell": [
+        17,
+        12
+      ],
+      "health": 150
+    },
+    {
+      "id": 2018,
+      "asset": "vineyard.barrels",
+      "cell": [
+        9,
+        9
+      ],
+      "health": 150
+    },
+    {
+      "id": 2019,
+      "asset": "vineyard.cart",
+      "cell": [
+        13,
+        24
+      ],
+      "health": 150
+    },
+    {
+      "id": 2020,
+      "asset": "vineyard.hay",
+      "cell": [
+        9,
+        29
+      ],
+      "health": 150
+    },
+    {
+      "id": 2021,
+      "asset": "vineyard.ruin",
+      "cell": [
+        6,
+        26
+      ],
+      "health": 400
+    },
+    {
+      "id": 2022,
+      "asset": "vineyard.vine_post",
+      "cell": [
+        19,
+        12
+      ],
+      "health": 150
+    },
+    {
+      "id": 2023,
+      "asset": "vineyard.fence",
+      "cell": [
+        13,
+        33
+      ],
+      "health": 150
+    },
+    {
+      "id": 2024,
+      "asset": "vineyard.fence",
+      "cell": [
+        16,
+        33
+      ],
+      "health": 150
     }
   ],
-  "decorations": [],
+  "decorations": [
+    {
+      "id": 2025,
+      "asset": "vineyard.lavender",
+      "position": [
+        8.117,
+        4.826
+      ],
+      "scale": 1.1,
+      "rotation": 0
+    },
+    {
+      "id": 2026,
+      "asset": "vineyard.poppies",
+      "position": [
+        9.49,
+        4.763
+      ],
+      "scale": 1.03,
+      "rotation": 0
+    },
+    {
+      "id": 2027,
+      "asset": "vineyard.daisies",
+      "position": [
+        8.076,
+        6.15
+      ],
+      "scale": 1.12,
+      "rotation": 0
+    },
+    {
+      "id": 2028,
+      "asset": "vineyard.grass_a",
+      "position": [
+        9.234,
+        5.815
+      ],
+      "scale": 1.17,
+      "rotation": 0
+    },
+    {
+      "id": 2029,
+      "asset": "vineyard.grass_a",
+      "position": [
+        8.222,
+        4.22
+      ],
+      "scale": 1.03,
+      "rotation": 0
+    },
+    {
+      "id": 2030,
+      "asset": "vineyard.grass_b",
+      "position": [
+        9.054,
+        5.671
+      ],
+      "scale": 1.12,
+      "rotation": 0
+    },
+    {
+      "id": 2031,
+      "asset": "vineyard.lavender",
+      "position": [
+        10.583,
+        5.725
+      ],
+      "scale": 1.01,
+      "rotation": 0
+    },
+    {
+      "id": 2032,
+      "asset": "vineyard.lavender",
+      "position": [
+        9.87,
+        5.654
+      ],
+      "scale": 0.87,
+      "rotation": 0
+    },
+    {
+      "id": 2033,
+      "asset": "vineyard.poppies",
+      "position": [
+        8.267,
+        5.296
+      ],
+      "scale": 1.11,
+      "rotation": 0
+    },
+    {
+      "id": 2034,
+      "asset": "vineyard.grass_a",
+      "position": [
+        19.298,
+        5.558
+      ],
+      "scale": 1.15,
+      "rotation": 0
+    },
+    {
+      "id": 2035,
+      "asset": "vineyard.poppies",
+      "position": [
+        16.591,
+        5.056
+      ],
+      "scale": 0.81,
+      "rotation": 0
+    },
+    {
+      "id": 2036,
+      "asset": "vineyard.lavender",
+      "position": [
+        18.934,
+        5.242
+      ],
+      "scale": 0.85,
+      "rotation": 0
+    },
+    {
+      "id": 2037,
+      "asset": "vineyard.grass_a",
+      "position": [
+        16.508,
+        6.555
+      ],
+      "scale": 0.98,
+      "rotation": 0
+    },
+    {
+      "id": 2038,
+      "asset": "vineyard.poppies",
+      "position": [
+        16.759,
+        6.142
+      ],
+      "scale": 0.84,
+      "rotation": 0
+    },
+    {
+      "id": 2039,
+      "asset": "vineyard.daisies",
+      "position": [
+        17.12,
+        5.605
+      ],
+      "scale": 1.13,
+      "rotation": 0
+    },
+    {
+      "id": 2040,
+      "asset": "vineyard.daisies",
+      "position": [
+        16.418,
+        5.071
+      ],
+      "scale": 0.99,
+      "rotation": 0
+    },
+    {
+      "id": 2041,
+      "asset": "vineyard.grass_a",
+      "position": [
+        17.325,
+        5.72
+      ],
+      "scale": 1.17,
+      "rotation": 0
+    },
+    {
+      "id": 2042,
+      "asset": "vineyard.grass_a",
+      "position": [
+        7.724,
+        12.118
+      ],
+      "scale": 1.1,
+      "rotation": 0
+    },
+    {
+      "id": 2043,
+      "asset": "vineyard.poppies",
+      "position": [
+        9.437,
+        12.945
+      ],
+      "scale": 0.9,
+      "rotation": 0
+    },
+    {
+      "id": 2044,
+      "asset": "vineyard.grass_b",
+      "position": [
+        10.402,
+        12.033
+      ],
+      "scale": 0.98,
+      "rotation": 0
+    },
+    {
+      "id": 2045,
+      "asset": "vineyard.lavender",
+      "position": [
+        10.351,
+        13.842
+      ],
+      "scale": 0.85,
+      "rotation": 0
+    },
+    {
+      "id": 2046,
+      "asset": "vineyard.grass_b",
+      "position": [
+        8.173,
+        12.795
+      ],
+      "scale": 0.95,
+      "rotation": 0
+    },
+    {
+      "id": 2047,
+      "asset": "vineyard.poppies",
+      "position": [
+        8.353,
+        13.182
+      ],
+      "scale": 0.9,
+      "rotation": 0
+    },
+    {
+      "id": 2048,
+      "asset": "vineyard.grass_b",
+      "position": [
+        8.185,
+        13.942
+      ],
+      "scale": 1.11,
+      "rotation": 0
+    },
+    {
+      "id": 2049,
+      "asset": "vineyard.grass_b",
+      "position": [
+        15.777,
+        11.616
+      ],
+      "scale": 1.03,
+      "rotation": 0
+    },
+    {
+      "id": 2050,
+      "asset": "vineyard.shrub",
+      "position": [
+        16.659,
+        11.738
+      ],
+      "scale": 0.83,
+      "rotation": 0
+    },
+    {
+      "id": 2051,
+      "asset": "vineyard.grass_a",
+      "position": [
+        17.883,
+        11.01
+      ],
+      "scale": 0.99,
+      "rotation": 0
+    },
+    {
+      "id": 2052,
+      "asset": "vineyard.poppies",
+      "position": [
+        17.95,
+        11.619
+      ],
+      "scale": 1.18,
+      "rotation": 0
+    },
+    {
+      "id": 2053,
+      "asset": "vineyard.grass_a",
+      "position": [
+        17.889,
+        10.829
+      ],
+      "scale": 0.93,
+      "rotation": 0
+    },
+    {
+      "id": 2054,
+      "asset": "vineyard.daisies",
+      "position": [
+        16.667,
+        11.285
+      ],
+      "scale": 1.05,
+      "rotation": 0
+    },
+    {
+      "id": 2055,
+      "asset": "vineyard.lavender",
+      "position": [
+        17.32,
+        11.541
+      ],
+      "scale": 1.07,
+      "rotation": 0
+    },
+    {
+      "id": 2056,
+      "asset": "vineyard.grass_b",
+      "position": [
+        13.188,
+        22.874
+      ],
+      "scale": 1.18,
+      "rotation": 0
+    },
+    {
+      "id": 2057,
+      "asset": "vineyard.daisies",
+      "position": [
+        13.41,
+        21.862
+      ],
+      "scale": 0.85,
+      "rotation": 0
+    },
+    {
+      "id": 2058,
+      "asset": "vineyard.grass_b",
+      "position": [
+        11.874,
+        23.199
+      ],
+      "scale": 0.82,
+      "rotation": 0
+    },
+    {
+      "id": 2059,
+      "asset": "vineyard.grass_b",
+      "position": [
+        12.909,
+        22.017
+      ],
+      "scale": 0.88,
+      "rotation": 0
+    },
+    {
+      "id": 2060,
+      "asset": "vineyard.shrub",
+      "position": [
+        10.744,
+        22.055
+      ],
+      "scale": 0.87,
+      "rotation": 0
+    },
+    {
+      "id": 2061,
+      "asset": "vineyard.lavender",
+      "position": [
+        10.768,
+        22.514
+      ],
+      "scale": 0.89,
+      "rotation": 0
+    },
+    {
+      "id": 2062,
+      "asset": "vineyard.poppies",
+      "position": [
+        12.427,
+        22.683
+      ],
+      "scale": 1.0,
+      "rotation": 0
+    },
+    {
+      "id": 2063,
+      "asset": "vineyard.grass_a",
+      "position": [
+        11.25,
+        22.234
+      ],
+      "scale": 0.91,
+      "rotation": 0
+    },
+    {
+      "id": 2064,
+      "asset": "vineyard.poppies",
+      "position": [
+        16.572,
+        26.914
+      ],
+      "scale": 0.94,
+      "rotation": 0
+    },
+    {
+      "id": 2065,
+      "asset": "vineyard.grass_a",
+      "position": [
+        16.96,
+        27.409
+      ],
+      "scale": 0.82,
+      "rotation": 0
+    },
+    {
+      "id": 2066,
+      "asset": "vineyard.lavender",
+      "position": [
+        16.331,
+        25.957
+      ],
+      "scale": 0.8,
+      "rotation": 0
+    },
+    {
+      "id": 2067,
+      "asset": "vineyard.poppies",
+      "position": [
+        18.48,
+        25.901
+      ],
+      "scale": 0.93,
+      "rotation": 0
+    },
+    {
+      "id": 2068,
+      "asset": "vineyard.grass_a",
+      "position": [
+        15.867,
+        27.321
+      ],
+      "scale": 1.04,
+      "rotation": 0
+    },
+    {
+      "id": 2069,
+      "asset": "vineyard.daisies",
+      "position": [
+        17.315,
+        26.707
+      ],
+      "scale": 1.1,
+      "rotation": 0
+    },
+    {
+      "id": 2070,
+      "asset": "vineyard.daisies",
+      "position": [
+        17.237,
+        27.446
+      ],
+      "scale": 1.13,
+      "rotation": 0
+    },
+    {
+      "id": 2071,
+      "asset": "vineyard.poppies",
+      "position": [
+        16.932,
+        27.578
+      ],
+      "scale": 1.0,
+      "rotation": 0
+    },
+    {
+      "id": 2072,
+      "asset": "vineyard.grass_a",
+      "position": [
+        18.403,
+        27.978
+      ],
+      "scale": 0.91,
+      "rotation": 0
+    },
+    {
+      "id": 2073,
+      "asset": "vineyard.grass_b",
+      "position": [
+        18.267,
+        25.902
+      ],
+      "scale": 0.95,
+      "rotation": 0
+    },
+    {
+      "id": 2074,
+      "asset": "vineyard.poppies",
+      "position": [
+        17.861,
+        27.556
+      ],
+      "scale": 1.07,
+      "rotation": 0
+    },
+    {
+      "id": 2075,
+      "asset": "vineyard.grass_a",
+      "position": [
+        11.521,
+        29.897
+      ],
+      "scale": 0.96,
+      "rotation": 0
+    },
+    {
+      "id": 2076,
+      "asset": "vineyard.grass_b",
+      "position": [
+        8.638,
+        30.445
+      ],
+      "scale": 1.2,
+      "rotation": 0
+    },
+    {
+      "id": 2077,
+      "asset": "vineyard.grass_b",
+      "position": [
+        9.087,
+        29.331
+      ],
+      "scale": 1.19,
+      "rotation": 0
+    },
+    {
+      "id": 2078,
+      "asset": "vineyard.shrub",
+      "position": [
+        10.969,
+        29.98
+      ],
+      "scale": 0.82,
+      "rotation": 0
+    },
+    {
+      "id": 2079,
+      "asset": "vineyard.grass_a",
+      "position": [
+        11.049,
+        30.666
+      ],
+      "scale": 1.19,
+      "rotation": 0
+    },
+    {
+      "id": 2080,
+      "asset": "vineyard.shrub",
+      "position": [
+        11.272,
+        31.166
+      ],
+      "scale": 1.17,
+      "rotation": 0
+    },
+    {
+      "id": 2081,
+      "asset": "vineyard.daisies",
+      "position": [
+        10.004,
+        29.053
+      ],
+      "scale": 1.02,
+      "rotation": 0
+    },
+    {
+      "id": 2082,
+      "asset": "vineyard.lavender",
+      "position": [
+        10.374,
+        30.361
+      ],
+      "scale": 1.04,
+      "rotation": 0
+    },
+    {
+      "id": 2083,
+      "asset": "vineyard.grass_a",
+      "position": [
+        9.13,
+        30.762
+      ],
+      "scale": 1.17,
+      "rotation": 0
+    },
+    {
+      "id": 2084,
+      "asset": "vineyard.poppies",
+      "position": [
+        19.479,
+        32.68
+      ],
+      "scale": 0.99,
+      "rotation": 0
+    },
+    {
+      "id": 2085,
+      "asset": "vineyard.poppies",
+      "position": [
+        19.232,
+        33.962
+      ],
+      "scale": 1.13,
+      "rotation": 0
+    },
+    {
+      "id": 2086,
+      "asset": "vineyard.grass_b",
+      "position": [
+        17.594,
+        32.287
+      ],
+      "scale": 1.2,
+      "rotation": 0
+    },
+    {
+      "id": 2087,
+      "asset": "vineyard.grass_b",
+      "position": [
+        18.984,
+        33.938
+      ],
+      "scale": 0.83,
+      "rotation": 0
+    },
+    {
+      "id": 2088,
+      "asset": "vineyard.lavender",
+      "position": [
+        20.354,
+        33.678
+      ],
+      "scale": 1.03,
+      "rotation": 0
+    },
+    {
+      "id": 2089,
+      "asset": "vineyard.grass_b",
+      "position": [
+        20.261,
+        32.432
+      ],
+      "scale": 1.14,
+      "rotation": 0
+    },
+    {
+      "id": 2090,
+      "asset": "vineyard.grass_b",
+      "position": [
+        17.606,
+        33.484
+      ],
+      "scale": 0.87,
+      "rotation": 0
+    },
+    {
+      "id": 2091,
+      "asset": "vineyard.grass_b",
+      "position": [
+        20.345,
+        32.067
+      ],
+      "scale": 1.03,
+      "rotation": 0
+    }
+  ],
   "resources": [
     {
       "remaining": 1000,

@@ -1,0 +1,720 @@
+[
+  {
+    "id": "vineyard.vine_a",
+    "name": "Лоза — ряд A",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 150,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/vine_decor.png",
+      "source": [
+        204,
+        8,
+        232,
+        194
+      ],
+      "size": [
+        125,
+        105
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.vine_b",
+    "name": "Лоза — ряд B",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 150,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/vine_decor.png",
+      "source": [
+        440,
+        8,
+        218,
+        194
+      ],
+      "size": [
+        125,
+        111
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.vine_post",
+    "name": "Лоза — отдельный куст",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 150,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/vine_decor.png",
+      "source": [
+        160,
+        211,
+        130,
+        156
+      ],
+      "size": [
+        58,
+        70
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.barrel",
+    "name": "Бочка с виноградом",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 150,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_1.png",
+      "source": [
+        1246,
+        10,
+        126,
+        137
+      ],
+      "size": [
+        48,
+        52
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.barrels",
+    "name": "Штабель бочек",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 150,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_1.png",
+      "source": [
+        457,
+        10,
+        154,
+        139
+      ],
+      "size": [
+        66,
+        60
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.crate",
+    "name": "Ящик винограда",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 150,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_1.png",
+      "source": [
+        151,
+        162,
+        143,
+        132
+      ],
+      "size": [
+        54,
+        50
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.cart",
+    "name": "Телега с виноградом",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      1
+    ],
+    "collision": [
+      true,
+      true
+    ],
+    "health": 150,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_1.png",
+      "source": [
+        180,
+        303,
+        226,
+        153
+      ],
+      "size": [
+        120,
+        81
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.press",
+    "name": "Виноградный пресс",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 250,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_1.png",
+      "source": [
+        1201,
+        280,
+        143,
+        187
+      ],
+      "size": [
+        63,
+        82
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.well",
+    "name": "Колодец виноградника",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 350,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_1.png",
+      "source": [
+        1360,
+        278,
+        166,
+        190
+      ],
+      "size": [
+        94,
+        108
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.fence",
+    "name": "Деревянная ограда",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      1
+    ],
+    "collision": [
+      true,
+      true
+    ],
+    "health": 150,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_1.png",
+      "source": [
+        11,
+        459,
+        176,
+        149
+      ],
+      "size": [
+        120,
+        102
+      ],
+      "anchor": [
+        0.5,
+        0.85
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.hay",
+    "name": "Сложенное сено",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      1
+    ],
+    "collision": [
+      true,
+      true
+    ],
+    "health": 150,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_1.png",
+      "source": [
+        1328,
+        466,
+        201,
+        145
+      ],
+      "size": [
+        100,
+        72
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.winery",
+    "name": "Дом винодела",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 650,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/decor_2.png",
+      "source": [
+        242,
+        5,
+        239,
+        201
+      ],
+      "size": [
+        184,
+        155
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.cellar",
+    "name": "Винный погреб",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 500,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/decor_2.png",
+      "source": [
+        7,
+        632,
+        240,
+        186
+      ],
+      "size": [
+        174,
+        135
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.arch",
+    "name": "Каменная арка с лозой",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      1
+    ],
+    "collision": [
+      true,
+      false,
+      true
+    ],
+    "health": 500,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/decor_2.png",
+      "source": [
+        1311,
+        418,
+        218,
+        202
+      ],
+      "size": [
+        178,
+        165
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.ruin",
+    "name": "Обвитая лозой стена",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      1
+    ],
+    "collision": [
+      true,
+      true
+    ],
+    "health": 400,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/decor_2.png",
+      "source": [
+        454,
+        830,
+        225,
+        178
+      ],
+      "size": [
+        125,
+        99
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.grass_a",
+    "name": "Трава — низкий пучок",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/grass_decor.png",
+      "source": [
+        8,
+        7,
+        136,
+        134
+      ],
+      "size": [
+        28,
+        28
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.grass_b",
+    "name": "Трава — широкий пучок",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/grass_decor.png",
+      "source": [
+        927,
+        9,
+        146,
+        134
+      ],
+      "size": [
+        34,
+        31
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.daisies",
+    "name": "Цветы — ромашки",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/grass_decor.png",
+      "source": [
+        162,
+        155,
+        137,
+        144
+      ],
+      "size": [
+        33,
+        35
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.lavender",
+    "name": "Цветы — лаванда",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/grass_decor.png",
+      "source": [
+        777,
+        155,
+        135,
+        147
+      ],
+      "size": [
+        33,
+        36
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.poppies",
+    "name": "Цветы — маки",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/grass_decor.png",
+      "source": [
+        1240,
+        156,
+        133,
+        144
+      ],
+      "size": [
+        32,
+        35
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.shrub",
+    "name": "Куст — низкий",
+    "gameplay": false,
+    "kind": "decoration",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      false
+    ],
+    "health": 1,
+    "blocksVision": false,
+    "sprite": {
+      "image": "sprites/vineyard/grass_decor.png",
+      "source": [
+        619,
+        309,
+        145,
+        145
+      ],
+      "size": [
+        44,
+        44
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  }
+]

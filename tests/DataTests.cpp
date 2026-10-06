@@ -179,6 +179,44 @@ void dataTests(TestSuite& test, const TestContext& context) {
         for (auto& e : fixture.entities["entities"]) e["library"] = false;
         require(rts::libraryFactions(fixture.load()).empty(), "Empty factions remain visible in the library");
     });
+    test("Vineyard separates cosmetic ground cover from solid props and leaves service lanes open", [&] {
+        const auto& world = context.worldAssets;
+        const auto scenario = rts::loadScenario(assets / "maps/demo.rtsmap", world, context.hallFootprint);
+        auto bare = scenario;
+        bare.landscape.paint.clear(); bare.landscape.decorations.clear();
+        rts::rebuildScenario(bare);
+        for (int y = 0; y < scenario.map.height(); ++y) for (int x = 0; x < scenario.map.width(); ++x) {
+            const rts::Cell c{x, y};
+            require(scenario.map.walkable(c) == bare.map.walkable(c) &&
+                scenario.map.blocksVision(c) == bare.map.blocksVision(c), "Vineyard cosmetics changed navigation or sight");
+        }
+        for (const auto& d : world.objects()) if (d.id.starts_with("vineyard.")) {
+            if (!d.gameplay) {
+                require(!d.blocksVision && std::none_of(d.collision.begin(), d.collision.end(), [](bool b) { return b; }),
+                    "Grass or flowers became a blocker");
+            } else {
+                require(std::any_of(d.collision.begin(), d.collision.end(), [](bool b) { return b; }), "Solid prop has no collision");
+            }
+        }
+        for (const auto& object : scenario.environment) if (object.definitionId.starts_with("vineyard.")) {
+            for (int y = 0; y < object.height; ++y) for (int x = 0; x < object.width; ++x) if (object.blocks(x, y)) {
+                const auto c = object.origin + rts::Cell{x, y};
+                require(!scenario.map.walkable(c) && scenario.map.walkable(c, rts::MovementType::Flying), "Solid vineyard prop lost ground-only collision");
+            }
+        }
+        for (const auto goal : {rts::Cell{12, 8}, rts::Cell{15, 8}, rts::Cell{12, 11}, rts::Cell{15, 11},
+                rts::Cell{12, 28}, rts::Cell{15, 29}, rts::Cell{19, 14}, rts::Cell{21, 16}, rts::Cell{10, 18}})
+            require(rts::findPath(scenario.map, scenario.worker, goal).has_value(), "Vineyard blocked an aisle, arch, ramp or resource approach");
+        auto restored = scenario;
+        const auto vineAt = std::find_if(restored.environment.begin(), restored.environment.end(), [](const auto& o) { return o.definitionId == "vineyard.vine_a"; });
+        require(vineAt != restored.environment.end(), "Demo has no vineyard rows");
+        auto& vine = *vineAt;
+        const auto id = vine.id; const auto origin = vine.origin;
+        vine.hitPoints = 0; rts::rebuildScenario(restored);
+        require(restored.map.walkable(origin) && !restored.map.blocksVision(origin), "Destroyed vine retained collision or sight");
+        vine.hitPoints = vine.maximumHitPoints; rts::rebuildScenario(restored);
+        require(vine.id == id && !restored.map.walkable(origin) && restored.map.blocksVision(origin), "Vine restoration lost identity or blockers");
+    });
     test("Large demo: workers, friendly army, hostile camp and reachable plateaus", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");
         rts::Simulation game(loadScenario(assets / "maps/demo.rtsmap"), {}, definitions.entity("human.worker"), definitions.entities());

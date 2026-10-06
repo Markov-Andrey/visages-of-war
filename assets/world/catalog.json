@@ -1,6 +1,12 @@
 {
-  "materialFiles": ["world/materials.json"],
-  "objectFiles": ["world/objects.json"],
+  "materialFiles": [
+    "world/materials.json",
+    "world/vineyard-materials.json"
+  ],
+  "objectFiles": [
+    "world/objects.json",
+    "world/vineyard-objects.json"
+  ],
   "remainsFile": "world/remains.json",
   "resourcesFile": "world/resources.json"
 }
