@@ -84,6 +84,7 @@ add_library(rts_render
     src/render/EntityRenderer.cpp
     src/render/HealthBarRenderer.cpp
     src/render/SceneRenderer.cpp
+    src/render/UnitOcclusionRenderer.cpp
     src/render/HudRenderer.cpp
     src/render/SelectionRenderer.cpp
     src/render/SelectionRingRenderer.cpp

@@ -265,6 +265,6 @@ private:
     int stored_{};
     bool heroFallen_{};
     std::uint64_t messageRevision_{};
-    std::wstring message_ = L"Выберите юнитов рамкой или здание щелчком. ПКМ — приказ.";
+    std::wstring message_;
 };
 }

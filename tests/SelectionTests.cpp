@@ -1,5 +1,6 @@
 #include "TestSupport.hpp"
 #include "rts/MinimapRaster.hpp"
+#include "rts/UnitOcclusion.hpp"
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
@@ -123,12 +124,14 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         const rts::GameplayNotification::Clock::time_point began{};
         rts::Simulation game({rts::Map(16, 16), {1, 1}, {5, 5}, {}});
         rts::GameplayNotification notice;
-        require(!notice.text(game, began).empty(), "Initial notification was missing");
+        require(notice.text(game, began).empty(), "Map start displayed an unsolicited notification");
+        const auto rejectOrder = [&] { require(!game.order({}, rts::OrderKind::Move, {10, 10}), "Empty selection accepted an order"); };
+        rejectOrder();
+        require(!notice.text(game, began).empty(), "Order notification was missing");
         require(!notice.text(game, began + milliseconds(3999)).empty(), "Notification disappeared too early");
         require(notice.text(game, began + seconds(4)).empty(), "Notification did not expire while simulation was paused");
         require(!game.message().empty(), "Presentation expiry changed simulation message");
 
-        const auto rejectOrder = [&] { require(!game.order({}, rts::OrderKind::Move, {10, 10}), "Empty selection accepted an order"); };
         rejectOrder();
         const auto error = game.message();
         require(notice.text(game, began + seconds(5)) == error, "New notification did not appear");
@@ -670,9 +673,38 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         rts::Simulation game(std::move(s));
         const rts::WorldView view{{300, 200}, 1};
         const auto back = rts::unitScreenAnchor(view, game.units()[0].position, 0) + rts::Vec2{0, -25};
-        require(rts::pickEntity(game, view, back) == game.buildings()[0].id, "Unit behind the building won selection by its x coordinate");
+        require(rts::pickEntity(game, view, back) == game.units()[0].id, "Unit behind the building cannot be selected through its window");
         const auto front = rts::unitScreenAnchor(view, game.units()[1].position, 0) + rts::Vec2{0, -48};
         require(rts::pickEntity(game, view, front) == game.units()[1].id, "Foreground unit hidden from selection");
+    });
+    test("Occlusion windows share picking, camera scale and logical visibility", [] {
+        auto s = flatScenario(); s.worker = {3, 0};
+        Simulation game(std::move(s));
+        const auto& unit = game.units()[0];
+        const auto& building = game.buildings()[0];
+        for (float zoom : {.35f, 1.f, 1.8f}) {
+            WorldView view{{450, 300}, zoom};
+            const auto window = unitOcclusion(game, unit, view);
+            const Vec2 middle{window.body.x + window.body.width * .5f, window.body.y + window.body.height * .5f};
+            require(window.contains(middle) && std::abs(window.opacity(middle) - .18f) < .001f, "Window body is opaque");
+            const Vec2 rim{window.body.x - window.padding - window.feather * .5f, middle.y};
+            require(!window.contains(rim) && window.opacity(rim) > .18f && window.opacity(rim) < 1, "Window has no soft fringe");
+            require(window.opacity({rim.x - window.feather, rim.y}) == 1, "Window changed distant pixels");
+            require(pickEntity(game, view, middle) == unit.id, "Camera changed selection through the building");
+            const auto b = buildingBounds(game, building, view);
+            require(pickEntity(game, view, {b.x + b.width - 2 * zoom, b.y + b.height * .5f}) == building.id,
+                "Building outside window became unselectable");
+            require(occlusionEligible(game, unit, buildingDepth(building)), "Visible rear unit has no mask");
+            require(!occlusionEligible(game, unit, unitDrawDepth(unit.position)), "Unit masks an object behind itself");
+        }
+        auto hidden = unit; hidden.cell = {game.map().width()-1, game.map().height()-1};
+        require(!occlusionEligible(game, hidden, 1000), "Hidden unit produces a mask");
+        auto dead = unit; dead.health = 0;
+        require(!occlusionEligible(game, dead, 1000), "Dead unit produces a mask");
+        for (PlayerId owner : {game.player().id, PlayerId(1), neutralPlayer}) {
+            auto other = unit; other.owner = owner;
+            require(occlusionEligible(game, other, buildingDepth(building)), "Mask depends on allegiance");
+        }
     });
 }
 }

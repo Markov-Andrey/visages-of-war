@@ -1,4 +1,5 @@
 #include "rts/GameplayUi.hpp"
+#include "rts/UnitOcclusion.hpp"
 
 namespace rts {
 namespace {
@@ -64,9 +65,17 @@ std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view
         const float d = buildingDepth(b);
         if (b.health > 0 && buildingVisible(game, b) && buildingBounds(game, b, view).contains(point) && d >= depth) { result = b.id; depth = d; }
     }
+    const auto* coveringBuilding = result ? game.building(*result) : nullptr;
+    if (coveringBuilding) {
+        // Remove only the covering building from depth competition inside a window.
+        for (const auto& u : game.units()) if (occlusionEligible(game, u, buildingDepth(*coveringBuilding)) &&
+            unitOcclusion(game, u, view).contains(point)) { result.reset(); depth = -1; break; }
+    }
     for (const auto& u : game.units()) {
         const float d = unitDrawDepth(u.position) + (airborne(u.definition.movement) ? 1000.0f : 0);
-        if (u.health > 0 && game.fog().visible(u.cell) && unitBounds(game, u, view).contains(point) && d >= depth) { result = u.id; depth = d; }
+        const bool throughWindow = coveringBuilding && occlusionEligible(game, u, buildingDepth(*coveringBuilding)) &&
+            unitOcclusion(game, u, view).contains(point);
+        if (u.health > 0 && game.fog().visible(u.cell) && (unitBounds(game, u, view).contains(point) || throughWindow) && d >= depth) { result = u.id; depth = d; }
     }
     return result;
 }

@@ -20,6 +20,16 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     const auto feedbackAge = [&](EntityId id) { return id == ui.commandFeedback.target ? commandAge : -1.f; };
     prepareNightLighting(game, view, extent, ui);
     const auto& map = game.map();
+    const auto objectBounds = [&](const WorldObjectDefinition& definition, Vec2 position, float scale, float rotation) {
+        const Cell cell{int(position.x), int(position.y)};
+        const auto p = view.project(position, map.surfaceHeight(cell, position));
+        const auto e = definition.size * (view.zoom * scale);
+        if (rotation == 0) return UiRect{p.x - e.x * definition.anchor.x, p.y - e.y * definition.anchor.y, e.x, e.y};
+        // Conservative rotation-independent bound, used only to reject non-overlapping masks.
+        const float radius = std::hypot(e.x * std::max(definition.anchor.x, 1 - definition.anchor.x),
+            e.y * std::max(definition.anchor.y, 1 - definition.anchor.y));
+        return UiRect{p.x - radius, p.y - radius, radius * 2, radius * 2};
+    };
     target_->PushAxisAlignedClip(rect(layout.world.x, layout.world.y, layout.world.width, layout.world.height), D2D1_ANTIALIAS_MODE_ALIASED);
     const auto onScreen = [&](Vec2 p) { return p.x > -250 && p.x < extent.x + 250 && p.y > -80 && p.y < extent.y; };
     enum class Kind { Crystal, Environment, Decoration, Building, Corpse, Bones, Unit, RallyPoint };
@@ -66,7 +76,10 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             case Kind::Decoration: {
                 const auto& object = game.landscape().decorations[item.index];
                 worldOpacity_ = game.fog().visible({int(object.position.x), int(object.position.y)}) ? 1.0f : .3f;
+                const bool masked = worldOpacity_ == 1 && beginUnitOcclusion(game, view, item.depth,
+                    objectBounds(worldAssets_.object(object.definitionId), object.position, object.scale, object.rotation));
                 decoration(object, map, view);
+                if (masked) target_->PopLayer();
                 break;
             }
             case Kind::Crystal: {
@@ -88,13 +101,23 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                 if (!onScreen(view.project(center(object.origin), float(map.at(object.origin).height)))) break;
                 object.hitPoints = std::max(1, object.hitPoints); // Last known image in explored fog.
                 worldOpacity_ = game.environmentVisible(item.index) ? 1.0f : .3f;
+                const auto p = view.project(center(object.origin), float(map.at(object.origin).height));
+                UiRect bounds{p.x - 60 * view.zoom, p.y - 110 * view.zoom, (120 + object.width * 64.f) * view.zoom, 155 * view.zoom};
+                if (!object.definitionId.empty() && !worldAssets_.object(object.definitionId).image.empty())
+                    bounds = objectBounds(worldAssets_.object(object.definitionId),
+                        {object.origin.x + object.width * .5f, object.origin.y + object.height - .5f}, 1, 0);
+                const bool masked = worldOpacity_ == 1 && beginUnitOcclusion(game, view, item.depth, bounds);
                 environmentObject(object, map, view);
+                if (masked) target_->PopLayer();
                 break;
             }
             case Kind::Building: {
                 const auto& b = game.buildings()[item.index];
-                if (onScreen(view.project(center(b.origin), float(map.at(b.origin).height))))
+                if (onScreen(view.project(center(b.origin), float(map.at(b.origin).height)))) {
+                    const bool masked = beginUnitOcclusion(game, view, item.depth, buildingBounds(game, b, view));
                     buildingSprite(game, b, view, ui.selection.contains(b.id));
+                    if (masked) target_->PopLayer();
+                }
                 break;
             }
             case Kind::Corpse: {

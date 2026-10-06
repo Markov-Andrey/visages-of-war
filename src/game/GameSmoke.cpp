@@ -330,7 +330,15 @@ void GameApplication::exerciseInterface() {
     for (int tick = 0; tick < 700; ++tick) game_.tick();
     if (!game_.buildings().back().complete() || game_.units().size() != initialUnitCount + 1) throw std::runtime_error("Smoke: construction or training failed");
     bounds = rts::buildingBounds(game_, game_.buildings().back(), view_);
-    click({bounds.x + bounds.width * .5f, bounds.y + 45});
+    // Builders can now be selected through the roof. Click an exposed part of
+    // the barracks instead of assuming that a fixed roof pixel selects it.
+    std::optional<rts::Vec2> barracksPoint;
+    for (int y = 1; y < 10 && !barracksPoint; ++y) for (int x = 1; x < 10 && !barracksPoint; ++x) {
+        const rts::Vec2 p{std::round(bounds.x + bounds.width * x / 10), std::round(bounds.y + bounds.height * y / 10)};
+        if (layout.world.contains(p) && rts::pickEntity(game_, view_, p) == game_.buildings().back().id) barracksPoint = p;
+    }
+    if (!barracksPoint) throw std::runtime_error("Smoke: no exposed barracks area for selection");
+    click(*barracksPoint);
     if (!selectedBuilding() || selectedBuilding()->definition.visual != rts::EntityVisual::Barracks)
         throw std::runtime_error("Smoke: barracks selection failed");
     onMessage(WM_KEYDOWN, 'Q', 0);

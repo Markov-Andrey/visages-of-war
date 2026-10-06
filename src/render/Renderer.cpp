@@ -31,6 +31,7 @@ void Renderer::ensureTarget() {
 }
 
 void Renderer::discardTarget() {
+    occlusionLayer_.Reset();
     commandIcons_.clear();
     portraitGradients_.clear();
     selectionRings_.clear();

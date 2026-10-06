@@ -84,6 +84,8 @@ private:
     void tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog = false);
     void terrainRow(const Map& map, int row, const WorldView& view, bool grid, bool fog = false);
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
+    bool beginUnitOcclusion(const Simulation& game, const WorldView& view, float depth, UiRect bounds);
+    ComPtr<ID2D1Layer> occlusionLayer_;
     void hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid);
     void drawUnitSelection(const Simulation& game, const Selection& selection, UiRect info);
     void drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color, float opacity = 1, bool dashed = false);

@@ -1,8 +1,47 @@
 #include "TestSupport.hpp"
 #include "render/RenderSupport.hpp"
+#include "rts/UnitOcclusion.hpp"
 
 namespace rts {
 struct RendererLightingTest {
+    static void occlusion(const tests::TestContext& context) {
+        using render::check;
+        using tests::require;
+        platform::ComApartment apartment;
+        Renderer renderer(Paths(context.assets, Paths::executable().parent_path() / "occlusion-test-data"));
+        Renderer::ComPtr<IWICBitmap> output;
+        constexpr UINT width = 240, height = 180;
+        renderer.offscreenSize_ = {float(width), float(height)};
+        check(renderer.wic_->CreateBitmap(width, height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, output.GetAddressOf()));
+        auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
+        properties.dpiX = properties.dpiY = 96;
+        check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
+        check(renderer.target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), renderer.brush_.GetAddressOf()));
+        auto scene = tests::flatScenario(); scene.worker = {3, 0};
+        Simulation game(std::move(scene));
+        WorldView view{{}, 1};
+        const auto body = unitBounds(game, game.worker(), view);
+        view.origin = Vec2{120, 90} - Vec2{body.x + body.width * .5f, body.y + body.height * .5f};
+        const auto window = unitOcclusion(game, game.worker(), view);
+        const auto draw = [&](float depth) {
+            renderer.target_->BeginDraw(); renderer.target_->Clear(D2D1::ColorF(0));
+            const bool masked = renderer.beginUnitOcclusion(game, view, depth, {0, 0, float(width), float(height)});
+            renderer.target_->FillRectangle(D2D1::RectF(0, 0, float(width), float(height)), renderer.brush_.Get());
+            if (masked) renderer.target_->PopLayer();
+            check(renderer.target_->EndDraw());
+            std::vector<UINT32> pixels(width * height);
+            check(output->CopyPixels(nullptr, width * 4, UINT(pixels.size() * 4), reinterpret_cast<BYTE*>(pixels.data())));
+            return pixels;
+        };
+        const auto pixels = draw(buildingDepth(game.buildings()[0]));
+        const auto sample = [&](int x, int y) { return pixels[y * width + x] & 255; };
+        require(sample(120, 90) >= 44 && sample(120, 90) <= 48, "Occlusion layer did not expose the rear image");
+        const auto fringe = sample(int(window.body.x - window.padding - window.feather * .5f), 90);
+        require(fringe > 70 && fringe < 230, "Occlusion fringe has a hard edge");
+        require(sample(1, 1) == 255 && sample(238, 178) == 255, "Clamped mask changed pixels outside the window");
+        const auto behind = draw(unitDrawDepth(game.worker().position));
+        require((behind[90 * width + 120] & 255) == 255, "Background object was made transparent");
+    }
     static void healthBars(const tests::TestContext& context) {
         using render::check;
         using tests::require;
@@ -110,6 +149,7 @@ struct RendererLightingTest {
 };
 namespace tests {
 void lightingTests(TestSuite& test, const TestContext& context) {
+    test("Occlusion layer exposes units with a soft local window and preserves background objects", [&] { RendererLightingTest::occlusion(context); });
     test("Health sections, damage colour and death visibility stay readable at night", [&] { RendererLightingTest::healthBars(context); });
     test("Night sprite composition preserves alpha, soft emission and foreground occlusion", [&] { RendererLightingTest::composite(context); });
     test("Night, dawn and daylight render with unchanged resources and paused time", [&] {
