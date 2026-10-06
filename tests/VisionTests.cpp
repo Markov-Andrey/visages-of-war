@@ -79,7 +79,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         for (const auto& crystal : site.crystals) site.map.occupy(crystal.cell);
         rts::EntityDefinition worker; worker.dayVision = worker.nightVision = 4;
         auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
-        rts::Simulation game(site, {}, worker, {depot});
+        rts::Simulation game(site, {}, worker, {depot}, {}, {}, {.startMinute = 22 * 60});
         const rts::WorldView view{{0, 0}, 1};
         const auto lights = rts::crystalLights(game, view);
         require(lights.size() == 1, "Hidden crystal emitted light");
@@ -135,7 +135,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
     test("Night lighting fades smoothly, respects fog and stays stable while paused", [&] {
         const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
-        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
         const rts::WorldView view{{0, 0}, 1}; const rts::Vec2 extent{1800, 1800};
         rts::FogMask fog; fog.update(game.fog(), 28, 28);
         rts::NightLightingRaster raster; raster.update(game, view, extent, fog);
@@ -298,8 +298,8 @@ void visionTests(TestSuite& test, const TestContext& context) {
         rts::WorldClock midnight({30, 48, 1439, 360, 1080});
         require(!midnight.tick() && midnight.minuteOfDay() == 0, "Midnight wraps incorrectly");
         rts::Simulation game(flatScenario());
-        require(game.clock().phase() == rts::DayPhase::Night && game.clock().minuteOfDay() == 22 * 60,
-            "Default match did not start at 22:00");
+        require(game.clock().phase() == rts::DayPhase::Day && game.clock().minuteOfDay() == 12 * 60,
+            "Default match did not start at noon");
         const auto before = game.clock().elapsedTicks();
         game.command({6, 3});
         require(game.clock().elapsedTicks() == before, "Command advanced time while paused");
@@ -328,7 +328,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         type.dayVision = 3; type.nightVision = 1;
         auto depot = testDepot("hall", type.id, 60); depot.dayVision = 3; depot.nightVision = 1; depot.maximumHealth = 300;
         const std::vector<rts::EntityDefinition> buildings{depot};
-        rts::Simulation game(std::move(s), {}, type, buildings);
+        rts::Simulation game(std::move(s), {}, type, buildings, {}, {}, {.startMinute = 22 * 60});
         require(game.clock().phase() == rts::DayPhase::Night && !game.fog().visible({4, 6}), "Night radius missing at match start");
         ticks(game, 4800); // 22:00 -> 06:00 at 10 ticks per game minute.
         require(game.clock().phase() == rts::DayPhase::Day && game.fog().visible({4, 6}), "Day radius missing after dawn");

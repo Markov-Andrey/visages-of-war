@@ -133,7 +133,7 @@ class Simulation {
 public:
     static constexpr int ticksPerSecond = simulationTicksPerSecond;
     explicit Simulation(Scenario scenario, PlayerSettings player = {}, EntityDefinition workerType = {},
-        std::vector<EntityDefinition> entityTypes = {}, std::string startingHero = {}, ProgressionRules progression = {});
+        std::vector<EntityDefinition> entityTypes = {}, std::string startingHero = {}, ProgressionRules progression = {}, ClockSettings clock = {});
     Simulation(const Simulation&) = delete;
     Simulation& operator=(const Simulation&) = delete;
     Simulation(Simulation&&) noexcept = default;

@@ -9,7 +9,7 @@ struct DayPhaseChanged { DayPhase before; DayPhase after; int minute; };
 struct ClockSettings {
     int ticksPerSecond = 30;
     int cycleSeconds = 480;
-    int startMinute = 22 * 60;
+    int startMinute = 12 * 60;
     int sunriseMinute = 6 * 60;
     int sunsetMinute = 18 * 60;
 };

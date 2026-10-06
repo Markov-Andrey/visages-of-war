@@ -68,7 +68,7 @@ private:
     rts::Vec2 mouse_{-1, -1};
     rts::GameplayUi ui_;
     rts::Vec2 dragStart_{}, panStart_{};
-    bool dragging_{}, adding_{}, panning_{}, minimapDragging_{}, grid_{true}, paused_{};
+    bool dragging_{}, adding_{}, panning_{}, minimapDragging_{}, grid_{}, paused_{};
     std::exception_ptr callbackError_;
 };
 }

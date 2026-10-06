@@ -45,7 +45,7 @@ private:
     HWND window_{};
     rts::WorldView view_;
     rts::Vec2 mouse_{-1,-1},panStart_{};
-    bool grid_=true,panning_{},editorPainting_{},smoke_{},testFinished_{};
+    bool grid_{},panning_{},editorPainting_{},smoke_{},testFinished_{};
     HANDLE gameProcess_{};
     std::filesystem::path testFile_;
     size_t paintAtTest_{},decorAtTest_{},unitsAtTest_{};

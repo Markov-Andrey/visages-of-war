@@ -160,7 +160,7 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         renderer.validateCombatAssets(definitions);
         Scenario site{Map(28, 28), {8, 11}, {11, 11}, {{{12, 12}, 1000}, {{13, 13}, 1000}}};
         for (const auto& crystal : site.crystals) site.map.occupy(crystal.cell);
-        Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
         renderer.snapshot(game, root / "lighting-night.png");
         const auto dark = RendererLightingTest::snapshotPixel(renderer, root / "lighting-night.png", 270, 400);
         // The fog's filtered edge and byte rounding may differ from the background by a couple of levels.
@@ -188,7 +188,7 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         auto types = definitions.entities();
         for (auto& type : types) type.dayVision = type.nightVision = 20;
         auto worker = definitions.entity("human.worker"); worker.dayVision = worker.nightVision = 20;
-        Simulation game(std::move(site), {}, worker, types);
+        Simulation game(std::move(site), {}, worker, types, {}, {}, {.startMinute = 22 * 60});
         GameplayUi ui;
         for (const auto& unit : game.units()) if (unit.owner == game.player().id) ui.selection.ids.push_back(unit.id);
         ticks(game, 8);

@@ -710,7 +710,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(rts::pickEntity(game, view, front) == game.units()[1].id, "Foreground unit hidden from selection");
     });
     test("Occlusion windows share picking, camera scale and logical visibility", [] {
-        auto s = flatScenario(); s.worker = {3, 0};
+        Scenario s{Map(24, 24), {1, 1}, {3, 0}, {}};
         Simulation game(std::move(s));
         const auto& unit = game.units()[0];
         const auto& building = game.buildings()[0];
@@ -730,6 +730,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             require(!occlusionEligible(game, unit, unitDrawDepth(unit.position)), "Unit masks an object behind itself");
         }
         auto hidden = unit; hidden.cell = {game.map().width()-1, game.map().height()-1};
+        require(!game.fog().visible(hidden.cell), "Hidden-unit fixture is inside the sight radius");
         require(!occlusionEligible(game, hidden, 1000), "Hidden unit produces a mask");
         auto dead = unit; dead.health = 0;
         require(!occlusionEligible(game, dead, 1000), "Dead unit produces a mask");

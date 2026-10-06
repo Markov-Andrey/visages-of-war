@@ -5,9 +5,9 @@
 
 namespace rts {
 Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinition workerType,
-    std::vector<EntityDefinition> entityTypes, std::string startingHero, ProgressionRules progression)
+    std::vector<EntityDefinition> entityTypes, std::string startingHero, ProgressionRules progression, ClockSettings clock)
     : scenario_(std::move(scenario)), player_(std::move(player)), workerType_(std::move(workerType)),
-      entityTypes_(std::move(entityTypes)), progression_(std::make_shared<const ProgressionRules>(std::move(progression))), fog_(map().width(), map().height()),
+      entityTypes_(std::move(entityTypes)), progression_(std::make_shared<const ProgressionRules>(std::move(progression))), clock_(clock), fog_(map().width(), map().height()),
       knownCrystals_(crystals().size()), knownEnvironment_(environment().size()), stored_(scenario_.startingCrystals) {
     if (scenario_.playerSlots != 1 || player_.id != 0) throw std::invalid_argument("Invalid match setup");
     for (const auto& object : scenario_.environment) nextId_ = std::max(nextId_, object.id + 1);

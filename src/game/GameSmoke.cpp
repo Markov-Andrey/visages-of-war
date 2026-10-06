@@ -11,10 +11,10 @@ void GameApplication::exerciseInterface() {
     cursor_.snapshot(rts::Paths::executable().parent_path() / L"cursors-preview.png");
     {
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
-        rts::Simulation lit(site, {}, definitions_.entity("human.worker"), definitions_.entities());
+        rts::Simulation lit(site, {}, definitions_.entity("human.worker"), definitions_.entities(), {}, {}, {.startMinute = 22 * 60});
         auto unlitTypes = definitions_.entities();
         for (auto& type : unlitTypes) for (auto& stage : type.buildingSprite.stages) stage.lights.clear();
-        rts::Simulation unlit(site, {}, definitions_.entity("human.worker"), unlitTypes);
+        rts::Simulation unlit(site, {}, definitions_.entity("human.worker"), unlitTypes, {}, {}, {.startMinute = 22 * 60});
         renderer_.snapshot(unlit, rts::Paths::executable().parent_path() / L"ratusha-light-off.png");
         renderer_.snapshot(lit, rts::Paths::executable().parent_path() / L"ratusha-light-on.png");
     }
@@ -23,8 +23,8 @@ void GameApplication::exerciseInterface() {
         site.startingCrystals = 500;
         rts::PlayerSettings player; player.color = rts::TeamColor::Red;
         rts::Simulation construction(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities());
-        if (construction.clock().phase() != rts::DayPhase::Night || construction.clock().minuteOfDay() != 22 * 60)
-            throw std::runtime_error("Smoke: match did not start at night");
+        if (construction.clock().phase() != rts::DayPhase::Day || construction.clock().minuteOfDay() != 12 * 60)
+            throw std::runtime_error("Smoke: match did not start at noon");
         const std::array builders{construction.worker().id};
         const auto id = construction.construct(builders, "human.hall", {12, 11});
         if (!id) throw std::runtime_error("Smoke: hall construction failed");
@@ -299,11 +299,11 @@ void GameApplication::exerciseInterface() {
     tooltipUi.mouse = {command.x + 20, command.y + 20};
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"tooltip-preview.png", nullptr, false, &tooltipUi);
     resetCamera();
-    if (!grid_) throw std::runtime_error("Smoke: grid must be enabled by default");
+    if (grid_) throw std::runtime_error("Smoke: grid must be disabled by default");
     onMessage(WM_KEYDOWN, VK_F3, 0);
-    if (grid_) throw std::runtime_error("Smoke: G did not hide grid");
+    if (!grid_) throw std::runtime_error("Smoke: F3 did not show grid");
     onMessage(WM_KEYDOWN, VK_F3, 0);
-    if (!grid_) throw std::runtime_error("Smoke: G did not restore grid");
+    if (grid_) throw std::runtime_error("Smoke: F3 did not hide grid");
     auto bounds = rts::buildingBounds(game_, game_.buildings().front(), view_);
     click({bounds.x + bounds.width * .5f, bounds.y + bounds.height * .45f});
     if (!selectedBuilding()) throw std::runtime_error("Smoke: building selection failed");
