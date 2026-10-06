@@ -117,7 +117,7 @@
       true
     ],
     "health": 150,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_1.png",
       "source": [
@@ -150,7 +150,7 @@
       true
     ],
     "health": 150,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_1.png",
       "source": [
@@ -183,7 +183,7 @@
       true
     ],
     "health": 150,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_1.png",
       "source": [
@@ -217,7 +217,7 @@
       true
     ],
     "health": 150,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_1.png",
       "source": [
@@ -250,7 +250,7 @@
       true
     ],
     "health": 250,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_1.png",
       "source": [
@@ -286,7 +286,7 @@
       true
     ],
     "health": 350,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_1.png",
       "source": [
@@ -320,7 +320,7 @@
       true
     ],
     "health": 150,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_1.png",
       "source": [
@@ -354,7 +354,7 @@
       true
     ],
     "health": 150,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_1.png",
       "source": [
@@ -392,7 +392,7 @@
       true
     ],
     "health": 650,
-    "blocksVision": true,
+    "blocksVision": false,
     "sprite": {
       "image": "sprites/vineyard/decor_2.png",
       "source": [
@@ -430,7 +430,7 @@
       true
     ],
     "health": 500,
-    "blocksVision": true,
+    "blocksVision": false,
     "sprite": {
       "image": "sprites/vineyard/decor_2.png",
       "source": [
@@ -465,7 +465,7 @@
       true
     ],
     "health": 500,
-    "blocksVision": false,
+    "blocksVision": true,
     "sprite": {
       "image": "sprites/vineyard/decor_2.png",
       "source": [
@@ -713,6 +713,204 @@
       "anchor": [
         0.5,
         0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.tree_cypress",
+    "name": "Кипарис",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/trees.png",
+      "source": [
+        20,
+        4,
+        113,
+        215
+      ],
+      "size": [
+        61,
+        116
+      ],
+      "anchor": [
+        0.5,
+        0.97
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.tree_olive",
+    "name": "Олива",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/trees.png",
+      "source": [
+        464,
+        228,
+        146,
+        169
+      ],
+      "size": [
+        105,
+        122
+      ],
+      "anchor": [
+        0.5,
+        0.97
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.tree_pine",
+    "name": "Пиния",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/trees.png",
+      "source": [
+        408,
+        406,
+        167,
+        187
+      ],
+      "size": [
+        118,
+        132
+      ],
+      "anchor": [
+        0.5,
+        0.97
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.tree_oak",
+    "name": "Лиственное дерево",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/trees.png",
+      "source": [
+        8,
+        602,
+        188,
+        192
+      ],
+      "size": [
+        112,
+        114
+      ],
+      "anchor": [
+        0.5,
+        0.97
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.tree_citrus",
+    "name": "Цитрусовое дерево",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/trees.png",
+      "source": [
+        12,
+        803,
+        135,
+        180
+      ],
+      "size": [
+        88,
+        117
+      ],
+      "anchor": [
+        0.5,
+        0.97
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "vineyard.tree_blossom",
+    "name": "Цветущее дерево",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "sprites/vineyard/trees.png",
+      "source": [
+        774,
+        805,
+        140,
+        188
+      ],
+      "size": [
+        97,
+        130
+      ],
+      "anchor": [
+        0.5,
+        0.97
       ],
       "pixelArt": false
     }

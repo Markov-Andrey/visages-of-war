@@ -43,6 +43,12 @@
       "original": "vine_decor.png",
       "path": "sprites/vineyard/vine_decor.png",
       "sha256": "82016BB8C28AF68F4940C2AD628F355127C1078F2FA9D49CB7319A0723C18E10"
+    },
+    {
+      "original": "trees-1.png",
+      "path": "sprites/vineyard/trees.png",
+      "sha256": "C90CD5FAF0F2BE7F2EAE83107B3A6110648CE7DC36D7C91B4479C58E76D313ED",
+      "selection": "Six isolated trees without painted ground: cypress, olive, stone pine, broadleaf, citrus and blossom. Multi-tree groups and mixed tree/bush compositions excluded. Original PNG bytes and alpha preserved."
     }
   ]
 }

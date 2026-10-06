@@ -2169,7 +2169,7 @@
         6,
         11
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_cypress",
       "id": 1000,
       "health": 100
     },
@@ -2178,7 +2178,7 @@
         7,
         10
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_pine",
       "id": 1001,
       "health": 100
     },
@@ -2187,7 +2187,7 @@
         7,
         12
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_olive",
       "id": 1002,
       "health": 100
     },
@@ -2196,7 +2196,7 @@
         8,
         9
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_cypress",
       "id": 1003,
       "health": 100
     },
@@ -2205,7 +2205,7 @@
         5,
         13
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_olive",
       "id": 1004,
       "health": 100
     },
@@ -2214,7 +2214,7 @@
         18,
         9
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_cypress",
       "id": 1005,
       "health": 100
     },
@@ -2223,7 +2223,7 @@
         19,
         9
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_cypress",
       "id": 1006,
       "health": 100
     },
@@ -2232,7 +2232,7 @@
         18,
         10
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_pine",
       "id": 1007,
       "health": 100
     },
@@ -2241,7 +2241,7 @@
         19,
         8
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_olive",
       "id": 1008,
       "health": 100
     },
@@ -2250,7 +2250,7 @@
         17,
         23
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_olive",
       "id": 1009,
       "health": 100
     },
@@ -2259,7 +2259,7 @@
         18,
         24
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_olive",
       "id": 1010,
       "health": 100
     },
@@ -2268,7 +2268,7 @@
         19,
         24
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_citrus",
       "id": 1011,
       "health": 100
     },
@@ -2277,7 +2277,7 @@
         18,
         25
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_citrus",
       "id": 1012,
       "health": 100
     },
@@ -2286,7 +2286,7 @@
         25,
         33
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_oak",
       "id": 1013,
       "health": 100
     },
@@ -2295,7 +2295,7 @@
         26,
         34
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_pine",
       "id": 1014,
       "health": 100
     },
@@ -2304,7 +2304,7 @@
         28,
         32
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_oak",
       "id": 1015,
       "health": 100
     },
@@ -2313,7 +2313,7 @@
         45,
         22
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_cypress",
       "id": 1016,
       "health": 100
     },
@@ -2322,7 +2322,7 @@
         46,
         21
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_pine",
       "id": 1017,
       "health": 100
     },
@@ -2331,7 +2331,7 @@
         47,
         22
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_olive",
       "id": 1018,
       "health": 100
     },
@@ -2340,7 +2340,7 @@
         48,
         23
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_cypress",
       "id": 1019,
       "health": 100
     },
@@ -2349,7 +2349,7 @@
         53,
         51
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_pine",
       "id": 1020,
       "health": 100
     },
@@ -2358,7 +2358,7 @@
         54,
         50
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_pine",
       "id": 1021,
       "health": 100
     },
@@ -2367,7 +2367,7 @@
         55,
         49
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_oak",
       "id": 1022,
       "health": 100
     },
@@ -2376,7 +2376,7 @@
         38,
         53
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_oak",
       "id": 1023,
       "health": 100
     },
@@ -2385,7 +2385,7 @@
         39,
         54
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_olive",
       "id": 1024,
       "health": 100
     },
@@ -2394,7 +2394,7 @@
         8,
         39
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_citrus",
       "id": 1025,
       "health": 100
     },
@@ -2403,7 +2403,7 @@
         9,
         38
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_olive",
       "id": 1026,
       "health": 100
     },
@@ -2412,7 +2412,7 @@
         10,
         40
       ],
-      "asset": "tree",
+      "asset": "vineyard.tree_citrus",
       "id": 1027,
       "health": 100
     },

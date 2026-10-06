@@ -219,6 +219,66 @@ void visionTests(TestSuite& test, const TestContext& context) {
         game.damageEnvironment(1001, 100);
         require(game.map().walkable({4, 5}), "Tree removal did not open path");
     });
+    test("Vineyard prop faces remain visible from every side while houses let sight through", [&] {
+        for (const auto& definition : context.worldAssets.objects()) {
+            if (!definition.id.starts_with("vineyard.") || !definition.gameplay) continue;
+            const bool house = definition.id == "vineyard.winery" || definition.id == "vineyard.cellar";
+            require(definition.blocksVision == !house, "Vineyard sight policy differs from the catalog requirement");
+            const auto object = context.worldAssets.instantiate(definition.id, 1000, {8, 8});
+            Map map(24, 24); map.rebuildVisionBlockers(std::array{object});
+            // Test the first occupied row/column, including both pillars of the arch.
+            const int right = 8 + object.width - 1, bottom = 8 + object.height - 1;
+            struct Ray { Cell observer, face, behind; };
+            const std::array rays{
+                Ray{{4, 8}, {8, 8}, {right + 1, 8}}, Ray{{18, 8}, {right, 8}, {7, 8}},
+                Ray{{8, 4}, {8, 8}, {8, bottom + 1}}, Ray{{8, 18}, {8, bottom}, {8, 7}}};
+            for (const auto& ray : rays) {
+                require(visionReaches(map, {ray.observer, 20}, ray.face), "First blocking face is hidden");
+                require(visionReaches(map, {ray.observer, 20}, ray.behind) == house, "Ground sight behind vineyard prop is wrong");
+                require(visionReaches(map, {ray.observer, 20, true}, ray.behind), "Vineyard prop blocked air sight");
+            }
+        }
+        Map map(24, 24);
+        map.rebuildVisionBlockers(std::array{context.worldAssets.instantiate("vineyard.arch", 1000, {8, 8})});
+        require(map.blocksVision({8, 8}) && !map.blocksVision({9, 8}) && map.blocksVision({10, 8}),
+            "Arch sight mask does not match its pillars and open centre");
+        require(visionReaches(map, {{9, 4}, 16}, {9, 12}), "The open arch blocks sight");
+    });
+    test("Visible vineyard obstacle hides live entities behind it and respects memory and other observers", [&] {
+        Scenario scene{Map(24, 24), {1, 1}, {4, 8}, {}};
+        scene.environment = {context.worldAssets.instantiate("vineyard.vine_a", 1000, {8, 8}),
+            context.worldAssets.instantiate("vineyard.barrel", 1001, {12, 8})};
+        scene.crystals = {context.worldAssets.instantiateCrystal("crystal.small", {11, 9})};
+        EntityDefinition worker; worker.dayVision = worker.nightVision = 18; worker.attackDamage = 10;
+        auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
+        scene.units = {{worker.id, 1, {11, 8}}};
+        rebuildScenario(scene, {depot.width, depot.height});
+        Simulation game(scene, {}, worker, {depot, worker});
+        const auto enemy = game.units().back().id;
+        const std::array attackers{game.worker().id};
+        const auto hidden = [&] {
+            require(game.environmentVisible(0) && game.knownEnvironment(0), "The first opaque object is not drawn");
+            require(game.fog().visible({8, 8}) && !game.fog().visible({9, 8}), "Multi-cell blocker hid its front or exposed its back");
+            require(!game.environmentVisible(1) && !game.crystalVisible(game.crystals().front()), "Live scenery leaked through the obstacle");
+            require(!game.fog().visible({11, 8}) && !selectableEntity(game, enemy) && !game.attack(attackers, enemy),
+                "Hidden enemy can be seen, selected or targeted");
+        };
+        hidden();
+        require(!game.knownEnvironment(1) && game.knownCrystal(0) == 0, "Unexplored scenery leaked into rendering");
+        require(game.setEnvironmentHealth(1000, 0), "Could not remove sight obstacle");
+        require(game.environmentVisible(1) && game.crystalVisible(game.crystals().front()) &&
+            selectableEntity(game, enemy) && game.attack(attackers, enemy), "Removing obstacle did not reveal live entities");
+        require(game.setEnvironmentHealth(1000, scene.environment.front().maximumHitPoints), "Could not restore sight obstacle");
+        hidden();
+        require(game.fog().explored({11, 8}) && game.knownEnvironment(1) && game.knownCrystal(0) > 0,
+            "Closing sight erased the remembered landscape instead of dimming it");
+        auto flanked = scene; flanked.extraWorkers = {{11, 6}};
+        Simulation flank(std::move(flanked), {}, worker, {depot, worker});
+        require(flank.fog().visible({11, 8}) && flank.environmentVisible(1), "One observer's obstacle cancelled another observer's sight");
+        auto flyer = worker; flyer.movement = MovementType::Flying;
+        Simulation air(scene, {}, flyer, {depot, flyer});
+        require(air.fog().visible({11, 8}) && air.environmentVisible(1), "Ground obstacle hid entities from an air observer");
+    });
     test("Forest and rock faces are visible but stop ground sight; air sees over them", [] {
         rts::Map map(16, 16);
         std::vector<rts::EnvironmentObject> forest;
