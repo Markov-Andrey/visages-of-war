@@ -1,4 +1,4 @@
-﻿"""Build the authored Sunny Hills asset-review landscape (standard-library Python only)."""
+"""Build the compact Sunny Hills village and asset bench (standard-library Python)."""
 import json
 import math
 import random
@@ -6,282 +6,262 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK = ROOT / 'assets/world/tilesets/sunny-hills'
-SIZE = 96
-RNG = random.Random(6102026)
+WIDTH, HEIGHT = 80, 64
+RNG = random.Random(7102026)
+CATEGORIES = ['trees', 'shrubs', 'coast', 'rocks', 'ruins', 'vineyards']
+
+
 def read(path):
     return json.loads(path.read_text(encoding='utf-8-sig'))
+
+
 def write(path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
-objects = {}
-for category in ['trees', 'shrubs', 'rocks', 'coast', 'ruins', 'vineyards']:
-    for definition in read(PACK / (category + '.json')):
-        objects[definition['id']] = definition
-heights = [[0] * SIZE for _ in range(SIZE)]
-surfaces = [['L'] * SIZE for _ in range(SIZE)]
-blocked = [['0'] * SIZE for _ in range(SIZE)]
-ramps = {}
-occupied = set()
-reserved = set()
-scenario = {'format': 'rts-world', 'name': 'Sunny Hills — Coast, Vineyards & Ruins', 'size': [SIZE, SIZE],
-            'start': {'hall': [33, 77], 'workers': [[34, 81], [35, 81], [36, 81]], 'hero': [38, 81], 'crystals': 1500},
+
+catalogs = {category: read(PACK / (category + '.json')) for category in CATEGORIES}
+objects = {d['id']: d for definitions in catalogs.values() for d in definitions}
+heights = [[0] * WIDTH for _ in range(HEIGHT)]
+surfaces = [['L'] * WIDTH for _ in range(HEIGHT)]
+ramps, occupied, reserved = {}, set(), set()
+scenario = {'format': 'rts-world', 'name': 'Sunny Hills - Vineyard Village & Asset Bench',
+            'size': [WIDTH, HEIGHT],
+            'start': {'hall': [16, 28], 'workers': [[18, 33], [19, 33], [20, 33]],
+                      'hero': [21, 34], 'crystals': 1500},
             'terrain': {}, 'paint': [], 'environment': [], 'decorations': [], 'resources': [], 'units': []}
 next_id = 1000
 
-def inside(x, y, polygon):
-    result = False
-    previous = polygon[-1]
-    for current in polygon:
-        ax, ay = previous; bx, by = current
-        if (ay > y) != (by > y) and x < (bx - ax) * (y - ay) / (by - ay) + ax:
-            result = not result
-        previous = current
-    return result
 
 def stamp(material, x, y, radius, opacity=1, hardness=.5):
-    scenario['paint'].append({'material': 'sunny_hills.' + material, 'position': [round(x, 3), round(y, 3)],
-                              'radius': radius, 'opacity': opacity, 'hardness': hardness, 'erase': False})
+    scenario['paint'].append({'material': 'sunny_hills.' + material,
+                              'position': [round(x, 3), round(y, 3)], 'radius': round(radius, 3),
+                              'opacity': opacity, 'hardness': hardness, 'erase': False})
 
-def road(points, material='dirt', radius=1.4, reserve=2.1):
+
+def road(points, material='dirt', radius=1.05, reserve=1.7):
     for a, b in zip(points, points[1:]):
-        length = math.dist(a, b)
-        count = max(1, math.ceil(length / .75))
+        count = max(1, math.ceil(math.dist(a, b) / .65))
         for step in range(count + 1):
             t = step / count
             x, y = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
-            stamp(material, x, y, radius, .88, .5)
-            for cy in range(max(0, int(y - reserve)), min(SIZE, math.ceil(y + reserve))):
-                for cx in range(max(0, int(x - reserve)), min(SIZE, math.ceil(x + reserve))):
+            stamp(material, x, y, radius, .86, .64)
+            for cy in range(max(0, int(y - reserve)), min(HEIGHT, math.ceil(y + reserve))):
+                for cx in range(max(0, int(x - reserve)), min(WIDTH, math.ceil(x + reserve))):
                     if math.hypot(cx + .5 - x, cy + .5 - y) < reserve:
                         reserved.add((cx, cy))
+
 
 def place(key, x, y, *, scale=1, force=False):
     global next_id
     key = key if key.startswith('sunny_hills.') else 'sunny_hills.' + key
     d = objects[key]
-    if not (0 <= x < SIZE and 0 <= y < SIZE):
+    if not (0 <= x < WIDTH and 0 <= y < HEIGHT):
         return False
     if not d['gameplay']:
-        scenario['decorations'].append({'id': next_id, 'asset': key, 'position': [round(x, 3), round(y, 3)], 'scale': round(scale, 3), 'rotation': 0})
+        if surfaces[int(y)][int(x)] != 'L':
+            return False
+        scenario['decorations'].append({'id': next_id, 'asset': key,
+                                       'position': [round(x, 3), round(y, 3)],
+                                       'scale': round(scale, 3), 'rotation': 0})
     else:
         x, y = int(x), int(y)
         w, h = d['footprint']
         cells = [(x + dx, y + dy) for dy in range(h) for dx in range(w)]
-        if any(cx >= SIZE or cy >= SIZE or surfaces[cy][cx] != 'L' or heights[cy][cx] != heights[y][x] or
-               (cx, cy) in occupied or (cx, cy) in ramps or (not force and (cx, cy) in reserved) for cx, cy in cells):
+        if any(cx >= WIDTH or cy >= HEIGHT or surfaces[cy][cx] != 'L' or
+               heights[cy][cx] != heights[y][x] or (cx, cy) in occupied or
+               (cx, cy) in ramps or (not force and (cx, cy) in reserved) for cx, cy in cells):
             return False
         scenario['environment'].append({'id': next_id, 'asset': key, 'cell': [x, y], 'health': d['health']})
         occupied.update(c for c, collision in zip(cells, d['collision']) if collision)
     next_id += 1
     return True
 
+
+def required(key, x, y):
+    assert place(key, x, y, force=True), ('Authored object overlaps', key, x, y)
+
+
 def ramp_lane(x, y, dx, dy):
     for offset in [-1, 0, 1]:
         cx, cy = x - dy * offset, y + dx * offset
         assert surfaces[cy][cx] == surfaces[cy + dy][cx + dx] == 'L'
-        assert heights[cy + dy][cx + dx] == heights[cy][cx] + 1, (cx, cy)
+        assert heights[cy + dy][cx + dx] == heights[cy][cx] + 1
         ramps[cx, cy] = [dx, dy]
         for step in [-1, 0, 1]:
             reserved.add((cx + dx * step, cy + dy * step))
 
-# The sea follows an irregular western shore. The northwest headland projects over it.
+
+# A small western cove frames the village; the shore has one broad dry descent.
 coast = []
-for y in range(SIZE):
-    edge = round(14 + 2.8 * math.sin(y / 10) + 1.3 * math.sin(y / 4.1))
-    if 19 <= y <= 29:
-        edge = min(edge, 11 + abs(y - 24) // 3)
-    if 61 <= y <= 69:
-        edge = 13
+for y in range(HEIGHT):
+    edge = 6 if 27 <= y <= 37 else round(5 + 1.3 * math.sin(y / 6))
     coast.append(edge)
     for x in range(edge):
-        surfaces[y][x] = 'D' if x < edge - 3 else 'S'
+        surfaces[y][x] = 'D' if x < edge - 2 else 'S'
         heights[y][x] = -1
-    if 51 <= y <= 73:
-        for x in range(edge, edge + 3):
-            heights[y][x] = -1
+    if 27 <= y <= 37:
+        heights[y][6] = heights[y][7] = -1
     if y % 2 == 0:
-        stamp('sand', edge + 1.5, y + .5, 3.4, .95, .58)
+        stamp('sand', edge + .65, y + .5, 1.7, .65, .45)
+ramp_lane(7, 32, 1, 0)
 
-# Three uneven hill systems divide the walkable valleys and road approaches.
-headland = [(12, 20), (16, 16), (25, 16), (31, 20), (31, 31), (24, 35), (16, 32), (12, 27)]
-forum = [(38, 35), (47, 32), (55, 37), (56, 47), (51, 54), (40, 54), (35, 45)]
-north_ridge = [(52, 4), (62, 1), (64, 22), (59, 34), (52, 30), (48, 17)]
-south_ridge = [(59, 65), (63, 68), (64, 84), (59, 90), (54, 80), (54, 72)]
-for y in range(SIZE):
-    for x in range(66):
-        if surfaces[y][x] != 'L':
-            continue
-        if any(inside(x + .5, y + .5, polygon) for polygon in [headland, forum, north_ridge, south_ridge]):
+# Low hills and a planted boundary enclose the designed western half.
+for y in range(HEIGHT):
+    for x in range(7, 38):
+        if y < 9 + int(2 * math.sin(x / 4)) or y > 54 + int(2 * math.sin(x / 5)):
             heights[y][x] = 1
-        if 18 <= x <= 26 and 20 <= y <= 26:
-            heights[y][x] = 2
-        if (55 <= x <= 60 and 9 <= y <= 23) or (58 <= x <= 61 and 73 <= y <= 81):
-            heights[y][x] = 2
-# Hand-authored, three-cell approaches through the terrace edges.
-for x in range(43, 46):
-    heights[53][x] = 1; heights[54][x] = 0; heights[55][x] = 0
-for x in range(44, 47):
-    heights[35][x] = 1; heights[34][x] = 0; heights[33][x] = 0
-ramp_lane(44, 54, 0, -1)
-ramp_lane(45, 34, 0, 1)
-ramp_lane(31, 28, -1, 0)
-ramp_lane(27, 24, -1, 0)
-ramp_lane(15, 65, 1, 0)
+for x in range(17, 20):
+    heights[9][x] = 1
+    heights[10][x] = heights[11][x] = 0
+ramp_lane(18, 10, 0, -1)
 
-# Warm meadow patches, bare summits and sandy margins sit below all road paint.
-for _ in range(100):
-    x, y = RNG.uniform(19, 63), RNG.uniform(3, 93)
-    stamp('dry_grass', x, y, RNG.uniform(2.4, 5.8), RNG.uniform(.25, .68), .25)
-for x, y in [(56, 13), (58, 20), (59, 76), (24, 24), (28, 44)]:
-    stamp('dirt', x, y, 4, .66, .3)
-for x, y, radius in [(44, 44, 6.5), (46, 49, 4), (23, 24, 3.5)]:
-    stamp('ancient_paving', x, y, radius, .95, .7)
+# The water bench has a dry bank, wadeable shallows and a deep-water pocket.
+for y in range(3, 11):
+    for x in range(65, 77):
+        heights[y][x] = -1
+        surfaces[y][x] = 'L' if x == 65 else ('S' if x < 70 else 'D')
+ramp_lane(65, 7, -1, 0)
+for y in [3.5, 5.5, 7.5, 9.5]:
+    stamp('sand', 64.8, y, .8, 1, .8)
 
-roads = [([(35, 82), (37, 76), (34, 68), (36, 61), (43, 58), (44, 54), (44, 49), (45, 42), (45, 34), (41, 27), (37, 20), (34, 10)], 'dirt', 1.5),
-         ([(41, 32), (36, 30), (32, 28.5), (29, 28.5), (28.5, 24.5), (24, 24.5)], 'dirt', 1.25),
-         ([(36, 64), (29, 63), (23, 67), (18, 65), (14, 65)], 'dirt', 1.25),
-         ([(36, 74), (43, 74), (49, 69), (51, 63), (60, 60), (67, 60), (70, 60)], 'cobblestone', 1.5),
-         ([(42, 57), (51, 58), (60, 60)], 'dirt', 1.15),
-         ([(35, 82), (41, 88), (49, 92), (60, 92), (67, 90), (70, 90)], 'dirt', 1.15),
-         ([(38, 21), (43, 16), (44, 8)], 'dirt', 1.0),
-         ([(34, 68), (27, 75), (25, 84), (30, 88)], 'dirt', 1.0)]
-for points, material, radius in roads:
-    road(points, material, radius)
-# Vineyard service lanes intentionally wind between the planted blocks.
-for points in [[(43, 74), (43, 81), (49, 84)], [(43, 78), (51, 78)], [(30, 12), (29, 18), (34, 22)], [(27, 75), (29, 80)]]:
-    road(points, radius=.75, reserve=1.2)
-road([(67, 3), (67, 93)], 'cobblestone', .8, 1.2)
+# Subtle warm meadow variation leaves the village readable at normal zoom.
+for x, y, radius in [(12, 22, 3), (28, 27, 3), (13, 40, 4), (24, 47, 4), (33, 17, 3), (9, 13, 3)]:
+    stamp('dry_grass', x, y, radius, .28, .2)
+for x, y in [(17.5, 29), (26.5, 27), (12.5, 29), (13.5, 36), (24.5, 40)]:
+    stamp('dirt', x, y, 2.1, .7, .5)
+stamp('cobblestone', 19.1, 30.7, 2.6, .92, .72)
 
-# Reserve the starting court and its working approaches.
-for y in range(76, 84):
-    for x in range(31, 40):
+# The main route is broad and unobstructed from the court to the bench spine.
+road([(19, 32), (23, 32), (28, 29), (34, 28), (40, 28)], radius=1.05, reserve=2)
+road([(19, 32), (14, 32), (10, 33), (7, 32)], radius=.95)
+road([(20, 30), (21, 26), (19, 23), (17, 20), (17, 14), (18.5, 10.5)], radius=.8, reserve=1.1)
+road([(21, 33), (22, 37), (23, 42), (29, 46), (34, 44)], radius=.9, reserve=1.4)
+road([(14, 33), (15, 38), (17, 43), (23, 42)], radius=.75, reserve=1.2)
+road([(40, 12), (40, 61)], radius=.8, reserve=1.3)
+road([(40, 12), (62.5, 12), (63.5, 7)], radius=.7, reserve=1.1)
+for y in range(27, 36):
+    for x in range(15, 23):
         reserved.add((x, y))
-occupied.update((x, y) for y in range(77, 79) for x in range(33, 36))
-stamp('cobblestone', 35, 79, 3.8, .92, .68)
+occupied.update((x, y) for y in range(28, 30) for x in range(16, 19))
 
-# Villas, their courtyards, vineyards, orchard rows and estate props.
-for key, x, y in [('vineyard.winery', 38, 68), ('vineyard.cellar', 47, 73), ('vineyard.winery', 27, 8),
-                  ('vineyard.cellar', 24, 77), ('vineyard.well', 40, 76), ('vineyard.press', 49, 81),
-                  ('vineyard.cart', 40, 84), ('vineyard.barrels', 49, 76), ('vineyard.crate', 40, 71),
-                  ('vineyard.hay', 27, 82), ('vineyard.arch', 38, 65)]:
-    place(key, x, y)
-for x in [45, 48, 51]:
-    for y in [81, 85, 88]:
-        place('vineyard.vine_a' if (x + y) % 2 else 'vineyard.vine_b', x, y)
-for x in [26, 29, 32]:
-    for y in [14, 17, 20]:
-        place('vineyard.vine_b', x, y)
-for y in range(70, 87, 3):
-    for x in [19, 22, 25, 28]:
-        place('tree.' + RNG.choice(['olive', 'fig', 'orange', 'lemon', 'pomegranate']) + '_' + str(RNG.randint(1, 5)), x, y)
-for x, y in [(32, 75), (38, 75), (31, 69), (36, 67), (42, 70), (45, 70), (26, 7), (32, 7), (25, 12), (35, 13)]:
-    place('tree.cypress_' + str(RNG.choice([1, 2, 5])), x, y)
+# Three small farmsteads form a courtyard instead of a scattered prop exhibition.
+for key, x, y in [('winery', 25, 26), ('cellar', 11, 28), ('cellar', 23, 39), ('cellar', 12, 35),
+                  ('well', 22, 28), ('barrels', 28, 27), ('barrel', 28, 26),
+                  ('crate', 26, 28), ('cart', 11, 30), ('hay', 9, 29), ('barrels', 11, 36),
+                  ('press', 26, 42), ('barrels', 26, 40), ('crate', 24, 42),
+                  ('fence', 10, 26), ('fence', 12, 26), ('fence', 28, 44), ('fence', 31, 44)]:
+    required('vineyard.' + key, x, y)
 
-# The coastal sanctuary sits above two terraces; the ruined town has broken streets.
-for key, x, y in [('ruin.temple', 19, 20), ('ruin.rotunda', 23, 20), ('ruin.monuments.statue', 19, 25),
-                  ('ruin.masonry.column', 25, 26), ('ruin.pottery.amphora', 24, 28), ('ruin.ivy_gate', 17, 28),
-                  ('ruin.theatre', 39, 37), ('ruin.villa', 49, 39), ('ruin.fountain', 47, 46),
-                  ('ruin.gateway', 38, 48), ('ruin.arcade', 51, 49), ('ruin.dais', 46, 38),
-                  ('ruin.portico', 40, 44), ('ruin.stairway', 50, 35)]:
-    place(key, x, y)
-ruin_small = [k for k, v in objects.items() if k.startswith('sunny_hills.ruin.') and '.' in k[len('sunny_hills.ruin.'):]]
-for _ in range(95):
-    x, y = RNG.uniform(36, 55), RNG.uniform(34, 54)
-    if surfaces[int(y)][int(x)] == 'L' and heights[int(y)][int(x)] == 1:
-        place(RNG.choice(ruin_small), x, y)
+# Narrow bare strips under trellises make the vineyards read as cultivated plots.
+for x in [20, 23, 26]:
+    road([(x + 1, 15), (x + 1, 21.5)], radius=.62, reserve=0)
+    for y in [15, 18, 21]:
+        required('vineyard.vine_a' if x % 2 else 'vineyard.vine_b', x, y)
+for x in [28, 31, 34]:
+    road([(x + 1, 34), (x + 1, 41.5)], radius=.65, reserve=0)
+    for y in [34, 37, 40]:
+        required('vineyard.vine_b' if y % 2 else 'vineyard.vine_a', x, y)
+for x, y in [(19, 15), (28, 21), (27, 34), (36, 40)]:
+    required('vineyard.vine_post', x, y)
 
-# Boulders and thick groves make real barriers rather than invisible painted walls.
-for _ in range(120):
-    x, y = RNG.randint(49, 62), RNG.randint(3, 89)
-    if heights[y][x] > 0 and not inside(x, y, forum):
-        place('rock.' + RNG.choice(['medium_', 'large_']) + str(RNG.randint(1, 6)), x, y)
-for cx, cy, rx, ry in [(26, 43, 6, 8), (23, 90, 6, 4), (46, 24, 5, 7), (59, 44, 5, 10), (34, 3, 10, 3)]:
-    for y in range(max(1, cy - ry), min(94, cy + ry + 1)):
-        for x in range(max(1, cx - rx), min(64, cx + rx + 1)):
-            distance = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2
-            if distance < .8 or distance < 1.1 and RNG.random() < .65:
-                if RNG.random() < .7:
-                    place('tree.' + RNG.choice(['oak', 'stone_pine', 'olive']) + '_' + str(RNG.randint(1, 5)), x, y)
-                else:
-                    place('rock.medium_' + str(RNG.randint(1, 6)), x, y)
-for _ in range(140):
-    x, y = RNG.randint(18, 63), RNG.randint(2, 93)
-    if RNG.random() < .55:
-        place('tree.' + RNG.choice(['olive', 'stone_pine', 'cypress']) + '_' + str(RNG.randint(1, 5)), x, y)
-    else:
-        place('rock.medium_' + str(RNG.randint(1, 6)), x, y)
+# Orchard rows, taller accents behind houses, and a few shade trees around the court.
+for row, y in enumerate([39, 42, 45]):
+    for column, x in enumerate([8, 11, 14]):
+        species = ['olive', 'lemon', 'fig'][(row + column) % 3]
+        place('tree.' + species + '_' + str(1 + (row * 2 + column) % 5), x, y)
+for key, x, y in [('cypress_1', 10, 27), ('cypress_2', 14, 28), ('cypress_5', 24, 25),
+                  ('cypress_2', 29, 26), ('olive_2', 9, 31), ('stone_pine_3', 30, 25),
+                  ('olive_4', 21, 40), ('cypress_1', 27, 39), ('stone_pine_1', 17, 36),
+                  ('fig_3', 25, 44), ('olive_5', 11, 44)]:
+    place('tree.' + key, x, y)
 
-# Fishermen's beach and pale coastal rocks; tiny marine motifs remain in the gallery.
-for key, x, y in [('coast.boat', 14, 59), ('coast.mooring', 15, 60), ('coast.cargo', 14, 69),
-                  ('coast.fishing_nets', 14, 71), ('coast.driftwood', 14.5, 63.5), ('coast.broken_amphora', 16.4, 69.8)]:
-    place(key, x, y)
-for y in range(2, 94, 4):
-    x = coast[y] + RNG.randint(1, 3)
+# Grouped perimeter groves frame open meadows; the central road remains a clear gap.
+for cx, cy, rx, ry in [(12, 13, 4, 4), (31, 11, 5, 5), (33, 51, 4, 4),
+                      (12, 50, 5, 4), (35, 21, 2, 4), (36, 37, 1, 5)]:
+    for y in range(cy - ry, cy + ry + 1, 2):
+        for x in range(cx - rx, cx + rx + 1, 2):
+            if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1 and RNG.random() < .88:
+                place('tree.' + RNG.choice(['olive', 'stone_pine', 'cypress']) + '_' + str(RNG.randint(1, 5)), x, y)
+for y in list(range(4, 25, 2)) + list(range(32, 61, 2)):
+    place('tree.cypress_' + str(1 + y % 5), 37, y)
+for cx, cy, rx, ry in [(15, 5, 7, 3), (29, 5, 6, 3), (14, 59, 6, 3), (29, 58, 6, 3)]:
+    for y in range(cy - ry, min(HEIGHT - 1, cy + ry + 1), 2):
+        for x in range(cx - rx, cx + rx + 1, 2):
+            if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 1:
+                place('tree.' + RNG.choice(['olive', 'stone_pine']) + '_' + str(RNG.randint(1, 5)), x, y)
+for x, y in [(9, 8), (13, 7), (28, 6), (32, 7), (10, 55), (17, 58), (30, 56), (34, 54)]:
     place('rock.medium_' + str(RNG.randint(1, 6)), x, y)
-    place('coast.dune_grass', x + 1.4, y + 1.3, scale=RNG.uniform(.65, 1.05))
 
-# Soft undergrowth stays cosmetic and does not alter walkability or line of sight.
-shrubs = [k for k in objects if '.shrub.' in k]
-groundcover = ['vineyard.grass_a', 'vineyard.grass_b', 'vineyard.lavender', 'vineyard.daisies', 'vineyard.poppies']
-for _ in range(440):
-    x, y = RNG.uniform(17, 64), RNG.uniform(1, 94)
-    c = int(x), int(y)
-    if surfaces[c[1]][c[0]] == 'L' and c not in reserved:
-        place(RNG.choice(shrubs if RNG.random() < .52 else groundcover), x, y, scale=RNG.uniform(.65, 1.1))
-for _ in range(70):
-    x, y = RNG.uniform(18, 63), RNG.uniform(3, 93)
-    if (int(x), int(y)) not in reserved:
-        place('rock.small_' + str(RNG.randint(1, 15)), x, y)
+# A working cove, not a second monumental scene.
+for key, x, y in [('coast.boat', 6, 28), ('coast.cargo', 6, 35),
+                  ('coast.driftwood', 6.3, 37.4), ('coast.dune_grass', 8.6, 36.8)]:
+    place(key, x, y)
+for y in [16, 20, 24, 41, 45, 49]:
+    place('rock.medium_' + str(1 + y % 6), coast[y] + 1, y)
 
-# The eastern specimen strip contains every material and all 185 object variants once.
-# Shelf spacing uses actual sprite sizes, so crowns and tall ruins remain individually readable.
+# Small, editable planting groups tie bases to the ground, leaving routes unpainted by props.
+flowers = ['vineyard.grass_a', 'vineyard.grass_b', 'vineyard.lavender', 'vineyard.daisies']
+for cx, cy, count in [(12, 29, 18), (26, 27, 20), (13, 36, 15), (24, 40, 20), (12, 42, 22),
+                      (24, 19, 18), (32, 38, 20), (12, 14, 18), (31, 12, 20),
+                      (12, 50, 18), (32, 51, 18), (36, 20, 12)]:
+    for _ in range(count):
+        x, y = cx + RNG.uniform(-2.6, 2.6), cy + RNG.uniform(-1.6, 2.2)
+        if (int(x), int(y)) not in reserved and (int(x), int(y)) not in occupied:
+            place(RNG.choice(flowers), x, y, scale=RNG.uniform(.8, 1.2))
+for x, y in [(10.6, 28.9), (14.3, 29.7), (12.2, 27.5), (24.7, 27.8), (27.8, 28.4),
+             (12, 37.1), (14.7, 36.8), (23, 41.3), (25.8, 41.5), (27.8, 44.9)]:
+    place('vineyard.shrub', x, y, scale=.9)
+
+# Six clean material samples, adjacent to the independent shallow/deep-water test.
 for i, material in enumerate(read(PACK / 'materials.json')):
-    cx, cy = 74 + (i % 3) * 8, 5 + (i // 3) * 7
-    for oy in [-1.6, 0, 1.6]:
-        for ox in [-1.6, 0, 1.6]:
-            stamp(material['id'].split('.')[-1], cx + ox, cy + oy, 2.15, 1, 1)
+    cx, cy = 44 + (i % 3) * 6, 4 + (i // 3) * 5
+    for ox in [-1, 1]:
+        for oy in [-1, 1]:
+            stamp(material['id'].split('.')[-1], cx + ox, cy + oy, 1.45, 1, 1)
+
+# Every object variant remains available once on the eastern half, at its native size.
+# Slots account for art bounds as well as collision; the western spine stays clear.
 gallery = []
-cursor_x, cursor_y, row_height = 70.0, 17.0, 0.0
-for category in ['trees', 'shrubs', 'coast', 'rocks', 'ruins', 'vineyards']:
-    if cursor_x > 70:
+cursor_x, cursor_y, row_height = 42.0, 14.0, 0.0
+for category in CATEGORIES:
+    if cursor_x > 42:
         cursor_y += row_height + .5
-        cursor_x, row_height = 70.0, 0.0
-    for d in read(PACK / (category + '.json')):
+        cursor_x, row_height = 42.0, 0.0
+    for d in catalogs[category]:
         w, h = d['footprint']
         sw, sh = d['sprite']['size']
         ax, ay = d['sprite']['anchor']
-        slot_width = max(w + .65, sw / 64 + .65, 2.0)
+        slot_width = max(w + .6, sw / 64 + .6, 1.6)
         above = max(h - .5, sh / 64 * ay)
         below = max(.5, sh / 64 * (1 - ay))
-        slot_height = above + below + .65
-        if cursor_x + slot_width > 95.5:
+        slot_height = above + below + .8
+        if cursor_x + slot_width > 79:
             cursor_y += row_height
-            cursor_x, row_height = 70.0, 0.0
-        anchor_x = cursor_x + slot_width / 2
-        anchor_y = cursor_y + above
-        if d['gameplay']:
-            x, y = round(anchor_x - w / 2), math.ceil(anchor_y - h + .5)
-        else:
-            x, y = anchor_x, anchor_y
-        assert y + h < SIZE, ('Gallery overflow', category, d['id'], y)
-        assert place(d['id'], x, y, force=True), ('Gallery placement', d['id'], x, y)
+            cursor_x, row_height = 42.0, 0.0
+        anchor_x, anchor_y = cursor_x + slot_width / 2, cursor_y + above
+        x, y = (round(anchor_x - w / 2), math.ceil(anchor_y - h + .5)) if d['gameplay'] else (anchor_x, anchor_y)
+        assert y + h < HEIGHT, ('Gallery overflow', d['id'], y)
+        assert place(d['id'], x, y, force=True), ('Gallery overlap', d['id'], x, y)
         gallery.append({'asset': d['id'], 'position': [x, y]})
         cursor_x += slot_width
-        row_height = max(row_height, slot_height + .4)
+        row_height = max(row_height, slot_height)
 
-# A few controllable units support movement and scale comparisons without a hostile camp.
-scenario['units'] = [{'asset': 'human.peacemaker', 'owner': 0, 'cell': [37, 82]},
-                     {'asset': 'human.peacemaker', 'owner': 0, 'cell': [38, 82]},
-                     {'asset': 'human.flying_soldier', 'owner': 0, 'cell': [36, 82]}]
-for x, y in [(30, 84), (30, 85), (31, 85)]:
+scenario['units'] = [{'asset': 'human.peacemaker', 'owner': 0, 'cell': [20, 35]},
+                     {'asset': 'human.peacemaker', 'owner': 0, 'cell': [21, 35]},
+                     {'asset': 'human.flying_soldier', 'owner': 0, 'cell': [19, 35]}]
+for x, y in [(17, 39), (18, 39), (18, 40)]:
     assert (x, y) not in occupied
     scenario['resources'].append({'asset': 'crystal.small', 'cell': [x, y], 'remaining': 1000})
+for x, y in scenario['start']['workers'] + [scenario['start']['hero']] + [u['cell'] for u in scenario['units']]:
+    assert (x, y) not in occupied and surfaces[y][x] == 'L' and (x, y) not in ramps
 scenario['terrain'] = {'base': 'sunny_hills.meadow',
                        'heights': [''.join('-' if h == -1 else str(h) for h in row) for row in heights],
-                       'surfaces': [''.join(row) for row in surfaces], 'blocked': [''.join(row) for row in blocked],
-                       'ramps': [[x, y, *d] for (x, y), d in ramps.items()]}
+                       'surfaces': [''.join(row) for row in surfaces], 'blocked': ['0' * WIDTH] * HEIGHT,
+                       'ramps': [[x, y, *direction] for (x, y), direction in ramps.items()]}
 write(ROOT / 'assets/maps/sunny-hills.rtsmap', scenario)
 review = ROOT / 'out/sunny-hills-review'
 review.mkdir(parents=True, exist_ok=True)
 write(review / 'gallery.json', gallery)
-print('Sunny Hills:', len(scenario['environment']), 'solid objects,', len(scenario['decorations']), 'cosmetics,', len(scenario['paint']), 'paint stamps; gallery ends at row', round(cursor_y + row_height, 1))
+print('Sunny Hills', WIDTH, 'x', HEIGHT, ':', len(scenario['environment']), 'solid objects,',
+      len(scenario['decorations']), 'cosmetics,', len(scenario['paint']), 'paint stamps;',
+      len(gallery), 'gallery objects, last row', round(cursor_y + row_height, 1))

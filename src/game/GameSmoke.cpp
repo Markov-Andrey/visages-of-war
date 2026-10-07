@@ -300,11 +300,11 @@ void GameApplication::exerciseInterface() {
     tooltipUi.mouse = {command.x + 20, command.y + 20};
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"tooltip-preview.png", nullptr, false, &tooltipUi);
     resetCamera();
-    if (grid_) throw std::runtime_error("Smoke: grid must be disabled by default");
-    onMessage(WM_KEYDOWN, VK_F3, 0);
-    if (!grid_) throw std::runtime_error("Smoke: F3 did not show grid");
-    onMessage(WM_KEYDOWN, VK_F3, 0);
-    if (grid_) throw std::runtime_error("Smoke: F3 did not hide grid");
+    if (!grid_) throw std::runtime_error("Smoke: grid must be enabled by default");
+    onMessage(WM_KEYDOWN, 'K', 0);
+    if (grid_) throw std::runtime_error("Smoke: K did not hide grid");
+    onMessage(WM_KEYDOWN, 'K', 0);
+    if (!grid_) throw std::runtime_error("Smoke: K did not show grid");
     auto bounds = rts::buildingBounds(game_, game_.buildings().front(), view_);
     click({bounds.x + bounds.width * .5f, bounds.y + bounds.height * .45f});
     if (!selectedBuilding()) throw std::runtime_error("Smoke: building selection failed");
@@ -447,7 +447,7 @@ void GameApplication::exerciseInterface() {
     if(ui_.consoleOpen||menu_.page!=rts::MenuPage::Playing) throw std::runtime_error("Console Escape opened the menu");
     onMessage(WM_KEYDOWN,VK_RETURN,0); onMessage(WM_CHAR,L'\r',0);
     for(wchar_t c:std::wstring(L"iseedeadpeoplex")) { onMessage(WM_KEYDOWN,std::towupper(c),0); onMessage(WM_CHAR,c,0); }
-    onMessage(WM_CHAR,L'\b',0); onMessage(WM_KEYDOWN,VK_F3,0);
+    onMessage(WM_CHAR,L'\b',0); onMessage(WM_KEYDOWN,'K',0);
     if(ui_.consoleInput!=L"iseedeadpeople"||grid_!=wasGrid||ui_.selection.ids!=selected||ui_.orderMode||!ui_.placement.empty())
         throw std::runtime_error("Console typing triggered gameplay hotkeys");
     renderer_.snapshot(game_,rts::Paths::executable().parent_path()/L"console-input-preview.png",nullptr,false,&ui_);

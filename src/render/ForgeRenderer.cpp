@@ -117,7 +117,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     if(editor.tool==EditorTool::Unit) value=editor.owner==0?L"Свой игрок":L"Противник";
     if(editor.tool==EditorTool::Ramp) { constexpr std::array<const wchar_t*,4> directions{L"вправо",L"вниз",L"влево",L"вверх"}; value=L"Подъём "+std::wstring(directions[editor.direction%4]); }
     text(value,rect(layout.panel.x+52,641,180,25),0xe7cf9d);
-    text(L"End / Home - overview / start\nR - rotate; [ ] - brush size\nG - grid; F5 - reload assets\nCtrl+Z / Y - undo / redo\nF9 - play; F10 - return",
+    text(L"End / Home - overview / start\nR - rotate; [ ] - brush size\nK - grid; F5 - reload assets\nCtrl+Z / Y - undo / redo\nF9 - play; F10 - return",
         rect(layout.panel.x+12,682,264,112),0x8ca9ae);
     panel({0,extent.y-34,layout.world.width,34},0x15272f);
     text(editor.message,rect(12,extent.y-28,layout.world.width-24,26),0xc1d9d0);

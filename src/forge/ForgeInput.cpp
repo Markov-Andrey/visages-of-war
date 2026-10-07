@@ -79,7 +79,7 @@ void ForgeApplication::editorKey(WPARAM key) {
     if(key==VK_ESCAPE) {editor_->endStroke();ReleaseCapture();}
     if(key==VK_HOME) resetCamera();
     if(key==VK_END) view_=rts::editorOverview(editor_->scenario().map,rts::EditorLayout(renderer_.size()).world);
-    if(key=='G') grid_=!grid_;
+    if(key=='K') grid_=!grid_;
     if(key==VK_F9) editorAction(5);
     if(key==VK_DELETE) editor_->setTool(rts::EditorTool::Remove);
     if(key==VK_OEM_4) editor_->radius=std::max(.25f,editor_->radius-.25f);

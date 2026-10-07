@@ -5,7 +5,8 @@
     "image": "world/tilesets/sunny-hills/textures/meadow.png",
     "repeatCells": 12,
     "tint": "ffffff",
-    "group": "Core"
+    "group": "Core",
+    "isometric": false
   },
   {
     "id": "earth",
@@ -21,6 +22,7 @@
     "image": "world/tilesets/sunny-hills/textures/meadow.png",
     "repeatCells": 12,
     "tint": "92a57e",
-    "group": "Core"
+    "group": "Core",
+    "isometric": false
   }
 ]

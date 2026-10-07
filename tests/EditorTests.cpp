@@ -1,4 +1,5 @@
 #include "TestSupport.hpp"
+#include "rts/GroundTextureProjection.hpp"
 
 namespace rts::tests {
 void editorTests(TestSuite& test, const TestContext& context) {
@@ -161,6 +162,52 @@ void editorTests(TestSuite& test, const TestContext& context) {
         require(e.scenario().map.at({7,17}).height==-1&&e.scenario().map.at({7,17}).surface==rts::Surface::ShallowWater,"Water depth changed elevation");
         require(e.undo()&&e.scenario().map.at({7,17}).surface==rts::Surface::Land&&e.scenario().map.at({7,17}).height==-1,"Undo surface edit damaged height");
         e.validateForPlay();
+    });
+    test("Ground art preserves source proportions with optional isometric projection", [&] {
+        require(!worldAssets.material("grass").isometric && !worldAssets.material("dark_grass").isometric &&
+            !worldAssets.material("sunny_hills.meadow").isometric && !worldAssets.material("sunny_hills.dry_grass").isometric &&
+            worldAssets.material("sunny_hills.cobblestone").isometric, "Grass projection overrides affected other materials");
+        const rts::GroundTextureProjection flat(12, 1536, false);
+        const auto flatSize = flat.project({1536, 1024});
+        require(flatSize == rts::Vec2{12, 8} && flat.unproject(flatSize) == rts::Vec2{1536, 1024},
+            "Unprojected grass was rotated, compressed or stretched");
+        const rts::GroundTextureProjection projection(8, 1536);
+        const auto right = projection.project({1536, 0}), down = projection.project({0, 1024});
+        require(std::abs(right.x - 2 * right.y) < .0001f && std::abs(down.x + 2 * down.y) < .0001f,
+            "Ground texture axes lost the 2:1 slope");
+        require(std::abs(right.x / -down.x - 1.5f) < .0001f, "Rectangular texture was stretched to a square");
+        for (const rts::Vec2 source : {rts::Vec2{0, 0}, {1536, 1024}, {-245, 1800}, {87.25f, -32.5f}}) {
+            const auto restored = projection.unproject(projection.project(source));
+            require(std::hypot(restored.x - source.x, restored.y - source.y) < .001f,
+                "Base brush and paint sampling use different projections");
+        }
+    });
+    test("Projected paint wraps negative texture coordinates and repeats across chunk boundaries", [] {
+        // This repeat size gives source-pixel axes (1, .5) and (-1, .5).
+        rts::MaterialPixels material{4, 2, 4 * std::sqrt(2.0f), {}};
+        for (int y = 0; y < 2; ++y) for (int x = 0; x < 4; ++x)
+            material.pixels.push_back(0xff000000u | (uint32_t(x * 64) << 16) | uint32_t(y * 128));
+        rts::Landscape landscape;
+        landscape.paint = {{"pattern", {8, 8}, 16, 1, 1, false}};
+        rts::TerrainPaint canvas;
+        const auto image = [&](const std::string&) -> const rts::MaterialPixels& { return material; };
+        canvas.update(landscape, 16, 16, image);
+        const auto sample = [&](int x, int y) {
+            return canvas.chunks().at({x / 256, y / 256}).pixels[(y % 256) * 256 + x % 256];
+        };
+        const auto close = [](uint32_t a, uint32_t b) {
+            for (int shift : {0, 8, 16, 24})
+                if (std::abs(int((a >> shift) & 255) - int((b >> shift) & 255)) > 1) return false;
+            return true;
+        };
+        // World (4.015625, 1.015625) maps to source (3.0234375, -.9921875).
+        // Wrapping and linear filtering yield red 162, blue 65, fully opaque.
+        require(close(sample(128, 32), 0xffa20041), "Negative projected coordinates sampled the wrong texels");
+        for (int y = 247; y <= 263; ++y) for (int x = 247; x <= 263; ++x) {
+            const auto color = sample(x, y);
+            require(close(color, sample(x + 128, y + 64)), "Horizontal source repeat drifted across paint chunks");
+            require(close(color, sample(x - 64, y + 32)), "Vertical source repeat lost rectangular aspect or wrapping");
+        }
     });
     test("Sparse terrain paint blends and erases across chunk boundaries and rebuilds after undo", [] {
         const rts::MaterialPixels red{1,1,4,{0xffff0000}},blue{1,1,4,{0xff0000ff}};

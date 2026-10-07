@@ -5,7 +5,8 @@
     "image": "world/tilesets/sunny-hills/textures/meadow.png",
     "repeatCells": 12,
     "tint": "ffffff",
-    "group": "Sunny Hills / Ground"
+    "group": "Sunny Hills / Ground",
+    "isometric": false
   },
   {
     "id": "sunny_hills.dry_grass",
@@ -13,7 +14,8 @@
     "image": "world/tilesets/sunny-hills/textures/dry-grass.png",
     "repeatCells": 12,
     "tint": "ffffff",
-    "group": "Sunny Hills / Ground"
+    "group": "Sunny Hills / Ground",
+    "isometric": false
   },
   {
     "id": "sunny_hills.dirt",

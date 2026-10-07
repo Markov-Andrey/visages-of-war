@@ -1,4 +1,5 @@
 #include "RenderSupport.hpp"
+#include "rts/GroundTextureProjection.hpp"
 #include <algorithm>
 #include <stdexcept>
 
@@ -53,6 +54,7 @@ Renderer::MaterialResource& Renderer::materialResource(const std::string& id) {
     UINT w{},h{}; check(converter->GetSize(&w,&h));
     if(!w||!h||w>8192||h>8192) throw std::runtime_error("Invalid terrain texture dimensions");
     r.image.width=int(w); r.image.height=int(h); r.image.repeatCells=material.repeatCells; r.image.pixels.resize(static_cast<size_t>(w)*h);
+    r.image.isometric=material.isometric;
     check(converter->CopyPixels(nullptr,w*4,static_cast<UINT>(r.image.pixels.size()*4),reinterpret_cast<BYTE*>(r.image.pixels.data())));
     for(auto& pixel:r.image.pixels) {
         uint32_t color=pixel&0xff000000;
@@ -62,7 +64,9 @@ Renderer::MaterialResource& Renderer::materialResource(const std::string& id) {
     const auto properties=D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM,D2D1_ALPHA_MODE_PREMULTIPLIED),96,96);
     check(target_->CreateBitmap(D2D1::SizeU(w,h),r.image.pixels.data(),w*4,properties,r.bitmap.GetAddressOf()));
     check(target_->CreateBitmapBrush(r.bitmap.Get(),D2D1::BitmapBrushProperties(D2D1_EXTEND_MODE_WRAP,D2D1_EXTEND_MODE_WRAP,D2D1_BITMAP_INTERPOLATION_MODE_LINEAR),r.brush.GetAddressOf()));
-    r.brush->SetTransform(D2D1::Matrix3x2F::Scale(material.repeatCells/w,material.repeatCells/h));
+    const GroundTextureProjection projection(material.repeatCells, int(w), material.isometric);
+    const auto xAxis = projection.project({1, 0}), yAxis = projection.project({0, 1});
+    r.brush->SetTransform(D2D1::Matrix3x2F(xAxis.x, xAxis.y, yAxis.x, yAxis.y, 0, 0));
     return r;
 }
 void Renderer::prepareLandscape(const Landscape& landscape,const Map& map) {

@@ -7,11 +7,11 @@
 
 namespace rts::forge {
 void ForgeApplication::exerciseInterface() {
-    if (grid_) throw std::runtime_error("Forge smoke: grid must be disabled by default");
-    onMessage(WM_KEYDOWN, 'G', 0);
-    if (!grid_) throw std::runtime_error("Forge smoke: G did not show grid");
-    onMessage(WM_KEYDOWN, 'G', 0);
-    if (grid_) throw std::runtime_error("Forge smoke: G did not hide grid");
+    if (!grid_) throw std::runtime_error("Forge smoke: grid must be enabled by default");
+    onMessage(WM_KEYDOWN, 'K', 0);
+    if (grid_) throw std::runtime_error("Forge smoke: K did not hide grid");
+    onMessage(WM_KEYDOWN, 'K', 0);
+    if (!grid_) throw std::runtime_error("Forge smoke: K did not show grid");
     const auto initialUnitCount = editor_->scenario().units.size();
     const auto initialPaint = editor_->scenario().landscape.paint;
     const auto initialDecorationCount = editor_->scenario().landscape.decorations.size();

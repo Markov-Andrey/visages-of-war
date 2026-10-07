@@ -40,7 +40,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
               << std::setfill(L'0') << std::setw(2) << minutes / 60 << L":" << std::setw(2) << minutes % 60;
     const bool compact = extent.x < 1060;
     text(paused ? L"ПАУЗА  /  Пробел" : clockText.str(), rect(145, 20, compact ? 180.0f : 220.0f, 25), 0xaabfbd);
-    if (!compact) text(grid ? L"F3 — сетка: вкл." : L"F3 — сетка: выкл.", rect(360, 21, 160, 25), 0x7d9b99);
+    if (!compact) text(grid ? L"K — сетка: вкл." : L"K — сетка: выкл.", rect(360, 21, 160, 25), 0x7d9b99);
     const UiRect crystalCounter{extent.x - 440, 10, 230, 38}, supplyCounter{extent.x - 188, 10, 178, 38};
     drawResourceIcon("crystal", {crystalCounter.x, 12, 34, 34});
     text(std::to_wstring(game.storedCrystals()), rect(crystalCounter.x + 42, compact ? 21.0f : 16.0f, 178, 35), 0xeac2a4, !compact);
@@ -184,7 +184,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     } else {
         text(L"Нет выделения", rect(info.x, info.y, info.width, 34), 0xe0eade, true);
         text(L"Выберите здание или выделите юнитов рамкой.", rect(info.x, info.y + 47, info.width, 45), 0x9eb6b7);
-        text(L"Края экрана / стрелки / средняя кнопка — камера\nF3 — сетка   •   Пробел — пауза", rect(info.x, info.y + 104, info.width, 55), 0x6e9395);
+        text(L"Края экрана / стрелки / средняя кнопка — камера\nK — сетка   •   Пробел — пауза", rect(info.x, info.y + 104, info.width, 55), 0x6e9395);
     }
     // Inspection shares stats and portraits, but never exposes another owner's command panel.
     if ((building && building->owner != game.player().id) || (unit && unit->owner != game.player().id)) {

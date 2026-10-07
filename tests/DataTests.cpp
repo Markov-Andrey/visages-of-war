@@ -217,26 +217,38 @@ void dataTests(TestSuite& test, const TestContext& context) {
         vine.hitPoints = vine.maximumHitPoints; rts::rebuildScenario(restored);
         require(vine.id == id && !restored.map.walkable(origin) && restored.map.blocksVision(origin), "Vine restoration lost identity or blockers");
     });
-    test("Sunny Hills showcases every asset and connects its asymmetric landscape through wide ramps", [&] {
+    test("Sunny Hills connects its compact village to every bench category and both water depths", [&] {
         const auto& world=context.worldAssets;
         const auto s=rts::loadScenario(assets/"maps/sunny-hills.rtsmap",world,context.hallFootprint);
-        require(s.map.width()==96&&s.map.height()==96,"Showcase must be 96 by 96");
+        require(s.map.width()==80&&s.map.height()==64,"Compact showcase must be 80 by 64");
         size_t objectCount=0,materialCount=0;
         for(const auto& d:world.objects()) if(d.id.starts_with("sunny_hills.")) {
             ++objectCount; int galleryCount=0;
-            for(const auto& o:s.environment) if(o.definitionId==d.id&&o.origin.x>=69) ++galleryCount;
-            for(const auto& o:s.landscape.decorations) if(o.definitionId==d.id&&o.position.x>=69) ++galleryCount;
+            for(const auto& o:s.environment) if(o.definitionId==d.id&&o.origin.x>=42) ++galleryCount;
+            for(const auto& o:s.landscape.decorations) if(o.definitionId==d.id&&o.position.x>=42) ++galleryCount;
             require(galleryCount==1,"Gallery must include exactly one of every object variant");
             if(!d.gameplay) require(!d.blocksVision&&std::none_of(d.collision.begin(),d.collision.end(),[](bool v){return v;}),"Cosmetic art affects traversal");
         }
         for(const auto& m:world.materials()) if(m.id.starts_with("sunny_hills.")) {
             ++materialCount;
-            require(std::any_of(s.landscape.paint.begin(),s.landscape.paint.end(),[&](const auto& p){return p.material==m.id&&p.position.x>=69;}),"Material missing from gallery");
+            require(std::any_of(s.landscape.paint.begin(),s.landscape.paint.end(),[&](const auto& p){return p.material==m.id&&p.position.x>=42;}),"Material missing from gallery");
         }
         require(objectCount==185&&materialCount==6,"Imported variant count changed without updating the showcase");
-        for(const rts::Cell goal: {rts::Cell{14,65},{24,24},{44,48},{34,10},{43,78},{67,60},{67,90}})
-            require(rts::findPath(s.map,s.worker,goal).has_value(),"Showcase road, sanctuary, beach or gallery is unreachable");
-        for(int y=0;y<96;++y) for(int x=0;x<96;++x) {
+        for(const rts::Cell goal: {rts::Cell{21,32},{18,8},{29,20},{33,43},{6,32},{5,32},
+                                  {40,28},{40,60},{40,13},{63,7},{68,7}}) {
+            require(rts::findPath(s.map,s.worker,goal).has_value(),"Village, vineyard, beach or bench is unreachable");
+            require(rts::findUnitPathTo(s.map,rts::center(s.worker),rts::center(goal),{},.35f,rts::MovementType::Walking).has_value(),
+                "Village-to-bench route is too narrow for a unit collision circle");
+        }
+        require(s.map.at({68,7}).surface==rts::Surface::ShallowWater&&s.map.at({72,7}).surface==rts::Surface::DeepWater,
+            "Bench water samples missing");
+        require(!rts::findPath(s.map,s.worker,{72,7}).has_value()&&
+            rts::findPath(s.map,s.worker,{72,7},rts::MovementType::Flying).has_value(),
+            "Water bench no longer distinguishes ground and flying movement");
+        for(const auto& o:s.environment) if(o.origin.x<40)
+            require(!o.definitionId.starts_with("sunny_hills.ruin.")&&o.definitionId!="sunny_hills.vineyard.ruin",
+                "Monumental ruins leaked into the rural composition");
+        for(int y=0;y<s.map.height();++y) for(int x=0;x<s.map.width();++x) {
             const rts::Cell c{x,y};const auto& t=s.map.at(c);
             if(t.surface!=rts::Surface::Land) require(t.height==-1,"Sea must share one flat surface");
             if(t.ramp==rts::Cell{}) continue;
@@ -246,7 +258,8 @@ void dataTests(TestSuite& test, const TestContext& context) {
             for(auto at=c-across;lane(at);at=at-across) ++width;
             require(width==3&&s.map.canStep(c-t.ramp,c)&&s.map.canStep(c,c+t.ramp),"Showcase ramp narrowed or obstructed");
         }
-        require(!s.map.canStep({40,53},{40,54})&&!s.map.walkable({26,43}),"Cliffs and dense groves no longer constrain movement");
+        require(!s.map.canStep({64,4},{65,4})&&!s.map.walkable({20,15}),
+            "Shore cliffs or vineyard collision no longer constrain movement");
     });
     test("Large demo: workers, friendly army, hostile camp and reachable plateaus", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");

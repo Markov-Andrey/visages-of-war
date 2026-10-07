@@ -291,7 +291,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         if (wParam == VK_SPACE) paused_ = !paused_;
-        if (wParam == VK_F3) grid_ = !grid_;
+        if (wParam == 'K') grid_ = !grid_;
         if (wParam == VK_HOME) resetCamera(false);
         if (wParam == VK_F1) selectArmy();
         if (wParam == VK_F2) selectHero();

@@ -25,7 +25,8 @@ endforeach()
 
 # Includes F9 -> game --map with unsaved changes -> F10 -> preserved Forge document.
 get_filename_component(forgeName "${FORGE}" NAME)
-execute_process(COMMAND "${stage}/${forgeName}" --smoke-test
+# The UI script uses authored coordinates from demo; the default showcase differs.
+execute_process(COMMAND "${stage}/${forgeName}" --smoke-test --map "${stage}/assets/maps/demo.rtsmap"
     WORKING_DIRECTORY "${WORK}" RESULT_VARIABLE result TIMEOUT 40)
 if(NOT result EQUAL 0)
     message(FATAL_ERROR "Relocated Forge/game test play failed: ${result}")
