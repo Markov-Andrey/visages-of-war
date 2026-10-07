@@ -2,17 +2,21 @@
 #include "rts/FogMask.hpp"
 
 namespace rts {
-// Static terrain + fog only. Units, resource markers and camera outlines draw
-// separately every frame so this cache never delays moving markers.
+class Simulation;
+// Terrain and last-known environment footprints. Dynamic markers draw separately.
 class MinimapRaster {
 public:
     static constexpr unsigned resolution = 164;
-    bool update(const Map& map, const FogMask& fog);
+    bool update(const Simulation& game, const FogMask& mask);
+    bool update(const Map& map, const FogOfWar& fog, const FogMask& mask,
+                std::span<const EnvironmentObject* const> knownObstacles = {});
     const std::vector<uint32_t>& pixels() const { return pixels_; }
 private:
     int width_{}, height_{};
     const FogMask* fog_{};
     uint64_t fogRevision_{};
-    std::vector<uint32_t> terrain_, pixels_;
+    std::optional<Map> terrainMap_; // Occupancy-free geometry: never expose live hidden objects.
+    std::vector<unsigned char> edges_;
+    std::vector<uint32_t> cells_, scratch_, pixels_;
 };
 }

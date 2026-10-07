@@ -8,7 +8,7 @@ void Renderer::drawMinimap(const Simulation& game, const BattleLayout& layout, c
     target_->FillRoundedRectangle(D2D1::RoundedRect(rect(mini.x - 3, mini.y - 3, mini.width + 6, mini.height + 6), 6, 6), brush_.Get());
     const MinimapProjection miniView(mini, game.map());
     constexpr auto miniPixels = MinimapRaster::resolution;
-    const bool changed = minimapRaster_.update(game.map(), fogMask_);
+    const bool changed = minimapRaster_.update(game, fogMask_);
     const auto& pixels = minimapRaster_.pixels();
     if (!minimap_) {
         const auto properties = D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED), 96, 96);

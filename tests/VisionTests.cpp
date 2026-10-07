@@ -1,5 +1,6 @@
 #include "TestSupport.hpp"
 #include "rts/NightLighting.hpp"
+#include "rts/MinimapRaster.hpp"
 
 namespace rts::tests {
 void visionTests(TestSuite& test, const TestContext& context) {
@@ -298,6 +299,19 @@ void visionTests(TestSuite& test, const TestContext& context) {
         hidden();
         require(game.fog().explored({11, 8}) && game.knownEnvironment(1) && game.knownCrystal(0) > 0,
             "Closing sight erased the remembered landscape instead of dimming it");
+        FogMask memoryMask; memoryMask.update(game.fog(), 24, 24);
+        MinimapRaster memoryMap; memoryMap.update(game, memoryMask);
+        const auto remembered = memoryMap.pixels();
+        require(game.setEnvironmentHealth(1001, 0) && game.knownEnvironment(1) && !game.environmentVisible(1),
+            "Offscreen destruction removed the remembered world object");
+        memoryMask.update(game.fog(), 24, 24);
+        require(!memoryMap.update(game, memoryMask) && memoryMap.pixels() == remembered,
+            "Minimap exposed destruction behind the sight blocker");
+        require(game.setEnvironmentHealth(1000, 0) && !game.knownEnvironment(1),
+            "Revisiting did not remove a destroyed object's remembered image");
+        memoryMask.update(game.fog(), 24, 24);
+        require(memoryMap.update(game, memoryMask) && memoryMap.pixels() != remembered,
+            "Revisiting did not clear the obsolete minimap obstacle");
         auto flanked = scene; flanked.extraWorkers = {{11, 6}};
         Simulation flank(std::move(flanked), {}, worker, {depot, worker});
         require(flank.fog().visible({11, 8}) && flank.environmentVisible(1), "One observer's obstacle cancelled another observer's sight");

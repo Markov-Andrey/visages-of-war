@@ -522,24 +522,87 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         const std::array<rts::VisionSource, 1> source{{{{8, 6}, 40, true}}};
         fog.update(map, source); mask.update(fog, 16, 12);
         rts::MinimapRaster raster;
-        require(raster.update(map, mask), "First image missing");
+        require(raster.update(map, fog, mask), "First image missing");
         const auto original = raster.pixels();
-        require(!raster.update(map, mask) && raster.pixels() == original, "Static frame rebuilt or changed");
+        require(!raster.update(map, fog, mask) && raster.pixels() == original, "Static frame rebuilt or changed");
         map.at({8, 6}).surface = rts::Surface::DeepWater;
-        require(raster.update(map, mask) && raster.pixels() != original, "In-place terrain change missed");
+        require(raster.update(map, fog, mask) && raster.pixels() != original, "In-place terrain change missed");
         const auto water = raster.pixels();
         map = rts::Map(16, 12); map.at({8, 6}).height = 1;
-        require(raster.update(map, mask) && raster.pixels() != water, "Same-size map replacement missed");
+        require(raster.update(map, fog, mask) && raster.pixels() != water, "Same-size map replacement missed");
         const auto plateau = raster.pixels();
         fog.update(map, {}); mask.update(fog, 16, 12);
-        require(raster.update(map, mask) && raster.pixels() != plateau, "Fog transition missed");
-        require(!raster.update(map, mask), "Unchanged fog rebuilt");
+        require(raster.update(map, fog, mask) && raster.pixels() != plateau, "Fog transition missed");
+        require(!raster.update(map, fog, mask), "Unchanged fog rebuilt");
         fog = rts::FogOfWar(16, 12); mask.update(fog, 16, 12);
-        require(raster.update(map, mask), "Exploration leaked across matches");
+        require(raster.update(map, fog, mask), "Exploration leaked across matches");
         const auto unexplored = raster.pixels();
         map = rts::Map(12, 16); fog = rts::FogOfWar(12, 16); mask.update(fog, 12, 16);
-        require(raster.update(map, mask) && raster.pixels() != unexplored, "Aspect ratio change missed");
-        require(!raster.update(map, mask), "Repeated rectangular map rebuilt");
+        require(raster.update(map, fog, mask) && raster.pixels() != unexplored, "Aspect ratio change missed");
+        require(!raster.update(map, fog, mask), "Repeated rectangular map rebuilt");
+    });
+    test("Minimap shows precise obstacle footprints in explored fog without leaking through black mask", [] {
+        Map map(20, 20); FogOfWar fog(20, 20); FogMask mask;
+        auto tree = makeEnvironment("TREE", 1000, {7, 7});
+        auto rock = makeEnvironment("ROCK", 1001, {11, 7});
+        auto arch = makeEnvironment("ARCH", 1002, {7, 12});
+        const std::array<const EnvironmentObject*, 3> known{{&tree, &rock, &arch}};
+        map.at({13, 12}).blocked = true;
+        map.at({15, 12}).surface = Surface::ShallowWater;
+        map.at({16, 12}).surface = Surface::DeepWater;
+        const std::array sources{VisionSource{{10, 10}, 30, true}};
+        fog.update(map, sources); mask.update(fog, 20, 20);
+        MinimapRaster raster; raster.update(map, fog, mask, known);
+        const MinimapProjection projection({0, 0, 164, 164}, map);
+        const auto sample = [&](Cell c) {
+            const auto p = projection.project(center(c));
+            return raster.pixels()[size_t(p.y) * 164 + size_t(p.x)];
+        };
+        const auto grass = sample({6, 7});
+        require(sample({7, 7}) != grass && sample({11, 7}) != grass && sample({7, 7}) != sample({11, 7}),
+            "Trees and rocks lack distinct muted obstacle colors");
+        require(sample({8, 12}) == grass && sample({12, 8}) == grass && sample({7, 12}) != grass && sample({9, 12}) != grass,
+            "Minimap painted the open arch or empty part of a collision footprint solid");
+        require(sample({13, 12}) != grass && sample({15, 12}) != sample({16, 12}),
+            "Blocked terrain or water depth is indistinguishable");
+        const auto litTree = sample({7, 7});
+        fog.update(map, {}); mask.update(fog, 20, 20); raster.update(map, fog, mask, known);
+        require(sample({7, 7}) != litTree && sample({7, 7}) != sample({6, 7}) && sample({7, 7}) != 0xff081119,
+            "Explored obstacle vanished or failed to dim in fog");
+        fog = FogOfWar(20, 20);
+        const std::array smallSource{VisionSource{{5, 7}, 1}};
+        fog.update(map, smallSource); mask.update(fog, 20, 20); raster.update(map, fog, mask, known);
+        require(!fog.explored({7, 7}) && mask.lightAt(center({7, 7})) > 0 && sample({7, 7}) == 0xff081119,
+            "Feathering exposed an unexplored obstacle beside the visible area");
+        require(sample({13, 12}) == 0xff081119, "Black mask leaked authored impassable terrain");
+    });
+    test("Minimap preserves one-cell obstacles on maps larger than the raster and refreshes removed blockers", [] {
+        Map map(512, 512); FogOfWar fog(512, 512); fog.revealAll(); FogMask mask; mask.update(fog, 512, 512);
+        auto tree = makeEnvironment("TREE", 1000, {254, 253});
+        const std::array<const EnvironmentObject*, 1> known{{&tree}};
+        MinimapRaster raster; raster.update(map, fog, mask);
+        const auto ground = raster.pixels();
+        require(raster.update(map, fog, mask, known) && raster.pixels() != ground,
+            "A point obstacle fell between minimap samples");
+        require(!raster.update(map, fog, mask, known), "Unchanged blockers regenerated the raster");
+        require(raster.update(map, fog, mask) && raster.pixels() == ground, "Removed known obstacle remained cached");
+    });
+    test("Minimap marks cliff edges using terrain traversal and leaves wide ramps open", [] {
+        Map map(16, 16);
+        for (int y = 0; y < 16; ++y) for (int x = 8; x < 16; ++x) map.at({x, y}).height = 1;
+        for (int y = 6; y <= 8; ++y) map.at({7, y}).ramp = {1, 0};
+        FogOfWar fog(16, 16); fog.revealAll(); FogMask mask; mask.update(fog, 16, 16);
+        MinimapRaster raster; raster.update(map, fog, mask);
+        const MinimapProjection projection({0, 0, 164, 164}, map);
+        const auto sample = [&](Vec2 world) {
+            const auto p = projection.project(world);
+            return raster.pixels()[size_t(p.y) * 164 + size_t(p.x)];
+        };
+        require(sample({7.98f, 4.5f}) != sample({7.5f, 4.5f}), "Cliff boundary is missing");
+        require(sample({7.98f, 7.5f}) == sample({7.5f, 7.5f}), "Ramp crossing was drawn as a cliff");
+        map.at({7, 7}).ramp = {};
+        require(raster.update(map, fog, mask) && sample({7.98f, 7.5f}) != sample({7.5f, 7.5f}),
+            "Ramp edit left a stale path through the cliff");
     });
     test("Building sprite selection, box groups, additive selection and camera transforms", [] {
         auto s = flatScenario(); s.extraWorkers = {{5, 3}, {4, 4}};

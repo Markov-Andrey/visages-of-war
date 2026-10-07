@@ -100,7 +100,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                 auto object = game.environment()[item.index];
                 if (!onScreen(view.project(center(object.origin), float(map.at(object.origin).height)))) break;
                 object.hitPoints = std::max(1, object.hitPoints); // Last known image in explored fog.
-                worldOpacity_ = game.environmentVisible(item.index) ? 1.0f : .3f;
+                worldOpacity_ = game.environmentVisible(item.index) ? 1.0f : .45f;
                 const auto p = view.project(center(object.origin), float(map.at(object.origin).height));
                 UiRect bounds{p.x - 60 * view.zoom, p.y - 110 * view.zoom, (120 + object.width * 64.f) * view.zoom, 155 * view.zoom};
                 if (!object.definitionId.empty() && !worldAssets_.object(object.definitionId).image.empty())
