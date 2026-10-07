@@ -1,0 +1,329 @@
+SUNNY HILLS / СОЛНЕЧНЫЕ ХОЛМЫ — РАБОЧИЙ НАБОР ПРОМПТОВ
+Версия: предложение художественного направления, 2026-10-07.
+Это задания для генерации кандидатов, а не утверждённый стиль и не гарантия результата.
+
+1. ИДЕЯ МЕСТА
+
+Живая винодельческая деревня центральной/южной Италии в тёплое лето.
+Светлый известняк, выгоревшая штукатурка, терракотовые крыши, старое дерево,
+оливковые и серо-зелёные посадки, пыльная земля. Предметы служат людям:
+у погреба стоят бочки, между лозами есть рабочие проходы, рядом с домом — колодец.
+Следы древности проявляются в повторно использованном камне и небольших остатках стен.
+Монументальные руины — отдельная поздняя серия, а не основа деревенской сцены.
+
+Главный приоритет — читаемость RTS при обычном игровом масштабе.
+Юниты, выделение и боевые эффекты должны оставаться заметными на фоне окружения.
+Декор не делаем мутным или пережатым: упрощаем формы и уменьшаем визуальный шум.
+Сохраняем принятую классическую покадровую анимацию юнитов; эти задания её не меняют.
+
+2. ЧТО ПРИКЛАДЫВАТЬ К КАЖДОЙ ГЕНЕРАЦИИ
+
+A — утверждённый снимок маленькой сцены из движка при фиксированном приближении.
+    До утверждения сцены текущий снимок — только ориентир масштаба и ракурса.
+B — один утверждённый объект той же категории, показанный достаточно крупно.
+C — тот же объект рядом с Миротворцем в игровом масштабе: эталон размера деталей.
+
+1.png из корня можно использовать как ориентир цельности композиции и материалов.
+Не использовать его как точный чертёж размеров, камеры или готовую сборку исходных PNG.
+2.png — ориентир переходов материалов. Его ромбовидные площадки с торцами нельзя
+считать готовыми бесшовными текстурами для текущего рендера.
+
+Текущие исходные ориентиры:
+assets/world/tilesets/sunny-hills/sprites/vineyard-villas.png
+assets/world/tilesets/sunny-hills/sprites/vineyard-props.png
+assets/world/tilesets/sunny-hills/sprites/grapevines.png
+assets/world/tilesets/sunny-hills/sprites/trees/olive.png
+assets/world/tilesets/sunny-hills/sprites/trees/cypress.png
+assets/world/tilesets/sunny-hills/sprites/trees/stone-pine.png
+assets/sprites/units/peacemaker/peacemaker.png
+
+Для референса брать отдельный кадр/объект, а не весь анимационный лист.
+После утверждения заменять временные ориентиры на принятые образцы.
+Не строить бесконечную цепочку «новая генерация по предыдущей»: всегда прикладывать
+одни и те же исходные эталоны. Это уменьшает постепенный уход стиля.
+
+3. РАЗМЕР И ВИЗУАЛЬНАЯ ИЕРАРХИЯ
+
+В проекте клетка земли при zoom=1 занимает 64 экранных пикселя.
+Реальные размеры всех текущих спрайтов перечислены в sunny-hills-asset-checklist.csv.
+Это отправные размеры, а не запрет на художественную корректировку.
+CSV содержит 6 материалов и 185 объектов. Поле prompt указывает задание ниже;
+priority — предлагаемая очередь (1 раньше, 3 позже), status=review — ещё не утверждено.
+screen_width/height — размер рисунка при zoom=1, footprint_width/height — клетки
+логического основания. role и blocks_vision описывают текущие игровые свойства,
+а не требования к генератору. source — путь от папки assets. Для материалов
+repeat_cells и isometric показывают текущие настройки наложения.
+
+Примеры текущих размеров при zoom=1:
+маленькая трава и цветы: примерно 28–35 px;
+отдельная бочка: 48×52 px; телега: 120×81 px;
+виноградные модули: 125×105 / 125×111 px;
+винодельня: 184×155 px; погреб: 174×135 px.
+
+Размер исходного PNG может быть больше, но оценивать его нужно при игровом размере.
+Не смешивать в одном наборе мелкую реалистичную штриховку и крупные условные мазки.
+Трава: спокойная масса, умеренные различия тона, без контура у каждой травинки.
+Мелкий декор: ясный силуэт, немного внутренних деталей, спокойные блики.
+Крупные препятствия: читаемое основание и форма, несколько крупных светотеневых пятен.
+Юниты и сигналы интерфейса: более выразительные акценты, чем окружающая мелочь.
+
+Не снижать качество JPEG-сжатием, размытием всего спрайта или грязным уменьшением.
+Если чистый исходник мутнеет только в игре, проверять масштабирование и кэш рендера.
+Сейчас покраска земли кешируется в 32 px на клетку: это отдельное ограничение,
+которое не следует пытаться исправить бесконечной перегенерацией исходников.
+
+4. ОБЩИЙ СТИЛЕВОЙ БЛОК — ДОБАВЛЯТЬ К КАЖДОМУ ЗАДАНИЮ
+
+Create production-oriented artwork for the same modular 2D RTS environment set,
+"Sunny Hills": a lived-in Mediterranean wine-growing village in warm summer.
+Use the attached approved references as the authority for brushwork, palette,
+edge treatment, lighting and detail scale. Use the in-game reference for size
+and readability, not as a request to reproduce its UI or characters.
+Use warm limestone, dusty ochre, weathered terracotta, aged wood, olive green
+and restrained cool green shadows. Paint clear larger forms with economical
+internal detail. Keep environmental highlights restrained so gameplay units
+remain readable. Preserve crisp intentional edges without a thick black halo.
+Do not introduce photorealistic pores, glossy PBR surfaces, cinematic grading,
+depth of field, bloom, dramatic rim light, text, logos or decorative framing.
+Do not change the established style to make this individual asset more impressive.
+
+5. ТЕХНИЧЕСКИЕ БЛОКИ — ВЫБРАТЬ ОДИН
+
+S — отдельный объект:
+Match the approved building/tree reference camera exactly: elevated oblique
+orthographic game view, with parallel edges and no vanishing-point perspective.
+Use soft neutral daylight from upper left, unless the approved reference defines
+a different direction; the approved reference takes priority. Internal form
+shading is allowed. Do not bake a long external cast shadow or a ground island.
+One complete object, entirely inside the canvas with transparent margin.
+Real transparent alpha background, no painted checkerboard or colored backdrop.
+Keep the base/contact point clearly identifiable. No labels or neighbouring objects.
+The final in-game bounding size is [WIDTH] by [HEIGHT] pixels. Design details to
+read at that size. A larger source canvas is allowed; do not add microdetail for it.
+
+T — повторяемая текстура земли:
+Create a square top-down ground material, covering the entire image edge to edge.
+No oblique camera, no diamond-shaped tile, no side faces, no floating platform,
+no raised border, no vignette and no external shadow. Match opposite edges for
+seamless repetition in both axes. Keep detail density even and avoid a distinctive
+central feature, large diagonal bands or repeating recognizable clusters.
+Use gentle material-scale shading, not directional shadows from unseen objects.
+Target a 1024 by 1024 source image; readability at the actual in-game repeat size
+matters more than source resolution. Do not paint a finished road or scene.
+
+Примечание: размер файла и бесшовность проверяются после генерации, не по обещанию ИИ.
+Трава у нас накладывается без изометрического преобразования. Остальные текущие
+материалы земли получают его в рендере. Исходники обоих типов генерируются сверху.
+Не превращать их в ромбы заранее: иначе получится повторное преобразование.
+
+D — плоский переходный декор:
+Create one irregular flat surface detail in the same ground plane as the approved
+in-game scene, on a true transparent background. It must sit flush with the ground:
+no slab thickness, no side wall, no raised platform, no exterior drop shadow.
+Use a broken organic outline with small transparent gaps. Do not surround it with
+a uniform circle of dirt or grass. Keep it modular and small enough to reposition.
+No tall plants or upright objects that would require separate depth sorting.
+
+Переходные детали — отдельные косметические элементы, а не новые препятствия.
+Это предлагаемые будущие дополнения; CSV отдельно перечисляет уже существующий набор.
+
+6. КОНКРЕТНЫЕ ЗАДАНИЯ
+
+Формула запроса: общий стилевой блок + технический блок + одно задание ниже.
+Перед отправкой заменить [параметры], приложить эталоны и проверить смысл задания.
+Не просить за один раз и текстуру сверху, и объёмный объект под углом.
+
+T01 — Meadow / зелёная трава. Блок T.
+A quiet Mediterranean meadow ground material. Use broad interlocking olive-green
+and muted yellow-green patches with sparse small grass strokes. Keep the surface
+visually calm beneath units. Avoid individually outlined blades, giant leaves,
+flowers, stones, tufts casting shadows, and high-frequency speckled noise.
+Material-only texture: no bushes, paths or other objects.
+
+T02 — Dry grass / сухая трава. Блок T.
+A sun-dried variant of the approved meadow material. Preserve its brush size,
+detail density and contrast. Shift some patches toward muted straw and dusty ochre,
+retaining subdued olive greens. It must blend naturally into the green meadow.
+Do not turn the entire texture bright yellow or introduce a different art style.
+
+T03 — Dirt / грунт. Блок T.
+A compacted warm earth material for rural lanes and farm courtyards. Large soft
+variations in ochre and brown, a few understated embedded pebbles and worn areas.
+No pre-drawn road outline, wheel tracks dominating the image, hard circular patches,
+deep cracks, photographic grain or grass border. Its detail scale matches the meadow.
+
+T04 — Sand / песок. Блок T.
+Pale warm coastal sand, slightly cooler in shallow depressions, with very sparse
+small mineral flecks. Keep it quieter and lighter than the dirt material, while
+matching the same painterly simplification. No shells, footprints, dunes, waves,
+water, seaweed or directional ripple pattern that dominates repetition.
+
+T05 — Cobblestone / деревенское мощение. Блок T.
+Worn irregular limestone cobbles for a village courtyard. Use clearly readable
+medium-sized stones, muted warm grey and beige, shallow dark joints and restrained
+edge highlights. Match the approved stone scale relative to the unit reference.
+No tiny photorealistic cracks, thick black outlines, shiny polish, platform edges
+or perspective. A few subtle variations, but no unique central arrangement.
+
+T06 — Ancient paving / старые плиты. Блок T. Поздняя серия.
+Older and somewhat larger limestone paving slabs from the same local stone as the
+village cobbles. Restrained chips and wear, consistent slab thickness suggested only
+inside the material. Keep it usable as a continuous surface. Do not embed columns,
+large rubble, shrubs, deep holes or a completed ruin composition.
+
+O01 — Винодельня / погреб. Блок S.
+Create one [small winery / wine cellar] for the approved Mediterranean village.
+Warm worn plaster and limestone, a weathered terracotta roof, a simple wooden door.
+Keep the building proportions, roof treatment and facade direction consistent with
+the attached approved villa. Use a few larger material accents instead of drawing
+every tile, crack and brick. No attached cart, barrels, bushes, courtyard or ground
+base: those must remain separate editable assets. No royal ornaments or glowing windows.
+
+O02 — Виноградная секция. Блок S.
+One short modular grapevine trellis section matching the approved vineyard reference.
+Wooden posts, a readable connecting support and a few coherent masses of grape leaves.
+Suggest small dark dusty-purple grapes sparingly; no bright oversized fruit.
+Keep the section's direction and endpoint heights compatible with repeated sections.
+Visible gaps beneath the foliage, restrained contrast, no ground, soil strip or shadow island.
+Create a variation in the foliage silhouette without changing the trellis scale or camera.
+
+O03 — Дерево. Блок S.
+One mature [SPECIES] matching the approved tree set. Build the crown from a few
+clear overlapping foliage masses, with a readable trunk and restrained internal
+leaf detail. Keep the trunk-to-crown scale and lighting consistent with the reference.
+The silhouette should identify the species at gameplay size. No individual leaf
+outlines everywhere, fruit larger than the approved reference, roots spread across
+a ground patch, grass, rocks or bushes attached to the base.
+Variation [NUMBER]: change branch balance and crown silhouette, not camera, style
+or lighting. Keep the base anchor consistent with the approved tree.
+
+SPECIES для текущего набора:
+olive — twisting trunk, muted grey-green crown;
+stone pine — broad umbrella-shaped crown, warm trunk;
+cypress — narrow upright silhouette, dense dark-green masses;
+lemon — compact rounded crown, sparse small muted yellow fruit;
+orange — compact rounded crown, sparse small orange fruit;
+fig — spreading crown, larger simplified leaf masses;
+pomegranate — irregular smaller crown, sparse subdued red fruit;
+oak — broad branching crown, restrained warm-green foliage.
+Сначала утвердить по одному дереву, затем делать пять вариантов каждой породы.
+
+O04 — Куст. Блок S.
+One low [laurel / myrtle / rosemary / juniper / oleander] shrub from the same set.
+Use a compact readable silhouette and a few foliage masses. Lower overall contrast
+than a tree or unit, but keep edges clean. Sparse subdued flowers only when appropriate
+to the species. No ground patch, surrounding flowers, stones or separate little bushes.
+Change the silhouette between variants without changing the shared scale of detail.
+
+O05 — Трава и цветы. Блок S.
+One small low [grass tuft / lavender clump / daisies / poppies] as a cosmetic ground
+accent. It should remain subordinate to nearby units and paths. Use a simple broken
+silhouette, a few stems and very few small flowers. Avoid dense black outlines,
+bright white sparkles, neon saturation, oversized blossoms or a circular soil base.
+It is a small accent, not a bush, hedge or miniature garden composition.
+
+O06 — Хозяйственный предмет. Блок S.
+One [barrel / stacked barrels / wooden crate / grape cart / wine press / well /
+wooden fence section / hay bundle / trellis post] for the same working vineyard.
+Match the material scale of the approved villa and the proportions of the unit.
+Weathered wood, subdued iron, warm local stone where needed. Use a small number of
+readable construction details. No magical glow, glossy metal, strong white highlights,
+elaborate ornament or attached ground. Include only parts belonging to this object.
+
+Для забора добавить:
+Keep endpoints and rail heights compatible with the approved fence section, so
+neighbouring sections can meet without changing scale or perspective.
+
+Для колодца добавить:
+The well is a single cohesive object; do not attach a surrounding paved courtyard.
+
+O07 — Камни. Блок S.
+One [small limestone stone / medium limestone outcrop / large limestone formation].
+Use the same warm-grey local stone as the approved village masonry. Large simple
+planes, restrained cracks, readable silhouette. No photographic roughness or tiny
+high-contrast fissures. No attached soil island, grass skirt, flowers or surrounding
+pebbles: those belong to separate ground-detail assets. Match reference lighting.
+
+O08 — Побережье. Блок S.
+One [small wooden fishing boat / mooring post / fishing nets / cargo bundle /
+driftwood / broken amphora / coastal rock] for the same Mediterranean village.
+Match the approved props' simplified brushwork, worn materials and gameplay scale.
+The object is dry and isolated on transparency, without water, beach, foam, sand
+base or surrounding vegetation. No cinematic lighting or polished display presentation.
+
+Мелкие ракушки, морские звёзды, кораллы и водоросли — последняя очередь.
+Не увеличивать их до размера хозяйственных предметов ради видимости.
+Для водорослей и плоских пляжных следов при необходимости использовать блок D.
+
+O09 — Модульные руины. Блок S. Только после утверждения деревни.
+One [broken wall section / column / column stump / stone arch / fallen column /
+small rubble pile] built from the same limestone as the approved village set.
+Reuse the established block size, mortar color, edge treatment and lighting.
+Simplify damage into a few readable breaks. Small restrained ivy accents may cling
+to the object, but no surrounding bushes, grass, paved base or complete scene.
+No pristine white marble, monumental scale, intricate carvings or photographic damage.
+For connecting wall sections, preserve matching endpoint heights and thickness.
+
+O10 — Мелкая керамика. Блок S. Поздняя серия.
+One [amphora / fallen amphora / small group of jars / pottery fragments] in muted
+weathered terracotta. Match the village roof and prop palette without bright orange
+or glossy highlights. Keep the shape readable at the specified small gameplay size.
+No supporting plinth, ground patch, surrounding stones or museum-style lighting.
+
+D01 — Разбитый край мощения. Блок D.
+A short irregular edge of the approved limestone paving: a few intact stones
+become separated chipped stones with transparent gaps toward the outside.
+Use exactly the approved cobble/slab scale. No complete square or diamond tile,
+no raised outer rim. The fragment must be useful along either a courtyard edge
+or a small break in a road, without defining the whole road shape.
+
+D02 — Низкая растительность у основания. Блок D.
+A sparse irregular patch of very low grass and weeds, suitable near the foot of
+a wall, fence or tree. Match the approved meadow palette and brushwork. Keep much
+of the area transparent so the underlying terrain remains visible. No large bush,
+flowers as bright focal points, dark circular halo or pre-drawn wall/tree.
+
+D03 — Почва и мелкий щебень. Блок D.
+A small irregular surface patch of subdued warm earth with a few scattered tiny
+limestone chips. Broken edges and transparent gaps, no circular vignette, no large
+boulders, thick slab or strong cast shadows. Use the same material colors and
+detail scale as the approved dirt, paving and props.
+
+7. ПРОМПТ ДЛЯ ИСПРАВЛЕНИЯ УЖЕ ПОЛУЧЕННОГО КАНДИДАТА
+
+Revise the attached candidate to match the approved reference set more closely.
+Preserve its silhouette, proportions, camera, contact point and canvas placement.
+Change only [ONE SPECIFIC ISSUE: internal detail density / palette / highlight
+contrast / outline thickness]. Keep the image crisp. Do not use blur or compression
+to reduce visual complexity. Do not redesign the object or add scenery.
+The approved reference has priority over making the candidate more detailed.
+
+Менять один параметр за итерацию. Если одновременно поменять цвет, форму, масштаб
+и освещение, будет трудно понять, какое исправление действительно помогло.
+
+8. ПОРЯДОК РАБОТЫ
+
+Первый пробный комплект: Meadow, Dirt, Cobblestone, винодельня, одна секция лоз,
+олива, кипарис, бочка и один маленький травяной акцент. Не переделывать сразу 185 объектов.
+Собрать из них небольшой участок рядом с существующим юнитом и оценить в движке.
+Затем добавить погреб, колодец, телегу, пинию, лимон и остальные сельские предметы.
+После утверждения основы — варианты деревьев, кусты, камни, побережье, переходные детали.
+Последними — керамика и руины, начиная с простых модулей, а не храма или театра.
+
+Для каждого кандидата:
+1) Проверить форму и стиль рядом с эталоном.
+2) Проверить в игровом размере и на обычном приближении камеры.
+3) Проверить настоящий alpha-канал и отсутствие цветной каймы на светлой и тёмной земле.
+4) Для материала проверить повторение 3×3, а затем реальное наложение в игре.
+5) Для объекта проверить опорную точку, перекрытия с юнитом и соответствие коллизии.
+6) Посмотреть днём и под туманом; декор не должен перетягивать внимание с юнита.
+7) Утвердить, сохранить исходник и параметры запроса. Только потом делать варианты.
+
+Не просить ИИ сразу создавать производственный атлас из десятков предметов.
+Надёжнее получать отдельные объекты, а нарезку и упаковку делать после приёмки.
+При атласной упаковке сохранять прозрачные поля и проверять края при фильтрации.
+Для улучшения производительности исходную редактируемую карту не нужно сплющивать:
+объекты, мазки и композиционные группы могут оставаться независимыми.
+
+Финальный критерий: ассет выглядит частью набора в игре, а не просто красив сам по себе.
+Промпт не гарантирует точный ракурс, бесшовность, alpha или размер — это проверяется отдельно.
