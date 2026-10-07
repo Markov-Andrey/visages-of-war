@@ -220,7 +220,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
     test("Sunny Hills connects its compact village to every bench category and both water depths", [&] {
         const auto& world=context.worldAssets;
         const auto s=rts::loadScenario(assets/"maps/sunny-hills.rtsmap",world,context.hallFootprint);
-        require(s.map.width()==80&&s.map.height()==64,"Compact showcase must be 80 by 64");
+        require(s.map.width()==96&&s.map.height()==64,"Showcase with Ink bench must be 96 by 64");
         size_t objectCount=0,materialCount=0;
         for(const auto& d:world.objects()) if(d.id.starts_with("sunny_hills.")) {
             ++objectCount; int galleryCount=0;
@@ -234,8 +234,28 @@ void dataTests(TestSuite& test, const TestContext& context) {
             require(std::any_of(s.landscape.paint.begin(),s.landscape.paint.end(),[&](const auto& p){return p.material==m.id&&p.position.x>=42;}),"Material missing from gallery");
         }
         require(objectCount==185&&materialCount==6,"Imported variant count changed without updating the showcase");
+        size_t inkObjects=0, inkMaterials=0;
+        for (const auto& d : world.objects()) if (d.id.starts_with("sunny_hills_ink.")) {
+            ++inkObjects;
+            require(std::count_if(s.environment.begin(), s.environment.end(), [&](const auto& o) {
+                return o.definitionId == d.id && o.origin.x >= 82;
+            }) == 1, "Ink bench must show each new object exactly once");
+            require(d.blocksVision == (d.id != "sunny_hills_ink.winery"), "Ink object sight rules differ from their category");
+        }
+        for (const auto& m : world.materials()) if (m.id.starts_with("sunny_hills_ink.")) {
+            ++inkMaterials;
+            require(std::any_of(s.landscape.paint.begin(), s.landscape.paint.end(), [&](const auto& p) {
+                return p.material == m.id && p.position.x >= 82;
+            }), "Ink material is missing from the eastern bench");
+        }
+        require(inkObjects == 22 && inkMaterials == 5, "Ink import lost variants");
+        require(s.landscape.baseMaterial == "sunny_hills_ink.meadow", "Village did not adopt the new ground");
+        for (const auto& o : s.environment) if (o.origin.x < 40)
+            require(!o.definitionId.starts_with("sunny_hills.tree.") && o.definitionId != "sunny_hills.vineyard.winery" &&
+                o.definitionId != "sunny_hills.vineyard.cellar" && o.definitionId != "sunny_hills.vineyard.vine_a" &&
+                o.definitionId != "sunny_hills.vineyard.vine_b", "Village retained an old counterpart of new Ink art");
         for(const rts::Cell goal: {rts::Cell{21,32},{18,8},{29,20},{33,43},{6,32},{5,32},
-                                  {40,28},{40,60},{40,13},{63,7},{68,7}}) {
+                                  {40,28},{40,60},{40,13},{63,7},{68,7},{80,12},{80,33},{80,60},{88,55}}) {
             require(rts::findPath(s.map,s.worker,goal).has_value(),"Village, vineyard, beach or bench is unreachable");
             require(rts::findUnitPathTo(s.map,rts::center(s.worker),rts::center(goal),{},.35f,rts::MovementType::Walking).has_value(),
                 "Village-to-bench route is too narrow for a unit collision circle");

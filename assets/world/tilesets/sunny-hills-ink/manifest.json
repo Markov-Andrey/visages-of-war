@@ -1,0 +1,76 @@
+{
+  "id": "sunny-hills-ink",
+  "name": "Sunny Hills Ink",
+  "imported": "2026-10-07",
+  "source": "Raw AI-generated artwork supplied by the project owner. Original PNG bytes preserved; catalog rectangles and alpha islands only, no resampling or repainting.",
+  "author": "Not specified by supplier",
+  "license": "Not specified by supplier; no third-party license inferred.",
+  "files": [
+    {
+      "original": "tile-1.png",
+      "path": "world/tilesets/sunny-hills-ink/textures/meadow.png",
+      "sha256": "7741DACB357B7E1BB2E668BE2B5EBE00EAC1F1F054768B759DF561A5EF41C81F"
+    },
+    {
+      "original": "tile-2.png",
+      "path": "world/tilesets/sunny-hills-ink/textures/dry-grass.png",
+      "sha256": "3F314D7D340331AC55A3E8A0B64A77A5952A14E88BBDFAEBC7A49CDC42B5AF83"
+    },
+    {
+      "original": "tile-3.png",
+      "path": "world/tilesets/sunny-hills-ink/textures/dirt.png",
+      "sha256": "5E4738AA3C2787B20C90FBD2E8A7A16F11E5E37D2BFD109C9C6C8AB2FA08EA54"
+    },
+    {
+      "original": "tile-4.png",
+      "path": "world/tilesets/sunny-hills-ink/textures/sand.png",
+      "sha256": "62A2E1434A18E4F01A7628BCDA1BE002D480DBC25A1C682BFFF57DF4A3C7C864"
+    },
+    {
+      "original": "tile-5.png",
+      "path": "world/tilesets/sunny-hills-ink/textures/cobblestone.png",
+      "sha256": "11A371CACB3199FCD55AC5B8EB8F6954FD57310DE52210F172526A01437EF115"
+    },
+    {
+      "original": "trees-1.png",
+      "path": "world/tilesets/sunny-hills-ink/sprites/trees/olive.png",
+      "sha256": "E9120E798471DA9FDE4EEBB06C3FFAE0406A26AA9C1BAF8FADCA2036986516F2"
+    },
+    {
+      "original": "trees-2.png",
+      "path": "world/tilesets/sunny-hills-ink/sprites/trees/stone-pine.png",
+      "sha256": "B6CAEBB01260A14ECB0A867D6722DC034BB72CCBD27DD1596DB04BA1D6EAB79B"
+    },
+    {
+      "original": "trees-3.png",
+      "path": "world/tilesets/sunny-hills-ink/sprites/trees/cypress.png",
+      "sha256": "D1D04852C609F67CA4C00D6C33BAA7166963009599929BB9922DDD3CDB278AC4"
+    },
+    {
+      "original": "trees-4.png",
+      "path": "world/tilesets/sunny-hills-ink/sprites/trees/lemon.png",
+      "sha256": "E0AD2B35CFB5B459C39B1709FEB3ADD87D81BA80DF4FD3F60681E273C635E6B7"
+    },
+    {
+      "original": "decor-001.png",
+      "path": "world/tilesets/sunny-hills-ink/sprites/winery.png",
+      "sha256": "A91BCF9C6E9F859666AFEAD7100F97D58EF3F71DE05D86788E90CC3E0E4DA8B0"
+    },
+    {
+      "original": "decor-002.png",
+      "path": "world/tilesets/sunny-hills-ink/sprites/grape-trellis.png",
+      "sha256": "254AD89213B0F33854E230DAA50D2DBFA792934CF1A6ACC539A86BF2492D04ED"
+    }
+  ],
+  "review": {
+    "materials": 5,
+    "objects": 22,
+    "trees": 20,
+    "notes": [
+      "Sprites have real alpha; RGB in transparent pixels is not a baked background.",
+      "Lemon variant 2 touches the top of the supplied sheet.",
+      "Tree variants are numbered left to right, top row then bottom row.",
+      "Ground projection and repeat scales match the previous Sunny Hills materials for comparison."
+    ]
+  }
+}

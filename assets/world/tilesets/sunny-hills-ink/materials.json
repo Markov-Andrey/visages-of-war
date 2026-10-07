@@ -1,0 +1,47 @@
+[
+  {
+    "id": "sunny_hills_ink.meadow",
+    "name": "Meadow (Ink)",
+    "image": "world/tilesets/sunny-hills-ink/textures/meadow.png",
+    "repeatCells": 12,
+    "tint": "ffffff",
+    "group": "Sunny Hills Ink / Ground",
+    "isometric": false
+  },
+  {
+    "id": "sunny_hills_ink.dry_grass",
+    "name": "Dry grass (Ink)",
+    "image": "world/tilesets/sunny-hills-ink/textures/dry-grass.png",
+    "repeatCells": 12,
+    "tint": "ffffff",
+    "group": "Sunny Hills Ink / Ground",
+    "isometric": false
+  },
+  {
+    "id": "sunny_hills_ink.dirt",
+    "name": "Dirt (Ink)",
+    "image": "world/tilesets/sunny-hills-ink/textures/dirt.png",
+    "repeatCells": 10,
+    "tint": "ffffff",
+    "group": "Sunny Hills Ink / Ground",
+    "isometric": true
+  },
+  {
+    "id": "sunny_hills_ink.sand",
+    "name": "Sand (Ink)",
+    "image": "world/tilesets/sunny-hills-ink/textures/sand.png",
+    "repeatCells": 12,
+    "tint": "ffffff",
+    "group": "Sunny Hills Ink / Ground",
+    "isometric": true
+  },
+  {
+    "id": "sunny_hills_ink.cobblestone",
+    "name": "Cobblestone (Ink)",
+    "image": "world/tilesets/sunny-hills-ink/textures/cobblestone.png",
+    "repeatCells": 8,
+    "tint": "ffffff",
+    "group": "Sunny Hills Ink / Ground",
+    "isometric": true
+  }
+]

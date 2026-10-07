@@ -1,0 +1,846 @@
+[
+  {
+    "id": "sunny_hills_ink.tree.olive_1",
+    "name": "Olive 1 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/olive.png",
+      "source": [
+        19,
+        19,
+        509,
+        506
+      ],
+      "islandSeed": [
+        246,
+        20
+      ],
+      "size": [
+        130.77,
+        130.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.olive_2",
+    "name": "Olive 2 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/olive.png",
+      "source": [
+        553,
+        6,
+        425,
+        521
+      ],
+      "islandSeed": [
+        685,
+        7
+      ],
+      "size": [
+        106.05,
+        130.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.olive_3",
+    "name": "Olive 3 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/olive.png",
+      "source": [
+        998,
+        26,
+        522,
+        481
+      ],
+      "islandSeed": [
+        1288,
+        27
+      ],
+      "size": [
+        141.08,
+        130.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.olive_4",
+    "name": "Olive 4 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/olive.png",
+      "source": [
+        86,
+        511,
+        682,
+        496
+      ],
+      "islandSeed": [
+        451,
+        512
+      ],
+      "size": [
+        160.0,
+        116.36
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.olive_5",
+    "name": "Olive 5 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/olive.png",
+      "source": [
+        830,
+        479,
+        554,
+        535
+      ],
+      "islandSeed": [
+        1080,
+        480
+      ],
+      "size": [
+        134.62,
+        130.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.stone_pine_1",
+    "name": "Stone Pine 1 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/stone-pine.png",
+      "source": [
+        21,
+        33,
+        541,
+        476
+      ],
+      "islandSeed": [
+        205,
+        34
+      ],
+      "size": [
+        180.0,
+        158.37
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.stone_pine_2",
+    "name": "Stone Pine 2 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/stone-pine.png",
+      "source": [
+        572,
+        19,
+        412,
+        490
+      ],
+      "islandSeed": [
+        771,
+        20
+      ],
+      "size": [
+        147.14,
+        175.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.stone_pine_3",
+    "name": "Stone Pine 3 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/stone-pine.png",
+      "source": [
+        980,
+        100,
+        538,
+        395
+      ],
+      "islandSeed": [
+        1333,
+        101
+      ],
+      "size": [
+        180.0,
+        132.16
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.stone_pine_4",
+    "name": "Stone Pine 4 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/stone-pine.png",
+      "source": [
+        166,
+        526,
+        548,
+        468
+      ],
+      "islandSeed": [
+        423,
+        527
+      ],
+      "size": [
+        180.0,
+        153.72
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.stone_pine_5",
+    "name": "Stone Pine 5 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/stone-pine.png",
+      "source": [
+        799,
+        512,
+        586,
+        484
+      ],
+      "islandSeed": [
+        1043,
+        513
+      ],
+      "size": [
+        180.0,
+        148.67
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.cypress_1",
+    "name": "Cypress 1 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/cypress.png",
+      "source": [
+        41,
+        26,
+        245,
+        965
+      ],
+      "islandSeed": [
+        150,
+        27
+      ],
+      "size": [
+        46.97,
+        185.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.cypress_2",
+    "name": "Cypress 2 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/cypress.png",
+      "source": [
+        329,
+        11,
+        266,
+        976
+      ],
+      "islandSeed": [
+        459,
+        12
+      ],
+      "size": [
+        50.42,
+        185.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.cypress_3",
+    "name": "Cypress 3 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/cypress.png",
+      "source": [
+        636,
+        8,
+        238,
+        983
+      ],
+      "islandSeed": [
+        750,
+        9
+      ],
+      "size": [
+        44.79,
+        185.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.cypress_4",
+    "name": "Cypress 4 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/cypress.png",
+      "source": [
+        914,
+        11,
+        298,
+        980
+      ],
+      "islandSeed": [
+        1109,
+        12
+      ],
+      "size": [
+        56.26,
+        185.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.cypress_5",
+    "name": "Cypress 5 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/cypress.png",
+      "source": [
+        1249,
+        37,
+        263,
+        954
+      ],
+      "islandSeed": [
+        1383,
+        38
+      ],
+      "size": [
+        51.0,
+        185.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.lemon_1",
+    "name": "Lemon 1 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/lemon.png",
+      "source": [
+        12,
+        33,
+        514,
+        513
+      ],
+      "islandSeed": [
+        232,
+        34
+      ],
+      "size": [
+        120.23,
+        120.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.lemon_2",
+    "name": "Lemon 2 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/lemon.png",
+      "source": [
+        544,
+        0,
+        446,
+        554
+      ],
+      "islandSeed": [
+        788,
+        0
+      ],
+      "size": [
+        96.61,
+        120.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.lemon_3",
+    "name": "Lemon 3 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/lemon.png",
+      "source": [
+        1000,
+        107,
+        525,
+        428
+      ],
+      "islandSeed": [
+        1182,
+        108
+      ],
+      "size": [
+        145.0,
+        118.21
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.lemon_4",
+    "name": "Lemon 4 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/lemon.png",
+      "source": [
+        199,
+        504,
+        569,
+        504
+      ],
+      "islandSeed": [
+        534,
+        505
+      ],
+      "size": [
+        135.48,
+        120.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.tree.lemon_5",
+    "name": "Lemon 5 (Ink)",
+    "group": "Sunny Hills Ink / Trees",
+    "gameplay": true,
+    "kind": "tree",
+    "footprint": [
+      1,
+      1
+    ],
+    "collision": [
+      true
+    ],
+    "health": 100,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/trees/lemon.png",
+      "source": [
+        798,
+        488,
+        575,
+        522
+      ],
+      "islandSeed": [
+        1062,
+        489
+      ],
+      "size": [
+        132.18,
+        120.0
+      ],
+      "anchor": [
+        0.5,
+        0.94
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.winery",
+    "name": "Winery (Ink)",
+    "group": "Sunny Hills Ink / Vineyards",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      3,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 300,
+    "blocksVision": false,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/winery.png",
+      "source": [
+        108,
+        13,
+        1321,
+        971
+      ],
+      "islandSeed": [
+        922,
+        14
+      ],
+      "size": [
+        184,
+        135.25
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  },
+  {
+    "id": "sunny_hills_ink.grape_trellis",
+    "name": "Grape trellis (Ink)",
+    "group": "Sunny Hills Ink / Vineyards",
+    "gameplay": true,
+    "kind": "decoration",
+    "footprint": [
+      2,
+      2
+    ],
+    "collision": [
+      true,
+      true,
+      true,
+      true
+    ],
+    "health": 150,
+    "blocksVision": true,
+    "sprite": {
+      "image": "world/tilesets/sunny-hills-ink/sprites/grape-trellis.png",
+      "source": [
+        24,
+        12,
+        1490,
+        1000
+      ],
+      "islandSeed": [
+        1371,
+        13
+      ],
+      "size": [
+        125,
+        83.89
+      ],
+      "anchor": [
+        0.5,
+        0.9
+      ],
+      "pixelArt": false
+    }
+  }
+]

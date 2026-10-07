@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACK = ROOT / 'assets/world/tilesets/sunny-hills'
-WIDTH, HEIGHT = 80, 64
+WIDTH, HEIGHT = 96, 64
 RNG = random.Random(7102026)
 CATEGORIES = ['trees', 'shrubs', 'coast', 'rocks', 'ruins', 'vineyards']
 
@@ -21,6 +21,20 @@ def write(path, value):
 
 catalogs = {category: read(PACK / (category + '.json')) for category in CATEGORIES}
 objects = {d['id']: d for definitions in catalogs.values() for d in definitions}
+INK_PACK = ROOT / 'assets/world/tilesets/sunny-hills-ink'
+ink_objects = read(INK_PACK / 'objects.json')
+objects.update({d['id']: d for d in ink_objects})
+
+def village_asset(key):
+    if key.startswith('sunny_hills.tree.'):
+        species, variant = key.removeprefix('sunny_hills.tree.').rsplit('_', 1)
+        species = {'fig': 'lemon', 'orange': 'lemon', 'pomegranate': 'olive', 'oak': 'stone_pine'}.get(species, species)
+        return 'sunny_hills_ink.tree.' + species + '_' + variant
+    if key in ['sunny_hills.vineyard.winery', 'sunny_hills.vineyard.cellar']:
+        return 'sunny_hills_ink.winery'
+    if key in ['sunny_hills.vineyard.vine_a', 'sunny_hills.vineyard.vine_b']:
+        return 'sunny_hills_ink.grape_trellis'
+    return key
 heights = [[0] * WIDTH for _ in range(HEIGHT)]
 surfaces = [['L'] * WIDTH for _ in range(HEIGHT)]
 ramps, occupied, reserved = {}, set(), set()
@@ -33,7 +47,9 @@ next_id = 1000
 
 
 def stamp(material, x, y, radius, opacity=1, hardness=.5):
-    scenario['paint'].append({'material': 'sunny_hills.' + material,
+    if not material.startswith('sunny_hills'):
+        material = ('sunny_hills_ink.' if x < 40 and material != 'ancient_paving' else 'sunny_hills.') + material
+    scenario['paint'].append({'material': material,
                               'position': [round(x, 3), round(y, 3)], 'radius': round(radius, 3),
                               'opacity': opacity, 'hardness': hardness, 'erase': False})
 
@@ -53,7 +69,9 @@ def road(points, material='dirt', radius=1.05, reserve=1.7):
 
 def place(key, x, y, *, scale=1, force=False):
     global next_id
-    key = key if key.startswith('sunny_hills.') else 'sunny_hills.' + key
+    key = key if key.startswith('sunny_hills') else 'sunny_hills.' + key
+    if x < 40:
+        key = village_asset(key)
     d = objects[key]
     if not (0 <= x < WIDTH and 0 <= y < HEIGHT):
         return False
@@ -253,7 +271,22 @@ for category in CATEGORIES:
         cursor_x += slot_width
         row_height = max(row_height, slot_height)
 
-scenario['units'] = [{'asset': 'human.peacemaker', 'owner': 0, 'cell': [20, 35]},
+# A separate eastern strip presents every Ink variant without crowding the old bench.
+road([(40, 12), (80, 12), (80, 60)], material='sunny_hills_ink.dirt', radius=.7, reserve=1.1)
+for i, material in enumerate(read(INK_PACK / 'materials.json')):
+    cx, cy = 84 + (i % 2) * 7, 3 + (i // 2) * 5
+    for ox in [-1, 1]:
+        for oy in [-.7, .7]:
+            stamp(material['id'], cx + ox, cy + oy, 1.4, 1, 1)
+for i, d in enumerate(ink_objects[:20]):
+    x, y = 82 + (i % 5) * 3, 20 + (i // 5) * 8
+    required(d['id'], x, y)
+    gallery.append({'asset': d['id'], 'position': [x, y]})
+for key, x, y in [('winery', 84, 54), ('grape_trellis', 90, 55)]:
+    required('sunny_hills_ink.' + key, x, y)
+    gallery.append({'asset': 'sunny_hills_ink.' + key, 'position': [x, y]})
+
+scenario['units'] = [{'asset': 'human.peacemaker', 'owner': 0, 'cell': [80, 33]},{'asset': 'human.peacemaker', 'owner': 0, 'cell': [20, 35]},
                      {'asset': 'human.peacemaker', 'owner': 0, 'cell': [5, 32]},
                      {'asset': 'human.peacemaker', 'owner': 0, 'cell': [68, 7]},
                      {'asset': 'human.flying_soldier', 'owner': 0, 'cell': [19, 35]}]
@@ -262,7 +295,7 @@ for x, y in [(17, 39), (18, 39), (18, 40)]:
     scenario['resources'].append({'asset': 'crystal.small', 'cell': [x, y], 'remaining': 1000})
 for x, y in scenario['start']['workers'] + [scenario['start']['hero']] + [u['cell'] for u in scenario['units']]:
     assert (x, y) not in occupied and surfaces[y][x] != 'D' and (x, y) not in ramps
-scenario['terrain'] = {'base': 'sunny_hills.meadow',
+scenario['terrain'] = {'base': 'sunny_hills_ink.meadow',
                        'heights': [''.join('-' if h == -1 else str(h) for h in row) for row in heights],
                        'surfaces': [''.join(row) for row in surfaces], 'blocked': ['0' * WIDTH] * HEIGHT,
                        'ramps': [[x, y, *direction] for (x, y), direction in ramps.items()]}

@@ -1,7 +1,8 @@
 {
   "materialFiles": [
     "world/materials.json",
-    "world/tilesets/sunny-hills/materials.json"
+    "world/tilesets/sunny-hills/materials.json",
+    "world/tilesets/sunny-hills-ink/materials.json"
   ],
   "objectFiles": [
     "world/objects.json",
@@ -10,7 +11,8 @@
     "world/tilesets/sunny-hills/rocks.json",
     "world/tilesets/sunny-hills/coast.json",
     "world/tilesets/sunny-hills/ruins.json",
-    "world/tilesets/sunny-hills/vineyards.json"
+    "world/tilesets/sunny-hills/vineyards.json",
+    "world/tilesets/sunny-hills-ink/objects.json"
   ],
   "remainsFile": "world/remains.json",
   "resourcesFile": "world/resources.json"
