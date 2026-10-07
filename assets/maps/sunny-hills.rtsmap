@@ -643,6 +643,1535 @@
     {
       "material": "sunny_hills.sand",
       "position": [
+        0.5,
+        0.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        0.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        0.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        2.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        2.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        2.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        4.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        4.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        4.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        4.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        6.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        6.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        6.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        6.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        8.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        8.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        8.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        8.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        10.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        10.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        10.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        10.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        12.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        12.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        12.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        12.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        14.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        14.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        14.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        14.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        16.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        16.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        16.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        16.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        18.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        18.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        18.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        20.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        20.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        20.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        22.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        22.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        22.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        24.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        24.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        24.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        26.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        26.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        26.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        28.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        28.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        28.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        28.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        30.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        30.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        30.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        30.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        32.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        32.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        32.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        32.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        34.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        34.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        34.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        34.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        36.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        36.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        36.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        36.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        38.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        38.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        38.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        40.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        40.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        40.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        42.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        42.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        42.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        42.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        44.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        44.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        44.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        44.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        46.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        46.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        46.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        46.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        48.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        48.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        48.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        48.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        50.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        50.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        50.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        50.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        52.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        52.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        52.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        52.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        54.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        54.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        54.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        6.5,
+        54.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        56.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        56.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        56.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        58.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        58.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        58.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        60.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        60.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        60.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        0.5,
+        62.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        2.5,
+        62.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        4.5,
+        62.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        65.5,
+        3.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        67.5,
+        3.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        69.5,
+        3.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        71.5,
+        3.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        73.5,
+        3.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        75.5,
+        3.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        65.5,
+        5.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        67.5,
+        5.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        69.5,
+        5.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        71.5,
+        5.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        73.5,
+        5.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        75.5,
+        5.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        65.5,
+        7.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        67.5,
+        7.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        69.5,
+        7.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        71.5,
+        7.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        73.5,
+        7.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        75.5,
+        7.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        65.5,
+        9.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        67.5,
+        9.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        69.5,
+        9.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        71.5,
+        9.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        73.5,
+        9.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
+        75.5,
+        9.5
+      ],
+      "radius": 1.65,
+      "opacity": 1,
+      "hardness": 0.85,
+      "erase": false
+    },
+    {
+      "material": "sunny_hills.sand",
+      "position": [
         64.8,
         3.5
       ],
@@ -9833,8 +11362,16 @@
       "asset": "human.peacemaker",
       "owner": 0,
       "cell": [
-        21,
-        35
+        5,
+        32
+      ]
+    },
+    {
+      "asset": "human.peacemaker",
+      "owner": 0,
+      "cell": [
+        68,
+        7
       ]
     },
     {

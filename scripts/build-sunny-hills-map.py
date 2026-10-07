@@ -104,6 +104,10 @@ for y in range(HEIGHT):
     if y % 2 == 0:
         stamp('sand', edge + .65, y + .5, 1.7, .65, .45)
 ramp_lane(7, 32, 1, 0)
+# Authored sand remains editable beneath the procedural water column.
+for y in range(0, HEIGHT, 2):
+    for x in range(0, coast[y] + 1, 2):
+        stamp('sand', x + .5, y + .5, 1.65, 1, .85)
 
 # Low hills and a planted boundary enclose the designed western half.
 for y in range(HEIGHT):
@@ -121,6 +125,9 @@ for y in range(3, 11):
         heights[y][x] = -1
         surfaces[y][x] = 'L' if x == 65 else ('S' if x < 70 else 'D')
 ramp_lane(65, 7, -1, 0)
+for y in range(3, 11, 2):
+    for x in range(65, 77, 2):
+        stamp('sand', x + .5, y + .5, 1.65, 1, .85)
 for y in [3.5, 5.5, 7.5, 9.5]:
     stamp('sand', 64.8, y, .8, 1, .8)
 
@@ -247,13 +254,14 @@ for category in CATEGORIES:
         row_height = max(row_height, slot_height)
 
 scenario['units'] = [{'asset': 'human.peacemaker', 'owner': 0, 'cell': [20, 35]},
-                     {'asset': 'human.peacemaker', 'owner': 0, 'cell': [21, 35]},
+                     {'asset': 'human.peacemaker', 'owner': 0, 'cell': [5, 32]},
+                     {'asset': 'human.peacemaker', 'owner': 0, 'cell': [68, 7]},
                      {'asset': 'human.flying_soldier', 'owner': 0, 'cell': [19, 35]}]
 for x, y in [(17, 39), (18, 39), (18, 40)]:
     assert (x, y) not in occupied
     scenario['resources'].append({'asset': 'crystal.small', 'cell': [x, y], 'remaining': 1000})
 for x, y in scenario['start']['workers'] + [scenario['start']['hero']] + [u['cell'] for u in scenario['units']]:
-    assert (x, y) not in occupied and surfaces[y][x] == 'L' and (x, y) not in ramps
+    assert (x, y) not in occupied and surfaces[y][x] != 'D' and (x, y) not in ramps
 scenario['terrain'] = {'base': 'sunny_hills.meadow',
                        'heights': [''.join('-' if h == -1 else str(h) for h in row) for row in heights],
                        'surfaces': [''.join(row) for row in surfaces], 'blocked': ['0' * WIDTH] * HEIGHT,

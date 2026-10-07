@@ -143,7 +143,10 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
         selectionColor(u.owner, game.player().id), .5f);
     drawCommandPulse(p, u.hero ? 27 : 23, u.hero ? 13 : 11, view.zoom, selectionColor(u.owner, game.player().id), commandAge);
     const auto frame = unitFrame(u);
-    unitImage(u.definition.sprite, frame.column, frame.row, p, view.zoom, u.owner == game.player().id ? teamColor_ : enemyColor_);
+    const float immersion = airborne(u.definition.movement) ? 0.0f :
+        std::max(0.0f, game.map().surfaceHeight(groundCell, u.position) - game.unitHeight(u));
+    wadingUnitImage(u.definition.sprite, frame.column, frame.row, p, shadow, immersion,
+        view.zoom, u.owner == game.player().id ? teamColor_ : enemyColor_);
     if (u.cargo > 0) {
         brush_->SetColor(D2D1::ColorF(worldAssets_.crystalSprite().glowColor));
         target_->FillEllipse(D2D1::Ellipse(point(p + Vec2{16, -25} * view.zoom), 5 * view.zoom, 7 * view.zoom), brush_.Get());

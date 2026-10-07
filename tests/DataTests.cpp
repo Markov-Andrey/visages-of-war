@@ -242,6 +242,12 @@ void dataTests(TestSuite& test, const TestContext& context) {
         }
         require(s.map.at({68,7}).surface==rts::Surface::ShallowWater&&s.map.at({72,7}).surface==rts::Surface::DeepWater,
             "Bench water samples missing");
+        for (const Cell cell : {Cell{5,32}, Cell{68,7}})
+            require(std::any_of(s.units.begin(), s.units.end(), [&](const auto& u) {
+                return u.cell == cell && u.definitionId == "human.peacemaker" && u.owner == 0;
+            }), "Water demonstration lost its wading peacemaker");
+        require(std::abs(s.map.bedHeight({68,7}, center({68,7})) -
+            s.map.bedHeight({72,7}, center({72,7})) - 1) < .0001f, "Water bench lost its one-level bed drop");
         require(!rts::findPath(s.map,s.worker,{72,7}).has_value()&&
             rts::findPath(s.map,s.worker,{72,7},rts::MovementType::Flying).has_value(),
             "Water bench no longer distinguishes ground and flying movement");

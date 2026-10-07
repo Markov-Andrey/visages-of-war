@@ -4,6 +4,54 @@
 
 namespace rts {
 struct RendererLightingTest {
+    static void water(const tests::TestContext& context) {
+        using render::check;
+        using tests::require;
+        platform::ComApartment apartment;
+        const auto root = Paths::executable().parent_path();
+        Renderer renderer(Paths(context.assets, root / "water-test-data"));
+        Renderer::ComPtr<IWICBitmap> output;
+        constexpr UINT width = 384, height = 192;
+        check(renderer.wic_->CreateBitmap(width, height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, output.GetAddressOf()));
+        auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
+        properties.dpiX = properties.dpiY = 96;
+        check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
+        check(renderer.target_->CreateSolidColorBrush(D2D1::ColorF(0), renderer.brush_.GetAddressOf()));
+        Map map(6, 3);
+        for (int y = 0; y < 3; ++y) for (int x = 0; x < 6; ++x)
+            map.at({x,y}).surface = x < 3 ? Surface::ShallowWater : Surface::DeepWater;
+        const auto draw = [&](unsigned background, WorldView waterView = {}) {
+            renderer.target_->BeginDraw(); renderer.target_->Clear(D2D1::ColorF(background));
+            for (int y = 0; y < 3; ++y) for (int x = 0; x < 6; ++x) renderer.waterTile(map, {x,y}, waterView);
+            check(renderer.target_->EndDraw());
+            std::vector<UINT32> pixels(width * height);
+            check(output->CopyPixels(nullptr, width * 4, UINT(pixels.size() * 4), reinterpret_cast<BYTE*>(pixels.data())));
+            return pixels;
+        };
+        const auto dark = draw(0), light = draw(0xffffff);
+        require((light[96 * width + 96] & 255) - (dark[96 * width + 96] & 255) > 100,
+            "Shallow water hid the bed texture");
+        require((light[96 * width + 320] & 255) - (dark[96 * width + 320] & 255) < 12,
+            "Deep water failed to attenuate the bed");
+        for (int x = 160; x < 223; ++x)
+            require(std::abs(int(light[96 * width + x] & 255) - int(light[96 * width + x + 1] & 255)) < 5,
+                "Water gradient has a hard cell seam");
+        const auto fractional = draw(0xffffff, WorldView{{.3f,.7f}, 1.15f});
+        for (int x = 365; x < 373; ++x)
+            require(fractional[100 * width + x] == fractional[100 * width + 364],
+                "Fractional zoom exposed a bright seam between transparent water cells");
+        map.at({4,1}).surface = Surface::ShallowWater;
+        const auto edited = draw(0xffffff);
+        require(edited[96 * width + 288] != light[96 * width + 288], "Water cache ignored an edited depth");
+        renderer.discardTarget();
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        auto scene = loadScenario(context.assets / "maps/sunny-hills.rtsmap", context.worldAssets, context.hallFootprint);
+        Simulation game(std::move(scene), {}, definitions.entity("human.worker"), definitions.entities());
+        game.revealMap();
+        WorldView view{{}, 1.15f};
+        view.origin = Vec2{700, 360} - view.project({69,7}, -1);
+        renderer.snapshot(game, root / "water-preview.png", nullptr, false, nullptr, MenuPage::BattleSetup, 0, nullptr, &view);
+    }
     static void occlusion(const tests::TestContext& context) {
         using render::check;
         using tests::require;
@@ -149,6 +197,7 @@ struct RendererLightingTest {
 };
 namespace tests {
 void lightingTests(TestSuite& test, const TestContext& context) {
+    test("Water renders a translucent bed and smooth editable depth boundary", [&] { RendererLightingTest::water(context); });
     test("Occlusion layer exposes units with a soft local window and preserves background objects", [&] { RendererLightingTest::occlusion(context); });
     test("Health sections, damage colour and death visibility stay readable at night", [&] { RendererLightingTest::healthBars(context); });
     test("Night sprite composition preserves alpha, soft emission and foreground occlusion", [&] { RendererLightingTest::composite(context); });

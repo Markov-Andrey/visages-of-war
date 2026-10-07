@@ -16,6 +16,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     const auto& s=editor.scenario(); const auto& map=s.map;
     const auto& depot=editor.startingDepot();
     prepareLandscape(s.landscape,map);
+    waterSeconds_ = 0;
     const auto extent=size(); const EditorLayout layout(extent);
     target_->BeginDraw(); target_->Clear(D2D1::ColorF(0x081119)); worldOpacity_=1;
     target_->PushAxisAlignedClip(rect(layout.world.x,layout.world.y,layout.world.width,layout.world.height),D2D1_ANTIALIAS_MODE_ALIASED);
@@ -36,10 +37,12 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     const auto drawUnit=[&](const UnitSpawn& u) {
         const auto& d=editor.definitions().entity(u.definitionId); const bool air=airborne(d.movement);
         const auto ground=unitScreenAnchor(view,center(u.cell),map.surfaceHeight(u.cell,center(u.cell)));
-        const auto p=air?unitScreenAnchor(view,center(u.cell),5):ground;
+        const auto p=unitScreenAnchor(view,center(u.cell),map.movementHeight(center(u.cell),d.movement));
         if(!visible(p)) return;
         if(air) { line(p,ground,0x76d99b,1.5f); brush_->SetColor(D2D1::ColorF(0x76d99b)); target_->DrawEllipse(D2D1::Ellipse(point(p),20*view.zoom,8*view.zoom),brush_.Get()); }
-        unitImage(d.sprite,d.sprite.idle,d.sprite.rows[0],p,view.zoom,u.owner==0?teamColor_:enemyColor_);
+        const float immersion = air ? 0.0f : std::max(0.0f,
+            map.surfaceHeight(u.cell,center(u.cell)) - map.movementHeight(center(u.cell),d.movement));
+        wadingUnitImage(d.sprite,d.sprite.idle,d.sprite.rows[0],p,ground,immersion,view.zoom,u.owner==0?teamColor_:enemyColor_);
         if(d.hero) { brush_->SetColor(D2D1::ColorF(0xe8c56b)); target_->DrawEllipse(D2D1::Ellipse(point(p),22*view.zoom,9*view.zoom),brush_.Get(),2); }
     };
     size_t next=0;

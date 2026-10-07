@@ -7,6 +7,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     ensureTarget();
     updateFogMask(game);
     prepareLandscape(game.landscape(), game.map());
+    waterSeconds_ = float(game.clock().elapsedTicks() % 36000) / Simulation::ticksPerSecond;
     const auto color = teamRgb(game.player().color);
     if (teamColor_ != color) { teamColor_ = color; loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_, SpriteTeamMask::Blue); }
     const auto enemyColor = teamRgb(game.player().color == TeamColor::Red ? TeamColor::Blue : TeamColor::Red);

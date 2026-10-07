@@ -38,6 +38,11 @@ public:
     bool canTraverse(Vec2 from, Vec2 to, float radius, MovementType movement = MovementType::Walking) const;
     // The same sloped surface is used by rendering, picking and unit placement.
     float surfaceHeight(Cell c, Vec2 world) const;
+    // Water keeps the authored flat surface; its bed slopes down independently.
+    // Depth tapers to zero at a dry bank for a continuous wading entrance.
+    float waterDepth(Cell c, Vec2 world) const;
+    float bedHeight(Cell c, Vec2 world) const;
+    float movementHeight(Vec2 world, MovementType movement) const;
     std::array<Vec2, 4> surfaceCorners(Cell c, const WorldView& view) const;
     std::optional<Cell> pick(Vec2 screen, const WorldView& view) const;
     std::optional<Vec2> pickPosition(Vec2 screen, const WorldView& view) const;

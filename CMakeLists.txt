@@ -71,6 +71,7 @@ add_library(rts_render
     src/render/RenderPrimitives.cpp
     src/render/RenderSnapshot.cpp
     src/render/TerrainRenderer.cpp
+    src/render/WaterRenderer.cpp
     src/render/WorldRenderer.cpp
     src/render/WorldSpriteAssets.cpp
     src/render/UnitSpriteRenderer.cpp

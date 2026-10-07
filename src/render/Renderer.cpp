@@ -32,6 +32,7 @@ void Renderer::ensureTarget() {
 
 void Renderer::discardTarget() {
     worldIslands_.clear();
+    waterTiles_.clear();
     occlusionLayer_.Reset();
     commandIcons_.clear();
     portraitGradients_.clear();

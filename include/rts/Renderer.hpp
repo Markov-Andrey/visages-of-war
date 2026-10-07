@@ -103,6 +103,11 @@ private:
     void unitSprite(const Simulation& game, const Unit& unit, const WorldView& view, bool selected, bool hovered = false, float commandAge = -1);
     void prepareLandscape(const Landscape& landscape, const Map& map);
     void paintedTile(Cell cell);
+    void waterTile(const Map& map, Cell cell, const WorldView& view);
+    void wadingUnitImage(const UnitSpriteDefinition& definition, int column, int row,
+        Vec2 ground, Vec2 waterline, float immersion, float zoom, unsigned color);
+    std::map<unsigned, ComPtr<ID2D1BitmapBrush>> waterTiles_;
+    float waterSeconds_{};
     void decoration(const Decoration& object, const Map& map, const WorldView& view);
     void worldSprite(const WorldObjectDefinition& definition, Vec2 position, float scale, float rotation, const Map& map, const WorldView& view);
     void writeSnapshot(IWICBitmap* bitmap, const std::filesystem::path& output);

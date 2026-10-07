@@ -4,6 +4,33 @@
 namespace rts::tests {
 void navigationTests(TestSuite& test, const TestContext& context) {
     (void)context;
+    test("Water bed slopes continuously while the surface and navigation stay flat", [] {
+        Map map(8, 4);
+        for (int y = 0; y < 4; ++y) for (int x = 0; x < 8; ++x) {
+            auto& t = map.at({x, y}); t.height = -1;
+            t.surface = x < 2 ? Surface::Land : x < 5 ? Surface::ShallowWater : Surface::DeepWater;
+        }
+        require(std::abs(map.bedHeight({3, 1}, {3.5f, 1.5f}) + 1.8f) < .0001f, "Wrong shallow bed");
+        require(std::abs(map.bedHeight({6, 1}, {6.5f, 1.5f}) + 2.8f) < .0001f, "Deep bed is not one level lower");
+        for (float x = 1.5f; x < 6.5f; x += .01f) {
+            const Cell c{int(x), 1}, next{int(x + .01f), 1};
+            require(std::abs(map.bedHeight(c, {x, 1.5f}) - map.bedHeight(next, {x + .01f, 1.5f})) < .02f,
+                "Bed snapped at a dry/shallow/deep seam");
+            require(map.surfaceHeight(c, {x, 1.5f}) == -1, "Water surface followed the bed");
+        }
+        require(map.canStep({1, 1}, {2, 1}) && !map.canStep({4, 1}, {5, 1}), "Wading changed walkability");
+        require(map.canStep({4, 1}, {5, 1}, MovementType::Swimming), "Bed slope blocked a swimmer");
+        require(map.movementHeight({6.5f, 1.5f}, MovementType::Flying) == 5, "Water lowered a flyer");
+        require(std::abs(map.movementHeight({6.5f, 1.5f}, MovementType::Swimming) + 1.28f) < .0001f,
+            "Swimmer sank to the deep bed");
+        const WorldView view{{30, 20}, 1.2f};
+        require(map.pick(view.project({6.5f, 1.5f}, -1), view) == Cell{6, 1}, "Water picking followed submerged bed");
+        map.at({0, 0}).height = 1;
+        require(map.waterDepth({0, 0}, {.9f, .9f}) == 0, "Separate elevation acquired water");
+        map.at({3, 1}).surface = Surface::Land;
+        require(map.waterDepth({4, 2}, {4.001f, 2.001f}) < .001f,
+            "Diagonal entry into water snapped at a bank corner");
+    });
     test("A* endpoints, diagonal cost, unreachable and occupied targets", [] {
         rts::Map map(5, 5);
         auto path = rts::findPath(map, {0, 0}, {4, 4});

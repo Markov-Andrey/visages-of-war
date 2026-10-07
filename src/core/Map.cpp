@@ -134,6 +134,44 @@ float Map::surfaceHeight(Cell c, Vec2 world) const {
     if (t.ramp.y == -1) slope = c.y + 1.0f - world.y;
     return t.height + std::clamp(slope, 0.0f, 1.0f);
 }
+float Map::waterDepth(Cell c, Vec2 world) const {
+    const auto& current = at(c);
+    if (current.surface == Surface::Land) return 0;
+    const int left = int(std::floor(world.x - .5f)), top = int(std::floor(world.y - .5f));
+    const auto smooth = [](float t) { return t * t * (3 - 2 * t); };
+    const float tx = smooth(world.x - .5f - left), ty = smooth(world.y - .5f - top);
+    const auto depth = [&](Cell sample) {
+        // Extend edge cells, but never blend separate pools across a cliff.
+        sample.x = std::clamp(sample.x, 0, width_ - 1);
+        sample.y = std::clamp(sample.y, 0, height_ - 1);
+        const auto& t = at(sample);
+        if (t.height != current.height || t.surface == Surface::Land) return 0.0f;
+        return t.surface == Surface::DeepWater ? 1.8f : .8f;
+    };
+    const float a = std::lerp(depth({left, top}), depth({left + 1, top}), tx);
+    const float b = std::lerp(depth({left, top + 1}), depth({left + 1, top + 1}), tx);
+    float shore = 1;
+    for (int y = -1; y <= 1; ++y) for (int x = -1; x <= 1; ++x) {
+        const Cell neighbor = c + Cell{x, y};
+        if (!contains(neighbor) || at(neighbor).surface != Surface::Land || at(neighbor).height != current.height) continue;
+        const float dx = world.x - std::clamp(world.x, float(neighbor.x), neighbor.x + 1.0f);
+        const float dy = world.y - std::clamp(world.y, float(neighbor.y), neighbor.y + 1.0f);
+        const float distance = std::hypot(dx, dy);
+        shore = std::min(shore, smooth(std::clamp(distance, 0.0f, 1.0f)));
+    }
+    return std::lerp(a, b, ty) * shore;
+}
+float Map::bedHeight(Cell c, Vec2 world) const {
+    return surfaceHeight(c, world) - waterDepth(c, world);
+}
+float Map::movementHeight(Vec2 world, MovementType movement) const {
+    if (airborne(movement)) return 5.0f;
+    const Cell c{int(std::floor(world.x)), int(std::floor(world.y))};
+    const float surface = surfaceHeight(c, world);
+    // Swimmers float; walkers stand on the bed. Amphibians float in deeper water.
+    const float depth = waterDepth(c, world);
+    return surface - (movement == MovementType::Walking ? depth : std::min(depth, .28f));
+}
 std::array<Vec2, 4> Map::surfaceCorners(Cell c, const WorldView& view) const {
     const std::array<Vec2, 4> world{{{float(c.x), float(c.y)}, {c.x + 1.0f, float(c.y)},
         {c.x + 1.0f, c.y + 1.0f}, {float(c.x), c.y + 1.0f}}};

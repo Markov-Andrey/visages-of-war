@@ -111,8 +111,7 @@ bool Simulation::environmentVisible(size_t index) const {
     return false;
 }
 float Simulation::unitHeight(const Unit& u) const {
-    if (airborne(u.definition.movement)) return 5.0f; // Fixed flight plane above the highest supported terrain.
-    return map().surfaceHeight({static_cast<int>(std::floor(u.position.x)), static_cast<int>(std::floor(u.position.y))}, u.position);
+    return map().movementHeight(u.position, u.definition.movement);
 }
 void Simulation::revealMap() {
     fog_.revealAll();

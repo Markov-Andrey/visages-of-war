@@ -59,12 +59,15 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
             return view.project(world[i], std::min(height, topHeight));
         };
         const std::array<Vec2, 4> face{{top[edge], top[next], bottomAt(next), bottomAt(edge)}};
+        // Flat neighbors have no cliff face. Stroking this degenerate polygon
+        // leaks a half-pixel grid into the already painted neighboring water.
+        if (face[0] == face[3] && face[1] == face[2]) continue;
         polygon(face, edge == 1 ? 0x454538 : 0x303c32);
         line(face[2], face[3], 0x242f29);
         lightSurface(face);
     }
     worldOpacity_ = previousOpacity;
-    if (tile.surface == Surface::Land) {
+    {
         // The brush repeats in logical world coordinates across many cells. Only
         // the surface projection changes on slopes; the texture never restarts per tile.
         D2D1_MATRIX_3X2_F previous;
@@ -77,16 +80,6 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
         target_->FillRectangle(rect(float(c.x), float(c.y), 1, 1), groundBrush_.Get());
         target_->SetAntialiasMode(antialias);
         target_->SetTransform(previous);
-    } else {
-        const bool shallow = tile.surface == Surface::ShallowWater;
-        polygon(top, shallow ? 0x4e9fa5 : 0x245879);
-        // Small wavelets distinguish water even with the navigation grid hidden.
-        for (int i = 0; i < 3; ++i) {
-            const float offset = ((c.x * 7 + c.y * 3 + i * 5) % 7) * .045f;
-            const Vec2 a{c.x + .12f + offset, c.y + .2f + i * .27f};
-            const Vec2 b{a.x + .27f, a.y};
-            line(view.project(a, map.surfaceHeight(c, a)), view.project(b, map.surfaceHeight(c, b)), shallow ? 0x83c5bd : 0x3c7f9d, view.zoom);
-        }
     }
     {
         D2D1_MATRIX_3X2_F previous;
@@ -98,6 +91,7 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
         target_->SetAntialiasMode(antialias);
         target_->SetTransform(previous);
     }
+    if (tile.surface != Surface::Land) waterTile(map, c, view);
     if (tile.ramp != Cell{}) {
         polygon(top, 0x8c8260, .7f);
         for (int i = 1; i < 5; ++i) {
@@ -138,8 +132,8 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
         const Cell adjacent = c + neighbors[edge];
         if (!map.contains(adjacent) || map.at(adjacent).height != tile.height)
             boundary(edge, 0xaca17a, std::max(1.0f, 2 * view.zoom));
-        else if (tile.surface != Surface::Land && map.at(adjacent).surface != tile.surface)
-            boundary(edge, map.at(adjacent).surface == Surface::Land ? 0xc5c299 : 0x70b8bd, std::max(1.0f, 2 * view.zoom));
+        else if (tile.surface != Surface::Land && map.at(adjacent).surface == Surface::Land)
+            boundary(edge, 0xc5d3b3, std::max(1.0f, view.zoom), .4f);
         if (grid) boundary(edge, 0xabc494, 1.0f, .25f);
     }
 }
