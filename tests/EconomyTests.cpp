@@ -26,7 +26,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Large crystals accept clicks on every cell and release the entire footprint after harvesting", [&] {
         const auto& world = context.worldAssets;
         for (const auto* kind : {"crystal.medium", "crystal.big"}) {
-            Scenario s{Map(24, 24), {1, 1}, {17, 13}, {world.instantiateCrystal(kind, {13, 13})}};
+            Scenario s{Map(24, 24), {1, 1}, {16, 13}, {world.instantiateCrystal(kind, {13, 13})}};
             s.crystals.front().remaining = 2;
             const auto node = s.crystals.front();
             rebuildScenario(s, {3, 2});
@@ -37,7 +37,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
             for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
                 require(game.command(node.cell + Cell{x, y}), "A crystal footprint cell rejected gathering");
             const auto slots = perimeter(game.map(), node.cell, node.width, node.height);
-            require(std::find(slots.begin(), slots.end(), game.worker().route.back()) != slots.end(), "Worker did not approach the outer perimeter");
+            const Cell arrival = game.worker().route.empty() ? game.worker().cell : game.worker().route.back();
+            require(std::find(slots.begin(), slots.end(), arrival) != slots.end(), "Worker did not approach the outer perimeter");
             ticks(game, 1800);
             require(game.crystals().front().remaining == 0 && game.storedCrystals() == 2 && game.crystals().front().id == id, "Depletion lost cargo or resource identity");
             for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
@@ -302,7 +303,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition worker; worker.trainingTicks = 1;
         rts::Simulation game(std::move(s), {}, worker);
         require(game.command({1, 3}), "Could not move worker into preferred exit");
-        ticks(game, 4);
+        ticks(game, 5);
         require(!game.worker().route.empty() && game.worker().position != rts::center(game.worker().cell) && game.worker().cell == rts::Cell{1, 4}, "Worker did not approach the exit");
         require(game.train(game.buildings().front().id), "Could not train near moving worker");
         game.tick();

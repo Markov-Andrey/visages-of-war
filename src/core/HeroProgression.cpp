@@ -22,7 +22,7 @@ void Simulation::rewardKill(const Unit& victim, PlayerId killer) {
     for (const auto& u : units_) if (u.hero && u.health > 0 && u.owner == killer && !u.atMaxLevel()) {
         const auto delta = u.position - victim.position;
         const int radius = progression_->experienceRadius;
-        if (delta.x * delta.x + delta.y * delta.y <= radius * radius) recipients.push_back(u.id);
+        if (groundLengthSquared(delta) <= radius * radius) recipients.push_back(u.id);
     }
     if (recipients.empty()) return;
     std::sort(recipients.begin(), recipients.end());

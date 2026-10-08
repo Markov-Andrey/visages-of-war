@@ -6,7 +6,7 @@ void checkCombatMotion(const Simulation& game) {
     for (size_t i = 0; i < game.units().size(); ++i) {
         const auto& a = game.units()[i];
         require(game.map().canTraverse(a.tickPosition, a.position, a.definition.collisionRadius, a.definition.movement), "Combat crossed terrain");
-        require(lengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f, 2), "Combat teleported a unit");
+        require(groundLengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f, 2), "Combat teleported a unit");
         for (size_t j = i + 1; j < game.units().size(); ++j) {
             const auto& b = game.units()[j];
             if (airborne(a.definition.movement) == airborne(b.definition.movement))
@@ -30,7 +30,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             for (int tick = 0; tick < 180; ++tick) { game.tick(); checkCombatMotion(game); }
             require(game.unit(enemy)->health < 1000, "Melee waited for a cell-centred attack slot");
             if (radius < .5f || reach > 0)
-                require(lengthSquared(game.worker().position - center(game.worker().cell)) > .001f, "Attack still snapped to a cell centre");
+                require(groundLengthSquared(game.worker().position - center(game.worker().cell)) > .001f, "Attack still snapped to a cell centre");
         }
     });
     test("Focused attacker preserves its detour around a stationary friendly screen", [] {
@@ -141,7 +141,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
     });
     test("Combat applies real damage immediately and health feedback survives level gains without changing combat", [] {
         auto site = flatScenario(); site.extraWorkers = {{4, 4}};
-        rts::EntityDefinition attacker; attacker.attackDamage = 20; attacker.attackWindupTicks = 1;
+        rts::EntityDefinition attacker; attacker.attackDamage = 20; attacker.attackWindupTicks = 1; attacker.attackRange = 2.3f;
         attacker.attackRecoveryTicks = 0; attacker.attackCooldownTicks = 1000;
         auto victim = attacker; victim.id = "health.victim"; victim.maximumHealth = 150; victim.attackDamage = 0; victim.hero.emplace();
         site.units = {{victim.id, 1, {5, 3}}};

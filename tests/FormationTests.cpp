@@ -6,7 +6,7 @@ void checkMotion(const Simulation& game) {
     for (size_t i = 0; i < game.units().size(); ++i) {
         const auto& a = game.units()[i];
         require(game.map().canTraverse(a.tickPosition, a.position, a.definition.collisionRadius, a.definition.movement), "Crowd crossed square terrain or a cliff");
-        require(lengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f, 2), "Crowd teleported");
+        require(groundLengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f, 2), "Crowd teleported");
         for (size_t j = i + 1; j < game.units().size(); ++j) {
             const auto& b = game.units()[j];
             if (airborne(a.definition.movement) != airborne(b.definition.movement)) continue;
@@ -39,7 +39,10 @@ void formationTests(TestSuite& test, const TestContext& context) {
             for (int sign : {1, -1}) {
                 const Cell target{31 + sign * direction.x * 12, 31 + sign * direction.y * 12};
                 require(game.command(ids, target), "Mixed role movement rejected");
-                for (int tick = 0; tick < 900 && !settled(game); ++tick) { game.tick(); checkMotion(game); }
+                float distance = 0;
+                for (const auto& u : game.units()) distance = std::max(distance, groundLength(u.routeDestination - u.position));
+                const int deadline = int(std::ceil(distance / siege.movementPerSecond * Simulation::ticksPerSecond)) + 400;
+                for (int tick = 0; tick < deadline && !settled(game); ++tick) { game.tick(); checkMotion(game); }
                 if (!settled(game)) for (const auto& u : game.units()) std::cerr << "mixed " << direction.x << ',' << direction.y << " sign=" << sign
                     << " role=" << u.definition.formationPriority << " pos=" << u.position.x << ',' << u.position.y
                     << " goal=" << u.routeDestination.x << ',' << u.routeDestination.y << " state=" << int(u.state)
@@ -47,7 +50,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
                 require(settled(game), "Mixed group did not finish reforming");
                 for (const auto& a : game.units()) for (const auto& b : game.units()) if (a.definition.formationPriority < b.definition.formationPriority) {
                     const Vec2 delta = a.position - b.position;
-                    require(delta.x * a.formationForward.x + delta.y * a.formationForward.y >= -.05f, "Rear role finished ahead of front role");
+                    require(groundDot(delta, a.formationForward) >= -.05f, "Rear role finished ahead of front role");
                 }
                 std::vector<Vec2> positions;
                 for (const auto& u : game.units()) positions.push_back(u.position);
@@ -67,16 +70,16 @@ void formationTests(TestSuite& test, const TestContext& context) {
             Vec2 mean{};
             for (size_t i = 0; i < slots.size(); ++i) {
                 mean = mean + slots[i].position;
-                fractional |= lengthSquared(slots[i].position - center(slots[i].cell)) > .001f;
-                require(lengthSquared(slots[i].position - center({40, 24})) <= std::pow(2.1f * (2 * radius + .08f), 2), "Group still forms a long column");
+                fractional |= groundLengthSquared(slots[i].position - center(slots[i].cell)) > .001f;
+                require(groundLengthSquared(slots[i].position - center({40, 24})) <= std::pow(2.1f * (2 * radius + .08f), 2), "Group still forms a long column");
                 for (size_t j = i + 1; j < slots.size(); ++j) {
-                    require(lengthSquared(slots[i].position - slots[j].position) + .00001f >= 4 * radius * radius, "Packed circles overlap");
+                    require(groundLengthSquared(slots[i].position - slots[j].position) + .00001f >= 4 * radius * radius, "Packed circles overlap");
                     sharedCell |= slots[i].cell == slots[j].cell;
                 }
             }
             require(fractional && (radius > .1f || sharedCell), "Formation remains tied to cell centres");
             mean = mean * (1.0f / slots.size());
-            require(lengthSquared(mean - center({40, 24})) < .25f, "Disk is not centred on target");
+            require(groundLengthSquared(mean - center({40, 24})) < .25f, "Disk is not centred on target");
             std::reverse(members.begin(), members.end());
             const auto reverse = planFormation(map, members, {40, 24}, {});
             for (size_t i = 0; i < slots.size(); ++i) require(slots[i].id == reverse[i].id && slots[i].position == reverse[i].position, "Selection order changed packing");
@@ -90,7 +93,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         float front = 1000, back = -1000;
         for (const auto& slot : slots) {
             const auto& m = *std::find_if(members.begin(), members.end(), [&](const auto& member) { return member.id == slot.id; });
-            const float depth = slot.position.x * slot.forward.x + slot.position.y * slot.forward.y;
+            const float depth = groundDot(slot.position, slot.forward);
             if (m.priority == 1) front = std::min(front, depth); else back = std::max(back, depth);
         }
         require(front >= back - .00001f, "Rear role took front places");
@@ -135,7 +138,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
                 game.tick(); checkMotion(game);
                 for (size_t i = 0; i < game.units().size(); ++i) {
                     const auto& u = game.units()[i];
-                    distances[i] += std::sqrt(lengthSquared(u.position - u.tickPosition));
+                    distances[i] += std::sqrt(groundLengthSquared(u.position - u.tickPosition));
                     if (u.state == UnitState::Idle && first < 0) first = tick;
                 }
                 if (settled(game)) break;
@@ -144,8 +147,8 @@ void formationTests(TestSuite& test, const TestContext& context) {
             require(settled(game), "Crowd stalled on open terrain");
             require(tick - first <= 75, "Late members circled the arrived group");
             for (size_t i = 0; i < game.units().size(); ++i) {
-                require(lengthSquared(game.units()[i].position - center(target)) < 9, "Crowd spread outside arrival region");
-                require(distances[i] < (direction.x && direction.y ? 27.0f : 21.0f), "Unnecessary long detour around friends");
+                require(groundLengthSquared(game.units()[i].position - center(target)) < 9, "Crowd spread outside arrival region");
+                require(distances[i] < (14 * groundLength({float(direction.x), float(direction.y)}) + 7.5f), "Unnecessary long detour around friends");
             }
             std::vector<Vec2> positions;
             for (const auto& u : game.units()) positions.push_back(u.position);
@@ -170,7 +173,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
                 if (u.next >= u.route.size()) continue; // Arrival has an explicit final group heading.
                 const auto delta = u.position - u.tickPosition;
                 Cell raw = trace.raw;
-                if (lengthSquared(delta) > 1e-10f) {
+                if (groundLengthSquared(delta) > 1e-10f) {
                     constexpr std::array<Cell, 8> headings{{{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}}};
                     const int heading = int(std::lround(std::atan2(delta.y, delta.x) / .7853981634f));
                     raw = headings[(heading + 8) % 8];
@@ -190,7 +193,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         require(settled(game), "Crowd jammed in a one-cell gate");
         for (const auto& u : game.units()) {
             require(u.position.x > 31, "Unit stopped on the wrong side of gate");
-            require(lengthSquared(u.position - center({46, 20})) < 3.25f * 3.25f, "Crowd failed to gather after the gate");
+            require(groundLengthSquared(u.position - center({46, 20})) < 3.25f * 3.25f, "Crowd failed to gather after the gate");
         }
     });
     test("Large crowds finish as a compact cluster instead of leaving a moving tail", [] {
@@ -204,7 +207,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
             if (!settled(game)) std::cerr << "large crowd miss count=" << count << '\n';
             require(settled(game), "Large crowd left units waiting outside settled friends");
             const float radius = .75f * std::sqrt(float(count)) + .5f;
-            for (const auto& u : game.units()) require(lengthSquared(u.position - center({65, 60})) < radius * radius, "Large crowd spread too far from order");
+            for (const auto& u : game.units()) require(groundLengthSquared(u.position - center({65, 60})) < radius * radius, "Large crowd spread too far from order");
         }
     });
     test("Dense followers respect a leader stopping or reversing", [] {
@@ -237,7 +240,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         for (int tick = 0; tick < 420; ++tick) {
             game.tick(); checkMotion(game);
             for (size_t i = 0; i < 2; ++i) {
-                const bool arrived = lengthSquared(game.units()[i].position - destinations[i]) < .0025f;
+                const bool arrived = groundLengthSquared(game.units()[i].position - destinations[i]) < .0025f;
                 if (arrived && !near[i]) ++visits[i];
                 near[i] = arrived;
             }
@@ -260,7 +263,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
             for (int tick = 0; tick < 300; ++tick) {
                 game.tick(); checkMotion(game);
                 for (size_t i = 1; i < game.units().size(); ++i) require(game.units()[i].position == center(game.units()[i].cell), "Enemy ring was displaced");
-                if (!open) require(lengthSquared(game.worker().position - start) < .5f, "Unit escaped a closed surround");
+                if (!open) require(groundLengthSquared(game.worker().position - start) < .5f, "Unit escaped a closed surround");
             }
             if (open) require(game.worker().cell == Cell{17, 10} && game.worker().state == UnitState::Idle, "Unit failed to escape through open gap");
         }

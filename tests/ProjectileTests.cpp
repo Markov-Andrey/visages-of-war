@@ -21,6 +21,22 @@ Simulation stationary(EntityDefinition gun) {
 }
 }
 void projectileTests(TestSuite& test, const TestContext& context) {
+    test("Weapon reach and projectile time are equal at equal visible distances", [] {
+        for (Cell delta : {Cell{5,-5}, {-5,5}, {10,10}, {-10,-10}, {10,2}, {-10,-2}, {2,10}, {-2,-10}}) {
+            for (float reach : {11.0f,12.0f}) {
+                auto gun = weapon(); gun.attackRange = reach;
+                Scenario s{Map(64,64),{1,1},{30,30},{}};
+                s.units = {{"dummy",1,s.worker + delta}};
+                Simulation game(std::move(s),{},gun,{gun,dummy()});
+                game.order(std::array{game.worker().id},OrderKind::Hold);
+                ticks(game,3);
+                require(game.worker().position == center({30,30}), "Hold moved to extend range");
+                if (reach == 11) require(game.projectiles().empty(), "Attack radius stretches in one direction");
+                else require(game.projectiles().size() == 1 && game.projectiles()[0].flightTicks == 56,
+                    "Projectile flight time depends on direction");
+            }
+        }
+    });
     test("Projectile rendering follows shifted units but preserves ordered ground impacts", [] {
         Projectile shot;
         shot.flightTicks = 10; shot.position = {8.5f, 6.5f}; shot.previousPosition = {8, 6.5f};
@@ -72,7 +88,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
             Simulation game(scene, {}, gun, {gun, dummy(), air});
             const auto enemy = game.units()[1].id, ally = game.units()[2].id, flyer = game.units()[3].id;
             require(game.order(std::array{game.worker().id}, OrderKind::AttackGround, {10, 6}), "Manual siege order rejected");
-            ticks(game, 34);
+            ticks(game, 41);
             require(game.unit(enemy)->health == 80 && game.unit(ally)->health == (friendly ? 80 : 100) && game.unit(flyer)->health == 100,
                 "Manual siege splash bypassed weapon target or friendly-fire rules");
         }
@@ -84,10 +100,10 @@ void projectileTests(TestSuite& test, const TestContext& context) {
             ticks(game,2); require(game.projectiles().empty() && game.unit(enemy)->health == 100,"Early release or damage");
             game.tick(); require(game.projectiles().size() == 1,"Missing projectile");
             const auto shot = game.projectiles().front();
-            require(shot.flightTicks == 30 && game.worker().cell == Cell{4,6},"Range or speed ignored");
-            ticks(game,15);
+            require(shot.flightTicks == 38 && game.worker().cell == Cell{4,6},"Range or speed ignored");
+            ticks(game,19);
             require(std::abs(game.projectiles()[0].height - ((shot.startHeight + shot.aimHeight)*.5f + arc)) < .001f,"Arc peak incorrect");
-            ticks(game,14); require(game.unit(enemy)->health == 100,"Damage before landing");
+            ticks(game,18); require(game.unit(enemy)->health == 100,"Damage before landing");
             game.tick(); require(game.projectiles().empty() && game.unit(enemy)->health == 80,"Missing or duplicate impact");
             ticks(game,20); require(game.unit(enemy)->health == 80,"Shot applied twice");
         }
@@ -96,13 +112,13 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         for (const auto mode : {ProjectileTargeting::Unit,ProjectileTargeting::Point}) {
             auto gun = weapon(mode); auto s = range(); s.worker = {10,6};
             auto air = dummy(); air.id = "air"; air.movement = MovementType::Flying;
-            s.units = {{gun.id,1,{4,6}}, {"dummy",0,{10,7}}, {"dummy",1,{11,6}}, {air.id,0,{10,6}}};
+            s.units = {{gun.id,1,{4,6}}, {"dummy",0,{10,5}}, {"dummy",1,{11,6}}, {air.id,0,{10,6}}};
             Simulation game(std::move(s),{},dummy(),{gun,dummy(),air});
             const auto moving = game.worker().id, splash = game.units()[2].id, ally = game.units()[3].id, flying = game.units()[4].id;
             ticks(game,3); require(game.projectiles().size() == 1,"Enemy did not fire");
             const auto aim = game.projectiles()[0].aim;
             require(game.command(std::array{moving},{18,6}),"Could not move target");
-            ticks(game,30);
+            ticks(game,38);
             require(game.worker().position.x > aim.x + 2,"Target failed to leave impact area");
             require(game.unit(moving)->health == (mode == ProjectileTargeting::Unit ? 80 : 100),"Wrong homing/point impact");
             require(game.unit(splash)->health == (mode == ProjectileTargeting::Point ? 80 : 100),"Splash does not use current area occupants");
@@ -119,10 +135,10 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         const auto shooter = game.worker().id, enemy = game.units()[1].id;
         require(game.attack(std::array{shooter},enemy),"Explicit shot rejected");
         ticks(game,5); require(!game.unit(shooter) && game.projectiles().size() == 1,"Shot vanished with shooter");
-        ticks(game,28); require(!game.unit(enemy) && game.hero()->hero->experience == 50,"Posthumous hit or XP lost");
+        ticks(game,36); require(!game.unit(enemy) && game.hero()->hero->experience == 50,"Posthumous hit or XP lost");
     });
     test("Siege samples a moving target at release and uses the actual ramp surface", [] {
-        auto gun = weapon(ProjectileTargeting::Point); gun.attackWindupTicks = 6; gun.projectile->impactHeight = 0;
+        auto gun = weapon(ProjectileTargeting::Point); gun.attackWindupTicks = 6; gun.attackRange = 9; gun.projectile->impactHeight = 0;
         auto target = dummy(); target.movementPerSecond = 3;
         auto s = range(); s.worker = {10,6}; s.units = {{gun.id,1,{4,6}}};
         for (int y = 0; y < s.map.height(); ++y) for (int x = 12; x < s.map.width(); ++x) s.map.at({x,y}).height = 1;
@@ -143,7 +159,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         game.attack(std::array{game.worker().id,killerId},enemy);
         ticks(game,5); require(!game.unit(enemy) && !game.projectiles().empty(),"Fixture failed to kill target in flight");
         game.stop(std::array{killerId}); // Its long cooldown prevents another hit.
-        ticks(game,30); require(game.projectiles().empty() && game.unit(other)->health == 100,"Arrow retargeted");
+        ticks(game,38); require(game.projectiles().empty() && game.unit(other)->health == 100,"Arrow retargeted");
     });
     test("Attack phases keep windup, recovery and cooldown distinct including zero-duration phases", [] {
         for (const auto times : {std::array{2,3,4},std::array{0,3,4},std::array{2,0,4},std::array{0,0,4},std::array{2,3,0},std::array{2,0,0}}) {
@@ -174,7 +190,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         auto s = range(); s.units = {{air.id,1,{10,6}}};
         Simulation game(s,{},gun,{gun,air});
         require(game.attack(std::array{game.worker().id},game.units()[1].id),"Archer rejected air");
-        ticks(game,40); require(game.units()[1].health == 80,"Arrow did not reach flight plane");
+        ticks(game,41); require(game.units()[1].health == 80,"Arrow did not reach flight plane");
         gun = weapon(ProjectileTargeting::Point); Simulation siege(s,{},gun,{gun,air});
         require(!siege.attack(std::array{siege.worker().id},siege.units()[1].id),"Siege accepted air");
         ticks(siege,40); require(siege.projectiles().empty(),"Siege auto-acquired air");

@@ -87,9 +87,9 @@ std::vector<FormationDestination> planFormation(const Map& map, std::span<const 
     for (const auto& m : members) { mean = mean + m.position.value_or(center(m.start)) - Vec2{.5f, .5f}; forward = forward + m.forward; }
     mean = mean * (1.0f / members.size());
     const Vec2 delta{target.x - mean.x, target.y - mean.y};
-    if (std::hypot(delta.x, delta.y) > .75f) forward = delta;
-    if (std::hypot(forward.x, forward.y) < .001f) forward = {0, 1};
-    forward = forward * (1.0f / std::hypot(forward.x, forward.y));
+    if (groundLength(delta) > .75f) forward = delta;
+    if (groundLength(forward) < .001f) forward = {0, 1};
+    forward = forward * (1.0f / groundLength(forward));
     Regions regions(map);
     std::vector<int> components;
     for (const auto& m : members) components.push_back(regions.at(m.start, m.movement));
@@ -97,7 +97,7 @@ std::vector<FormationDestination> planFormation(const Map& map, std::span<const 
         return free(p, members[i].movement, members[i].radius) && regions.at(cellAt(p), members[i].movement) == components[i];
     };
     constexpr int64_t stayCost = 1000000000000LL, impossible = stayCost * 100;
-    // Hexagonal circle packing in logical coordinates, sized from the bodies.
+    // Hexagonal circle packing in the orthonormal ground plane, sized from the bodies.
     // Grid cells only identify terrain; several small bodies may share one cell.
     float spacing = .1f;
     for (const auto& member : members) spacing = std::max(spacing, 2 * member.radius + .08f);
@@ -105,11 +105,11 @@ std::vector<FormationDestination> planFormation(const Map& map, std::span<const 
     const int rings = std::max(10, int(std::ceil(std::sqrt(float(members.size())))) + 4);
     const Vec2 origin = center(target);
     for (int y = -rings; y <= rings; ++y) for (int x = -rings; x <= rings; ++x) {
-        const Vec2 p = origin + Vec2{(x + y * .5f) * spacing, y * .866025404f * spacing};
+        const Vec2 p = origin + planeToGround({(x + y * .5f) * spacing, y * .866025404f * spacing});
         for (size_t i = 0; i < members.size(); ++i) if (reachable(i, p)) { candidates.push_back(p); break; }
     }
-    const auto radial = [&](Vec2 p) { return lengthSquared(p - origin); };
-    const auto depth = [&](Vec2 p) { return p.x * forward.x + p.y * forward.y; };
+    const auto radial = [&](Vec2 p) { return groundLengthSquared(p - origin); };
+    const auto depth = [&](Vec2 p) { return groundDot(p, forward); };
     std::sort(candidates.begin(), candidates.end(), [&](Vec2 a, Vec2 b) {
         const int ra = int(std::lround(radial(a) * 10000)), rb = int(std::lround(radial(b) * 10000));
         if (ra != rb) return ra < rb;
@@ -127,7 +127,7 @@ std::vector<FormationDestination> planFormation(const Map& map, std::span<const 
     for (size_t i = 0; i < members.size(); ++i) for (size_t j = 0; j < ideal.size(); ++j) {
         const auto d = ideal[j] - members[i].position.value_or(center(members[i].start));
         costs[i][j] = members[i].priority == priorities[j] && reachable(i, ideal[j]) ?
-            int64_t(std::llround(1000 * lengthSquared(d))) : impossible;
+            int64_t(std::llround(1000 * groundLengthSquared(d))) : impossible;
     }
     auto assignment = assign(costs);
     const bool fits = std::all_of(assignment.begin(), assignment.end(), [&](size_t j) { return j < ideal.size(); });
@@ -137,7 +137,7 @@ std::vector<FormationDestination> planFormation(const Map& map, std::span<const 
         costs.assign(members.size(), std::vector<int64_t>(candidates.size() + members.size(), stayCost));
         for (size_t i = 0; i < members.size(); ++i) for (size_t j = 0; j < candidates.size(); ++j) {
             const auto d = candidates[j] - members[i].position.value_or(center(members[i].start));
-            costs[i][j] = reachable(i, candidates[j]) ? int64_t(std::llround(1000000 * radial(candidates[j]) + 1000 * lengthSquared(d))) : impossible;
+            costs[i][j] = reachable(i, candidates[j]) ? int64_t(std::llround(1000000 * radial(candidates[j]) + 1000 * groundLengthSquared(d))) : impossible;
         }
         assignment = assign(costs);
         ideal = candidates;

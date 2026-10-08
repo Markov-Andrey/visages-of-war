@@ -30,7 +30,7 @@ void Renderer::drawProjectiles(const Simulation& game, const WorldView& view) {
         const auto p = view.project(hit.position,hit.height);
         const float progress = 1 - hit.remainingTicks / 12.0f;
         brush_->SetColor(D2D1::ColorF(0xd8bc8a, (1 - progress) * .65f));
-        const float radius = hit.radius * WorldView::tileSize * view.zoom * (.3f + .7f * progress);
+        const float radius = hit.radius * WorldView::tileSize / groundPlaneScale * view.zoom * (.3f + .7f * progress);
         target_->DrawEllipse(D2D1::Ellipse(point(p),radius,radius),brush_.Get(),2 * view.zoom);
     }
 }

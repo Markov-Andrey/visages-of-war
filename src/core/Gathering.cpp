@@ -25,9 +25,16 @@ bool Simulation::seekCrystal(Unit& u) {
     constexpr int neighborRadius = 3;
     const auto distance = [&](size_t i) {
         const auto& node = crystals()[i];
-        const int dx = std::max({0, node.cell.x - (origin.cell.x + origin.width - 1), origin.cell.x - (node.cell.x + node.width - 1)});
-        const int dy = std::max({0, node.cell.y - (origin.cell.y + origin.height - 1), origin.cell.y - (node.cell.y + node.height - 1)});
-        return dx * dx + dy * dy;
+        const float left = float(node.cell.x - (origin.cell.x + origin.width - 1));
+        const float right = float(node.cell.x + node.width - 1 - origin.cell.x);
+        const float top = float(node.cell.y - (origin.cell.y + origin.height - 1));
+        const float bottom = float(node.cell.y + node.height - 1 - origin.cell.y);
+        if (left <= 0 && right >= 0 && top <= 0 && bottom >= 0) return 0.0f;
+        // Closest points of the two grid footprints in the ground-plane metric.
+        return std::min({groundLengthSquared({left, std::clamp(.6f * left, top, bottom)}),
+            groundLengthSquared({right, std::clamp(.6f * right, top, bottom)}),
+            groundLengthSquared({std::clamp(.6f * top, left, right), top}),
+            groundLengthSquared({std::clamp(.6f * bottom, left, right), bottom})});
     };
     std::vector<size_t> candidates;
     for (size_t i = 0; i < crystals().size(); ++i)

@@ -188,7 +188,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
                 const auto& a = baseline.worker(); const auto& b = adjusted.worker();
                 require(a.cell == b.cell && a.position == b.position && a.state == b.state,
                     "Walk animation tuning changed travel speed or arrival");
-                distance += std::hypot(b.position.x - previous.x, b.position.y - previous.y);
+                distance += groundLength(b.position - previous);
                 previous = b.position;
                 const float expected = std::fmod(distance / slower.sprite.walkCycleDistance, 1.0f);
                 const float delta = std::abs(b.walkCycle - expected);

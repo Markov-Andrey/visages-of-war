@@ -145,8 +145,8 @@ void Simulation::tick() {
         if (a->moveGroup != b->moveGroup) return a->moveGroup < b->moveGroup;
         if (!a->moveGroup) return a->id < b->id;
         const auto f = a->formationForward;
-        const float da = a->position.x * f.x + a->position.y * f.y;
-        const float db = b->position.x * f.x + b->position.y * f.y;
+        const float da = groundDot(a->position, f);
+        const float db = groundDot(b->position, f);
         return da != db ? da > db : a->id < b->id;
     });
     for (auto* u : updateOrder) {

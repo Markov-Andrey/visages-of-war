@@ -16,7 +16,7 @@ void Simulation::resumeOrder(Unit& u) {
 }
 bool Simulation::groundAttackReach(const Unit& u, Cell target, std::optional<Cell> from) const {
     const Vec2 delta = center(target) - (from ? center(*from) : u.position);
-    return delta.x * delta.x + delta.y * delta.y <= u.definition.attackRange * u.definition.attackRange;
+    return groundLengthSquared(delta) <= u.definition.attackRange * u.definition.attackRange;
 }
 void Simulation::chaseGround(Unit& u) {
     const auto target = u.currentOrder.cell;

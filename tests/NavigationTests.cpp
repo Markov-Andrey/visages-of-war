@@ -4,6 +4,18 @@
 namespace rts::tests {
 void navigationTests(TestSuite& test, const TestContext& context) {
     (void)context;
+    test("A body beside a gate corner can retreat inside its cell before replanning", [] {
+        Map map(24,16);
+        for (int y=0;y<16;++y) if (y!=8) map.at({8,y}).blocked=true;
+        const Vec2 start{7.74587f,8.04231f};
+        const auto path=findUnitPathTo(map,start,{14.5f,8.5f},{},.35f,MovementType::Walking);
+        require(path && path->cells.front()==cellAt(start), "Corner retreat was not found");
+        Vec2 previous=start;
+        for (Cell cell : path->cells) {
+            require(map.canTraverse(previous,center(cell),.35f), "Retreat route crosses a wall");
+            previous=center(cell);
+        }
+    });
     test("Water bed slopes continuously while the surface and navigation stay flat", [] {
         Map map(8, 4);
         for (int y = 0; y < 4; ++y) for (int x = 0; x < 8; ++x) {
@@ -34,7 +46,7 @@ void navigationTests(TestSuite& test, const TestContext& context) {
     test("A* endpoints, diagonal cost, unreachable and occupied targets", [] {
         rts::Map map(5, 5);
         auto path = rts::findPath(map, {0, 0}, {4, 4});
-        require(path && path->cost == 56 && path->cells.size() == 5, "Incorrect diagonal route");
+        require(path && path->cost == 4472 && path->cells.size() == 5, "Incorrect diagonal route");
         require(path->cells.front() == rts::Cell{0, 0} && path->cells.back() == rts::Cell{4, 4}, "Incorrect endpoints");
         require(rts::findPath(map, {2, 2}, {2, 2})->cost == 0, "Start equals goal");
         map.at({4, 4}).blocked = true;
@@ -64,7 +76,7 @@ void navigationTests(TestSuite& test, const TestContext& context) {
             const rts::Cell goal{size - 2, 1};
             const std::array<rts::Cell, 1> goals{{goal}}, occupied{{goal}};
             const auto expected = rts::findPath(map, {1, 1}, goal);
-            require(expected && expected->cost == (size - 3) * 10, "Unexpected open route");
+            require(expected && expected->cost == (size - 3) * 1250, "Unexpected open route");
             require(!rts::findPath(map, {1, 1}, goals, occupied), "Occupied target accepted");
             const auto afterOccupied = rts::findPath(map, {1, 1}, goal);
             require(afterOccupied && afterOccupied->cells == expected->cells, "Previous occupancy leaked into search");
@@ -85,7 +97,7 @@ void navigationTests(TestSuite& test, const TestContext& context) {
             rts::Map map(size, size);
             for (int i = 0; i < 80; ++i) {
                 const auto path = rts::findPath(map, {0, 0}, {size - 1, size - 1});
-                if (!path || path->cost != (size - 1) * 14 || path->cells.size() != static_cast<size_t>(size)) return false;
+                if (!path || path->cost != (size - 1) * 1118 || path->cells.size() != static_cast<size_t>(size)) return false;
             }
             return true;
         };
@@ -100,7 +112,7 @@ void navigationTests(TestSuite& test, const TestContext& context) {
         map.at({2, 2}).ramp = {1, 0};
         const auto up = rts::findPath(map, {0, 2}, {6, 2});
         const auto down = rts::findPath(map, {6, 2}, {0, 2});
-        require(up && down && up->cost == 60 && down->cost == 60, "Ramp not bidirectional");
+        require(up && down && up->cost == 7500 && down->cost == 7500, "Ramp not bidirectional");
         require(!map.canStep({2, 1}, {2, 2}) && !map.canStep({2, 2}, {2, 3}), "Side entrance to ramp");
         require(!map.canStep({2, 2}, {3, 3}), "Diagonal ramp shortcut");
         map.at({2, 2}).blocked = true;
@@ -120,7 +132,7 @@ void navigationTests(TestSuite& test, const TestContext& context) {
             require(map.canStep(middle - across, middle) && map.canStep(middle, middle + across) &&
                 map.canStep(middle + across, middle), "Adjacent ramp lanes disconnected");
             const auto path = rts::findPath(map, middle - across, middle + across);
-            require(path && path->cost == 20, "Unit detoured around continuous ramp surface");
+            require(path && path->cost == 2500, "Unit detoured around continuous ramp surface");
             const auto edge = rts::center(middle) + rts::Vec2{float(across.x), float(across.y)} * .5f;
             require(map.surfaceHeight(middle, edge) == map.surfaceHeight(middle + across, edge), "Adjacent lanes have a vertical seam");
             const auto outside = middle + rts::Cell{across.x * 2, across.y * 2};
@@ -143,7 +155,7 @@ void navigationTests(TestSuite& test, const TestContext& context) {
         map.at({2, 2}).blocked = true;
         const std::array<rts::Cell, 3> goals{{{6, 6}, {2, 2}, {1, 0}}};
         const auto path = rts::findPath(map, {0, 0}, goals);
-        require(path && path->cost == 10 && path->cells.back() == rts::Cell{1, 0}, "Wrong goal selected");
+        require(path && path->cost == 1250 && path->cells.back() == rts::Cell{1, 0}, "Wrong goal selected");
     });
     test("Shared route fields preserve shortest terrain routes and invalidate blocked edges", [] {
         auto s = shoreScenario();

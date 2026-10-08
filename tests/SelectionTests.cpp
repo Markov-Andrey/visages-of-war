@@ -570,7 +570,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(sample({7, 7}) != litTree && sample({7, 7}) != sample({6, 7}) && sample({7, 7}) != 0xff081119,
             "Explored obstacle vanished or failed to dim in fog");
         fog = FogOfWar(20, 20);
-        const std::array smallSource{VisionSource{{5, 7}, 1}};
+        const std::array smallSource{VisionSource{{5, 7}, 2}};
         fog.update(map, smallSource); mask.update(fog, 20, 20); raster.update(map, fog, mask, known);
         require(!fog.explored({7, 7}) && mask.lightAt(center({7, 7})) > 0 && sample({7, 7}) == 0xff081119,
             "Feathering exposed an unexplored obstacle beside the visible area");

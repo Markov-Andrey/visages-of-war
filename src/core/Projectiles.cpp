@@ -22,7 +22,7 @@ void Simulation::releaseProjectile(Unit& u, Vec2 aim, float aimHeight, EntityId 
     p.startHeight = p.height = p.previousHeight = unitHeight(u) + p.definition.launchHeight;
     p.aimHeight = aimHeight + p.definition.impactHeight;
     const Vec2 distance = p.aim - p.start;
-    p.flightTicks = std::max(1, static_cast<int>(std::ceil(std::hypot(distance.x, distance.y) / p.definition.speed * ticksPerSecond)));
+    p.flightTicks = std::max(1, static_cast<int>(std::ceil(groundLength(distance) / p.definition.speed * ticksPerSecond)));
     projectiles_.push_back(std::move(p));
 }
 void Simulation::tickProjectiles(std::vector<Hit>& hits) {
@@ -46,7 +46,7 @@ void Simulation::tickProjectiles(std::vector<Hit>& hits) {
                 if ((!p.definition.friendlyFire && !combat::hostile(p.owner, target.owner)) ||
                     !combat::accepts(p.targets, p.sourceAir, airborne(target.definition.movement))) continue;
                 const Vec2 delta = target.position - p.aim;
-                if (delta.x * delta.x + delta.y * delta.y <= p.definition.splashRadius * p.definition.splashRadius)
+                if (groundLengthSquared(delta) <= p.definition.splashRadius * p.definition.splashRadius)
                     hits.push_back({target.id, p.damage, p.owner});
             }
         }

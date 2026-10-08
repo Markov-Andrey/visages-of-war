@@ -2,6 +2,51 @@
 
 namespace rts::tests {
 void movementTests(TestSuite& test, const TestContext& context) {
+    test("Equal visible distances take equal time in all eight directions", [] {
+        // These integer grid displacements describe a circle on the flat screen:
+        // radius 10, including 6:8 directions. Measure actual elapsed
+        // simulation ticks and per-tick pixels, independently of the metric helper.
+        for (auto movement : {MovementType::Walking, MovementType::Flying}) {
+            for (Cell d : {Cell{5,-5}, {-5,5}, {10,10}, {-10,-10}, {10,2}, {-10,-2}, {2,10}, {-2,-10}}) {
+                Scenario s{Map(64,64), {1,1}, {30,30}, {}};
+                EntityDefinition type; type.movement = movement; type.movementPerSecond = 3;
+                Simulation game(std::move(s), {}, type);
+                const auto id = game.worker().id;
+                const Vec2 start = game.worker().position;
+                const Cell goal = game.worker().cell + d;
+                require(game.order(std::array{id}, OrderKind::Move, goal), "Direction order failed");
+                const WorldView view{{143,-82}, 1.7f};
+                const auto delta = view.project(center(goal)) - view.project(start);
+                const float pixels = std::hypot(delta.x, delta.y);
+                const float step = type.movementPerSecond * WorldView::tileSize / std::sqrt(1.25f) * view.zoom / Simulation::ticksPerSecond;
+                const int expected = int(std::ceil(pixels / step - .0001f));
+                int elapsed = 0;
+                while (game.worker().state != UnitState::Idle && elapsed < 300) {
+                    const auto before = view.project(game.worker().position);
+                    game.tick(); ++elapsed;
+                    const auto travel = view.project(game.worker().position) - before;
+                    const float actual = std::hypot(travel.x, travel.y);
+                    require(actual <= step + .002f, "Direction exceeded visible speed");
+                    if (elapsed < expected) require(std::abs(actual - step) < .002f, "Visible speed depends on direction");
+                }
+                require(std::abs(elapsed - expected) <= 1 && game.worker().cell == goal, "Travel time depends on direction");
+            }
+        }
+    });
+    test("Ground circles stay circular on screen including broad phase and cell edges", [] {
+        const Vec2 start{8,8};
+        for (int i = 0; i < 32; ++i) {
+            const float angle = i * .196349541f;
+            const Vec2 offset = planeToGround({std::cos(angle),std::sin(angle)});
+            require(sweptCircleIntersects(start,start,.3f,{start + offset * .59f,.3f}), "Broad phase missed a contact");
+            require(!sweptCircleIntersects(start,start,.3f,{start + offset * .61f,.3f}), "Circle grew in one direction");
+            const auto screen = WorldView{}.project(start + offset) - WorldView{}.project(start);
+            require(std::abs(std::hypot(screen.x,screen.y) - 64 / std::sqrt(1.25f)) < .001f, "Ground metric depends on direction");
+        }
+        Map map(16,16); map.occupy({8,8});
+        require(!map.canTraverse({7.65f,8.4f},{7.65f,8.4f},.4f), "Circle clipped diamond wall");
+        require(map.canTraverse({7.5f,8.4f},{7.5f,8.4f},.4f), "Clear circle rejected at diamond wall");
+    });
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Circle sweeps preserve walls, corners, shore ramps and the air layer", [] {
         rts::Map map(12, 12);
@@ -20,11 +65,11 @@ void movementTests(TestSuite& test, const TestContext& context) {
     test("Circular path obstacles allow diagonal clearance and account for different sizes", [] {
         rts::Map map(12, 12);
         const std::array<rts::Cell, 1> goal{{{6, 6}}};
-        std::array<rts::Circle, 1> obstacle{{{{5.5f, 4.5f}, .2f}}};
+        std::array<rts::Circle, 1> obstacle{{{{5.3f, 4.5f}, .2f}}};
         const auto small = rts::findUnitPath(map, {4.5f, 4.5f}, goal, obstacle, .2f, rts::MovementType::Walking);
         obstacle[0].radius = .5f;
         const auto large = rts::findUnitPath(map, {4.5f, 4.5f}, goal, obstacle, .5f, rts::MovementType::Walking);
-        require(small && large && small->cost == 28 && large->cost > small->cost, "Path still uses square unit occupancy");
+        require(small && large && small->cost == 2236 && large->cost > small->cost, "Path still uses square unit occupancy");
         require(rts::sweptCircleIntersects({0, 0}, {5, 0}, .1f, {{2.5f, 0}, .1f}), "Fast circle tunnelled through unit");
         require(!rts::sweptCircleIntersects({0, 0}, {5, 0}, .1f, {{2.5f, .3f}, .1f}), "Broad phase replaced circular collision");
     });
@@ -61,7 +106,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
             for (float t : {.25f, .5f, .75f}) {
                 const auto pa = beforeA + (game.unit(a)->position - beforeA) * t;
                 const auto pb = beforeB + (game.unit(b)->position - beforeB) * t;
-                require(std::hypot(pa.x - pb.x, pa.y - pb.y) + .00001f >=
+                require(groundLength(pa - pb) + .00001f >=
                     game.unit(a)->definition.collisionRadius + game.unit(b)->definition.collisionRadius,
                     "Moving circles intersected between simulation ticks");
             }
@@ -77,7 +122,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         for (int i = 0; i < 100; ++i) {
             game.tick();
             const auto now = game.worker().position;
-            require(std::hypot(now.x - previous.x, now.y - previous.y) < 0.1f, "Teleport after replacement order");
+            require(groundLength(now - previous) < 0.1f, "Teleport after replacement order");
             previous = now;
         }
         game.stop();
@@ -127,7 +172,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
             }
         }
         require(crossed.size() == ids.size(), "Some units bypassed the lowered ford");
-        for (const auto& slot : expected) require(rts::lengthSquared(game.unit(slot.id)->position - rts::center({26, 10})) < 9 && game.unit(slot.id)->state == rts::UnitState::Idle, "Squad stalled at shore or failed to reform");
+        for (const auto& slot : expected) require(rts::groundLengthSquared(game.unit(slot.id)->position - rts::center({26, 10})) < 9 && game.unit(slot.id)->state == rts::UnitState::Idle, "Squad stalled at shore or failed to reform");
     });
     test("Negative water elevation loads independently and rejects submerged ramps", [&] {
         const auto file = rts::Paths::executable().parent_path() / L"test-shore.rtsmap";
@@ -235,7 +280,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
             }
         }
         require(expected.size() == 12 && crossedGround, "Air units avoided ground occupancy");
-        for (const auto& slot : expected) require(rts::lengthSquared(game.unit(slot.id)->position - slot.position) < 16 && game.unit(slot.id)->state == rts::UnitState::Idle, "Flyers did not reform near their destination");
+        for (const auto& slot : expected) require(rts::groundLengthSquared(game.unit(slot.id)->position - slot.position) < 16 && game.unit(slot.id)->state == rts::UnitState::Idle, "Flyers did not reform near their destination");
         const auto* first = game.unit(ids.front());
         const rts::WorldView view{{100, 150}, 1};
         const auto flyingPoint = rts::unitScreenAnchor(view, first->position, game.unitHeight(*first)) + rts::Vec2{0, -25};

@@ -5,13 +5,12 @@
 namespace rts {
 struct Circle { Vec2 position; float radius; };
 inline Cell cellAt(Vec2 p) { return {int(std::floor(p.x)), int(std::floor(p.y))}; }
-inline float lengthSquared(Vec2 v) { return v.x * v.x + v.y * v.y; }
 inline float pointSegmentDistanceSquared(Vec2 p, Vec2 a, Vec2 b) {
     const auto d = b - a;
-    const float length = lengthSquared(d);
+    const float length = groundLengthSquared(d);
     const auto v = p - a;
-    const float t = length > 0 ? std::clamp((v.x * d.x + v.y * d.y) / length, 0.0f, 1.0f) : 0;
-    return lengthSquared(p - (a + d * t));
+    const float t = length > 0 ? std::clamp(groundDot(v, d) / length, 0.0f, 1.0f) : 0;
+    return groundLengthSquared(p - (a + d * t));
 }
 inline float segmentDistanceSquared(Vec2 a, Vec2 b, Vec2 c, Vec2 d) {
     const auto cross = [](Vec2 u, Vec2 v) { return u.x * v.y - u.y * v.x; };
@@ -27,8 +26,9 @@ inline float segmentDistanceSquared(Vec2 a, Vec2 b, Vec2 c, Vec2 d) {
 // Square proximity is the broad phase; the narrow phase tests the entire swept circle.
 inline bool sweptCircleIntersects(Vec2 from, Vec2 to, float radius, Circle other) {
     const float sum = radius + other.radius;
-    if (other.position.x < std::min(from.x, to.x) - sum || other.position.x > std::max(from.x, to.x) + sum ||
-        other.position.y < std::min(from.y, to.y) - sum || other.position.y > std::max(from.y, to.y) + sum) return false;
+    const float extent = groundRadiusExtent(sum);
+    if (other.position.x < std::min(from.x, to.x) - extent || other.position.x > std::max(from.x, to.x) + extent ||
+        other.position.y < std::min(from.y, to.y) - extent || other.position.y > std::max(from.y, to.y) + extent) return false;
     return pointSegmentDistanceSquared(other.position, from, to) < sum * sum - 1e-6f;
 }
 inline bool sweptCircleIntersectsCell(Vec2 from, Vec2 to, float radius, Cell cell) {

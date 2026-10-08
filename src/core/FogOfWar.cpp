@@ -6,7 +6,7 @@ namespace rts {
 bool visionReaches(const Map& map, VisionSource source, Cell target) {
     if (!map.contains(source.cell) || !map.contains(target)) return false;
     const Cell delta = target - source.cell;
-    if (delta.x * delta.x + delta.y * delta.y > source.radius * source.radius) return false;
+    if (groundLengthSquared({float(delta.x), float(delta.y)}) > source.radius * source.radius) return false;
     if (source.air) return true;
     const int height = map.at(source.cell).height;
     Cell sample = source.cell;
@@ -44,11 +44,15 @@ void FogOfWar::update(const Map& map, std::span<const VisionSource> sources) {
     for (auto& cell : cells_) if (cell == Visibility::Visible) cell = Visibility::Explored;
     for (const auto& source : sources) {
         if (!map.contains(source.cell)) continue;
-        for (int y = std::max(0, source.cell.y - source.radius); y <= std::min(height_ - 1, source.cell.y + source.radius); ++y) {
+        const int extent = int(std::ceil(groundRadiusExtent(float(source.radius))));
+        for (int y = std::max(0, source.cell.y - extent); y <= std::min(height_ - 1, source.cell.y + extent); ++y) {
             const int dy = y - source.cell.y;
-            // Scan the disk, not its bounding square: outer corners cannot be seen.
-            const int halfWidth = static_cast<int>(std::sqrt(source.radius * source.radius - dy * dy));
-            for (int x = std::max(0, source.cell.x - halfWidth); x <= std::min(width_ - 1, source.cell.x + halfWidth); ++x) {
+            // A circular ground-plane radius is an ellipse in cell coordinates.
+            const float squared = .64f * (source.radius * source.radius - dy * dy);
+            if (squared < 0) continue;
+            const float middle = source.cell.x + .6f * dy, halfWidth = std::sqrt(squared);
+            for (int x = std::max(0, int(std::ceil(middle - halfWidth - .0001f)));
+                 x <= std::min(width_ - 1, int(std::floor(middle + halfWidth + .0001f))); ++x) {
                 auto& cell = cells_[static_cast<size_t>(y) * width_ + x];
                 // Visibility is the union of all observers. A ray cannot add anything
                 // to a cell already revealed during this update.

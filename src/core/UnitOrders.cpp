@@ -115,7 +115,7 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
             participants.push_back(u);
             speed = std::min(speed, u->definition.movementPerSecond);
             if (destinations.size() > 1)
-                groupRadius = std::max(groupRadius, 1.75f * std::sqrt(lengthSquared(destination.position - center(c))));
+                groupRadius = std::max(groupRadius, 1.75f * std::sqrt(groundLengthSquared(destination.position - center(c))));
         }
         for (size_t i = 0; i < destinations.size(); ++i) {
             const auto& destination = destinations[i];
@@ -128,7 +128,7 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
         for (size_t i = 0; i < destinations.size(); ++i) {
             const auto& destination = destinations[i];
             auto* u = participants[i];
-            if (kind == OrderKind::Patrol && lengthSquared(destination.position - u->position) < 1e-8f) continue;
+            if (kind == OrderKind::Patrol && groundLengthSquared(destination.position - u->position) < 1e-8f) continue;
             // Shared terrain guidance is enough for a moving crowd. Other units
             // are handled locally; their changing positions never invalidate this field.
             std::optional<Path> path;
@@ -180,7 +180,7 @@ void Simulation::arrived(Unit& u) {
     default:
         u.state = UnitState::Idle;
         if (u.currentOrder.kind == OrderKind::Patrol &&
-            lengthSquared(u.currentOrder.position.value_or(center(u.currentOrder.cell)) - u.patrolOrigin) > 1e-8f) {
+            groundLengthSquared(u.currentOrder.position.value_or(center(u.currentOrder.cell)) - u.patrolOrigin) > 1e-8f) {
             const Vec2 destination = u.currentOrder.position.value_or(center(u.currentOrder.cell));
             u.currentOrder.position = u.patrolOrigin; u.currentOrder.cell = cellAt(u.patrolOrigin);
             u.patrolOrigin = destination;

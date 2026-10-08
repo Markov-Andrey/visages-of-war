@@ -4,6 +4,18 @@
 
 namespace rts::tests {
 void visionTests(TestSuite& test, const TestContext& context) {
+    test("Vision radius is a screen-plane circle and cached scan matches every ray", [] {
+        Map map(48,48); FogOfWar fog(48,48);
+        const VisionSource source{{24,24},8,true};
+        fog.update(map,std::span<const VisionSource>(&source,1));
+        for (int y=0;y<48;++y) for (int x=0;x<48;++x) {
+            const double dx=x-24,dy=y-24;
+            const double horizontal=dx-dy,vertical=(dx+dy)*.5;
+            const bool expected=(horizontal*horizontal+vertical*vertical)*1.25 <= 64;
+            require(visionReaches(map,source,{x,y}) == expected, "Vision radius depends on grid direction");
+            require(fog.visible({x,y}) == expected, "Fog scan missed part of the ground-plane circle");
+        }
+    });
     test("Full map reveal persists without observers and resets for a new match", [&] {
         const auto definitions=Definitions::load(context.assets/"data/catalog.json");
         Scenario scenario{Map(32,32),{1,1},{4,3},{}};
@@ -233,7 +245,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         scenario.map.at({6, 5}).blocked = true; // Terrain must survive object destruction.
         rts::Simulation game(std::move(scenario));
         const auto path = rts::findPath(game.map(), {5, 4}, {5, 6});
-        require(path && path->cost == 20, "Arch opening blocked by visual extent");
+        require(path && path->cost == 2500, "Arch opening blocked by visual extent");
         require(!game.map().walkable({4, 5}), "Arch pillar not blocking");
         require(game.damageEnvironment(1000, 100), "Damage rejected");
         require(game.environment()[0].hitPoints == 400 && game.map().occupancy({4, 5}) == 2, "Partial damage released collision");
@@ -429,12 +441,12 @@ void visionTests(TestSuite& test, const TestContext& context) {
         auto depot = testDepot("hall", type.id, 60); depot.dayVision = 3; depot.nightVision = 1; depot.maximumHealth = 300;
         const std::vector<rts::EntityDefinition> buildings{depot};
         rts::Simulation game(std::move(s), {}, type, buildings, {}, {}, {.startMinute = 22 * 60});
-        require(game.clock().phase() == rts::DayPhase::Night && !game.fog().visible({4, 6}), "Night radius missing at match start");
+        require(game.clock().phase() == rts::DayPhase::Night && !game.fog().visible({4, 5}), "Night radius missing at match start");
         ticks(game, 4800); // 22:00 -> 06:00 at 10 ticks per game minute.
-        require(game.clock().phase() == rts::DayPhase::Day && game.fog().visible({4, 6}), "Day radius missing after dawn");
+        require(game.clock().phase() == rts::DayPhase::Day && game.fog().visible({4, 5}), "Day radius missing after dawn");
         ticks(game, 7200); // 06:00 -> 18:00.
         require(game.clock().phase() == rts::DayPhase::Night, "Night did not start");
-        require(!game.fog().visible({4, 6}) && game.fog().explored({4, 6}), "Night radius or fog memory incorrect");
+        require(!game.fog().visible({4, 5}) && game.fog().explored({4, 5}), "Night radius or fog memory incorrect");
         require(game.fog().visible(game.worker().cell), "Observer cannot see own tile");
     });
 }

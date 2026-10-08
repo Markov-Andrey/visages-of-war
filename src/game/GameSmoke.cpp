@@ -417,6 +417,9 @@ void GameApplication::exerciseInterface() {
     if (game_.units().size() == combatUnitCount || game_.corpses().empty()) throw std::runtime_error("Smoke: no unit died in combat");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"death-preview.png");
     auto heroScenario = rts::loadScenario(paths_.asset(L"maps/demo.rtsmap"));
+    // This fixture tests the fallen-hero UI. Keep the duel isolated: a nearby
+    // worker can be closer in the ground-plane metric and attract the attacker.
+    heroScenario.extraWorkers.clear();
     heroScenario.units = {{"human.hero", 0, {15, 18}}, {"human.peacemaker", 1, {16, 18}}};
     auto heroTypes = definitions_.entities();
     for (auto& type : heroTypes) if (type.id == "human.hero") { type.maximumHealth = 12; type.attackDamage = 0; }

@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
             game.tick();
             int arrived = 0;
             for (const auto& u : game.units()) {
-                distance += std::sqrt(rts::lengthSquared(u.position - u.tickPosition));
+                distance += std::sqrt(rts::groundLengthSquared(u.position - u.tickPosition));
                 if (u.state == rts::UnitState::Idle) ++arrived;
             }
             if (arrived && first < 0) first = tick;

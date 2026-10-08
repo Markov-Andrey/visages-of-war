@@ -7,6 +7,12 @@
 
 namespace rts {
 namespace {
+// Costs are ground-plane distance * 1000. The two grid diagonals have
+// different visible lengths; this is also the exact empty-grid lower bound.
+int gridDistance(Cell d) {
+    const int x = std::abs(d.x), y = std::abs(d.y);
+    return 1250 * std::abs(x - y) + (d.x * d.y > 0 ? 1118 : 2236) * std::min(x, y);
+}
 struct SearchWorkspace {
     std::vector<int> cost, parent;
     std::vector<std::uint32_t> visited, blocked;
@@ -59,8 +65,7 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
     const auto heuristic = [&](Cell c) {
         int best = std::numeric_limits<int>::max();
         for (Cell g : validGoals) {
-            const int dx = std::abs(c.x - g.x), dy = std::abs(c.y - g.y);
-            best = std::min(best, 10 * std::max(dx, dy) + 4 * std::min(dx, dy));
+            best = std::min(best, gridDistance(g - c));
         }
         return best;
     };
@@ -110,7 +115,7 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
                 if (!clear(origin, point(to)) || ((from == start || (destination && to == goals.front())) &&
                     !map.canTraverse(origin, point(to), radius, movement))) continue;
             }
-            const int newCost = current.g + ((d.x && d.y) ? 14 : 10);
+            const int newCost = current.g + gridDistance(d);
             const int next = index(to);
             if (visited[next] == generation && newCost >= cost[next]) continue;
             visited[next] = generation;
@@ -119,6 +124,12 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
             open.push({newCost + heuristic(to), newCost, next, deviation(to)});
         }
     }
+    // A body stopped beside a corner can have no clear edge to a neighbouring
+    // cell centre, yet still be able to retreat to its own cell centre first.
+    // Keep that anchor in the returned route; followPath walks to it normally.
+    const auto anchor = center(start);
+    if (radius > 0 && position != anchor && clear(position, anchor) && map.canTraverse(position, anchor, radius, movement))
+        return searchPath(map, start, goals, occupied, movement, anchor, radius, obstacles, destination, expansionLimit);
     return std::nullopt;
 }
 }
@@ -158,7 +169,7 @@ RouteField makeRouteField(const Map& map, std::span<const Cell> goals, MovementT
         for (Cell d : steps) {
             const Cell to = from + d;
             if (!map.canStep(to, from, movement)) continue;
-            const int nextCost = cost + (d.x && d.y ? 14 : 10), nextId = index(to);
+            const int nextCost = cost + gridDistance(d), nextId = index(to);
             if (field.costs[nextId] >= 0 && field.costs[nextId] <= nextCost) continue;
             field.costs[nextId] = nextCost; field.next[nextId] = from; open.push({nextCost, nextId});
         }

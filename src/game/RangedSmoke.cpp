@@ -4,7 +4,7 @@
 namespace rts::game {
 void GameApplication::exerciseRangedCombat() {
     rts::Scenario scene{rts::Map(32,32),{10,10},{12,14},{}};
-    scene.units = {{"human.archer",0,{14,14}}, {"human.catapult",0,{14,16}}, {"human.peacemaker",1,{20,14}}};
+    scene.units = {{"human.archer",0,{14,14}}, {"human.catapult",0,{14,16}}, {"human.peacemaker",1,{19,15}}};
     auto types = definitions_.entities();
     for (auto& d : types) if (d.id == "human.peacemaker") { d.attackDamage = 0; d.maximumHealth = 10000; }
     game_ = rts::Simulation(std::move(scene),menu_.player,definitions_.entity("human.worker"),std::move(types));
@@ -15,7 +15,9 @@ void GameApplication::exerciseRangedCombat() {
     if (game_.projectiles().size() != 2 || game_.unit(enemy)->health != 10000)
         throw std::runtime_error("Ranged smoke: expected two airborne shots before impact");
     renderer_.snapshot(game_,rts::Paths::executable().parent_path()/L"ranged-preview.png",nullptr,false,&ui_);
-    for (int t = 0; t < 50; ++t) game_.tick();
+    int impactTicks = 0;
+    for (const auto& shot : game_.projectiles()) impactTicks = std::max(impactTicks, shot.flightTicks - shot.elapsedTicks);
+    for (int t = 0; t <= impactTicks; ++t) game_.tick();
     if (game_.unit(enemy)->health >= 10000 - 45) throw std::runtime_error("Ranged smoke: no projectile damage");
     rts::Scenario training{rts::Map(32,32),{10,10},{12,14},{}};
     training.startingCrystals = 1000;

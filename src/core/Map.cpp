@@ -117,7 +117,8 @@ bool Map::canStep(Cell from, Cell to, MovementType movement) const {
 bool Map::canTraverse(Vec2 from, Vec2 to, float radius, MovementType movement) const {
     if (!std::isfinite(radius) || radius <= 0 || !std::isfinite(from.x) || !std::isfinite(from.y) ||
         !std::isfinite(to.x) || !std::isfinite(to.y)) return false;
-    for (Vec2 p : {from, to}) if (p.x < radius || p.y < radius || p.x > width_ - radius || p.y > height_ - radius) return false;
+    const float extent = groundRadiusExtent(radius);
+    for (Vec2 p : {from, to}) if (p.x < extent || p.y < extent || p.x > width_ - extent || p.y > height_ - extent) return false;
     if (airborne(movement) && layoutSize_ == Cell{}) return true;
     // Trace every centre crossing through the same ramp/corner rules as grid navigation.
     Cell current = cellAt(from);
@@ -134,10 +135,10 @@ bool Map::canTraverse(Vec2 from, Vec2 to, float radius, MovementType movement) c
         if (!canStep(current, next, movement)) return false;
         current = next;
     }
-    const int left = std::max(0, int(std::floor(std::min(from.x, to.x) - radius)));
-    const int right = std::min(width_ - 1, int(std::floor(std::max(from.x, to.x) + radius)));
-    const int top = std::max(0, int(std::floor(std::min(from.y, to.y) - radius)));
-    const int bottom = std::min(height_ - 1, int(std::floor(std::max(from.y, to.y) + radius)));
+    const int left = std::max(0, int(std::floor(std::min(from.x, to.x) - extent)));
+    const int right = std::min(width_ - 1, int(std::floor(std::max(from.x, to.x) + extent)));
+    const int top = std::max(0, int(std::floor(std::min(from.y, to.y) - extent)));
+    const int bottom = std::min(height_ - 1, int(std::floor(std::max(from.y, to.y) + extent)));
     for (int y = top; y <= bottom; ++y) for (int x = left; x <= right; ++x) {
         const Cell c{x, y};
         if (!walkable(c, movement)) {

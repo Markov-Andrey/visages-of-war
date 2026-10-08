@@ -19,7 +19,7 @@ bool Simulation::attackReach(const Unit& attacker, const Unit& target, std::opti
     if (!canAttack(attacker, target)) return false;
     const Vec2 start = origin.value_or(attacker.position);
     const Vec2 delta = target.position - start;
-    if (delta.x * delta.x + delta.y * delta.y > attacker.definition.attackRange * attacker.definition.attackRange) return false;
+    if (groundLengthSquared(delta) > attacker.definition.attackRange * attacker.definition.attackRange) return false;
     if (attacker.definition.projectile) return true;
     // Direct melee cannot reach across a cliff or through a static obstacle.
     const Cell from = cellAt(start), d = target.cell - from;

@@ -65,7 +65,7 @@ inline rts::Scenario shoreScenario() {
 }
 inline bool separated(const rts::Unit& a, const rts::Unit& b) {
     const auto delta = a.position - b.position;
-    return std::hypot(delta.x, delta.y) + .00001f >= a.definition.collisionRadius + b.definition.collisionRadius;
+    return groundLength(delta) + .00001f >= a.definition.collisionRadius + b.definition.collisionRadius;
 }
 inline void ticks(rts::Simulation& game, int count) { for (int i = 0; i < count; ++i) game.tick(); }
 
@@ -118,7 +118,7 @@ inline int oracleCost(const rts::Map& map, rts::Cell start, rts::Cell goal) {
             // Independent flat-map oracle, including two-sided corner prevention.
             if ((!dx && !dy) || !map.walkable(next)) continue;
             if (dx && dy && (!map.walkable({c.x + dx, c.y}) || !map.walkable({c.x, c.y + dy}))) continue;
-            const int candidate = cost + ((dx && dy) ? 14 : 10);
+            const int candidate = cost + int(std::lround(std::hypot(float(dx - dy), .5f * (dx + dy)) * std::sqrt(1.25f) * 1000));
             if (candidate < costs[index(next)]) { costs[index(next)] = candidate; queue.push({candidate, index(next)}); }
         }
     }

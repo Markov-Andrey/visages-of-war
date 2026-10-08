@@ -2,6 +2,7 @@
 
 - Target Windows 10/11 x64 only; C++20, MSVC, CMake. Project name is RTS.
 - Keep simulation in logical map coordinates, independent of render pixels and camera.
+- Measure movement, collisions, formations, combat and vision with the shared ground-plane metric in Types.hpp. It matches the screen plane up to a fixed scale; equal visible distances take equal time. Cell coordinates still author diamonds and static footprints. Never normalize a movement vector with the raw grid Euclidean norm or camera zoom.
 - Terrain uses logical square cells projected as 2:1 diamonds through WorldView. Normal authored maps use Map::rectangular with dimensions divisible by 32; the projected outer boundary stays rectangular and clipped cells are never playable, including for air. Keep picking, placement, camera and minimap consistent with this geometry. Map(width,height) is the uncropped logical-grid constructor for diagnostic fixtures.
 - Keep walkability rules in `Map::canStep`; test changes involving ramps, corners and height transitions.
 - Water depth is a surface type independent of elevation. Thread unit movement types through navigation, interactions, production and rally checks; air has separate dynamic occupancy.

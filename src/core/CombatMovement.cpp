@@ -22,7 +22,7 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const Unit* target) {
         }) && map().canTraverse(p, p, radius, movement);
     };
     const auto reaches = [&](Vec2 p) {
-        return target ? attackReach(u, *target, p) : lengthSquared(p - aim) <= range * range;
+        return target ? attackReach(u, *target, p) : groundLengthSquared(p - aim) <= range * range;
     };
     if (u.state == UnitState::ToAttack && u.next < u.route.size() && u.blockedTicks < 12 &&
         reaches(u.routeDestination) && free(u.routeDestination)) return;
@@ -30,7 +30,7 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const Unit* target) {
     // Aim at continuous positions on the attack disk, not at terrain cell centres.
     // The radial direction gives the shortest approach; additional rings handle
     // cramped terrain and occupied firing positions without changing weapon reach.
-    const Vec2 offset = u.position - aim;
+    const Vec2 offset = groundToPlane(u.position - aim);
     const float heading = std::atan2(offset.y, offset.x);
     const float contact = target && airborne(target->definition.movement) == airborne(movement) ?
         std::min(range, radius + target->definition.collisionRadius + .045f) : std::min(range, .05f);
@@ -40,7 +40,7 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const Unit* target) {
         const int count = std::clamp(int(std::ceil(distance * 12)), 24, 64);
         for (int i = 0; i < count; ++i) {
             const float angle = heading + i * (6.283185307f / count);
-            const Vec2 p = aim + Vec2{std::cos(angle), std::sin(angle)} * distance;
+            const Vec2 p = aim + planeToGround({std::cos(angle), std::sin(angle)}) * distance;
             if ((!firing || reaches(p)) && free(p)) goals.push_back(p);
         }
     };
@@ -55,11 +55,11 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const Unit* target) {
         return;
     }
     const auto score = [&](Vec2 p) {
-        const float retry = u.blockedTicks >= 12 && lengthSquared(p - u.routeDestination) < .49f ? 4.0f : 0.0f;
-        return lengthSquared(p - u.position) + retry;
+        const float retry = u.blockedTicks >= 12 && groundLengthSquared(p - u.routeDestination) < .49f ? 4.0f : 0.0f;
+        return groundLengthSquared(p - u.position) + retry;
     };
     std::stable_sort(goals.begin(), goals.end(), [&](Vec2 a, Vec2 b) { return score(a) < score(b); });
-    if (staging && lengthSquared(goals.front() - u.position) < .04f) {
+    if (staging && groundLengthSquared(goals.front() - u.position) < .04f) {
         u.route.clear(); u.next = 0; u.state = UnitState::ToAttack;
         return;
     }

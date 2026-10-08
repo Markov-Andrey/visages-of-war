@@ -7,7 +7,7 @@ void MotionFacing::reset() { *this = {}; }
 Cell MotionFacing::update(Cell current, Vec2 displacement, float nominalStep) {
     // Tiny collision corrections must not turn the sprite. Blocked ticks also
     // interrupt a pending turn, but do not make the next correction a fresh start.
-    if (std::hypot(displacement.x, displacement.y) < std::max(.00001f, nominalStep * .15f)) {
+    if (groundLength(displacement) < std::max(.00001f, nominalStep * .15f)) {
         average_ = average_ * .65f;
         pendingTicks_ = 0;
         return current;

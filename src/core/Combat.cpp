@@ -44,7 +44,7 @@ void Simulation::tickCombat() {
                 if (!canAttack(u, candidate) || (candidate.id == u.unreachableTarget && u.targetRetryTicks > 0)) continue;
                 const bool inReach = attackReach(u, candidate);
                 if ((onlyInReach || u.currentOrder.kind == OrderKind::Hold) && !inReach) continue;
-                float score = lengthSquared(candidate.position - u.position);
+                float score = groundLengthSquared(candidate.position - u.position);
                 if (inReach) score -= 10000;
                 else {
                     // Spread automatic melee acquisition along the front. A focused
