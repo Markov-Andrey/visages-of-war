@@ -7,6 +7,29 @@ void editorTests(TestSuite& test, const TestContext& context) {
     const auto& worldPaths=context.worldPaths;
     const auto& worldAssets=context.worldAssets;
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
+    test("Rectangular map saves its crop and rejects footprints crossing partial diamonds", [&] {
+        const auto definitions=rts::Definitions::load(assets/"data/catalog.json");
+        rts::Scenario scenario{rts::Map::rectangular(64,96),{55,55},{60,60},{}};
+        rts::WorldEditor editor(scenario,worldAssets,definitions);
+        editor.setTool(rts::EditorTool::Start); editor.choice=0;
+        // The origin is complete, but the back of a 3x2 footprint exits the right edge.
+        const rts::Cell border{63,32};
+        require(editor.scenario().map.playable(border),"Boundary test origin is not a complete cell");
+        require(!editor.apply(rts::center(border)),"Editor allowed a building on half a diamond"); editor.endStroke();
+        require(editor.apply({70.5f,70.5f}),"Editor rejected interior footprint"); editor.endStroke();
+        require(editor.undo() && editor.scenario().map.layoutSize()==rts::Cell{64,96},"Undo lost rectangular layout");
+        const auto file=worldPaths.writable(L"rectangular-isometric.rtsmap");
+        rts::saveScenario(editor.scenario(),file);
+        const auto loaded=loadScenario(file);
+        require(loaded.map.layoutSize()==rts::Cell{64,96} && loaded.map.groundMinimum()==scenario.map.groundMinimum(),"Roundtrip lost rectangular crop");
+        for(int y=0;y<loaded.map.height();++y) for(int x=0;x<loaded.map.width();++x)
+            require(loaded.map.playable({x,y})==scenario.map.playable({x,y}),"Roundtrip changed partial-cell navigation");
+        rts::Simulation game(loaded,{},definitions.entity("human.worker"),definitions.entities());
+        game.revealMap();
+        require(!game.canPlace("human.hall",border),"Game accepted a cropped building footprint");
+        auto invalid=loaded; invalid.units.push_back({"human.flying_soldier",0,{64,32}});
+        mustThrow([&] { rts::rebuildScenario(invalid); });
+    });
     test("Palette groups expose every Sunny Hills category and preserve authored state", [&] {
         const auto definitions=rts::Definitions::load(assets/"data/catalog.json");
         rts::WorldEditor editor(loadScenario(assets/"maps/demo.rtsmap"),worldAssets,definitions);
@@ -166,7 +189,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
     test("Ground art preserves source proportions with optional isometric projection", [&] {
         require(!worldAssets.material("grass").isometric && !worldAssets.material("dark_grass").isometric &&
             !worldAssets.material("sunny_hills.meadow").isometric && !worldAssets.material("sunny_hills.dry_grass").isometric &&
-            worldAssets.material("sunny_hills.cobblestone").isometric, "Grass projection overrides affected other materials");
+            !worldAssets.material("sunny_hills.cobblestone").isometric, "Ground art must stay flat in logical coordinates");
         const rts::GroundTextureProjection flat(12, 1536, false);
         const auto flatSize = flat.project({1536, 1024});
         require(flatSize == rts::Vec2{12, 8} && flat.unproject(flatSize) == rts::Vec2{1536, 1024},
@@ -184,7 +207,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
     });
     test("Projected paint wraps negative texture coordinates and repeats across chunk boundaries", [] {
         // This repeat size gives source-pixel axes (1, .5) and (-1, .5).
-        rts::MaterialPixels material{4, 2, 4 * std::sqrt(2.0f), {}};
+        rts::MaterialPixels material{4, 2, 4 * std::sqrt(2.0f), {}, true};
         for (int y = 0; y < 2; ++y) for (int x = 0; x < 4; ++x)
             material.pixels.push_back(0xff000000u | (uint32_t(x * 64) << 16) | uint32_t(y * 128));
         rts::Landscape landscape;

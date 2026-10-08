@@ -1,0 +1,16 @@
+#pragma code_page(65001)
+#include <windows.h>
+
+200 DIALOGEX 0, 0, 214, 112
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Новая карта"
+FONT 9, "Segoe UI"
+BEGIN
+    LTEXT "Ширина:", -1, 12, 16, 70, 14
+    COMBOBOX 201, 90, 12, 106, 180, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT "Высота:", -1, 12, 44, 70, 14
+    COMBOBOX 202, 90, 40, 106, 180, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT "Прямоугольное поле, изометрическая сетка", -1, 12, 67, 196, 12
+    DEFPUSHBUTTON "Создать", IDOK, 70, 88, 62, 16
+    PUSHBUTTON "Отмена", IDCANCEL, 138, 88, 62, 16
+END

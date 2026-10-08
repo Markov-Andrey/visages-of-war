@@ -385,7 +385,7 @@ void GameApplication::exerciseInterface() {
     onMessage(WM_MBUTTONDOWN, 0, at(screenCenter));
     for (const auto point : {rts::Vec2{-4000, -4000}, rts::Vec2{4000, 4000}}) {
         onMessage(WM_MOUSEMOVE, MK_MBUTTON, at(point));
-        const auto top = view_.project({}), bottom = view_.project({float(game_.map().width()), float(game_.map().height())});
+        const auto top = view_.origin + game_.map().groundMinimum() * view_.zoom, bottom = top + game_.map().groundExtent() * view_.zoom;
         const float margin = cameraTuning.borderMargin + .02f;
         if ((bottom.x - top.x >= layout.world.width && (top.x > layout.world.x + margin || bottom.x < layout.world.x + layout.world.width - margin)) ||
             (bottom.y - top.y >= layout.world.height && (top.y > layout.world.y + margin || bottom.y < layout.world.y + layout.world.height - margin)))

@@ -13,7 +13,7 @@ inline const UnitDeathFrame* corpseFrame(const Corpse& corpse) {
 inline SpriteFrame locomotionFrame(const Unit& unit) {
     // Animation columns and directional rows come from each entity sprite definition.
     // Rows run clockwise on screen: S, SE, E, NE, N, NW, W, SW.
-    constexpr std::array<Cell, 8> facings{{{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}}};
+    constexpr std::array<Cell, 8> facings{{{1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}}};
     int row = 0;
     for (size_t i = 0; i < facings.size(); ++i) if (unit.facing == facings[i]) row = static_cast<int>(i);
     const bool walking = unit.next < unit.route.size() && unit.position != unit.tickPosition;

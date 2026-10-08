@@ -175,11 +175,48 @@ void navigationTests(TestSuite& test, const TestContext& context) {
         map.occupy({7, 6});
         require(!rts::findUnitPathTo(map, {2.5f, 6.5f}, {6.9f, 6.5f}, {}, .35f, rts::MovementType::Walking), "Fractional goal clips square building");
     });
+    test("Rectangular isometric borders reject partial cells and swept collision circles on every side", [] {
+        for (const Cell dimensions : {Cell{64,64}, Cell{96,64}, Cell{32,96}}) {
+            auto map = Map::rectangular(dimensions.x, dimensions.y);
+            require(map.groundExtent() == Vec2{dimensions.x*64.0f, dimensions.y*64.0f}, "Layout aspect ratio changed");
+            const WorldView view{{380,-90},.73f};
+            int partial = 0;
+            for (int y=0;y<map.height();++y) for (int x=0;x<map.width();++x) {
+                const Cell cell{x,y};
+                if (map.playable(cell)) {
+                    require(map.walkable(cell) && map.walkable(cell,MovementType::Flying), "Complete flat tile became unplayable");
+                    if(x%11==0 && y%13==0) require(map.pick(view.project(center(cell)),view)==cell,"Picking missed complete diamond");
+                    continue;
+                }
+                for (MovementType type : {MovementType::Walking, MovementType::Swimming, MovementType::Amphibious, MovementType::Flying}) {
+                    require(!map.walkable(cell,type),"Clipped tile is walkable");
+                    require(!map.canTraverse(center(cell),center(cell),.3f,type),"Clipped tile accepted unit circle");
+                }
+                if (!map.withinGround(WorldView{}.project(center(cell)))) continue;
+                ++partial;
+                require(!map.pick(view.project(center(cell)),view),"Half diamond is selectable");
+                for (Cell delta : {Cell{1,0},Cell{0,1},Cell{-1,0},Cell{0,-1}}) {
+                    const Cell neighbor=cell+delta;
+                    if (!map.playable(neighbor)) continue;
+                    const Vec2 inward{float(delta.x),float(delta.y)};
+                    const Vec2 nearEdge=center(cell)+inward*.6f;
+                    for (MovementType type : {MovementType::Walking,MovementType::Flying}) {
+                        require(!map.canStep(neighbor,cell,type),"Path crosses cropped boundary");
+                        require(!map.canTraverse(center(neighbor),nearEdge,.3f,type),"Unit circle crosses boundary while centre stays inside");
+                        require(map.canTraverse(center(neighbor),center(neighbor),.3f,type),"Boundary blocks a circle that fits");
+                    }
+                }
+            }
+            require(partial>0,"Rectangle has no clipped edge cells");
+        }
+        mustThrow([] { Map::rectangular(63,64); });
+        mustThrow([] { Map::rectangular(512,512); });
+    });
     test("Projection and picking account for camera, elevation and ramp surface", [] {
         rts::WorldView view{{310, 120}, 1.35f};
         const auto zero = view.project({0, 0}), right = view.project({1, 0}), down = view.project({0, 1});
-        require(right.x > zero.x && right.y == zero.y && down.x == zero.x && down.y > zero.y, "Terrain grid axes are not screen-aligned");
-        require(std::abs(right.x - zero.x - (down.y - zero.y)) < .001f, "Terrain cells are not square");
+        require(right.x > zero.x && right.y > zero.y && down.x < zero.x && down.y > zero.y, "Terrain grid is not isometric");
+        require(std::abs(right.x - zero.x - 2 * (down.y - zero.y)) < .001f, "Terrain diamond ratio is not 2:1");
         const rts::Vec2 world{6.25f, 3.5f};
         const auto back = view.unproject(view.project(world, 2), 2);
         require(std::abs(back.x - world.x) < 0.001f && std::abs(back.y - world.y) < 0.001f, "Projection roundtrip");

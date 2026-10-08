@@ -11,7 +11,7 @@ struct RendererLightingTest {
         const auto root = Paths::executable().parent_path();
         Renderer renderer(Paths(context.assets, root / "water-test-data"));
         Renderer::ComPtr<IWICBitmap> output;
-        constexpr UINT width = 384, height = 192;
+        constexpr UINT width = 640, height = 384;
         check(renderer.wic_->CreateBitmap(width, height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, output.GetAddressOf()));
         auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
         properties.dpiX = properties.dpiY = 96;
@@ -20,7 +20,7 @@ struct RendererLightingTest {
         Map map(6, 3);
         for (int y = 0; y < 3; ++y) for (int x = 0; x < 6; ++x)
             map.at({x,y}).surface = x < 3 ? Surface::ShallowWater : Surface::DeepWater;
-        const auto draw = [&](unsigned background, WorldView waterView = {}) {
+        const auto draw = [&](unsigned background, WorldView waterView = {{192,0},1}) {
             renderer.target_->BeginDraw(); renderer.target_->Clear(D2D1::ColorF(background));
             for (int y = 0; y < 3; ++y) for (int x = 0; x < 6; ++x) renderer.waterTile(map, {x,y}, waterView);
             check(renderer.target_->EndDraw());
@@ -28,28 +28,38 @@ struct RendererLightingTest {
             check(output->CopyPixels(nullptr, width * 4, UINT(pixels.size() * 4), reinterpret_cast<BYTE*>(pixels.data())));
             return pixels;
         };
+        const WorldView waterView{{192,0},1};
+        const auto pixel = [&](const auto& pixels, Vec2 world, const WorldView& view) {
+            const auto p=view.project(world);
+            return pixels[int(p.y)*width+int(p.x)];
+        };
         const auto dark = draw(0), light = draw(0xffffff);
-        require((light[96 * width + 96] & 255) - (dark[96 * width + 96] & 255) > 100,
+        require((pixel(light,{1.5f,1.5f},waterView)&255)-(pixel(dark,{1.5f,1.5f},waterView)&255)>100,
             "Shallow water hid the bed texture");
-        require((light[96 * width + 320] & 255) - (dark[96 * width + 320] & 255) < 12,
+        require((pixel(light,{5,1.5f},waterView)&255)-(pixel(dark,{5,1.5f},waterView)&255)<12,
             "Deep water failed to attenuate the bed");
-        for (int x = 160; x < 223; ++x)
-            require(std::abs(int(light[96 * width + x] & 255) - int(light[96 * width + x + 1] & 255)) < 5,
-                "Water gradient has a hard cell seam");
-        const auto fractional = draw(0xffffff, WorldView{{.3f,.7f}, 1.15f});
-        for (int x = 365; x < 373; ++x)
-            require(fractional[100 * width + x] == fractional[100 * width + 364],
-                "Fractional zoom exposed a bright seam between transparent water cells");
-        map.at({4,1}).surface = Surface::ShallowWater;
-        const auto edited = draw(0xffffff);
-        require(edited[96 * width + 288] != light[96 * width + 288], "Water cache ignored an edited depth");
+        for(int step=0;step<64;++step) {
+            const float x=2.5f+step/64.0f;
+            require(std::abs(int(pixel(light,{x,1.5f},waterView)&255)-int(pixel(light,{x+1/64.0f,1.5f},waterView)&255))<7,
+                "Water gradient has a hard diamond seam");
+        }
+        const WorldView fractionalView{{192.3f,.7f},1.15f};
+        const auto fractional=draw(0xffffff,fractionalView);
+        for(int step=0;step<32;++step) {
+            const float x=4.8f+step/80.0f;
+            require(std::abs(int(pixel(fractional,{x,1.5f},fractionalView)&255)-int(pixel(fractional,{4.8f,1.5f},fractionalView)&255))<=1,
+                "Fractional zoom exposed a seam between transparent diamonds");
+        }
+        map.at({4,1}).surface=Surface::ShallowWater;
+        const auto edited=draw(0xffffff);
+        require(pixel(edited,{4.5f,1.5f},waterView)!=pixel(light,{4.5f,1.5f},waterView),"Water cache ignored an edited depth");
         renderer.discardTarget();
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         auto scene = loadScenario(context.assets / "maps/sunny-hills.rtsmap", context.worldAssets, context.hallFootprint);
         Simulation game(std::move(scene), {}, definitions.entity("human.worker"), definitions.entities());
         game.revealMap();
         WorldView view{{}, 1.15f};
-        view.origin = Vec2{700, 360} - view.project({69,7}, -1);
+        view.origin = Vec2{700, 360} - view.project({41.5f,21.5f}, -1);
         renderer.snapshot(game, root / "water-preview.png", nullptr, false, nullptr, MenuPage::BattleSetup, 0, nullptr, &view);
     }
     static void occlusion(const tests::TestContext& context) {
@@ -211,7 +221,10 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         for (const auto& crystal : site.crystals) site.map.occupy(crystal.cell);
         Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
         renderer.snapshot(game, root / "lighting-night.png");
-        const auto dark = RendererLightingTest::snapshotPixel(renderer, root / "lighting-night.png", 270, 400);
+        WorldView shot{{},.85f}; shot.origin=Vec2{720,350}-shot.project(center(game.hall())+Vec2{1,2});
+        const auto hidden=shot.project(center({2,18}));
+        require(!game.fog().explored({2,18}),"Dark-pixel probe is no longer unexplored");
+        const auto dark = RendererLightingTest::snapshotPixel(renderer, root / "lighting-night.png", int(hidden.x), int(hidden.y));
         // The fog's filtered edge and byte rounding may differ from the background by a couple of levels.
         for (const int shift : {0, 8, 16})
             require(std::abs(int((dark >> shift) & 255) - int((0x081119u >> shift) & 255)) <= 2,

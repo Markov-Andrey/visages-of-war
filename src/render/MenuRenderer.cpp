@@ -44,17 +44,19 @@ void Renderer::drawMenu(const Simulation& game, const MenuState& menu, const Def
         line({34, 80}, {extent.x - 34, 80}, 0x8c7957);
         text(L"Сражения", rect(layout.map.x, layout.map.y - 54, 500, 44), 0xe5e8d7, true);
         panel(layout.map, 0x15272c);
-        const float zoom = std::min(376.0f / (game.map().width() * WorldView::tileSize),
-                                    180.0f / (game.map().height() * WorldView::tileSize));
-        const WorldView preview{{layout.map.x + (420 - game.map().width() * WorldView::tileSize * zoom) * .5f, layout.map.y + 22}, zoom};
-        for (int y = 0; y < game.map().height(); ++y) for (int x = 0; x < game.map().width(); ++x)
-            tile(game.map(), {x, y}, preview, false);
+        const auto mapSize = game.map().groundExtent(), mapMinimum = game.map().groundMinimum();
+        const float zoom = std::min(376.0f / mapSize.x, 180.0f / mapSize.y);
+        const Vec2 previewTop{layout.map.x + (420 - mapSize.x * zoom) * .5f, layout.map.y + 22};
+        const WorldView preview{previewTop - mapMinimum * zoom, zoom};
+        target_->PushAxisAlignedClip(rect(previewTop.x, previewTop.y, mapSize.x * zoom, mapSize.y * zoom), D2D1_ANTIALIAS_MODE_ALIASED);
+        for (int row = 0; row < game.map().width() + game.map().height(); ++row) terrainRow(game.map(), row, preview, false);
         for (const auto& crystal : game.crystals()) {
             const auto p = preview.project(crystal.center(), float(game.map().at(crystal.cell).height));
             crystalMapMarker(target_.Get(), brush_.Get(), worldAssets_, crystal, p);
         }
+        target_->PopAxisAlignedClip();
         text(wide(game.mapName()), rect(layout.map.x + 22, layout.map.y + 217, 380, 34), 0xe5e8d7, true);
-        text(L"1 игрок   •   " + std::to_wstring(game.map().width()) + L" × " + std::to_wstring(game.map().height()), rect(layout.map.x + 22, layout.map.y + 260, 380, 26), 0x91aba5);
+        text(L"1 игрок   •   " + std::to_wstring(game.map().layoutSize() == Cell{} ? game.map().width() : game.map().layoutSize().x) + L" × " + std::to_wstring(game.map().layoutSize() == Cell{} ? game.map().height() : game.map().layoutSize().y), rect(layout.map.x + 22, layout.map.y + 260, 380, 26), 0x91aba5);
         text(L"Выбрана", rect(layout.map.x + 22, layout.map.y + 286, 380, 25), 0xa0c789);
         const auto& commander = definitions.commanders().at(menu.commanderIndex);
         text(L"Игрок 1", rect(layout.commander.x, layout.map.y + 4, 390, 40), 0xe5e8d7, true);

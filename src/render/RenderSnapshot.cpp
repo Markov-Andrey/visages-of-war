@@ -28,7 +28,7 @@ void Renderer::snapshot(const Simulation& game, const std::filesystem::path& out
         if (!grid && game.hero()) ui.selection.hero(game);
         if (grid) ui.placement = "human.barracks";
         if (interfaceState) ui = *interfaceState;
-        draw(game, view, grid ? std::optional<Cell>{{17, 17}} : std::nullopt, ui, grid, false);
+        draw(game, view, grid ? std::optional<Cell>{game.worker().cell + Cell{3,1}} : std::nullopt, ui, grid, false);
     }
     writeSnapshot(bitmap.Get(), output);
     discardTarget();

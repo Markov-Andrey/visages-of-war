@@ -7,6 +7,31 @@
 #include <commdlg.h>
 
 namespace rts::forge {
+namespace {
+INT_PTR CALLBACK mapSizeDialog(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (message == WM_INITDIALOG) {
+        SetWindowLongPtrW(window, DWLP_USER, lParam);
+        for (int control : {201, 202}) {
+            for (int value = 32; value <= 512; value += 32)
+                SendDlgItemMessageW(window, control, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(std::to_wstring(value).c_str()));
+            SendDlgItemMessageW(window, control, CB_SETCURSEL, 1, 0);
+        }
+        return TRUE;
+    }
+    if (message == WM_COMMAND && LOWORD(wParam) == IDCANCEL) { EndDialog(window, IDCANCEL); return TRUE; }
+    if (message == WM_COMMAND && LOWORD(wParam) == IDOK) {
+        const Cell size{32 * (1 + int(SendDlgItemMessageW(window, 201, CB_GETCURSEL, 0, 0))),
+                        32 * (1 + int(SendDlgItemMessageW(window, 202, CB_GETCURSEL, 0, 0)))};
+        if (size.x / 2 + size.y > 512) {
+            MessageBoxW(window, L"Слишком большая карта. Уменьшите ширину или высоту.", L"Visages Forge", MB_OK | MB_ICONINFORMATION);
+            return TRUE;
+        }
+        *reinterpret_cast<Cell*>(GetWindowLongPtrW(window, DWLP_USER)) = size;
+        EndDialog(window, IDOK); return TRUE;
+    }
+    return FALSE;
+}
+}
 void ForgeApplication::editorError(const std::exception& error) {
     const std::string value=error.what();
     const int n=MultiByteToWideChar(CP_UTF8,0,value.data(),int(value.size()),nullptr,0);
@@ -53,8 +78,18 @@ void ForgeApplication::editorAction(size_t action) {
         editor_->endStroke();
         if(action==0) { SendMessageW(window_,WM_CLOSE,0,0); return; }
         if(action==1 && confirmEditorChanges()) {
-            rts::Scenario blank{rts::Map(64,64),{10,10},{13,12},{}};
-            blank.heroSpawn=rts::Cell{14,12}; blank.startingCrystals=300;
+            Cell dimensions{64,64};
+            const auto result=DialogBoxParamW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(200), window_, mapSizeDialog,
+                reinterpret_cast<LPARAM>(&dimensions));
+            if (result == -1) throw std::runtime_error("Cannot open map dimensions dialog");
+            if (result != IDOK) return;
+            auto map = Map::rectangular(dimensions.x, dimensions.y);
+            const Cell middle{map.width()/2,map.height()/2};
+            const auto& depot=editor_->startingDepot();
+            const Cell hall=middle-Cell{depot.width/2,depot.height/2};
+            const Cell worker=hall+Cell{depot.width+1,depot.height/2};
+            rts::Scenario blank{std::move(map),hall,worker,{}};
+            blank.heroSpawn=worker+Cell{0,2}; blank.startingCrystals=300;
             editor_->replace(std::move(blank)); editor_->file.clear(); editor_->dirty=true; resetCamera();
         }
         if(action==2 && confirmEditorChanges()) {

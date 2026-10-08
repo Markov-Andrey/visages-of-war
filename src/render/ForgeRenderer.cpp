@@ -20,12 +20,13 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     const auto extent=size(); const EditorLayout layout(extent);
     target_->BeginDraw(); target_->Clear(D2D1::ColorF(0x081119)); worldOpacity_=1;
     target_->PushAxisAlignedClip(rect(layout.world.x,layout.world.y,layout.world.width,layout.world.height),D2D1_ANTIALIAS_MODE_ALIASED);
+
     struct Item { float depth; int kind; size_t index; };
     std::vector<Item> items;
-    for(size_t i=0;i<s.environment.size();++i) items.push_back({s.environment[i].origin.y+s.environment[i].height-.5f,0,i});
-    for(size_t i=0;i<s.landscape.decorations.size();++i) items.push_back({s.landscape.decorations[i].position.y,1,i});
+    for(size_t i=0;i<s.environment.size();++i) items.push_back({s.environment[i].origin.x+s.environment[i].origin.y+s.environment[i].width+s.environment[i].height-1.0f,0,i});
+    for(size_t i=0;i<s.landscape.decorations.size();++i) items.push_back({s.landscape.decorations[i].position.x+s.landscape.decorations[i].position.y,1,i});
     for(size_t i=0;i<s.crystals.size();++i) items.push_back({s.crystals[i].depth(),2,i});
-    items.push_back({s.hall.y+depot.height-.5f,3,0});
+    items.push_back({s.hall.x+s.hall.y+depot.width+depot.height-.3f,3,0});
     std::vector<UnitSpawn> units=s.units;
     const auto& commander=editor.definitions().commanders().front();
     units.push_back({commander.startingWorker,0,s.worker});
@@ -46,7 +47,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
         if(d.hero) { brush_->SetColor(D2D1::ColorF(0xe8c56b)); target_->DrawEllipse(D2D1::Ellipse(point(p),22*view.zoom,9*view.zoom),brush_.Get(),2); }
     };
     size_t next=0;
-    for(int y=0;y<map.height();++y) {
+    for(int y=0;y<map.width()+map.height();++y) {
         terrainRow(map,y,view,grid);
         while(next<items.size()&&items[next].depth<y+1) {
             const auto item=items[next++];
@@ -69,7 +70,7 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
         const Cell c{int(at->x),int(at->y)}; const auto p=view.project(*at,map.surfaceHeight(c,*at));
         brush_->SetColor(D2D1::ColorF(0xace8d0,.9f));
         if(editor.tool==EditorTool::Paint||editor.tool==EditorTool::ErasePaint||editor.tool==EditorTool::Height||editor.tool==EditorTool::Surface)
-            target_->DrawEllipse(D2D1::Ellipse(point(p),editor.radius*64*view.zoom,editor.radius*64*view.zoom),brush_.Get(),1.5f);
+            target_->DrawEllipse(D2D1::Ellipse(point(p),editor.radius*64*1.41421356f*view.zoom,editor.radius*32*1.41421356f*view.zoom),brush_.Get(),1.5f);
         else if(editor.tool==EditorTool::Start && editor.selected()=="hall") {
             for(int y=0;y<depot.height;++y) for(int x=0;x<depot.width;++x)
                 if(map.contains(c+Cell{x,y})) polygon(map.surfaceCorners(c+Cell{x,y},view),0xace8d0,.7f,false);

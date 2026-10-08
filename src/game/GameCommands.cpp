@@ -149,7 +149,7 @@ std::optional<rts::Cell> GameApplication::pickCommandTarget() const {
     std::optional<rts::Cell> result;
     float nearestDepth = -1;
     for (const auto& u : game_.units()) {
-        const float depth = rts::airborne(u.definition.movement) ? 1000.0f + u.position.y : u.position.y;
+        const float depth = rts::airborne(u.definition.movement) ? 2000.0f + rts::unitDrawDepth(u.position) : rts::unitDrawDepth(u.position);
         if (u.owner != game_.player().id && game_.fog().visible(u.cell) &&
             rts::unitBounds(game_, u, view_).contains(mouse_) && depth >= nearestDepth) {
             nearestDepth = depth; result = u.cell;

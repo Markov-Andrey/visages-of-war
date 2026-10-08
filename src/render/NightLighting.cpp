@@ -131,18 +131,20 @@ void NightLightingRaster::update(const Simulation& game, const WorldView& view, 
             visibility_[static_cast<size_t>(y) * width_ + x] = std::clamp((fog.lightAt(world) - .3f) / .7f, 0.0f, 1.0f);
         }
     };
-    for (int y = 0; y < map.height(); ++y) for (int x = 0; x < map.width(); ++x) {
+    for (int row = 0; row < map.width() + map.height() - 1; ++row)
+    for (int x = std::max(0, row - map.height() + 1); x <= std::min(map.width() - 1, row); ++x) {
+        const int y = row - x;
         const Cell c{x, y};
         const auto top = map.surfaceCorners(c, view);
-        // The front face is a vertical strip in the square projection.
-        const Cell below{x, y + 1};
-        const std::array<Vec2, 2> world{{{x + 1.0f, y + 1.0f}, {float(x), y + 1.0f}}};
-        std::array<Vec2, 4> face{top[2], top[3], {}, {}};
-        for (size_t i = 0; i < 2; ++i) {
-            const float h = map.contains(below) ? map.surfaceHeight(below, world[i]) : map.at(c).height - .65f;
-            face[3 - i] = view.project(world[i], std::min(h, map.surfaceHeight(c, world[i])));
+        const std::array<Vec2, 4> world{{{float(x), float(y)}, {x+1.0f, float(y)}, {x+1.0f, y+1.0f}, {float(x), y+1.0f}}};
+        for (int edge : {1, 2}) {
+            const Cell below = c + (edge == 1 ? Cell{1, 0} : Cell{0, 1});
+            const auto bottom = [&](int i) {
+                const float h = map.contains(below) ? map.surfaceHeight(below, world[i]) : map.at(c).height - .65f;
+                return view.project(world[i], std::min(h, map.surfaceHeight(c, world[i])));
+            };
+            rasterize({top[edge], top[edge+1], bottom(edge+1), bottom(edge)}, c, false);
         }
-        rasterize(face, c, false);
         rasterize(top, c, true);
     }
     for (int y = 0; y < height_; ++y) for (int x = 0; x < width_; ++x) {

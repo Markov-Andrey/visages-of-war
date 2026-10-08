@@ -23,7 +23,7 @@ void occupyFlat(Map& m, Cell origin, int width, int height, const std::vector<bo
     const int level = m.at(origin).height;
     for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
         const Cell c = origin + Cell{x,y};
-        if (!m.contains(c) || m.at(c).height != level || m.at(c).surface != Surface::Land || m.at(c).ramp != Cell{} || m.at(c).blocked)
+        if (!m.playable(c) || m.at(c).height != level || m.at(c).surface != Surface::Land || m.at(c).ramp != Cell{} || m.at(c).blocked)
             throw std::runtime_error("Object footprint requires flat land");
         if (mask[static_cast<size_t>(y)*width+x]) {
             if (m.occupancy(c)) throw std::runtime_error("Overlapping map objects");
@@ -71,7 +71,8 @@ void rebuildScenario(Scenario& s, Cell hallFootprint) {
             throw std::runtime_error("Invalid environment identity or health");
         // Inactive objects keep their placement and ID, without reserving the footprint.
         if (o.active()) occupyFlat(m, o.origin, o.width, o.height, o.collision);
-        else if (!m.contains(o.origin) || !m.contains(o.origin + Cell{o.width-1,o.height-1})) throw std::runtime_error("Object outside map");
+        else for (int y=0;y<o.height;++y) for (int x=0;x<o.width;++x)
+            if (!m.playable(o.origin+Cell{x,y})) throw std::runtime_error("Object outside playable map");
     }
     for (const auto& c : s.crystals) {
         if (c.capacity < 1 || c.capacity > 1000000 || c.remaining < 1 || c.remaining > c.capacity ||
@@ -81,8 +82,8 @@ void rebuildScenario(Scenario& s, Cell hallFootprint) {
     std::set<std::pair<int,int>> workers;
     for (const auto c : [&] { auto cells=s.extraWorkers; cells.push_back(s.worker); return cells; }())
         if (!m.walkable(c, MovementType::Amphibious) || !workers.insert({c.x,c.y}).second) throw std::runtime_error("Invalid worker spawn");
-    if (s.heroSpawn && !m.contains(*s.heroSpawn)) throw std::runtime_error("Hero spawn outside map");
-    for (const auto& u : s.units) if (!m.contains(u.cell) || u.owner >= neutralPlayer || u.definitionId.empty()) throw std::runtime_error("Invalid unit spawn");
+    if (s.heroSpawn && !m.playable(*s.heroSpawn)) throw std::runtime_error("Hero spawn outside map");
+    for (const auto& u : s.units) if (!m.playable(u.cell) || u.owner >= neutralPlayer || u.definitionId.empty()) throw std::runtime_error("Invalid unit spawn");
     for (const auto& d : s.landscape.decorations) {
         validateDecoration(m,d);
         if (!ids.insert(d.id).second) throw std::runtime_error("Invalid decoration placement");
@@ -104,6 +105,12 @@ Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& asse
     if (j.at("format") != "rts-world") throw std::runtime_error("Expected rts-world map");
     const auto size = cell(j.at("size"));
     Scenario s{Map(size.x,size.y), cell(j.at("start").at("hall")), {}, {}};
+    if (j.contains("layoutSize")) {
+        const auto layout = cell(j.at("layoutSize"));
+        auto map = Map::rectangular(layout.x, layout.y);
+        if (map.width() != size.x || map.height() != size.y) throw std::runtime_error("Map storage does not match rectangular layout");
+        s.map = std::move(map);
+    }
     s.name = j.at("name").get<std::string>();
     s.startingCrystals = j.at("start").at("crystals").get<int>();
     const auto& workers = j.at("start").at("workers");
@@ -156,6 +163,7 @@ Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& asse
 void saveScenario(const Scenario& s, const std::filesystem::path& path) {
     auto checked=s; rebuildScenario(checked);
     Json j{{"format","rts-world"},{"name",s.name},{"size",Json::array({s.map.width(),s.map.height()})}};
+    if (s.map.layoutSize() != Cell{}) j["layoutSize"] = xy(s.map.layoutSize());
     auto& start=j["start"]; start["hall"]=xy(s.hall); start["crystals"]=s.startingCrystals;
     start["workers"]=Json::array({xy(s.worker)}); for(auto c:s.extraWorkers) start["workers"].push_back(xy(c));
     start["hero"]=s.heroSpawn ? xy(*s.heroSpawn) : Json(nullptr);

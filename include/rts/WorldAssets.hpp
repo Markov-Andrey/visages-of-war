@@ -12,7 +12,7 @@ struct TerrainMaterial {
     float repeatCells = 16;
     unsigned tint = 0xffffff;
     std::string group = "Core";
-    bool isometric = true;
+    bool isometric = false;
 };
 struct WorldObjectDefinition {
     std::string id, name;

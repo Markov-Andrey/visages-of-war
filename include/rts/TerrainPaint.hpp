@@ -5,7 +5,7 @@
 #include <map>
 
 namespace rts {
-struct MaterialPixels { int width{}, height{}; float repeatCells{}; std::vector<uint32_t> pixels; bool isometric = true; };
+struct MaterialPixels { int width{}, height{}; float repeatCells{}; std::vector<uint32_t> pixels; bool isometric = false; };
 struct PaintChunk { std::vector<uint32_t> pixels; uint64_t revision{}; };
 // CPU cache for visual paint only. Sparse chunks avoid a giant texture per map/material.
 class TerrainPaint {

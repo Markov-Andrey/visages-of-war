@@ -299,6 +299,10 @@ scenario['terrain'] = {'base': 'sunny_hills_ink.meadow',
                        'heights': [''.join('-' if h == -1 else str(h) for h in row) for row in heights],
                        'surfaces': [''.join(row) for row in surfaces], 'blocked': ['0' * WIDTH] * HEIGHT,
                        'ramps': [[x, y, *direction] for (x, y), direction in ramps.items()]}
+import sys
+sys.dont_write_bytecode = True
+from isometric_map import rectangular_composition
+rectangular_composition(scenario, objects, reserved)
 write(ROOT / 'assets/maps/sunny-hills.rtsmap', scenario)
 review = ROOT / 'out/sunny-hills-review'
 review.mkdir(parents=True, exist_ok=True)

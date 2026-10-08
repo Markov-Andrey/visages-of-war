@@ -3,7 +3,7 @@
 #include <algorithm>
 
 namespace rts {
-// Feet sit at 5/6 of the square cell height: the middle of its lower third.
+// Feet sit in the lower third of the projected diamond.
 // This is presentation only. Positions, occupancy, vision and minimap markers
 // continue to use logical map coordinates and the original terrain height.
 inline constexpr float unitGroundOffset = 1.0f / 3;
@@ -13,7 +13,7 @@ inline Vec2 unitScreenOffset(const WorldView& view) {
 inline Vec2 unitScreenAnchor(const WorldView& view, Vec2 position, float height = 0) {
     return view.project(position, height) + unitScreenOffset(view);
 }
-inline float unitDrawDepth(Vec2 position) { return position.y + unitGroundOffset; }
+inline float unitDrawDepth(Vec2 position) { return position.x + position.y + unitGroundOffset * 2; }
 inline Vec2 projectileScreenPosition(const WorldView& view, const Projectile& projectile, bool previous = false) {
     const int elapsed = previous ? std::max(0, projectile.elapsedTicks - 1) : projectile.elapsedTicks;
     const float progress = std::clamp(float(elapsed) / std::max(1, projectile.flightTicks), 0.0f, 1.0f);

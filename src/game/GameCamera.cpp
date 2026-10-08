@@ -16,7 +16,7 @@ void GameApplication::constrainCamera() {
     const auto extent = renderer_.size();
     if (extent.x <= 0 || extent.y <= 262) return;
     const auto area = BattleLayout(extent).world;
-    camera_.setBounds(view_, {area.x, area.y}, {area.width, area.height}, {float(game_.map().width()), float(game_.map().height())});
+    camera_.setBounds(view_, {area.x, area.y}, {area.width, area.height}, game_.map().groundExtent(), game_.map().groundMinimum());
 }
 void GameApplication::resetCamera(bool immediate) {
     if (immediate) view_.zoom = cameraTuning.initialZoom;

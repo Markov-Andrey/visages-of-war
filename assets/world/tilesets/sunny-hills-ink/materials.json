@@ -24,7 +24,7 @@
     "repeatCells": 10,
     "tint": "ffffff",
     "group": "Sunny Hills Ink / Ground",
-    "isometric": true
+    "isometric": false
   },
   {
     "id": "sunny_hills_ink.sand",
@@ -33,7 +33,7 @@
     "repeatCells": 12,
     "tint": "ffffff",
     "group": "Sunny Hills Ink / Ground",
-    "isometric": true
+    "isometric": false
   },
   {
     "id": "sunny_hills_ink.cobblestone",
@@ -42,6 +42,6 @@
     "repeatCells": 8,
     "tint": "ffffff",
     "group": "Sunny Hills Ink / Ground",
-    "isometric": true
+    "isometric": false
   }
 ]

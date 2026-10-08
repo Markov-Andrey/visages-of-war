@@ -163,7 +163,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
         rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
-        const rts::WorldView view{{0, 0}, 1}; const rts::Vec2 extent{1800, 1800};
+        const rts::WorldView view{{900, 0}, 1}; const rts::Vec2 extent{1800, 1800};
         rts::FogMask fog; fog.update(game.fog(), 28, 28);
         rts::NightLightingRaster raster; raster.update(game, view, extent, fog);
         const auto sample = [&](rts::Vec2 p) { return raster.pixels().at(size_t(int(p.y / rts::NightLightingRaster::pixelStep)) * raster.width() + int(p.x / rts::NightLightingRaster::pixelStep)); };

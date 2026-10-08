@@ -14,6 +14,33 @@ Map::Map(int width, int height) : width_(width), height_(height) {
     occupancy_.resize(tiles_.size());
     visionBlockers_.resize(tiles_.size());
 }
+Map Map::rectangular(int width, int height) {
+    if (width < 32 || height < 32 || width > 1024 || height > 512 || width % 32 || height % 32 || width / 2 + height > 512)
+        throw std::invalid_argument("Rectangular map dimensions must be multiples of 32; width / 2 + height <= 512");
+    Map map(width / 2 + height, width / 2 + height);
+    map.layoutSize_ = {width, height};
+    return map;
+}
+Vec2 Map::groundMinimum() const {
+    return layoutSize_ != Cell{} ? Vec2{-layoutSize_.x * 32.0f, layoutSize_.x * 16.0f} : Vec2{-height_ * 64.0f, 0};
+}
+Vec2 Map::groundExtent() const {
+    return layoutSize_ != Cell{} ? Vec2{layoutSize_.x * 64.0f, layoutSize_.y * 64.0f} : Vec2{(width_ + height_) * 64.0f, (width_ + height_) * 32.0f};
+}
+bool Map::withinGround(Vec2 p) const {
+    const auto a = groundMinimum(), b = a + groundExtent();
+    return p.x >= a.x && p.y >= a.y && p.x < b.x && p.y < b.y;
+}
+bool Map::playable(Cell c) const {
+    if (!contains(c)) return false;
+    return completeCell(c, layoutSize_);
+}
+bool Map::completeCell(Cell c, Cell layoutSize) {
+    if (layoutSize == Cell{}) return true;
+    // Integer half-planes include only whole diamonds, never a clipped edge cell.
+    return c.x - c.y - 1 >= -layoutSize.x / 2 && c.x - c.y + 1 <= layoutSize.x / 2 &&
+        c.x + c.y >= layoutSize.x / 2 && c.x + c.y + 2 <= layoutSize.x / 2 + layoutSize.y * 2;
+}
 void Map::rebuildVisionBlockers(std::span<const EnvironmentObject> objects) {
     std::fill(visionBlockers_.begin(), visionBlockers_.end(), false);
     for (const auto& object : objects)
@@ -27,7 +54,7 @@ bool Map::blocksVision(Cell c) const {
 }
 bool Map::contains(Cell c) const { return c.x >= 0 && c.y >= 0 && c.x < width_ && c.y < height_; }
 bool Map::walkable(Cell c, MovementType movement) const {
-    if (!contains(c)) return false;
+    if (!playable(c)) return false;
     if (airborne(movement)) return true;
     if (at(c).blocked || occupancy(c) != 0) return false;
     const auto surface = at(c).surface;
@@ -77,7 +104,8 @@ bool Map::cardinalStep(Cell from, Cell to, MovementType movement) const {
 bool Map::canStep(Cell from, Cell to, MovementType movement) const {
     const Cell d = to - from;
     if (std::abs(d.x) > 1 || std::abs(d.y) > 1 || d == Cell{}) return false;
-    if (airborne(movement)) return contains(from) && contains(to);
+    if (airborne(movement)) return playable(from) && playable(to) &&
+        (d.x == 0 || d.y == 0 || (playable({from.x + d.x, from.y}) && playable({from.x, from.y + d.y})));
     if (d.x == 0 || d.y == 0) return cardinalStep(from, to, movement);
     const Cell sideX{from.x + d.x, from.y};
     const Cell sideY{from.x, from.y + d.y};
@@ -90,7 +118,7 @@ bool Map::canTraverse(Vec2 from, Vec2 to, float radius, MovementType movement) c
     if (!std::isfinite(radius) || radius <= 0 || !std::isfinite(from.x) || !std::isfinite(from.y) ||
         !std::isfinite(to.x) || !std::isfinite(to.y)) return false;
     for (Vec2 p : {from, to}) if (p.x < radius || p.y < radius || p.x > width_ - radius || p.y > height_ - radius) return false;
-    if (airborne(movement)) return true;
+    if (airborne(movement) && layoutSize_ == Cell{}) return true;
     // Trace every centre crossing through the same ramp/corner rules as grid navigation.
     Cell current = cellAt(from);
     const Cell finish = cellAt(to);
@@ -191,20 +219,25 @@ std::optional<Cell> Map::pick(Vec2 screen, const WorldView& view) const {
         }
         return std::abs(area) > .01f && !(positive && negative);
     };
-    // Reverse the renderer's row order. Elevated surfaces can overlap lower rows.
-    for (int y = height_ - 1; y >= 0; --y) for (int x = width_ - 1; x >= 0; --x) {
+    if (layoutSize_ != Cell{} && !withinGround((screen - view.origin) * (1 / view.zoom))) return std::nullopt;
+    // Reverse diagonal painter order, including both front cliff faces.
+    for (int row = width_ + height_ - 2; row >= 0; --row)
+    for (int x = std::min(width_ - 1, row); x >= std::max(0, row - height_ + 1); --x) {
+        const int y = row - x;
         const Cell c{x, y};
         const auto top = surfaceCorners(c, view);
-        if (inside(top)) return c;
-        // The front cliff is visible geometry, not a selectable tile behind it.
-        const Cell neighbor{x, y + 1};
-        const std::array<Vec2, 2> world{{{x + 1.0f, y + 1.0f}, {float(x), y + 1.0f}}};
-        std::array<Vec2, 4> face{top[2], top[3], {}, {}};
-        for (size_t i = 0; i < 2; ++i) {
-            const float below = contains(neighbor) ? surfaceHeight(neighbor, world[i]) : at(c).height - .65f;
-            face[3 - i] = view.project(world[i], std::min(below, surfaceHeight(c, world[i])));
+        if (inside(top)) return playable(c) ? std::optional<Cell>(c) : std::nullopt;
+        const std::array<Vec2, 4> world{{{float(x), float(y)}, {x + 1.0f, float(y)},
+            {x + 1.0f, y + 1.0f}, {float(x), y + 1.0f}}};
+        for (int edge : {1, 2}) {
+            const Cell neighbor = c + (edge == 1 ? Cell{1, 0} : Cell{0, 1});
+            const int next = edge + 1;
+            const auto bottom = [&](int i) {
+                const float h = contains(neighbor) ? surfaceHeight(neighbor, world[i]) : at(c).height - .65f;
+                return view.project(world[i], std::min(h, surfaceHeight(c, world[i])));
+            };
+            if (inside({top[edge], top[next], bottom(next), bottom(edge)})) return std::nullopt;
         }
-        if (inside(face)) return std::nullopt;
     }
     return std::nullopt;
 }

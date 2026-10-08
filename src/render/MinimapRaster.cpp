@@ -31,10 +31,10 @@ bool MinimapRaster::update(const Simulation& game, const FogMask& mask) {
 }
 bool MinimapRaster::update(const Map& map, const FogOfWar& fog, const FogMask& mask,
                            std::span<const EnvironmentObject* const> knownObstacles) {
-    bool geometryChanged = !terrainMap_ || width_ != map.width() || height_ != map.height();
+    bool geometryChanged = !terrainMap_ || width_ != map.width() || height_ != map.height() || terrainMap_->layoutSize() != map.layoutSize();
     bool changed = geometryChanged || fog_ != &mask || fogRevision_ != mask.revision() || pixels_.empty();
     width_ = map.width(); height_ = map.height();
-    if (geometryChanged) terrainMap_.emplace(width_, height_);
+    if (geometryChanged) { terrainMap_ = map; terrainMap_->clearOccupancy(); }
     const size_t count = static_cast<size_t>(width_) * height_;
     scratch_.resize(count);
     for (int y = 0; y < height_; ++y) for (int x = 0; x < width_; ++x) {
@@ -46,9 +46,9 @@ bool MinimapRaster::update(const Map& map, const FogOfWar& fog, const FogMask& m
         previous = tile;
         // Logical exploration gates the raster; feathering must not reveal terrain.
         const auto visibility = fog.at(cell);
-        unsigned color = tile.blocked ? 0x3b3740 : tile.surface == Surface::DeepWater ? 0x243d50 :
+        unsigned color = (tile.blocked || !map.playable(cell)) ? 0x3b3740 : tile.surface == Surface::DeepWater ? 0x243d50 :
             tile.surface == Surface::ShallowWater ? 0x54787e : tile.height > 0 ? 0x9a9b80 : 0x879172;
-        if (tile.blocked || tile.surface == Surface::DeepWater) color |= solid;
+        if (tile.blocked || !map.playable(cell) || tile.surface == Surface::DeepWater) color |= solid;
         scratch_[static_cast<size_t>(y) * width_ + x] = visibility == Visibility::Unexplored ? 0 :
             color | (static_cast<unsigned>(visibility) << 25);
     }
@@ -83,7 +83,8 @@ bool MinimapRaster::update(const Map& map, const FogOfWar& fog, const FogMask& m
     cells_.swap(scratch_);
     pixels_.assign(resolution * resolution, 0xff101c25);
     const MinimapProjection raster({0, 0, float(resolution), float(resolution)}, map);
-    const float pixelsPerCell = float(resolution) / std::max(width_, height_);
+    const auto extent = map.groundExtent();
+    const float pixelsPerCell = float(resolution) / std::max(extent.x, extent.y) * WorldView::tileSize / std::sqrt(1.25f);
     const float edgeWidth = std::min(.3f, .7f / pixelsPerCell);
     const auto lightAt = [&](Cell cell, Vec2 world) {
         // Retain enough contrast for remembered paths; visible areas stay brighter.
@@ -109,7 +110,7 @@ bool MinimapRaster::update(const Map& map, const FogOfWar& fog, const FogMask& m
     // Minimum-size marks represent only explored obstructions, never hidden ones.
     if (pixelsPerCell < 1) for (int y = 0; y < height_; ++y) for (int x = 0; x < width_; ++x) {
         const auto value = cells_[static_cast<size_t>(y) * width_ + x];
-        if (!(value & solid)) continue;
+        if (!(value & solid) || !map.playable({x, y})) continue;
         const Cell cell{x, y};
         const auto p = raster.project(center(cell));
         const int px = std::clamp(int(p.x), 0, int(resolution) - 1), py = std::clamp(int(p.y), 0, int(resolution) - 1);

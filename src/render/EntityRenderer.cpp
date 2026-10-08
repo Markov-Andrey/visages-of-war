@@ -8,12 +8,12 @@ void Renderer::environmentObject(const EnvironmentObject& object, const Map& map
     if (!object.definitionId.empty()) {
         const auto& definition = worldAssets_.object(object.definitionId);
         if (!definition.image.empty()) {
-            worldSprite(definition, {object.origin.x + object.width * .5f, object.origin.y + object.height - .5f}, 1, 0, map, view);
+            worldSprite(definition, {object.origin.x + object.width - .5f, object.origin.y + object.height - .5f}, 1, 0, map, view);
             return;
         }
     }
     const auto p = view.project(object.kind == EnvironmentKind::Rock ?
-        Vec2{object.origin.x + object.width * .5f, object.origin.y + object.height - .5f} : center(object.origin),
+        Vec2{object.origin.x + object.width - .5f, object.origin.y + object.height - .5f} : center(object.origin),
         float(map.at(object.origin).height));
     const auto shifted = [&](Vec2 offset) { return p + offset * view.zoom; };
     if (object.kind == EnvironmentKind::Tree) {
@@ -45,21 +45,17 @@ void Renderer::environmentObject(const EnvironmentObject& object, const Map& map
 }
 
 void Renderer::buildingGroundSelection(const Simulation& game, const Building& b, const WorldView& view, int row) {
-    if (row < b.origin.y || row >= b.origin.y + b.definition.height) return;
-    const float height = float(game.map().at(b.origin).height);
-    const auto a = view.project({float(b.origin.x), float(row)}, height);
-    const auto c = view.project({float(b.origin.x + b.definition.width), float(row + 1)}, height);
     const auto color = selectionColor(b.owner, game.player().id);
-    // Paint with the terrain row, before its objects. Only the outer footprint has a border.
-    const auto antialias = target_->GetAntialiasMode();
-    target_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
-    brush_->SetColor(D2D1::ColorF(color, .16f));
-    target_->FillRectangle(rect(a.x, a.y, c.x - a.x, c.y - a.y), brush_.Get());
-    target_->SetAntialiasMode(antialias);
-    line(a, {a.x, c.y}, color, 2);
-    line({c.x, a.y}, c, color, 2);
-    if (row == b.origin.y) line(a, {c.x, a.y}, color, 2);
-    if (row + 1 == b.origin.y + b.definition.height) line({a.x, c.y}, c, color, 2);
+    for (int y = 0; y < b.definition.height; ++y) for (int x = 0; x < b.definition.width; ++x) {
+        const Cell cell = b.origin + Cell{x, y};
+        if (cell.x + cell.y != row) continue;
+        const auto corners = game.map().surfaceCorners(cell, view);
+        polygon(corners, color, .16f);
+        if (y == 0) line(corners[0], corners[1], color, 2);
+        if (x + 1 == b.definition.width) line(corners[1], corners[2], color, 2);
+        if (y + 1 == b.definition.height) line(corners[2], corners[3], color, 2);
+        if (x == 0) line(corners[3], corners[0], color, 2);
+    }
 }
 
 void Renderer::buildingSprite(const Simulation& game, const Building& b, const WorldView& view, bool selected) {

@@ -139,6 +139,7 @@ add_visages_app(VisagesForge "Visages Forge" "Visages.Forge"
     src/platform/ForgeMain.cpp
     src/forge/ForgeApplication.cpp
     src/forge/ForgeDocument.cpp
+    src/forge/ForgeDialogs.rc
     src/forge/ForgeInput.cpp
     src/forge/ForgePlaytest.cpp
     src/forge/ForgeSmoke.cpp

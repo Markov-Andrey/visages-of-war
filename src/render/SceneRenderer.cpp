@@ -32,6 +32,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         return UiRect{p.x - radius, p.y - radius, radius * 2, radius * 2};
     };
     target_->PushAxisAlignedClip(rect(layout.world.x, layout.world.y, layout.world.width, layout.world.height), D2D1_ANTIALIAS_MODE_ALIASED);
+
     const auto onScreen = [&](Vec2 p) { return p.x > -250 && p.x < extent.x + 250 && p.y > -80 && p.y < extent.y; };
     enum class Kind { Crystal, Environment, Decoration, Building, Corpse, Bones, Unit, RallyPoint };
     struct Item { float depth; Kind kind; size_t index; };
@@ -41,18 +42,18 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         onScreen(view.project(center(b.origin), float(map.at(b.origin).height)))) groundSelections.push_back(&b);
     for (size_t i = 0; i < game.landscape().decorations.size(); ++i) {
         const auto p = game.landscape().decorations[i].position;
-        if (game.fog().explored({int(p.x), int(p.y)})) items.push_back({p.y, Kind::Decoration, i});
+        if (game.fog().explored({int(p.x), int(p.y)})) items.push_back({p.x + p.y, Kind::Decoration, i});
     }
     for (size_t i = 0; i < game.crystals().size(); ++i) if (game.knownCrystal(i) > 0)
         items.push_back({game.crystals()[i].depth(), Kind::Crystal, i});
     for (size_t i = 0; i < game.environment().size(); ++i) if (game.knownEnvironment(i)) {
         const auto& object = game.environment()[i];
-        items.push_back({object.origin.y + object.height - .5f, Kind::Environment, i});
+        items.push_back({object.origin.x + object.origin.y + object.width + object.height - 1.0f, Kind::Environment, i});
     }
     for (size_t i = 0; i < game.buildings().size(); ++i) if (game.buildings()[i].health > 0 && buildingVisible(game, game.buildings()[i]))
         items.push_back({buildingDepth(game.buildings()[i]), Kind::Building, i});
     for (size_t i = 0; i < game.buildings().size(); ++i) if (rallyPointVisible(game, game.buildings()[i], ui))
-        items.push_back({game.buildings()[i].rally.y + .5f, Kind::RallyPoint, i});
+        items.push_back({game.buildings()[i].rally.x + game.buildings()[i].rally.y + 1.0f, Kind::RallyPoint, i});
     for (size_t i = 0; i < game.corpses().size(); ++i) if (game.fog().visible(game.corpses()[i].cell))
         items.push_back({unitDrawDepth(game.corpses()[i].position), Kind::Corpse, i});
     for (size_t i = 0; i < game.bones().size(); ++i) if (game.fog().visible(game.bones()[i].cell))
@@ -61,9 +62,9 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         items.push_back({unitDrawDepth(game.units()[i].position), Kind::Unit, i});
     std::stable_sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.depth < b.depth; });
     size_t nextItem = 0;
-    // Draw back-to-front by ground row, with all objects ordered by their ground anchor.
+    // Draw back-to-front by ground diagonal, with all objects ordered by their ground anchor.
     // Foreground elevated terrain is allowed to occlude lower objects behind its edge.
-    for (int y = 0; y < map.height(); ++y) {
+    for (int y = 0; y < map.width() + map.height(); ++y) {
         terrainRow(map, y, view, grid, true);
         worldOpacity_ = 1;
         for (const auto* building : groundSelections) buildingGroundSelection(game, *building, view, y);
@@ -106,7 +107,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                 UiRect bounds{p.x - 60 * view.zoom, p.y - 110 * view.zoom, (120 + object.width * 64.f) * view.zoom, 155 * view.zoom};
                 if (!object.definitionId.empty() && !worldAssets_.object(object.definitionId).image.empty())
                     bounds = objectBounds(worldAssets_.object(object.definitionId),
-                        {object.origin.x + object.width * .5f, object.origin.y + object.height - .5f}, 1, 0);
+                        {object.origin.x + object.width - .5f, object.origin.y + object.height - .5f}, 1, 0);
                 const bool masked = worldOpacity_ == 1 && beginUnitOcclusion(game, view, item.depth, bounds);
                 environmentObject(object, map, view);
                 if (masked) target_->PopLayer();
@@ -145,7 +146,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     worldOpacity_ = 1;
     std::vector<const Unit*> flyers;
     for (const auto& u : game.units()) if (airborne(u.definition.movement) && game.fog().visible(u.cell)) flyers.push_back(&u);
-    std::stable_sort(flyers.begin(), flyers.end(), [](const Unit* a, const Unit* b) { return a->position.y < b->position.y; });
+    std::stable_sort(flyers.begin(), flyers.end(), [](const Unit* a, const Unit* b) { return unitDrawDepth(a->position) < unitDrawDepth(b->position); });
     for (const auto* u : flyers) unitSprite(game, *u, view, ui.selection.contains(u->id), hoverUnit == u->id, feedbackAge(u->id));
     drawProjectiles(game, view);
     if (grid) for (size_t i = 0; i < game.environment().size(); ++i) {

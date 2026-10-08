@@ -97,7 +97,7 @@ WorldAssets WorldAssets::load(const Paths& paths) {
         m.group = j.value("group", std::string("Core"));
         m.image = utf8Path(j.at("image").get<std::string>()); paths.asset(m.image);
         m.repeatCells = number(j.at("repeatCells"), .25f, 128);
-        m.isometric = j.value("isometric", true);
+        m.isometric = j.value("isometric", false);
         const auto tint = j.value("tint", std::string("ffffff"));
         if (tint.size() != 6 || tint.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos) throw std::runtime_error("Invalid texture tint");
         m.tint = static_cast<unsigned>(std::stoul(tint, nullptr, 16));

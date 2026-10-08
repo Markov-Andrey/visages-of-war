@@ -22,14 +22,14 @@ inline constexpr CameraTuning cameraTuning{};
 class CameraController {
 public:
     static Vec2 edgeDirection(Vec2 mouse, Vec2 extent);
-    void setBounds(WorldView& view, Vec2 viewportOrigin, Vec2 viewportSize, Vec2 mapSize);
+    void setBounds(WorldView& view, Vec2 viewportOrigin, Vec2 viewportSize, Vec2 mapSize, Vec2 mapMinimum = {});
     void focus(WorldView& view, Vec2 world, Vec2 screenCenter, bool immediate = false);
     void zoom(WorldView& view, Vec2 anchor, float wheelSteps);
     void zoomTo(WorldView& view, Vec2 anchor, float zoom);
     void stop(const WorldView& view);
     void update(WorldView& view, Vec2 screenCenter, Vec2 direction, float elapsed);
 private:
-    struct Bounds { Vec2 origin, size, mapSize; };
+    struct Bounds { Vec2 origin, size, mapSize, mapMinimum; };
     std::optional<Bounds> bounds_;
     Vec2 boundedOrigin(const WorldView& view, Vec2 origin) const;
     void constrain(WorldView& view);

@@ -3,11 +3,21 @@
 namespace rts {
 using namespace render;
 void Renderer::terrainRow(const Map& map, int row, const WorldView& view, bool grid, bool fog) {
+    const bool cropped = map.layoutSize() != Cell{};
+    if (cropped) {
+        const auto a = view.origin + map.groundMinimum() * view.zoom;
+        const auto e = map.groundExtent() * view.zoom;
+        target_->PushAxisAlignedClip(rect(a.x, a.y, e.x, e.y), D2D1_ANTIALIAS_MODE_ALIASED);
+    }
     const auto drawEarly = [&](Cell cell) {
-        if (cell.y == 0) return false;
+        if (cell.x == 0 || cell.y == 0) return false;
         const auto& current = map.at(cell);
-        const auto& previous = map.at(cell + Cell{0, -1});
-        return current.height == previous.height && current.ramp == Cell{} && previous.ramp == Cell{};
+        if (current.ramp != Cell{}) return false;
+        for (Cell d : {Cell{-1, 0}, Cell{0, -1}}) {
+            const auto& previous = map.at(cell + d);
+            if (current.height != previous.height || previous.ramp != Cell{}) return false;
+        }
+        return true;
     };
     const auto extent = size();
     const auto draw = [&](Cell cell) {
@@ -16,14 +26,17 @@ void Renderer::terrainRow(const Map& map, int row, const WorldView& view, bool g
         worldOpacity_ = 1;
         tile(map, cell, view, grid, fog);
     };
-    for (int x = 0; x < map.width(); ++x)
-        if (!drawEarly({x, row})) draw({x, row});
-    // Paint the next row of continuous flat ground before this row's objects.
-    // Lower-third anchors let rings/shadows spill across the cell boundary;
-    // painting that ground later would erase their lower edge. Each tile is
-    // still painted once, and cliffs/slopes retain their foreground ordering.
-    if (row + 1 < map.height()) for (int x = 0; x < map.width(); ++x)
-        if (drawEarly({x, row + 1})) draw({x, row + 1});
+    const auto diagonal = [&](int depth, bool early) {
+        for (int x = std::max(0, depth - map.height() + 1); x <= std::min(map.width() - 1, depth); ++x) {
+            const Cell c{x, depth - x};
+            if (drawEarly(c) == early) draw(c);
+        }
+    };
+    diagonal(row, false);
+    // Paint continuous foreground ground before rings, shadows and sprite feet.
+    // Cliffs and ramps retain their diagonal painter order.
+    diagonal(row + 1, true);
+    if (cropped) target_->PopAxisAlignedClip();
 }
 
 void Renderer::updateFogMask(const Simulation& game) {
@@ -92,6 +105,7 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
         target_->SetTransform(previous);
     }
     if (tile.surface != Surface::Land) waterTile(map, c, view);
+    if (map.layoutSize() != Cell{} && !map.playable(c)) polygon(top, 0x29352b, .45f);
     if (tile.ramp != Cell{}) {
         polygon(top, 0x8c8260, .7f);
         for (int i = 1; i < 5; ++i) {

@@ -5,9 +5,10 @@
 
 namespace rts {
 WorldView editorOverview(const Map& map, UiRect area) {
-    const float zoom=std::min((area.width-40)/(WorldView::tileSize*map.width()),(area.height-40)/(WorldView::tileSize*map.height()));
-    return {{area.x+(area.width-WorldView::tileSize*map.width()*zoom)*.5f,
-             area.y+(area.height-WorldView::tileSize*map.height()*zoom)*.5f},zoom};
+    const auto size = map.groundExtent(), minimum = map.groundMinimum();
+    const float zoom = std::min((area.width-40)/size.x, (area.height-40)/size.y);
+    return {{area.x+(area.width-size.x*zoom)*.5f-minimum.x*zoom,
+             area.y+(area.height-size.y*zoom)*.5f-minimum.y*zoom},zoom};
 }
 EditorLayout::EditorLayout(Vec2 size) {
     const float width=286;
@@ -171,7 +172,7 @@ bool WorldEditor::applyOne(Vec2 p) {
             const auto d=directions[direction%4]; const Cell side{-d.y,d.x};
             for(int i=-1;i<=1;++i) {
                 const Cell at=c+Cell{side.x*i,side.y*i};
-                if(!s.map.contains(at)||!s.map.contains(at+d)||s.map.occupancy(at)||s.map.occupancy(at+d)) throw std::runtime_error("Ramp needs three clear lanes");
+                if(!s.map.playable(at)||!s.map.playable(at+d)||s.map.occupancy(at)||s.map.occupancy(at+d)) throw std::runtime_error("Ramp needs three clear lanes");
                 s.map.at(at).ramp=d;
             }
             changed=true;

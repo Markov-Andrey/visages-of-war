@@ -88,7 +88,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         constexpr std::array<Cell, 8> directions{{{0,1},{1,1},{1,0},{1,-1},{0,-1},{-1,-1},{-1,0},{-1,1}}};
         for (size_t row = 0; row < 8; ++row) {
             unit.facing = directions[row];
-            require(unitFrame(unit).row == int(row) && unitFrame(unit).column == 0, "Stand direction does not match logical movement");
+            require(unitFrame(unit).row == (int(row) + 7) % 8 && unitFrame(unit).column == 0, "Stand direction does not match logical movement");
         }
         unit.route = {{1, 1}}; unit.position = {.1f, 0};
         for (int frame = 0; frame < 4; ++frame) {

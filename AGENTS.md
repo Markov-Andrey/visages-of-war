@@ -2,7 +2,7 @@
 
 - Target Windows 10/11 x64 only; C++20, MSVC, CMake. Project name is RTS.
 - Keep simulation in logical map coordinates, independent of render pixels and camera.
-- Terrain uses screen-aligned square cells; building/unit sprites retain their oblique perspective. Keep picking, placement and minimap consistent with WorldView.
+- Terrain uses logical square cells projected as 2:1 diamonds through WorldView. Normal authored maps use Map::rectangular with dimensions divisible by 32; the projected outer boundary stays rectangular and clipped cells are never playable, including for air. Keep picking, placement, camera and minimap consistent with this geometry. Map(width,height) is the uncropped logical-grid constructor for diagnostic fixtures.
 - Keep walkability rules in `Map::canStep`; test changes involving ramps, corners and height transitions.
 - Water depth is a surface type independent of elevation. Thread unit movement types through navigation, interactions, production and rally checks; air has separate dynamic occupancy.
 - Shallow and deep water share a flat elevation of -1 in the demo. Coastal ramps are dry lower land tiles pointing uphill; crossing a shore cliff without a ramp is forbidden for ground movement.

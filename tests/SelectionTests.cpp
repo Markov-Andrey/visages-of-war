@@ -213,7 +213,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
                 "A click outside the world changed selection");
             require(!selection.selectTypeInView(game, view, viewport, {viewport.x + 1, viewport.y + 1}, false) && selection.ids == selected,
                 "A ground double click selected a unit type");
-            auto panned = view; panned.origin.x -= 20 * rts::WorldView::tileSize * zoom;
+            auto panned = view; panned.origin = panned.origin - (view.project({20,0}) - view.project({0,0}));
             require(selection.selectTypeInView(game, panned, viewport, point, false) && selection.ids == std::vector{distant},
                 "Type selection ignored the camera position");
         }
@@ -696,29 +696,42 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         selection.click(game, view, p, false);
         require(selection.contains(nodeId), "Resource could not be selected after regaining sight");
     });
-    test("Minimap shares square axes, picking and clipped camera bounds", [] {
-        rts::Map map(64, 40);
-        const rts::UiRect area{10, 20, 164, 164};
-        const rts::MinimapProjection mini(area, map);
-        const auto origin = mini.project({0, 0}), x = mini.project({1, 0}), y = mini.project({0, 1});
-        require(x.x > origin.x && x.y == origin.y && y.x == origin.x && y.y > origin.y, "Minimap axes rotated or reflected");
-        require(std::abs((x.x - origin.x) - (y.y - origin.y)) < .01f, "Minimap cells are not square");
-        for (int cy = 0; cy < map.height(); ++cy) for (int cx = 0; cx < map.width(); ++cx)
-            require(mini.pick(mini.project(rts::center({cx, cy}))) == rts::Cell{cx, cy}, "Minimap click missed displayed tile");
-        require(!mini.pick({area.x + 1, area.y + 1}) && !mini.pick({area.x + 162, area.y + 162}), "Non-square map letterboxing accepted");
-        const rts::MinimapProjection square(area, rts::Map(64, 64));
-        require(square.pick({area.x + 1, area.y + 1}) == rts::Cell{0, 0} &&
-                square.pick({area.x + 163, area.y + 163}) == rts::Cell{63, 63}, "Square map does not fill minimap corners");
-        rts::WorldView camera{{0, 0}, .8f};
-        const rts::UiRect world{0, 58, 1440, 638};
-        camera.origin = rts::Vec2{720, 377} - camera.project({24, 20});
-        const auto visible = mini.viewport(camera, world);
-        require(visible.size() == 4, "Interior camera outline clipped incorrectly");
-        require(std::abs(visible[0].y - visible[1].y) < .001f && std::abs(visible[1].x - visible[2].x) < .001f, "Camera outline is rotated");
-        camera.origin = {720, 60};
-        for (rts::Vec2 p : mini.viewport(camera, world)) {
-            p = mini.unproject(p);
-            require(p.x >= -.001f && p.y >= -.001f && p.x <= map.width() + .001f && p.y <= map.height() + .001f, "Outline escaped map");
+    test("Minimap refreshes a changed rectangular crop with identical backing dimensions", [] {
+        const auto tall=Map::rectangular(64,96), wide=Map::rectangular(128,64);
+        require(tall.width()==wide.width(),"Fixture backing dimensions differ");
+        FogOfWar fog(tall.width(),tall.height()); fog.revealAll();
+        FogMask mask; mask.update(fog,tall.width(),tall.height());
+        MinimapRaster raster; raster.update(tall,fog,mask);
+        const auto before=raster.pixels();
+        require(raster.update(wide,fog,mask) && raster.pixels()!=before,"Replacement layout retained the previous minimap crop");
+        require(!raster.update(wide,fog,mask),"Unchanged crop rebuilt the minimap");
+    });
+    test("Minimap shares isometric picking and a rectangular camera outline", [] {
+        auto map=Map::rectangular(96,64);
+        const UiRect area{10,20,164,164};
+        const MinimapProjection mini(area,map);
+        const auto origin=mini.project({0,0}), x=mini.project({1,0}), y=mini.project({0,1});
+        require(x.x>origin.x && x.y>origin.y && y.x<origin.x && y.y>origin.y,"Minimap axes differ from terrain");
+        for(int cy=0;cy<map.height();++cy) for(int cx=0;cx<map.width();++cx) {
+            const Cell c{cx,cy};
+            const auto picked=mini.pick(mini.project(center(c)));
+            require(map.playable(c)?picked==c:!picked,"Minimap accepted a partial cell or missed a complete one");
+        }
+        require(!mini.pick({11,21}) && !mini.pick({173,183}),"Letterboxing is interactive");
+        const MinimapProjection square(area,Map::rectangular(64,64));
+        for(Vec2 p:{Vec2{area.x+4,area.y+4},Vec2{area.x+160,area.y+160}})
+            require(square.pick(p).has_value(),"Square field does not fill minimap corners");
+        WorldView camera{{0,0},.8f};
+        const UiRect world{0,58,1440,638};
+        camera.origin=Vec2{720,377}-camera.project({56,56});
+        const auto visible=mini.viewport(camera,world);
+        require(visible.size()==4 && std::abs(visible[0].y-visible[1].y)<.001f &&
+            std::abs(visible[1].x-visible[2].x)<.001f,"Camera outline is rotated");
+        camera.origin={720,60};
+        for(Vec2 p:mini.viewport(camera,world)) {
+            p=WorldView{}.project(mini.unproject(p));
+            const auto a=map.groundMinimum(),b=a+map.groundExtent();
+            require(p.x>=a.x-.01f && p.y>=a.y-.01f && p.x<=b.x+.01f && p.y<=b.y+.01f,"Outline escaped rectangular crop");
         }
     });
     test("Locomotion uses step frames, retains facing and pauses with actual movement", [] {
@@ -729,7 +742,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             game.tick();
             const auto frame = rts::locomotionFrame(game.worker());
             require(frame.column >= 0 && frame.column < 4, "Walk selected sword or other action frames");
-            require(frame.row == 2, "East step did not face screen east");
+            require(frame.row == 1, "Logical east step did not face screen southeast");
             seen[frame.column] = true;
         }
         require(std::all_of(seen.begin(), seen.end(), [](bool value) { return value; }), "Walk never cycled through steps");
@@ -737,7 +750,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         const auto stopped = rts::locomotionFrame(game.worker());
         const float phase = game.worker().walkCycle;
         ticks(game, 10);
-        require(stopped.column == 0 && stopped.row == 2 && game.worker().walkCycle == phase, "Stopped unit walked or lost facing");
+        require(stopped.column == 0 && stopped.row == 1 && game.worker().walkCycle == phase, "Stopped unit walked or lost facing");
         rts::Unit waiting = game.worker(); waiting.route = {{0, 0}, {1, 0}}; waiting.next = 1; waiting.blockedTicks = 2;
         require(rts::locomotionFrame(waiting).column == 0, "Waiting unit walked in place");
     });

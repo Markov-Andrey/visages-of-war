@@ -31,6 +31,6 @@ void Renderer::drawMinimap(const Simulation& game, const BattleLayout& layout, c
         dot(u.position, u.owner == game.player().id ? teamColor_ : enemyColor_, 1.5f);
     const auto viewport = miniView.viewport(view, layout.world);
     polygon(viewport, 0xd1e8e0, .8f, false);
-    text(std::to_wstring(game.map().width()) + L" × " + std::to_wstring(game.map().height()) + L"  /  Home — база", rect(mini.x, size().y - 19, 200, 18), 0x6e9395);
+    text(std::to_wstring(game.map().layoutSize() == Cell{} ? game.map().width() : game.map().layoutSize().x) + L" × " + std::to_wstring(game.map().layoutSize() == Cell{} ? game.map().height() : game.map().layoutSize().y) + L"  /  Home — база", rect(mini.x, size().y - 19, 200, 18), 0x6e9395);
 }
 }

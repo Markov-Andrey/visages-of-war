@@ -25,7 +25,7 @@ inline UiRect buildingLayerBounds(const BuildingSpriteStage& stage, const Buildi
 }
 UiRect buildingBounds(const Simulation& game, const Building& building, const WorldView& view);
 UiRect crystalBounds(const Simulation& game, const Crystal& crystal, const WorldView& view);
-inline float buildingDepth(const Building& building) { return building.origin.y + building.definition.height - .15f; }
+inline float buildingDepth(const Building& building) { return building.origin.x + building.origin.y + building.definition.width + building.definition.height - .3f; }
 bool buildingVisible(const Simulation& game, const Building& building);
 bool selectableEntity(const Simulation& game, EntityId id);
 std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view, Vec2 point);

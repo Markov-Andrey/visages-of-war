@@ -22,15 +22,16 @@ Vec2 CameraController::edgeDirection(Vec2 mouse, Vec2 extent) {
     };
     return {axis(mouse.x, extent.x), axis(mouse.y, extent.y)};
 }
-void CameraController::setBounds(WorldView& view, Vec2 viewportOrigin, Vec2 viewportSize, Vec2 mapSize) {
+void CameraController::setBounds(WorldView& view, Vec2 viewportOrigin, Vec2 viewportSize, Vec2 mapSize, Vec2 mapMinimum) {
     if (viewportSize.x <= 0 || viewportSize.y <= 0 || mapSize.x <= 0 || mapSize.y <= 0) return;
-    bounds_ = Bounds{viewportOrigin, viewportSize, mapSize};
+    bounds_ = Bounds{viewportOrigin, viewportSize, mapSize, mapMinimum};
     constrain(view);
 }
 Vec2 CameraController::boundedOrigin(const WorldView& view, Vec2 origin) const {
     if (!bounds_) return origin;
-    const auto axis = [&](float value, float start, float size, float cells) {
-        const float mapPixels = cells * WorldView::tileSize * view.zoom;
+    const auto axis = [&](float value, float start, float size, float pixels, float minimumPixel) {
+        const float mapPixels = pixels * view.zoom;
+        start -= minimumPixel * view.zoom;
         // Shrink the reserve continuously as the whole map starts fitting the viewport.
         if (mapPixels <= size) return start + (size - mapPixels) * .5f;
         const float margin = std::min({cameraTuning.borderMargin, size * .2f, (mapPixels - size) * .5f});
@@ -38,8 +39,8 @@ Vec2 CameraController::boundedOrigin(const WorldView& view, Vec2 origin) const {
         const float maximum = start + margin;
         return std::clamp(value, minimum, maximum);
     };
-    return {axis(origin.x, bounds_->origin.x, bounds_->size.x, bounds_->mapSize.x),
-        axis(origin.y, bounds_->origin.y, bounds_->size.y, bounds_->mapSize.y)};
+    return {axis(origin.x, bounds_->origin.x, bounds_->size.x, bounds_->mapSize.x, bounds_->mapMinimum.x),
+        axis(origin.y, bounds_->origin.y, bounds_->size.y, bounds_->mapSize.y, bounds_->mapMinimum.y)};
 }
 void CameraController::constrain(WorldView& view) {
     const auto bounded = boundedOrigin(view, view.origin);

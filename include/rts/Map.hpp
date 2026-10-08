@@ -21,6 +21,15 @@ struct Tile {
 class Map {
 public:
     Map(int width, int height);
+    // Screen-rectangular field, in nominal 64-pixel map units (multiples of 32).
+    // Storage includes the clipped diamonds; only complete cells are playable.
+    static Map rectangular(int width, int height);
+    Cell layoutSize() const { return layoutSize_; }
+    Vec2 groundMinimum() const;
+    Vec2 groundExtent() const;
+    bool withinGround(Vec2 projected) const;
+    bool playable(Cell c) const;
+    static bool completeCell(Cell c, Cell layoutSize);
     int width() const { return width_; }
     int height() const { return height_; }
     bool contains(Cell c) const;
@@ -50,6 +59,7 @@ private:
     bool cardinalStep(Cell from, Cell to, MovementType movement) const;
     int width_;
     int height_;
+    Cell layoutSize_{};
     std::vector<Tile> tiles_;
     std::vector<unsigned> occupancy_;
     std::vector<bool> visionBlockers_;
@@ -65,7 +75,7 @@ struct Crystal {
     int width = 1, height = 1, capacity = defaultReserve; // Derived from the resource catalog.
     bool contains(Cell c) const { return c.x >= cell.x && c.y >= cell.y && c.x < cell.x + width && c.y < cell.y + height; }
     Vec2 center() const { return {cell.x + width * .5f, cell.y + height * .5f}; }
-    float depth() const { return cell.y + height - .5f; }
+    float depth() const { return cell.x + cell.y + width + height - 1.0f; }
 };
 struct UnitSpawn { std::string definitionId; PlayerId owner{}; Cell cell; };
 struct Scenario {

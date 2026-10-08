@@ -220,58 +220,66 @@ void dataTests(TestSuite& test, const TestContext& context) {
     test("Sunny Hills connects its compact village to every bench category and both water depths", [&] {
         const auto& world=context.worldAssets;
         const auto s=rts::loadScenario(assets/"maps/sunny-hills.rtsmap",world,context.hallFootprint);
-        require(s.map.width()==96&&s.map.height()==64,"Showcase with Ink bench must be 96 by 64");
+        require(s.map.layoutSize()==Cell{96,64},"Showcase with Ink bench must be 96 by 64");
+        const auto authoredX=[](Vec2 p) { return p.x-p.y+48; };
+        const auto objectX=[&](const auto& o) { return authoredX({o.origin.x+o.width-.5f,o.origin.y+o.height-.5f}); };
+        const auto cell=[](Cell p) { return Cell{int(std::floor(p.x*.5f+p.y+.75f)),int(std::floor(p.y-p.x*.5f+48.25f))}; };
         size_t objectCount=0,materialCount=0;
         for(const auto& d:world.objects()) if(d.id.starts_with("sunny_hills.")) {
             ++objectCount; int galleryCount=0;
-            for(const auto& o:s.environment) if(o.definitionId==d.id&&o.origin.x>=42) ++galleryCount;
-            for(const auto& o:s.landscape.decorations) if(o.definitionId==d.id&&o.position.x>=42) ++galleryCount;
+            for(const auto& o:s.environment) if(o.definitionId==d.id&&objectX(o)>=40) ++galleryCount;
+            for(const auto& o:s.landscape.decorations) if(o.definitionId==d.id&&authoredX(o.position)>=40) ++galleryCount;
             require(galleryCount==1,"Gallery must include exactly one of every object variant");
             if(!d.gameplay) require(!d.blocksVision&&std::none_of(d.collision.begin(),d.collision.end(),[](bool v){return v;}),"Cosmetic art affects traversal");
         }
         for(const auto& m:world.materials()) if(m.id.starts_with("sunny_hills.")) {
             ++materialCount;
-            require(std::any_of(s.landscape.paint.begin(),s.landscape.paint.end(),[&](const auto& p){return p.material==m.id&&p.position.x>=42;}),"Material missing from gallery");
+            require(std::any_of(s.landscape.paint.begin(),s.landscape.paint.end(),[&](const auto& p){return p.material==m.id&&authoredX(p.position)>=40;}),"Material missing from gallery");
         }
         require(objectCount==185&&materialCount==6,"Imported variant count changed without updating the showcase");
         size_t inkObjects=0, inkMaterials=0;
         for (const auto& d : world.objects()) if (d.id.starts_with("sunny_hills_ink.")) {
             ++inkObjects;
             require(std::count_if(s.environment.begin(), s.environment.end(), [&](const auto& o) {
-                return o.definitionId == d.id && o.origin.x >= 82;
+                return o.definitionId == d.id && objectX(o) >= 80;
             }) == 1, "Ink bench must show each new object exactly once");
             require(d.blocksVision == (d.id != "sunny_hills_ink.winery"), "Ink object sight rules differ from their category");
         }
         for (const auto& m : world.materials()) if (m.id.starts_with("sunny_hills_ink.")) {
             ++inkMaterials;
             require(std::any_of(s.landscape.paint.begin(), s.landscape.paint.end(), [&](const auto& p) {
-                return p.material == m.id && p.position.x >= 82;
+                return p.material == m.id && authoredX(p.position) >= 80;
             }), "Ink material is missing from the eastern bench");
         }
         require(inkObjects == 22 && inkMaterials == 5, "Ink import lost variants");
         require(s.landscape.baseMaterial == "sunny_hills_ink.meadow", "Village did not adopt the new ground");
-        for (const auto& o : s.environment) if (o.origin.x < 40)
+        for (const auto& o : s.environment) if (objectX(o) < 40)
             require(!o.definitionId.starts_with("sunny_hills.tree.") && o.definitionId != "sunny_hills.vineyard.winery" &&
                 o.definitionId != "sunny_hills.vineyard.cellar" && o.definitionId != "sunny_hills.vineyard.vine_a" &&
                 o.definitionId != "sunny_hills.vineyard.vine_b", "Village retained an old counterpart of new Ink art");
-        for(const rts::Cell goal: {rts::Cell{21,32},{18,8},{29,20},{33,43},{6,32},{5,32},
+        for(const rts::Cell authoredGoal: {rts::Cell{21,32},{18,8},{29,20},{33,43},{6,32},{5,32},
                                   {40,28},{40,60},{40,13},{63,7},{68,7},{80,12},{80,33},{80,60},{88,55}}) {
+            const auto goal=cell(authoredGoal);
             require(rts::findPath(s.map,s.worker,goal).has_value(),"Village, vineyard, beach or bench is unreachable");
             require(rts::findUnitPathTo(s.map,rts::center(s.worker),rts::center(goal),{},.35f,rts::MovementType::Walking).has_value(),
                 "Village-to-bench route is too narrow for a unit collision circle");
         }
-        require(s.map.at({68,7}).surface==rts::Surface::ShallowWater&&s.map.at({72,7}).surface==rts::Surface::DeepWater,
+        const Cell shallow{40,19}, deep=cell({72,7});
+        require(s.map.at(shallow).surface==Surface::ShallowWater && s.map.at(deep).surface==Surface::DeepWater,
             "Bench water samples missing");
-        for (const Cell cell : {Cell{5,32}, Cell{68,7}})
-            require(std::any_of(s.units.begin(), s.units.end(), [&](const auto& u) {
-                return u.cell == cell && u.definitionId == "human.peacemaker" && u.owner == 0;
-            }), "Water demonstration lost its wading peacemaker");
-        require(std::abs(s.map.bedHeight({68,7}, center({68,7})) -
-            s.map.bedHeight({72,7}, center({72,7})) - 1) < .0001f, "Water bench lost its one-level bed drop");
-        require(!rts::findPath(s.map,s.worker,{72,7}).has_value()&&
-            rts::findPath(s.map,s.worker,{72,7},rts::MovementType::Flying).has_value(),
+        int waders=0;
+        for(const auto& u:s.units) if(s.map.at(u.cell).surface==Surface::ShallowWater) {
+            ++waders;
+            require(u.definitionId=="human.peacemaker" && u.owner==0,"Water demonstration lost its wading peacemaker");
+            require(findUnitPathTo(s.map,center(s.worker),center(u.cell),{},.35f,MovementType::Walking).has_value(),
+                "Wading example cannot leave the water");
+        }
+        require(waders==2,"Both water demonstrations require a unit");
+        require(std::abs(s.map.bedHeight(shallow,center(shallow))-s.map.bedHeight(deep,center(deep))-1)<.0001f,
+            "Water bench lost its one-level bed drop");
+        require(!findPath(s.map,s.worker,deep).has_value() && findPath(s.map,s.worker,deep,MovementType::Flying).has_value(),
             "Water bench no longer distinguishes ground and flying movement");
-        for(const auto& o:s.environment) if(o.origin.x<40)
+        for(const auto& o:s.environment) if(objectX(o)<40)
             require(!o.definitionId.starts_with("sunny_hills.ruin.")&&o.definitionId!="sunny_hills.vineyard.ruin",
                 "Monumental ruins leaked into the rural composition");
         for(int y=0;y<s.map.height();++y) for(int x=0;x<s.map.width();++x) {
@@ -284,7 +292,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
             for(auto at=c-across;lane(at);at=at-across) ++width;
             require(width==3&&s.map.canStep(c-t.ramp,c)&&s.map.canStep(c,c+t.ramp),"Showcase ramp narrowed or obstructed");
         }
-        require(!s.map.canStep({64,4},{65,4})&&!s.map.walkable({20,15}),
+        require(!s.map.canStep(cell({64,4}),cell({65,4})),
             "Shore cliffs or vineyard collision no longer constrain movement");
     });
     test("Large demo: workers, friendly army, hostile camp and reachable plateaus", [&] {
