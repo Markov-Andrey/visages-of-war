@@ -480,6 +480,52 @@ void visionTests(TestSuite& test, const TestContext& context) {
         rts::FogOfWar fresh(20, 20); mask.update(fresh, 20, 20);
         require(mask.lightAt({8.5f, 8.5f}) == 0 && !mask.covers({8, 8}), "A new match reused old exploration");
     });
+    test("Incremental fog pixels and upload region match a cold rebuild", [] {
+        using namespace rts;
+        FogMask mask;
+        const auto verify = [&](const FogOfWar& fog, int width, int height) {
+            const auto previous = mask.pixels();
+            const auto revision = mask.revision();
+            const bool changed = mask.update(fog, width, height);
+            FogMask cold;
+            cold.update(fog, width, height);
+            require(mask.pixels() == cold.pixels(), "Partial fog rebuild left stale pixels or changed filtering");
+            require(mask.revision() == revision + unsigned(changed), "Fog revision changed on a cache hit");
+            const auto area = mask.changedRegion();
+            for (int y = 0; y < mask.pixelHeight(); ++y) for (int x = 0; x < mask.pixelWidth(); ++x) {
+                const size_t index = static_cast<size_t>(y) * mask.pixelWidth() + x;
+                if (previous.size() == mask.pixels().size() && previous[index] != mask.pixels()[index])
+                    require(x >= area.left && x < area.right && y >= area.top && y < area.bottom,
+                        "A changed pixel fell outside the GPU upload region");
+            }
+            for (float y = -.5f; y < height + 1; y += .75f) for (float x = -.5f; x < width + 1; x += .75f)
+                require(mask.lightAt({x, y}) == cold.lightAt({x, y}), "Partial fog light samples differ");
+            if (!changed) require(area.left == area.right && area.top == area.bottom, "Cache hit retained a dirty region");
+        };
+        Map map(40, 28);
+        FogOfWar fog(40, 28);
+        verify(fog, 40, 28);
+        // Edges, corners, overlapping and separated observers, radius changes,
+        // explored transitions and replacement by another same-size map.
+        std::mt19937 random(724);
+        for (int step = 0; step < 45; ++step) {
+            const std::array<VisionSource, 2> observers{{
+                {{int(random() % 40), int(random() % 28)}, 1 + int(random() % 10), false},
+                {{step % 2 ? 0 : 39, step % 3 ? 0 : 27}, 2, true}}};
+            fog.update(map, observers); verify(fog, 40, 28);
+            verify(fog, 40, 28);
+        }
+        fog.update(map, {}); verify(fog, 40, 28);
+        fog = FogOfWar(40, 28); verify(fog, 40, 28);
+        const VisionSource near{{20, 14}, 1};
+        fog.update(map, std::span(&near, 1)); verify(fog, 40, 28);
+        const auto area = mask.changedRegion();
+        require((area.right - area.left) * (area.bottom - area.top) < mask.pixelWidth() * mask.pixelHeight() / 4,
+            "A local visibility change rebuilt the full map");
+        fog.revealAll(); verify(fog, 40, 28);
+        FogOfWar swapped(28, 40); verify(swapped, 28, 40); // Same pixel count, different stride.
+        FogOfWar tiny(1, 1); tiny.revealAll(); verify(tiny, 1, 1);
+    });
     test("Day/night transitions, midnight and pause use simulation ticks", [] {
         rts::WorldClock clock({30, 48, 359, 360, 1080}); // One tick per game minute.
         const auto dawn = clock.tick();

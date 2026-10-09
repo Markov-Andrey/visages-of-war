@@ -1,6 +1,7 @@
 #include "TestSupport.hpp"
 #include "game/CameraController.hpp"
 #include "rts/MenuBackdrop.hpp"
+#include "rts/TerrainVisibility.hpp"
 
 namespace rts::tests {
 namespace {
@@ -12,6 +13,24 @@ void advance(game::CameraController& camera, WorldView& view, int frames, float 
 }
 void cameraTests(TestSuite& test) {
     using game::CameraController;
+    test("Terrain diagonal clipping preserves every on-screen cell across cameras and zooms", [] {
+        for (const Cell size : {Cell{1, 1}, Cell{37, 83}, Cell{144, 144}, Cell{512, 512}})
+            for (float zoom : {.08f, .6f, 1.f, 2.f})
+                for (float offset : {-12000.f, -250.f, 0.f, 713.25f, 14000.f}) {
+                    const WorldView view{{offset, -800}, zoom};
+                    for (int depth = -1; depth <= size.x + size.y; ++depth) {
+                        const auto span = terrainColumns(view, size.x, size.y, depth, -250, 1690);
+                        for (int x = span.begin; x < span.end; ++x)
+                            require(x >= 0 && x < size.x && depth - x >= 0 && depth - x < size.y,
+                                "Clipped diagonal contains an invalid tile");
+                        for (int x = std::max(0, depth - size.y + 1); x < std::min(size.x, depth + 1); ++x) {
+                            const auto p = view.project(center({x, depth - x}), float(x % 5 - 1));
+                            if (p.x > -250 && p.x < 1690)
+                                require(x >= span.begin && x < span.end, "Clipping removed visible terrain");
+                        }
+                    }
+                }
+    });
     test("Camera clamps to the rectangular crop with a nonzero projected origin", [] {
         const auto map=Map::rectangular(96,64);
         const Vec2 origin{0,58}, size{1440,638}, middle=origin+size*.5f;

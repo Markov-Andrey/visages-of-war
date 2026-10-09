@@ -1,4 +1,5 @@
 #include "RenderSupport.hpp"
+#include "rts/TerrainVisibility.hpp"
 
 namespace rts {
 using namespace render;
@@ -27,7 +28,8 @@ void Renderer::terrainRow(const Map& map, int row, const WorldView& view, bool g
         tile(map, cell, view, grid, fog);
     };
     const auto diagonal = [&](int depth, bool early) {
-        for (int x = std::max(0, depth - map.height() + 1); x <= std::min(map.width() - 1, depth); ++x) {
+        const auto columns = terrainColumns(view, map.width(), map.height(), depth, -250, extent.x + 250);
+        for (int x = columns.begin; x < columns.end; ++x) {
             const Cell c{x, depth - x};
             if (drawEarly(c) == early) draw(c);
         }
@@ -52,7 +54,12 @@ void Renderer::updateFogMask(const Simulation& game) {
             D2D1::BitmapBrushProperties(D2D1_EXTEND_MODE_CLAMP, D2D1_EXTEND_MODE_CLAMP, D2D1_BITMAP_INTERPOLATION_MODE_LINEAR), fogBrush_.GetAddressOf()));
         fogBrush_->SetTransform(D2D1::Matrix3x2F::Scale(1.0f / FogMask::pixelsPerCell, 1.0f / FogMask::pixelsPerCell) *
             D2D1::Matrix3x2F::Translation(-float(FogMask::padding), -float(FogMask::padding)));
-    } else check(fogBitmap_->CopyFromMemory(nullptr, fogMask_.pixels().data(), w * 4));
+    } else {
+        const auto area = fogMask_.changedRegion();
+        const auto destination = D2D1::RectU(area.left, area.top, area.right, area.bottom);
+        check(fogBitmap_->CopyFromMemory(&destination,
+            fogMask_.pixels().data() + static_cast<size_t>(area.top) * w + area.left, w * 4));
+    }
 }
 
 void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog) {

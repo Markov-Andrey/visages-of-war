@@ -3,6 +3,8 @@
 #include "rts/Formation.hpp"
 #include "rts/Simulation.hpp"
 #include "rts/WorldEditor.hpp"
+#include "rts/FogMask.hpp"
+#include "rts/TerrainVisibility.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -25,6 +27,48 @@ template<class Work> void measure(const char* name, Work work) {
     std::sort(samples.begin(), samples.end());
     std::cout << name << ": " << std::fixed << std::setprecision(3) << samples[3]
               << " ms; checksum=" << checksum << '\n';
+}
+void presentationBenchmark() {
+    for (int size : {128, 512}) {
+        rts::Map map(size, size);
+        rts::FogOfWar first(size, size), second(size, size);
+        const rts::VisionSource a{{size / 2, size / 2}, 10}, b{{size / 2 + 1, size / 2}, 10};
+        first.update(map, std::span(&a, 1));
+        first.update(map, std::span(&b, 1));
+        second = first;
+        second.update(map, std::span(&a, 1));
+        rts::FogMask mask;
+        mask.update(first, size, size);
+        const auto name = "fog mask: " + std::to_string(size) + "x" + std::to_string(size) + " / 8 local observer changes";
+        measure(name.c_str(), [&] {
+            for (int i = 0; i < 8; ++i) mask.update(i % 2 ? first : second, size, size);
+            std::uint64_t checksum = 0;
+            for (auto pixel : mask.pixels()) checksum += pixel;
+            return checksum;
+        });
+    }
+    rts::Map terrain(512, 512);
+    for (int y = 0; y < 512; ++y) for (int x = 0; x < 512; ++x) terrain.at({x, y}).height = (x + y) % 5 - 1;
+    for (bool clipped : {false, true}) {
+        measure(clipped ? "terrain candidates: camera-bounded / 512x512 / 16 views" :
+            "terrain candidates: full scan / 512x512 / 16 views", [&] {
+            std::uint64_t checksum = 0;
+            for (int frame = 0; frame < 16; ++frame) {
+                const rts::WorldView view{{720.f + frame * 13, 450 - 512 * 32 * .85f}, .85f};
+                for (int depth = 0; depth < 1024; ++depth) {
+                    const auto columns = clipped ? rts::terrainColumns(view, 512, 512, depth, -250, 1690) :
+                        rts::TerrainColumns{std::max(0, depth - 511), std::min(512, depth + 1)};
+                    for (int x = columns.begin; x < columns.end; ++x) {
+                        const rts::Cell cell{x, depth - x};
+                        const auto p = view.project(rts::center(cell), float(terrain.at(cell).height));
+                        if (p.x > -250 && p.x < 1690 && p.y > -100 && p.y < 1080)
+                            checksum += 1 + cell.x + cell.y * 512;
+                    }
+                }
+            }
+            return checksum;
+        });
+    }
 }
 void combatBenchmark() {
     using Clock = std::chrono::steady_clock;
@@ -86,6 +130,7 @@ void editorBenchmark() {
 }
 
 int main(int argc, char** argv) {
+    if (argc == 2 && std::string_view(argv[1]) == "--presentation-only") { presentationBenchmark(); return 0; }
     if (argc == 2 && std::string_view(argv[1]) == "--combat-only") { combatBenchmark(); return 0; }
     combatBenchmark();
     rts::Map open(128, 128);
@@ -211,4 +256,5 @@ int main(int argc, char** argv) {
         return checksum;
     });
     editorBenchmark();
+    presentationBenchmark();
 }
