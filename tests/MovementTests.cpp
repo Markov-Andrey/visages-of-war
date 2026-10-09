@@ -206,7 +206,8 @@ void movementTests(TestSuite& test, const TestContext& context) {
         }
         require(rts::visionReaches(map, {{3, 3}, 8}, {6, 4}), "Shore cannot see lower water");
         require(rts::visionReaches(map, {{3, 4}, 8}, {6, 4}), "Water depth blocked vision");
-        require(!rts::visionReaches(map, {{3, 4}, 8}, {3, 3}), "Lowered water ignored high ground vision rules");
+        require(!rts::visionReaches(map, {{3, 4}, 8}, {3, 3}), "Minimum sight revealed the higher shore");
+        require(!rts::visionReaches(map, {{3, 5}, 8}, {3, 3}), "Lowered water ignored distant high ground vision rules");
     });
     test("Water movement matrix, corners, cliffs and independent air layer", [] {
         using M = rts::MovementType; using S = rts::Surface;

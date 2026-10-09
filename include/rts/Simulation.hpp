@@ -242,7 +242,7 @@ private:
     void resolveHits(const std::vector<Hit>& hits);
     void rewardKill(const Unit& victim, PlayerId killer);
     void chase(Unit& attacker, const Unit& target);
-    void updateVision();
+    void updateVision(bool force = true);
     Scenario scenario_;
     PlayerSettings player_;
     EntityDefinition workerType_;
@@ -252,6 +252,7 @@ private:
     ArmySupply supply_;
     WorldClock clock_;
     FogOfWar fog_;
+    std::vector<VisionSource> visionSources_;
     std::vector<int> knownCrystals_;
     std::vector<bool> knownEnvironment_;
     std::vector<WorldEvent> events_;

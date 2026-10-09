@@ -118,15 +118,17 @@ void Simulation::revealMap() {
     updateVision();
     setMessage(L"Вся карта открыта до конца матча.");
 }
-void Simulation::updateVision() {
+void Simulation::updateVision(bool force) {
     std::vector<VisionSource> sources;
     const bool day = clock_.phase() == DayPhase::Day;
-    for (const auto& u : units_) if (u.owner == player_.id) sources.push_back({u.cell, day ? u.definition.dayVision : u.definition.nightVision, airborne(u.definition.movement)});
-    for (const auto& b : buildings_) if (b.owner == player_.id) {
+    for (const auto& u : units_) if (u.owner == player_.id && u.health > 0) sources.push_back({u.cell, day ? u.definition.dayVision : u.definition.nightVision, airborne(u.definition.movement)});
+    for (const auto& b : buildings_) if (b.owner == player_.id && b.health > 0) {
         const int radius = b.complete() ? (day ? b.definition.dayVision : b.definition.nightVision) : 2;
         sources.push_back({b.origin + Cell{b.definition.width / 2, b.definition.height / 2}, radius});
     }
-    fog_.update(map(), sources);
+    if (!force && sources == visionSources_) return;
+    visionSources_ = std::move(sources);
+    fog_.update(map(), visionSources_);
     for (size_t i = 0; i < crystals().size(); ++i) if (crystalVisible(crystals()[i])) knownCrystals_[i] = crystals()[i].remaining;
     for (size_t i = 0; i < environment().size(); ++i) if (environmentVisible(i)) knownEnvironment_[i] = environment()[i].active();
 }
@@ -159,8 +161,13 @@ void Simulation::tick() {
             u->facing = u->motionFacing.update(u->facing, u->position - u->tickPosition, speed / ticksPerSecond);
         }
     }
+    // Cell/radius changes must affect targeting and presentation in this tick.
+    // An unchanged observer set does not need another full fog raster update.
+    updateVision(false);
     tickCombat(); // Damage is simultaneous; removals happen after all movement pointers are no longer used.
     tickProduction();
-    if (phase || clock_.elapsedTicks() % 5 == 0) updateVision();
+    // Combat and production may remove or add observers. Periodic forced updates
+    // also refresh remembered resources and externally changed terrain.
+    updateVision(clock_.elapsedTicks() % 5 == 0);
 }
 }

@@ -4,7 +4,12 @@
 
 namespace rts {
 enum class Visibility : unsigned char { Unexplored, Explored, Visible };
-struct VisionSource { Cell cell; int radius; bool air{}; };
+struct VisionSource {
+    Cell cell;
+    int radius;
+    bool air{};
+    bool operator==(const VisionSource&) const = default;
+};
 bool visionReaches(const Map& map, VisionSource source, Cell target);
 class FogOfWar {
 public:

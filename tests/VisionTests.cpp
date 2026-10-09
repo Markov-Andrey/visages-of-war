@@ -4,6 +4,86 @@
 
 namespace rts::tests {
 void visionTests(TestSuite& test, const TestContext& context) {
+    test("Minimum sight respects cliffs and blockers while downward sight retains its radius", [&] {
+        Map map(12,12); FogOfWar fog(12,12);
+        for (int y=0;y<12;++y) map.at({6,y}).height=1;
+        const std::array objects{context.worldAssets.instantiate("tree",1000,{5,6})};
+        map.rebuildVisionBlockers(objects);
+        for (int radius : {1,8}) {
+            const VisionSource source{{5,5},radius};
+            fog.update(map,std::span<const VisionSource>(&source,1));
+            for (int y=4;y<=6;++y) for (int x=4;x<=6;++x) {
+                const bool expected=x!=6;
+                require(fog.visible({x,y})==expected && visionReaches(map,source,{x,y})==expected,
+                    "Minimum sight revealed a higher neighbour or lost a same-level neighbour");
+            }
+            require(!fog.visible({7,5}) && !visionReaches(map,source,{7,5}), "Proximity sight revealed beyond a cliff");
+            require(!fog.visible({5,7}) && !visionReaches(map,source,{5,7}), "Proximity sight revealed behind a tree");
+        }
+        const VisionSource high{{6,5},8};
+        fog.update(map,std::span<const VisionSource>(&high,1));
+        require(fog.visible({2,5}) && visionReaches(map,high,{2,5}), "Downward sight was limited to one cell");
+        const VisionSource air{{5,5},1,true};
+        fog.update(map,std::span<const VisionSource>(&air,1));
+        require(fog.visible({6,5}) && visionReaches(map,air,{6,5}), "Cliff incorrectly blocked adjacent air sight");
+        for (Cell edge : {Cell{0,0},{11,0},{0,11},{11,11}}) {
+            const VisionSource source{edge,1};
+            fog.update(map,std::span<const VisionSource>(&source,1));
+            for (int y=0;y<12;++y) for (int x=0;x<12;++x)
+                require(fog.visible({x,y}) == (std::abs(x-edge.x)<=1 && std::abs(y-edge.y)<=1),
+                    "Minimum sight is not a clipped one-cell neighbourhood");
+        }
+    });
+    test("Ramp movement keeps sight and selection every tick and reveals the plateau immediately", [] {
+        for (Cell direction : {Cell{1,0},{-1,0},{0,1},{0,-1}}) for (int minute : {720,1320}) {
+            const auto cell = [&](int along, int lane=0) {
+                return Cell{20 + along*direction.x - lane*direction.y, 20 + along*direction.y + lane*direction.x};
+            };
+            Scenario scene{Map(40,40),{1,1},cell(-3),{}};
+            for (int y=0;y<40;++y) for (int x=0;x<40;++x)
+                if ((x-20)*direction.x+(y-20)*direction.y >= 1) scene.map.at({x,y}).height=1;
+            for (int lane=-1;lane<=1;++lane) scene.map.at(cell(0,lane)).ramp=direction;
+            EntityDefinition worker; worker.dayVision=5; worker.nightVision=1;
+            auto depot=testDepot("hall",worker.id); depot.dayVision=depot.nightVision=1;
+            Simulation game(std::move(scene),{},worker,{depot},{},{},{.startMinute=minute});
+            const auto id=game.worker().id;
+            Selection selection; selection.ids={id};
+            require(!game.fog().visible(cell(2)), "Plateau fixture already visible from below");
+            bool enteredOffCadence=false, sawFromRamp=false;
+            for (Cell goal : {cell(4),cell(-3)}) {
+                require(game.order(std::array{id},OrderKind::Move,goal), "Ramp order failed");
+                for (int tick=0;tick<300 && game.worker().state!=UnitState::Idle;++tick) {
+                    const auto previous=game.worker().cell;
+                    game.tick();
+                    const auto current=game.worker().cell;
+                    selection.prune(game);
+                    require(game.fog().visible(current) && selectableEntity(game,id) && selection.ids==std::vector{id},
+                        "Ramp transition hid the unit or dropped selection");
+                    const auto& tile=game.map().at(current);
+                    const int sightHeight=tile.height+(tile.ramp!=Cell{} ? 1 : 0);
+                    for (int y=-1;y<=1;++y) for (int x=-1;x<=1;++x) {
+                        const Cell neighbour=current+Cell{x,y};
+                        require(game.fog().visible(neighbour)==(game.map().at(neighbour).height<=sightHeight),
+                            "Moving proximity sight ignored elevation or retained stale cells");
+                    }
+                    if (tile.ramp!=Cell{}) {
+                        sawFromRamp=true;
+                        require(game.fog().visible(cell(1)), "Ramp did not reveal the upper landing during ascent/descent");
+                        if (minute==720) require(game.fog().visible(cell(4)), "Ramp did not grant the normal sight radius upstairs");
+                    } else if (tile.height==0) {
+                        require(!game.fog().visible(cell(1)), "Unit beside a ramp or back below it still sees the plateau");
+                    }
+                    if (game.map().at(previous).height==0 && game.map().at(current).height==1) {
+                        enteredOffCadence |= game.clock().elapsedTicks()%5!=0;
+                        if (minute==720) require(game.fog().visible(cell(4)), "Full plateau sight waited for a periodic update");
+                    }
+                }
+                require(game.worker().cell==goal, "Unit did not finish the ramp crossing");
+            }
+            require(enteredOffCadence, "Fixture missed the gap between periodic fog updates");
+            require(sawFromRamp, "Fixture never observed the ramp transition");
+        }
+    });
     test("Vision radius is a screen-plane circle and cached scan matches every ray", [] {
         Map map(48,48); FogOfWar fog(48,48);
         const VisionSource source{{24,24},8,true};

@@ -187,9 +187,9 @@ void editorTests(TestSuite& test, const TestContext& context) {
         e.validateForPlay();
     });
     test("Ground art preserves source proportions with optional isometric projection", [&] {
-        require(!worldAssets.material("grass").isometric && !worldAssets.material("dark_grass").isometric &&
-            !worldAssets.material("sunny_hills.meadow").isometric && !worldAssets.material("sunny_hills.dry_grass").isometric &&
-            !worldAssets.material("sunny_hills.cobblestone").isometric, "Ground art must stay flat in logical coordinates");
+        require(worldAssets.material("grass").isometric && worldAssets.material("dark_grass").isometric &&
+            worldAssets.material("sunny_hills.meadow").isometric && worldAssets.material("sunny_hills.dry_grass").isometric &&
+            !worldAssets.material("sunny_hills.cobblestone").isometric, "Ground art projection differs from the authored material settings");
         const rts::GroundTextureProjection flat(12, 1536, false);
         const auto flatSize = flat.project({1536, 1024});
         require(flatSize == rts::Vec2{12, 8} && flat.unproject(flatSize) == rts::Vec2{1536, 1024},

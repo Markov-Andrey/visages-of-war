@@ -6,7 +6,7 @@
     "repeatCells": 12,
     "tint": "ffffff",
     "group": "Core",
-    "isometric": false
+    "isometric": true
   },
   {
     "id": "earth",
@@ -14,7 +14,8 @@
     "image": "world/tilesets/sunny-hills/textures/dirt.png",
     "repeatCells": 10,
     "tint": "ffffff",
-    "group": "Core"
+    "group": "Core",
+    "isometric": true
   },
   {
     "id": "dark_grass",
@@ -23,6 +24,6 @@
     "repeatCells": 12,
     "tint": "92a57e",
     "group": "Core",
-    "isometric": false
+    "isometric": true
   }
 ]
