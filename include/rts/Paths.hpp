@@ -13,7 +13,6 @@ public:
     std::filesystem::path optionalAsset(const std::filesystem::path& relative) const;
     std::filesystem::path writable(const std::filesystem::path& relative) const;
     const std::filesystem::path& assetRoot() const { return assets_; }
-    const std::filesystem::path& userRoot() const { return userData_; }
 private:
     static std::filesystem::path resolve(const std::filesystem::path& root, const std::filesystem::path& relative);
     std::filesystem::path assets_;

@@ -166,7 +166,7 @@ private:
     MinimapRaster minimapRaster_;
     ComPtr<ID2D1Bitmap> fogBitmap_;
     ComPtr<ID2D1BitmapBrush> fogBrush_;
-    ComPtr<ID2D1Bitmap> hall_, worker_, enemy_, minimap_;
+    ComPtr<ID2D1Bitmap> hall_, minimap_;
     ComPtr<ID2D1Bitmap> menuBackground_, menuForeground_, logo_, buttonFrame_;
     unsigned teamColor_ = teamRgb(TeamColor::Blue);
     unsigned enemyColor_ = teamRgb(TeamColor::Red);

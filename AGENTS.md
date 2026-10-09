@@ -1,5 +1,7 @@
 # RTS project conventions
 
+- Keep documentation focused on current contracts and workflows. Use catalogs as the source for balance and asset inventories; keep change history in Git, remove completed TODO entries, and avoid appending dated test reports or duplicating rules across guides.
+
 - Target Windows 10/11 x64 only; C++20, MSVC, CMake. Project name is RTS.
 - Keep simulation in logical map coordinates, independent of render pixels and camera.
 - Measure movement, collisions, formations, combat and vision with the shared ground-plane metric in Types.hpp. It matches the screen plane up to a fixed scale; equal visible distances take equal time. Cell coordinates still author diamonds and static footprints. Never normalize a movement vector with the raw grid Euclidean norm or camera zoom.

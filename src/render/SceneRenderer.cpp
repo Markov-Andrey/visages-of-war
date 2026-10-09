@@ -8,10 +8,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     updateFogMask(game);
     prepareLandscape(game.landscape(), game.map());
     waterSeconds_ = float(game.clock().elapsedTicks() % 36000) / Simulation::ticksPerSecond;
-    const auto color = teamRgb(game.player().color);
-    if (teamColor_ != color) { teamColor_ = color; loadBitmap(paths_.asset(L"sprites/worker.png"), worker_, teamColor_, SpriteTeamMask::Blue); }
-    const auto enemyColor = teamRgb(game.player().color == TeamColor::Red ? TeamColor::Blue : TeamColor::Red);
-    if (enemyColor_ != enemyColor) { enemyColor_ = enemyColor; loadBitmap(paths_.asset(L"sprites/worker.png"), enemy_, enemyColor_, SpriteTeamMask::Blue); }
+    teamColor_ = teamRgb(game.player().color);
+    enemyColor_ = teamRgb(game.player().color == TeamColor::Red ? TeamColor::Blue : TeamColor::Red);
     target_->BeginDraw();
     target_->Clear(D2D1::ColorF(0x081119));
     const auto extent = size();

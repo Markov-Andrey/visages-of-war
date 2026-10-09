@@ -77,37 +77,49 @@
                   },
                   {
                       "original": "ratusha-0.png",
-                      "path": "sprites/buildings/valeri/ratusha/ratusha-0.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-0.png",
+                      "removed": "2026-10-09",
+                      "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
                       "imported": "2026-09-29",
                       "sha256": "06FE2E219A9B10DB4D92C8E48BC22A49B80A6FE97CB1BC6077A8D193DBAE8A01"
                   },
                   {
                       "original": "ratusha-33.png",
-                      "path": "sprites/buildings/valeri/ratusha/ratusha-33.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-33.png",
+                      "removed": "2026-10-09",
+                      "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
                       "imported": "2026-09-29",
                       "sha256": "F52922D1A5298D02B43AFBBF9E4E76B2E03583026CDA8413ADA475B68496D331"
                   },
                   {
                       "original": "ratusha-66.png",
-                      "path": "sprites/buildings/valeri/ratusha/ratusha-66.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-66.png",
+                      "removed": "2026-10-09",
+                      "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
                       "imported": "2026-09-29",
                       "sha256": "A624B6AD053F28770B65EFE628960C7E6DF8EBE8F64C223E736E8F77DFB9B5FD"
                   },
                   {
                       "original": "ratusha.png",
-                      "path": "sprites/buildings/valeri/ratusha/ratusha.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/ratusha.png",
+                      "removed": "2026-10-09",
+                      "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
                       "imported": "2026-09-29",
                       "sha256": "51A6A8C237DA82B474564A20CC0A17DF1D38B45DF487C8F1AB3FBB672E2B4E8E"
                   },
                   {
                       "original": "ratusha-no-fire.png",
-                      "path": "sprites/buildings/valeri/ratusha/ratusha-no-fire.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-no-fire.png",
+                      "removed": "2026-10-09",
+                      "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
                       "imported": "2026-09-30",
                       "sha256": "F58E87D796F1A5C4794E1AA469F5396E4838EC17FF1B7D14E61240FCAC0AD15C"
                   },
                   {
                       "original": "ratusha-kupol.png",
-                      "path": "sprites/buildings/valeri/ratusha/ratusha-kupol.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-kupol.png",
+                      "removed": "2026-10-09",
+                      "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
                       "imported": "2026-09-30",
                       "sha256": "1EB18D04D93587347F11F1A491B7062B9324E4FB34E697D6FAFDC649CAEF5BC2"
                   },
@@ -120,7 +132,9 @@
                   {
                       "original": "Generated solid-white coverage mask",
                       "source": "Procedural 1312x1199 white RGB test pattern; contains no artwork pixels",
-                      "path": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
+                      "removed": "2026-10-09",
+                      "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
                       "imported": "2026-09-30",
                       "sha256": "4215A5974A2DF5EEA4B240AC936E54388B78036E3A57E39969966230B38F760F"
                   },
@@ -243,42 +257,54 @@
                   },
         {
           "original": "peacemaker-nw-attack.png",
-          "path": "sprites/units/peacemaker/source/peacemaker-nw-attack.png",
+          "retiredPath": "sprites/units/peacemaker/source/peacemaker-nw-attack.png",
+          "removed": "2026-10-09",
+          "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
           "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
           "sha256": "F5BDCE5BF191AFE22A97D66562C888491762CD091D384D373FE45E1A7FE76E10"
         },
         {
           "original": "peacemaker-nw-walk.png",
-          "path": "sprites/units/peacemaker/source/peacemaker-nw-walk.png",
+          "retiredPath": "sprites/units/peacemaker/source/peacemaker-nw-walk.png",
+          "removed": "2026-10-09",
+          "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
           "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
           "sha256": "9517D1C04F7533C1442C8C0F0E949D3FEEEF60514581B422637ABF5057FBA759"
         },
         {
           "original": "peacemaker-se-attack.png",
-          "path": "sprites/units/peacemaker/source/peacemaker-se-attack.png",
+          "retiredPath": "sprites/units/peacemaker/source/peacemaker-se-attack.png",
+          "removed": "2026-10-09",
+          "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
           "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
           "sha256": "C28EC7DB074B3954D8AEF0E8FF80051810241FC85BD0BD699BCAADD633A85742"
         },
         {
           "original": "peacemaker-se-walk.png",
-          "path": "sprites/units/peacemaker/source/peacemaker-se-walk.png",
+          "retiredPath": "sprites/units/peacemaker/source/peacemaker-se-walk.png",
+          "removed": "2026-10-09",
+          "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
           "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
           "sha256": "0F0A372616C7BB92D5E0E79E205E0A328643F83A0C4C29D7D4DE6C32ACB49934"
         },
         {
           "original": "peacemaker-stand.png",
-          "path": "sprites/units/peacemaker/source/peacemaker-stand.png",
+          "retiredPath": "sprites/units/peacemaker/source/peacemaker-stand.png",
+          "removed": "2026-10-09",
+          "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
           "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
           "sha256": "62A5B701D11A77B1ECA9EC0A8039A533D5E37F2B6600CC6C654EABDDADF2227F"
         },
         {
           "original": "peacemaker-death.png",
-          "path": "sprites/units/peacemaker/source/peacemaker-death.png",
+          "retiredPath": "sprites/units/peacemaker/source/peacemaker-death.png",
+          "removed": "2026-10-09",
+          "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
           "source": "Project owner Peacemaker death animation; original bytes preserved. Four shared frames, last frame is the persistent corpse; crops and ground pivots in data/entities/humans.json.",
           "sha256": "22106E00329C5998C0F1778AA9B1555EF2C267357D98AAB0CECBC7069CBEFEF1"

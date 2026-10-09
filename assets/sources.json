@@ -13,6 +13,18 @@
       "sha256": "4BB3D7E9FE9A81B2F29CD410DB404665C4546A18D42BE977821D2A18DAFC8549",
       "removed": "2026-10-04",
       "reason": "Replaced by project owner crystal variants; no longer installed or restored. Provenance retained."
+    },
+    {
+      "destination": "sprites/tree.png",
+      "archive": "characters.zip",
+      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
+      "entry": "Puny-Characters/Environment/Tree.png",
+      "sha256": "C86FDE88AB3CBD47A2B97DDD4AC54B5D3B2E7C597E392C3DB407731839F800C1",
+      "source": "https://opengameart.org/content/puny-characters",
+      "author": "Shade",
+      "license": "CC0-1.0",
+      "removed": "2026-10-09",
+      "reason": "Replaced by catalog trees from Sunny Hills; no longer loaded, installed or restored."
     }
   ],
   "files": [
@@ -29,13 +41,6 @@
       "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
       "entry": "Puny-Characters/Soldier-Blue.png",
       "sha256": "DDCB515BAAF2B5B7A4C569BA23D7490C3E5221BB5E97D760CE67CE9C261A543D"
-    },
-    {
-      "destination": "sprites/tree.png",
-      "archive": "characters.zip",
-      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
-      "entry": "Puny-Characters/Environment/Tree.png",
-      "sha256": "C86FDE88AB3CBD47A2B97DDD4AC54B5D3B2E7C597E392C3DB407731839F800C1"
     },
     {
       "destination": "sprites/archer.png",
