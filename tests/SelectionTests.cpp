@@ -46,6 +46,9 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             require(queue.slots.size() == 10, "Queue layout does not expose ten slots");
             for (size_t i = 0; i < queue.slots.size(); ++i) {
                 const auto slot = queue.slots[i];
+                const Vec2 middle{slot.x + slot.width * .5f, slot.y + slot.height * .5f};
+                require(queue.pick(middle, 10) == i && !queue.pick(middle, i), "Queue hit test missed an icon or hit an empty slot");
+                require(!queue.pick({slot.x + slot.width + 2, middle.y}, 10), "Gap between icons selected a queue job");
                 require(slot.width >= 28 && slot.width == slot.height && slot.x >= content.x && slot.y >= content.y + 96 &&
                     slot.x + slot.width <= content.x + content.width + .01f && slot.y + slot.height <= content.y + content.height + .01f,
                     "Queue icon became unreadable or escaped the panel");

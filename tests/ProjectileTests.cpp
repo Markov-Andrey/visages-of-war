@@ -303,7 +303,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         require(game.train(*site,"human.slinger") && game.train(*site,"human.catapult"),"Ranged roster unavailable");
         require(!game.train(*site,"human.hero"),"Building trained an unsupported type");
         require(game.storedCrystals() == crystals - 240 && game.armySupply().used() == supply + 6,"Roster costs wrong");
-        require(game.cancelTraining(*site) && game.storedCrystals() == crystals - 80 && game.armySupply().used() == supply + 2,"Roster refund wrong");
+        require(game.cancelTraining(*site) && game.storedCrystals() == crystals - 160 && game.armySupply().used() == supply + 2,"Roster refund wrong");
         ticks(game,180);
         require(game.units().back().definitionId == "human.slinger","Production ignored selected type");
         require(game.train(*site,"human.catapult"),"Siege recruitment failed"); ticks(game,300);

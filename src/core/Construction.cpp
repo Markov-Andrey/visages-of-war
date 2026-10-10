@@ -63,10 +63,10 @@ bool Simulation::cancelConstruction(EntityId id) {
     if (it == buildings_.end() || it->complete() || it->owner != player_.id) return false;
     for (int y = 0; y < it->definition.height; ++y) for (int x = 0; x < it->definition.width; ++x)
         scenario_.map.release(it->origin + Cell{x, y});
-    stored_ += it->definition.cost.crystals; supply_.release(it->definition.cost.supply);
+    stored_ += cancellationRefund(it->definition.cost.crystals); supply_.release(it->definition.cost.supply);
     for (auto& u : units_) if (u.targetBuilding == id) issue(u, {OrderKind::Stop});
     buildings_.erase(it); updateVision();
-    setMessage(L"Строительство отменено. Кристаллы возвращены.");
+    setMessage(L"Строительство отменено. Возвращено 50% стоимости.");
     return true;
 }
 bool Simulation::train(EntityId id, const std::string& definitionId) {
@@ -85,12 +85,15 @@ bool Simulation::train(EntityId id, const std::string& definitionId) {
     setMessage(L"Юнит добавлен в очередь.");
     return true;
 }
-bool Simulation::cancelTraining(EntityId id) {
+bool Simulation::cancelTraining(EntityId id, std::optional<size_t> queueIndex) {
     auto* b = mutableBuilding(id);
     if (!b || b->owner != player_.id || b->production.empty()) return false;
-    const auto job = b->production.back();
-    b->production.pop_back(); stored_ += job.paidCrystals; supply_.release(job.reservedSupply);
-    setMessage(L"Последний заказ отменён.");
+    const size_t index = queueIndex.value_or(b->production.size() - 1);
+    if (index >= b->production.size()) return false;
+    const auto job = b->production[index];
+    b->production.erase(b->production.begin() + index);
+    stored_ += cancellationRefund(job.paidCrystals); supply_.release(job.reservedSupply);
+    setMessage(L"Заказ отменён. Возвращено 50% стоимости.");
     return true;
 }
 bool Simulation::setRally(EntityId id, Cell c) {

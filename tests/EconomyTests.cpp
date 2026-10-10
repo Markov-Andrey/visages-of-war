@@ -179,10 +179,10 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto tower = game.construct(ids, "human.watchtower", {3, 5});
         require(tower && game.storedCrystals() == 325, "Tower placement failed");
         require(game.cancelConstruction(*tower), "Cancellation failed");
-        require(game.map().walkable({3, 5}) && game.storedCrystals() == 400, "Cancellation lost resource or occupancy");
+        require(game.map().walkable({3, 5}) && game.storedCrystals() == 362, "Cancellation did not refund half rounded down or release occupancy");
         require(!game.map().walkable({5, 3}) && !game.cancelConstruction(*building), "Cancellation touched completed building");
     });
-    test("Common building costs reserve supply atomically and cancellation refunds both resources", [&] {
+    test("Building cancellation refunds half the crystals and releases all reserved supply", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");
         auto types = definitions.entities();
         for (auto& type : types) if (type.id == "human.watchtower") type.cost.supply = 99;
@@ -193,9 +193,11 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(tower && game.armySupply().used() == 100 && game.storedCrystals() == 425, "Building did not reserve its common cost");
         require(!game.construct(ids, "human.watchtower", {4, 5}), "Construction exceeded supply cap");
         require(game.map().walkable({4, 5}) && game.storedCrystals() == 425 && game.buildings().size() == 2, "Rejected construction changed world or resources");
+        for (int i = 0; i < 300 && game.building(*tower)->constructionProgress < game.building(*tower)->definition.constructionTicks / 2; ++i) game.tick();
+        require(game.building(*tower)->constructionProgress > 0 && !game.building(*tower)->complete(), "Partial construction fixture did not advance");
         require(game.cancelConstruction(*tower), "Could not cancel supply-consuming construction");
-        require(game.map().walkable({3, 5}) && game.armySupply().used() == 1 && game.storedCrystals() == 500, "Cancellation did not restore footprint and both costs");
-        require(!game.cancelConstruction(*tower) && game.storedCrystals() == 500, "Cancellation refunded twice");
+        require(game.map().walkable({3, 5}) && game.armySupply().used() == 1 && game.storedCrystals() == 462, "Cancellation did not release footprint/supply and refund half the crystals");
+        require(!game.cancelConstruction(*tower) && game.storedCrystals() == 462, "Cancellation refunded twice");
     });
     test("Initial production exits below the left corner for every footprint and rally destination", [] {
         for (const rts::Cell size : {rts::Cell{3, 2}, rts::Cell{1, 1}, rts::Cell{2, 4}}) for (const bool moveRally : {false, true}) {
@@ -325,7 +327,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.armySupply().used() == 5 && game.storedCrystals() == 280, "Queue did not reserve cost and supply");
         require(game.cancelTraining(*barracks), "Queue cancellation failed");
         require(game.building(*barracks)->training(), "Cancelling one of two jobs stopped training effects");
-        require(game.armySupply().used() == 3 && game.storedCrystals() == 340, "Queue refund incorrect");
+        require(game.armySupply().used() == 3 && game.storedCrystals() == 310, "Queue refund incorrect");
         ticks(game, 600);
         require(game.units().size() == 2 && game.armySupply().used() == 3, "Spawn charged supply twice");
         require(!game.building(*barracks)->training(), "Finished production left training effects active");
@@ -342,7 +344,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         ticks(game, 150);
         require(game.units().size() == 1 && game.building(hall)->production.front().remainingTicks == 0, "Spawn overlapped blocked exit");
         require(!game.building(hall)->training(), "Finished job blocked at exit still counted as training");
-        require(game.cancelTraining(hall) && game.armySupply().used() == 1 && game.storedCrystals() == 300, "Blocked job not refundable");
+        require(game.cancelTraining(hall) && game.armySupply().used() == 1 && game.storedCrystals() == 280, "Blocked job did not refund half");
         require(game.train(hall), "Could not retrain");
         game.command({0, 0}); ticks(game, 150);
         require(game.units().size() == 2 && game.armySupply().used() == 2, "Production did not resume after exit cleared");
@@ -366,8 +368,39 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(queued.storedCrystals() == fullBalance && queued.armySupply().used() == fullSupply, "Full queue rejection consumed resources");
         require(queued.cancelTraining(depot) && queued.train(depot), "Tenth queue slot could not be reused");
         for (int i = 0; i < 10; ++i) require(queued.cancelTraining(depot), "Could not cancel the full queue");
-        require(queued.building(depot)->production.empty() && queued.storedCrystals() == initialBalance &&
+        require(queued.building(depot)->production.empty() && queued.storedCrystals() == initialBalance - 11 * 20 &&
             queued.armySupply().used() == initialSupply, "Full queue cancellation did not refund resources");
+    });
+    test("Indexed cancellation removes only the chosen job, refunds half and preserves other progress", [] {
+        auto scene = flatScenario(); scene.startingCrystals = 1000;
+        EntityDefinition worker; worker.cost = {75, 1};
+        auto second = worker; second.id = "test.second"; second.cost = {40, 2};
+        auto third = worker; third.id = "test.third"; third.cost = {60, 3};
+        Simulation game(std::move(scene), {}, worker, {worker, second, third});
+        auto& building = const_cast<Building&>(game.buildings().front());
+        building.definition.trainableUnits = {worker.id, second.id, third.id};
+        for (const auto& id : {worker.id, second.id, third.id, worker.id}) require(game.train(building.id, id), "Could not fill mixed queue");
+        require(game.storedCrystals() == 750 && game.armySupply().used() == 8, "Orders did not charge up front");
+        ticks(game, 10);
+        const int progress = building.production.front().remainingTicks;
+        require(!game.cancelTraining(building.id, 4) && game.storedCrystals() == 750 && building.production.size() == 4,
+            "Out-of-range cancellation changed queue or balance");
+        building.owner = 1;
+        require(!game.cancelTraining(building.id, 1) && game.storedCrystals() == 750, "Foreign queue could be cancelled");
+        building.owner = game.player().id;
+        require(game.cancelTraining(building.id, 1) && building.production.size() == 3 && game.storedCrystals() == 770 &&
+            game.armySupply().used() == 6, "Middle cancellation refunded the wrong order");
+        require(building.production.front().remainingTicks == progress && building.production[1].definitionId == third.id &&
+            building.production[2].definitionId == worker.id, "Middle cancellation changed progress or queue order");
+        require(game.cancelTraining(building.id, 0) && game.storedCrystals() == 807 && game.armySupply().used() == 5 &&
+            building.production.front().remainingTicks == third.trainingTicks, "Active cancellation transferred progress or rounded refund up");
+        game.tick();
+        require(building.production.front().remainingTicks == third.trainingTicks - 1, "Next job did not start after cancelling the active job");
+        require(game.cancelTraining(building.id, 1) && game.storedCrystals() == 844 && building.production.front().definitionId == third.id,
+            "Last-slot cancellation removed the active job");
+        require(game.cancelTraining(building.id) && building.production.empty() && game.storedCrystals() == 874 && game.armySupply().used() == 1,
+            "Default cancellation failed to release the last job");
+        require(!game.cancelTraining(building.id, 0) && game.storedCrystals() == 874, "Empty queue refunded twice");
     });
     test("Several workers conserve resources while sharing gathering and depot approaches", [] {
         auto s = flatScenario(73); s.extraWorkers = {{5, 3}, {4, 4}, {5, 4}};

@@ -69,6 +69,8 @@ struct AbilityDefinition {
 };
 struct AbilityCooldown { int abilityId{}, remainingTicks{}; };
 struct ResourceCost { int crystals{}, supply{}; };
+// Cancellation returns half of the paid crystals, rounded down to whole crystals.
+inline constexpr int cancellationRefund(int paidCrystals) { return paidCrystals / 2; }
 enum class EntityVisual { Unit, Hall, Barracks, Tower };
 struct EntityDefinition {
     std::string id = "human.worker";

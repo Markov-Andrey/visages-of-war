@@ -202,6 +202,11 @@ struct SelectionPanelLayout {
 };
 struct ProductionQueueLayout {
     std::array<UiRect, Building::productionQueueLimit> slots;
+    std::optional<size_t> pick(Vec2 point, size_t count) const {
+        for (size_t i = 0; i < std::min(count, slots.size()); ++i)
+            if (slots[i].contains(point)) return i;
+        return std::nullopt;
+    }
     explicit ProductionQueueLayout(UiRect content) {
         constexpr float gap = 4;
         const size_t columns = content.width >= 10 * 36 + 9 * gap ? 10 : 5;

@@ -122,7 +122,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         text(wide(b.definition.factionName) + L"  ·  Здание", rect(content.x, content.y + 39, content.width, 25), 0x9dc1b6);
         if (!b.complete()) {
             text(L"Строительство  " + std::to_wstring(b.constructionProgress * 100 / b.definition.constructionTicks) + L"%", rect(content.x, content.y + 70, content.width, 28), 0xe4c388);
-            labels[5] = L"Отменить строительство"; details[5] = L"Прекратить строительство и вернуть ресурсы.";
+            labels[5] = L"Отменить строительство"; details[5] = L"Вернуть 50% стоимости в кристаллах и освободить лимит армии.";
             icons[5] = "cancel"; buttonKeys[5] = L'X';
         } else if (!b.definition.trainableUnits.empty()) {
             constexpr std::array keys{L'Q', L'E', L'T'};
@@ -135,7 +135,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             labels[1] = L"Точка сбора"; details[1] = L"Выбрать точку сбора. Её также можно задать ПКМ по карте.";
             icons[1] = "rally"; buttonKeys[1] = L'R'; active[1] = ui.rallyMode;
             if (!b.production.empty()) {
-                labels[5] = L"Отменить обучение"; details[5] = L"Отменить последний заказ в очереди и вернуть ресурсы.";
+                labels[5] = L"Отменить обучение"; details[5] = L"Отменить последний заказ. Вернуть 50% кристаллов и освободить лимит армии.";
                 icons[5] = "cancel"; buttonKeys[5] = L'X';
             }
             const bool blocked = !b.production.empty() && b.production.front().remainingTicks == 0;
@@ -160,7 +160,13 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                     const float fraction = job.totalTicks > 0 ? 1 - float(job.remainingTicks) / job.totalTicks : 1;
                     target_->FillRectangle(rect(progress.left, progress.top, (slot.width - 2) * fraction, 4), brush_.Get());
                 }
-                if (slot.contains(ui.mouse)) tooltip = &type;
+                if (slot.contains(ui.mouse)) {
+                    if (b.owner == game.player().id) {
+                        actionTitle = wide(type.displayName);
+                        actionDescription = L"ЛКМ — отменить этот заказ.\nВозврат: " + std::to_wstring(cancellationRefund(job.paidCrystals)) +
+                            L" кристаллов (50%).\nЛимит армии освобождается полностью.";
+                    } else tooltip = &type;
+                }
             }
         } else text(L"Расширяет обзор днём и ночью", rect(content.x, content.y + 76, content.width, 30), 0x9eb6b7);
     } else if (unit) {

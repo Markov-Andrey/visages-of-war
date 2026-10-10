@@ -199,7 +199,7 @@ public:
     std::optional<EntityId> construct(std::span<const EntityId> builders, const std::string& type, Cell origin);
     bool cancelConstruction(EntityId id);
     bool train(EntityId buildingId, const std::string& definitionId = {});
-    bool cancelTraining(EntityId buildingId);
+    bool cancelTraining(EntityId buildingId, std::optional<size_t> queueIndex = std::nullopt);
     bool setRally(EntityId buildingId, Cell cell);
     void tick();
 private:
