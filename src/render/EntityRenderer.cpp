@@ -61,7 +61,7 @@ void Renderer::buildingGroundSelection(const Simulation& game, const Building& b
     worldOpacity_ = opacity;
 }
 
-void Renderer::buildingSprite(const Simulation& game, const Building& b, const WorldView& view, bool selected) {
+void Renderer::buildingSprite(const Simulation& game, const Building& b, const WorldView& view, bool selected, float preview) {
     const auto bounds = buildingBounds(game, b, view);
     const auto& type = b.definition;
     const auto* stage = type.buildingSprite.stage(b.constructionProgress, type.constructionTicks);
@@ -77,7 +77,10 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
         bool visible = false;
         for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x)
             visible |= game.fog().visible(b.origin + Cell{x, y});
-        buildingImage(*stage, bounds, color, game.clock().elapsedTicks(), b.training(), visible);
+        const float progress = preview >= 0 ? preview : float(b.constructionProgress) / type.constructionTicks;
+        if (type.buildingSprite.construction && progress < 1)
+            constructionImage(game, b, view, bounds, color, visible, progress);
+        else buildingImage(*stage, bounds, color, game.clock().elapsedTicks(), b.training(), visible);
     } else if (!b.complete()) {
         const std::array<Vec2, 4> foundation{{p + Vec2{-50, -22} * z, p + Vec2{50, -22} * z, p + Vec2{65, 12} * z, p + Vec2{-65, 12} * z}};
         polygon(foundation, 0x928169);

@@ -98,9 +98,19 @@ RallySpriteDefinition parseRallySprite(const Json& sprite) {
 }
 void parseBuildingSprite(EntityDefinition& e, const Json& sprite) {
     if (sprite.is_null()) return;
-    fields(sprite, {"scale", "stages"}, {"portrait", "icon", "portraitMask", "iconMask"});
+    fields(sprite, {"scale", "stages"}, {"portrait", "icon", "portraitMask", "iconMask", "construction"});
     auto& s = e.buildingSprite;
     s.scale = real(sprite.at("scale"), .01f, 4);
+    if (sprite.contains("construction")) {
+        const auto& effect = sprite.at("construction");
+        fields(effect, {"image", "footprintScale", "anchor"}, {"contours", "revealMask"});
+        auto& c = s.construction.emplace();
+        c.image = imagePath(effect.at("image"));
+        c.footprintScale = real(effect.at("footprintScale"), .05f, 2);
+        c.anchor = pair(effect.at("anchor"), 0, 1);
+        if (effect.contains("contours")) c.contours = imagePath(effect.at("contours"));
+        if (effect.contains("revealMask")) c.revealMask = imagePath(effect.at("revealMask"));
+    }
     if (sprite.contains("portrait")) s.portrait = imagePath(sprite.at("portrait"));
     if (sprite.contains("icon")) s.icon = imagePath(sprite.at("icon"));
     if (sprite.contains("portraitMask")) s.portraitMask = imagePath(sprite.at("portraitMask"));

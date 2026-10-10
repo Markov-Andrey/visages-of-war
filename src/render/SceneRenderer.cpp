@@ -111,7 +111,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
                 const auto& b = game.buildings()[item.index];
                 if (onScreen(view.project(center(b.origin), float(map.at(b.origin).height)))) {
                     const bool masked = beginUnitOcclusion(game, view, item.depth, buildingBounds(game, b, view));
-                    buildingSprite(game, b, view, ui.selection.contains(b.id));
+                    const auto preview = ui.constructionPreviews.find(b.id);
+                    buildingSprite(game, b, view, ui.selection.contains(b.id), preview == ui.constructionPreviews.end() ? -1.f : preview->second.at(game.clock().elapsedTicks()));
                     if (masked) target_->PopLayer();
                 }
                 break;

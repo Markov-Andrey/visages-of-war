@@ -10,6 +10,7 @@
 #include "rts/WorldAssets.hpp"
 #include "rts/TerrainPaint.hpp"
 #include "rts/DirectionalSprite.hpp"
+#include "rts/ConstructionVisual.hpp"
 #include <windows.h>
 #include <d2d1.h>
 #include <dwrite.h>
@@ -58,7 +59,16 @@ private:
     void discardTarget();
     void loadBitmap(const std::filesystem::path& path, ComPtr<ID2D1Bitmap>& bitmap, unsigned teamMask = 0,
         SpriteTeamMask palette = SpriteTeamMask::None, const std::filesystem::path& maskPath = {}, bool lighting = false, bool highlights = false);
-    void buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks = 0, bool training = false, bool visible = true);
+    void buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks = 0, bool training = false, bool visible = true, bool complete = true);
+    struct ConstructionResource {
+        ComPtr<ID2D1Bitmap> lines, halo, surface;
+        std::array<ComPtr<ID2D1PathGeometry>, constructionBands> bands;
+        std::array<ComPtr<ID2D1GeometryGroup>, constructionBands + 1> before, after;
+    };
+    std::map<std::string, ConstructionPixels> constructionPixels_;
+    std::map<std::string, ConstructionResource> constructionResources_;
+    ConstructionResource& constructionResource(const EntityDefinition& type);
+    void constructionImage(const Simulation& game, const Building& building, const WorldView& view, UiRect bounds, unsigned color, bool visible, float progress);
     ID2D1Bitmap* maskedBitmap(const std::string& image, const std::string& mask, unsigned color);
     void drawRallyPoint(const Simulation& game, const Building& building, const WorldView& view);
     void drawCrystal(const Crystal& crystal, Vec2 ground, float zoom, bool glowing = false, std::uint64_t tick = 0);
@@ -108,7 +118,7 @@ private:
     void drawManaBar(const Unit& unit, UiRect bounds, bool beveled = false);
     void drawVitalBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
-    void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected);
+    void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected, float preview = -1);
     void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row, bool preview);
     void unitSprite(const Simulation& game, const Unit& unit, const WorldView& view, bool selected, bool hovered = false, float commandAge = -1);
     void prepareLandscape(const Landscape& landscape, const Map& map);

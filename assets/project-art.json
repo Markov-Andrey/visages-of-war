@@ -7,6 +7,12 @@
     ],
     "files":  [
         {
+          "original": "builds.png",
+          "path": "sprites/buildings/valeri/construction/invocation.png",
+          "source": "Project owner artwork; original PNG bytes preserved. Lamp and circle form one construction invocation layer.",
+          "sha256": "48805E423CA57A6C919D89B929FDA6F87AD28993AD7BDC15774D4F3D811F4F01"
+        },
+        {
           "original": "crysal-medium.png",
           "path": "sprites/resources/crystal/medium.png",
           "imported": "2026-10-04",
@@ -141,21 +147,24 @@
                   {
                       "original": "graphics-export/ratusha/ratusha-0.png",
                       "source": "Project owner revision with aligned canvas; imported unchanged",
-                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-0.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/aligned/ratusha-0.png",
+                      "status": "Replaced by procedural construction using the finished building sprite.",
                       "imported": "2026-09-30",
                       "sha256": "AE595C1DC45A3C94DDE14B2F213E6753D021C635C836860E64FDECC3FCB3E00A"
                   },
                   {
                       "original": "graphics-export/ratusha/ratusha-33.png",
                       "source": "Project owner revision with aligned canvas; imported unchanged",
-                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-33.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/aligned/ratusha-33.png",
+                      "status": "Replaced by procedural construction using the finished building sprite.",
                       "imported": "2026-09-30",
                       "sha256": "54C445E145E0BF69CA6E1278C3CEC379058A050B7F714E88B15AC98AEBB37143"
                   },
                   {
                       "original": "graphics-export/ratusha/ratusha-66.png",
                       "source": "Project owner revision with aligned canvas; imported unchanged",
-                      "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-66.png",
+                      "retiredPath": "sprites/buildings/valeri/ratusha/aligned/ratusha-66.png",
+                      "status": "Replaced by procedural construction using the finished building sprite.",
                       "imported": "2026-09-30",
                       "sha256": "16022014DC59BD7E79FE0EAC3550BE96C0DF28253154185654DF73564D6364C3"
                   },

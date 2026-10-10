@@ -48,13 +48,13 @@ void GameApplication::exerciseInterface() {
         const auto id = construction.construct(builders, "human.hall", {12, 11});
         if (!id) throw std::runtime_error("Smoke: hall construction failed");
         rts::GameplayUi ui; ui.selection.ids = {*id};
-        for (int percent : {0, 33, 66, 100}) {
+        for (int percent : {0, 10, 33, 66, 99, 100}) {
             int attempts = 0;
             while (construction.building(*id)->constructionProgress * 100 < percent * construction.building(*id)->definition.constructionTicks && attempts++ < 1000)
                 construction.tick();
             const auto* building = construction.building(*id);
             const auto* stage = building->definition.buildingSprite.stage(building->constructionProgress, building->definition.constructionTicks);
-            if (!stage || stage->from != percent) throw std::runtime_error("Smoke: hall construction stage failed");
+            if (!stage || !building->definition.buildingSprite.construction || stage->from != 0) throw std::runtime_error("Smoke: hall construction effect failed");
             renderer_.snapshot(construction, rts::Paths::executable().parent_path() / (L"ratusha-stage-" + std::to_wstring(percent) + L".png"), nullptr, false, &ui);
         }
         if (!construction.train(*id) || !construction.building(*id)->training())

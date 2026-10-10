@@ -533,6 +533,18 @@ void dataTests(TestSuite& test, const TestContext& context) {
     });
     test("Building art switches at exact percentages and validates authored stages", [&] {
         CatalogFixture fixture(assets);
+        const auto production = fixture.load();
+        require(production.entity("human.hall").buildingSprite.stages.size() == 1 &&
+            production.entity("human.hall").buildingSprite.construction && production.entity("human.barracks").buildingSprite.construction &&
+            !production.entity("human.watchtower").buildingSprite.construction, "Construction effect must cover the two authored buildings only");
+        auto finalStage = fixture.entities["entities"][3]["buildingSprite"]["stages"].back();
+        auto& authoredStages = fixture.entities["entities"][3]["buildingSprite"]["stages"];
+        authoredStages = Json::array();
+        for (int from : {0, 33, 66, 100}) {
+            auto stage = finalStage; stage["from"] = from;
+            if (from < 100) { stage.erase("layers"); stage.erase("lights"); }
+            authoredStages.push_back(stage);
+        }
         const auto defs = fixture.load();
         const auto& hall = defs.entity("human.hall");
         const auto& art = hall.buildingSprite;
@@ -568,6 +580,11 @@ void dataTests(TestSuite& test, const TestContext& context) {
         rejects([](Json& a) { a["stages"][0]["source"][2] = 0; });
         rejects([](Json& a) { a["stages"][0]["anchor"][0] = 2; });
         rejects([](Json& a) { a["scale"] = 0; });
+        rejects([](Json& a) { a["construction"]["image"] = "../outside.png"; });
+        rejects([](Json& a) { a["construction"]["contours"] = "C:/mask.png"; });
+        rejects([](Json& a) { a["construction"]["revealMask"] = "../mask.png"; });
+        rejects([](Json& a) { a["construction"]["footprintScale"] = 0; });
+        rejects([](Json& a) { a["construction"]["anchor"] = {2, 0}; });
         rejects([](Json& a) { a["stages"] = Json::array(); });
         rejects([](Json& a) { a["stages"] = Json::array({a["stages"][3]}); });
         rejects([](Json& a) { a["portrait"] = "../portrait.png"; });
@@ -591,7 +608,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         rejects([](Json& a) { a["stages"][3]["layers"][0]["destination"][2] = 0; });
         rejects([](Json& a) { a["stages"][3]["layers"][0]["destination"] = {1, 2}; });
         fixture.entities["entities"][3]["buildingSprite"] = original;
-        fixture.entities["entities"][3]["buildingSprite"]["stages"][3]["teamMask"] = "sprites/buildings/valeri/ratusha/ratusha-team.png";
+        fixture.entities["entities"][3]["buildingSprite"]["stages"][3]["teamMask"] = "sprites/buildings/valeri/ratusha/aligned/ratusha-team.png";
         require(!fixture.load().entity("human.hall").buildingSprite.stages.back().teamMask.empty(), "Explicit mask path lost");
         fixture.entities["entities"][3]["buildingSprite"]["stages"][3]["emissionMask"] = "sprites/window-emission.png";
         const auto masked = fixture.load().entity("human.hall").buildingSprite.stages.back();
@@ -600,7 +617,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
     test("Building layers loop on simulation ticks and keep training effects separate", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");
         const auto& art = definitions.entity("human.hall").buildingSprite;
-        for (int progress : {0, 99, 198}) require(art.stage(progress, 300)->layers.empty(), "Finished effects appeared on construction");
+        for (int progress : {0, 99, 198}) require(art.stage(progress, 300) == art.stage(300, 300), "Construction must retain the final sprite pivot and layers");
         const auto& layers = art.stage(300, 300)->layers;
         require(layers.size() == 4, "Hall lost its fire, dome or braziers");
         require(layers[0].visible(false) && layers[1].visible(false), "Idle hall lost its crown");

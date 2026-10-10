@@ -2,7 +2,7 @@
 
 namespace rts {
 using namespace render;
-void Renderer::buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks, bool training, bool visible) {
+void Renderer::buildingImage(const BuildingSpriteStage& stage, UiRect bounds, unsigned color, std::uint64_t ticks, bool training, bool visible, bool complete) {
     const auto draw = [&](const auto& art, const std::array<int, 4>& source, UiRect destination) {
         const auto& image = art.image;
         const auto& teamMask = art.teamMask;
@@ -13,7 +13,7 @@ void Renderer::buildingImage(const BuildingSpriteStage& stage, UiRect bounds, un
     draw(stage, stage.source, bounds);
     for (size_t index = 0; index < stage.layers.size(); ++index) {
         const auto& layer = stage.layers[index];
-        if (!layer.visible(training)) continue;
+        if (!layer.visible(training) || (!complete && layer.emissive)) continue;
         const auto destination = buildingLayerBounds(stage, layer, bounds);
         if (visible && layer.emissive) for (const auto& light : stage.lights)
             if (light.animationLayer == static_cast<int>(index) && light.visible(training)) {

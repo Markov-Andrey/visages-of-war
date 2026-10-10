@@ -403,51 +403,6 @@
         "stages": [
           {
             "from": 0,
-            "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-0.png",
-            "teamMask": null,
-            "source": [
-              0,
-              0,
-              1312,
-              1199
-            ],
-            "anchor": [
-              0.5,
-              0.8
-            ]
-          },
-          {
-            "from": 33,
-            "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-33.png",
-            "teamMask": null,
-            "source": [
-              0,
-              0,
-              1312,
-              1199
-            ],
-            "anchor": [
-              0.5,
-              0.8
-            ]
-          },
-          {
-            "from": 66,
-            "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-66.png",
-            "teamMask": null,
-            "source": [
-              0,
-              0,
-              1312,
-              1199
-            ],
-            "anchor": [
-              0.5,
-              0.8
-            ]
-          },
-          {
-            "from": 100,
             "image": "sprites/buildings/valeri/ratusha/aligned/ratusha-no-fire.png",
             "teamMask": "sprites/buildings/valeri/ratusha/aligned/ratusha-team.png",
             "source": [
@@ -733,7 +688,15 @@
               }
             ]
           }
-        ]
+        ],
+        "construction": {
+          "image": "sprites/buildings/valeri/construction/invocation.png",
+          "footprintScale": 0.399,
+          "anchor": [
+            0.5,
+            0.72
+          ]
+        }
       },
       "alternateForms": [],
       "attack": {
@@ -803,10 +766,26 @@
             "from": 0,
             "image": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps.png",
             "teamMask": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-mask.png",
-            "source": [0, 0, 1536, 1024],
-            "anchor": [0.58, 0.62]
+            "source": [
+              0,
+              0,
+              1536,
+              1024
+            ],
+            "anchor": [
+              0.58,
+              0.62
+            ]
           }
-        ]
+        ],
+        "construction": {
+          "image": "sprites/buildings/valeri/construction/invocation.png",
+          "footprintScale": 0.399,
+          "anchor": [
+            0.5,
+            0.72
+          ]
+        }
       },
       "alternateForms": [],
       "attack": {

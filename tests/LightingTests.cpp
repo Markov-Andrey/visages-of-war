@@ -5,6 +5,81 @@
 
 namespace rts {
 struct RendererLightingTest {
+    static void construction(const tests::TestContext& context) {
+        using tests::require;
+        using render::check;
+        platform::ComApartment apartment;
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        Renderer renderer(Paths(context.assets, Paths::executable().parent_path() / "construction-test-data"));
+        renderer.offscreenSize_ = {1440, 900};
+        Renderer::ComPtr<IWICBitmap> output;
+        check(renderer.wic_->CreateBitmap(1440, 900, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, output.GetAddressOf()));
+        auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
+        properties.dpiX = properties.dpiY = 96;
+        check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
+        renderer.loadResources(); renderer.validateCombatAssets(definitions);
+        Scenario site{Map(32, 32), {12, 15}, {17, 14}, {}}; site.startingCrystals = 1000;
+        Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        const std::array builders{game.worker().id};
+        const auto corps = game.construct(builders, "human.barracks", {17, 10});
+        require(corps.has_value(), "Construction rendering fixture failed");
+        game.revealMap();
+        WorldView view{{}, 1}; view.origin = Vec2{720, 345} - view.project({16, 14});
+        GameplayUi ui;
+        const auto read = [&] {
+            std::vector<BYTE> pixels(1440 * 900 * 4);
+            check(output->CopyPixels(nullptr, 1440 * 4, UINT(pixels.size()), pixels.data()));
+            return pixels;
+        };
+        const auto set = [&](int percent) {
+            for (const auto& b : game.buildings()) {
+                auto& editable = const_cast<Building&>(b);
+                editable.constructionProgress = b.definition.constructionTicks * percent / 100;
+                editable.health = b.definition.maximumHealth;
+            }
+        };
+        for (int percent : {0, 10, 33, 66, 99, 100}) {
+            set(percent); renderer.draw(game, view, {}, ui, false, false);
+            renderer.writeSnapshot(output.Get(), Paths::executable().parent_path() / (L"construction-live-" + std::to_wstring(percent) + L".png"));
+        }
+        const auto finished = read();
+        for (const auto& b : game.buildings()) const_cast<Building&>(b).definition.buildingSprite.construction.reset();
+        renderer.draw(game, view, {}, ui, false, false);
+        require(read() == finished, "100% construction differs from the ordinary finished sprite");
+        for (const auto& b : game.buildings()) const_cast<Building&>(b).definition.buildingSprite.construction = definitions.entity(b.definition.id).buildingSprite.construction;
+        set(66); renderer.draw(game, view, {}, ui, false, false); const auto middle = read();
+        renderer.draw(game, view, {}, ui, false, true);
+        // Pause adds UI text; compare the world above the bottom interface.
+        auto paused = read();
+        require(std::equal(middle.begin() + 1440 * 100 * 4, middle.begin() + 1440 * 600 * 4, paused.begin() + 1440 * 100 * 4), "Paused construction changed world pixels");
+        set(10); renderer.draw(game, view, {}, ui, false, false);
+        set(66); renderer.draw(game, view, {}, ui, false, false);
+        require(read() == middle, "Restoring construction progress changed the reveal mask");
+        const auto& b = game.buildings().front();
+        ui.constructionPreviews[b.id] = {.progress = .33f};
+        renderer.draw(game, view, {}, ui, false, false); const auto independent = read();
+        require(independent != middle, "Per-building visual progress had no effect");
+        for (int y = 100; y < 600; ++y)
+            require(std::equal(middle.begin() + (y * 1440 + 900) * 4, middle.begin() + (y * 1440 + 1400) * 4,
+                independent.begin() + (y * 1440 + 900) * 4), "Hall preview changed the Corps construction progress");
+        ui.constructionPreviews.clear(); renderer.draw(game, view, {}, ui, false, false);
+        require(read() == middle && renderer.constructionResources_.size() == 2, "Shared cache retained per-instance progress");
+        for (float zoom : {.5f, 1.5f}) {
+            view.zoom = zoom; view.origin = {}; view.origin = Vec2{720, 345} - view.project({16,14});
+            renderer.draw(game, view, {}, ui, false, false);
+            renderer.writeSnapshot(output.Get(), Paths::executable().parent_path() / (zoom < 1 ? L"construction-live-far.png" : L"construction-live-near.png"));
+        }
+        Simulation night(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
+        night.revealMap();
+        const std::array nightBuilders{night.worker().id};
+        require(night.construct(nightBuilders, "human.barracks", {17, 10}).has_value(), "Night construction fixture failed");
+        for (const auto& building : night.buildings())
+            const_cast<Building&>(building).constructionProgress = building.definition.constructionTicks * 66 / 100;
+        view.zoom = 1; view.origin = {}; view.origin = Vec2{720, 345} - view.project({16, 14});
+        renderer.draw(night, view, {}, ui, false, false);
+        require(renderer.nightActive_, "Night construction bypassed surface lighting");
+        renderer.writeSnapshot(output.Get(), Paths::executable().parent_path() / L"construction-live-night.png");
+    }
     static void rallyOverlay(const tests::TestContext& context) {
         using render::check;
         using tests::require;
@@ -389,6 +464,28 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         render::boundaryRuns({5, 5}, {6, 5}, &mask, [&](float, float, float) { require(false, "Grid draws through black mask after map replacement"); });
     });
     test("Water renders a translucent bed and smooth editable depth boundary", [&] { RendererLightingTest::water(context); });
+    test("Construction restores progress, completes exactly and shares only artwork", [&] { RendererLightingTest::construction(context); });
+    test("Construction phases and authored reveal order preserve exact endpoints", [&] {
+        const auto start = constructionPhase(0), frame = constructionPhase(.33f), end = constructionPhase(1);
+        require(start.invocation == 1 && start.lines == 0 && start.material == 0, "Invocation exposed the building");
+        require(frame.invocation == 0 && frame.lines == 1 && frame.material == 0, "33 percent is not a pure light frame");
+        require(end.invocation == 0 && end.material == 1 && end.glow == 0, "Finished building retained construction light");
+        SpritePixels source{32, 24, std::vector<std::uint8_t>(32 * 24 * 4, 255)};
+        auto order = source;
+        for (int y = 0; y < 24; ++y) for (int x = 0; x < 16; ++x)
+            for (int c = 0; c < 3; ++c) order.bgra[(y * 32 + x) * 4 + c] = 0;
+        const auto first = makeConstructionPixels(source, &source, &order);
+        const auto second = makeConstructionPixels(source, &source, &order);
+        require(first.regions == second.regions && first.lines.bgra == second.lines.bgra, "Construction mask generation is unstable");
+        for (int i = 1; i < constructionBands - 1; ++i) require(first.regions[i].empty(), "Black/white reveal mask introduced unintended ranks");
+        require(!first.regions[0].empty() && !first.regions.back().empty(), "Authored reveal order was ignored");
+        for (const auto& r : first.regions[0]) require(r[0] + r[2] <= 16, "Dark-first reveal crossed the authored boundary");
+        float area = 0;
+        for (const auto& band : first.regions) for (const auto& r : band) area += r[2] * r[3];
+        require(area == first.lines.width * first.lines.height, "Rank bands lost padding or overlap");
+        GameplayUi::ConstructionPreview preview{0, true, 10};
+        require(preview.at(10) == 0 && preview.at(10 + 15 * Simulation::ticksPerSecond) == 1, "Preview time is not tied to simulation ticks");
+    });
     test("Rally marker overlays buildings and disappears on deselection", [&] { RendererLightingTest::rallyOverlay(context); });
     test("Occlusion layer exposes units with a soft local window and preserves background objects", [&] { RendererLightingTest::occlusion(context); });
     test("Health sections, damage colour and death visibility stay readable at night", [&] { RendererLightingTest::healthBars(context); });

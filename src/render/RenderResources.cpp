@@ -55,6 +55,12 @@ void Renderer::verifyAssets() {
             images.push_back(imagePath(e.projectile->image));
             if (!e.projectile->teamMask.empty()) images.push_back(imagePath(e.projectile->teamMask));
         }
+        if (e.buildingSprite.construction) {
+            const auto& effect = *e.buildingSprite.construction;
+            images.push_back(imagePath(effect.image));
+            if (!effect.contours.empty()) images.push_back(imagePath(effect.contours));
+            if (!effect.revealMask.empty()) images.push_back(imagePath(effect.revealMask));
+        }
         for (const auto& stage : e.buildingSprite.stages) {
             images.push_back(imagePath(stage.image));
             if (!stage.teamMask.empty()) images.push_back(imagePath(stage.teamMask));

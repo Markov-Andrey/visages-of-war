@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <optional>
 #include <vector>
 
 namespace rts {
@@ -38,10 +39,16 @@ struct BuildingSpriteStage {
     std::vector<BuildingSpriteLayer> layers; // Drawn over the base, in authored order.
     std::vector<BuildingSpriteLight> lights; // Presentation only; never adds fog observers.
 };
+struct BuildingConstructionEffect {
+    std::string image, contours, revealMask;
+    float footprintScale = .399f;
+    Vec2 anchor{.5f, .72f};
+};
 struct BuildingSpriteDefinition {
     float scale = 1; // Display pixels per source pixel at zoom 1; never affects occupancy.
     std::string portrait, icon, portraitMask, iconMask;
     std::vector<BuildingSpriteStage> stages;
+    std::optional<BuildingConstructionEffect> construction;
     const BuildingSpriteStage* stage(int progress, int duration) const {
         const BuildingSpriteStage* result = nullptr;
         for (const auto& candidate : stages) {

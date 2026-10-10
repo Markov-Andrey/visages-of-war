@@ -94,6 +94,15 @@ struct CommandFeedback {
     }
 };
 struct GameplayUi {
+    struct ConstructionPreview {
+        float progress{};
+        bool playing{};
+        std::uint64_t startTick{};
+        float at(std::uint64_t tick) const {
+            return playing ? std::min(1.f, float(tick - std::min(tick, startTick)) / (15 * Simulation::ticksPerSecond)) : progress;
+        }
+    };
+    std::map<EntityId, ConstructionPreview> constructionPreviews;
     // Presentation cache: notification lifetime continues while the simulation is paused.
     mutable GameplayNotification notification;
     CommandFeedback commandFeedback;

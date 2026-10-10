@@ -7,6 +7,7 @@ namespace rts {
 using namespace render;
 
 void Renderer::reloadWorldAssets(const WorldAssets& assets) {
+    constructionResources_.clear(); constructionPixels_.clear();
     for (const auto& [id, bitmap] : worldIslands_) spriteLights_.erase(bitmap.Get());
     worldIslands_.clear(); worldSourcePixels_.clear();
     directionalSheets_.clear();

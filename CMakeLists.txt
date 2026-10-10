@@ -34,6 +34,7 @@ add_library(rts_core
     src/render/MinimapRaster.cpp
     src/render/DirectionalSprite.cpp
     src/render/SpriteIsland.cpp
+    src/render/ConstructionVisual.cpp
     src/core/Navigation.cpp
     src/core/Formation.cpp
     src/core/Simulation.cpp
@@ -81,6 +82,7 @@ add_library(rts_render
     src/render/DirectionalSpriteAssets.cpp
     src/render/UnitDirectionPreview.cpp
     src/render/BuildingSpriteRenderer.cpp
+    src/render/ConstructionRenderer.cpp
     src/render/RallyPointRenderer.cpp
     src/render/LightingRenderer.cpp
     src/render/SpriteLighting.cpp

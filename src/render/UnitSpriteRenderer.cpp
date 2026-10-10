@@ -99,6 +99,13 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
     }
     for (const auto& e : definitions.entities()) {
         const auto& buildingArt = e.buildingSprite;
+        if (buildingArt.construction) {
+            dimensions(buildingArt.construction->image);
+            const auto size = dimensions(buildingArt.stages.back().image);
+            for (const auto& mask : {buildingArt.construction->contours, buildingArt.construction->revealMask})
+                if (!mask.empty() && dimensions(mask) != size)
+                    throw std::runtime_error("Construction mask dimensions must match finished sprite: " + e.id);
+        }
         if (!buildingArt.portrait.empty()) dimensions(buildingArt.portrait);
         if (!buildingArt.icon.empty()) dimensions(buildingArt.icon);
         if (!buildingArt.portraitMask.empty() && dimensions(buildingArt.portraitMask) != dimensions(buildingArt.portrait))
