@@ -1,8 +1,39 @@
 #include "RenderSupport.hpp"
 #include "rts/TerrainVisibility.hpp"
+#include "TerrainGrid.hpp"
 
 namespace rts {
 using namespace render;
+void Renderer::gridFootprint(const Map& map, Cell cell, const WorldView& view, unsigned color) {
+    const WorldView local{};
+    const auto centerAtOne = local.project(center(cell), float(map.at(cell).height));
+    auto corners = map.surfaceCorners(cell, local);
+    std::array<float, 8> key{};
+    for (size_t i = 0; i < corners.size(); ++i) {
+        corners[i] = (corners[i] - centerAtOne) * .85f;
+        key[i * 2] = corners[i].x;
+        key[i * 2 + 1] = corners[i].y;
+    }
+    auto& geometry = gridFootprints_[key];
+    if (!geometry) {
+        ComPtr<ID2D1GeometrySink> sink;
+        check(factory_->CreatePathGeometry(geometry.GetAddressOf()));
+        check(geometry->Open(sink.GetAddressOf()));
+        sink->BeginFigure(point(corners.front()), D2D1_FIGURE_BEGIN_HOLLOW);
+        for (size_t i = 1; i < corners.size(); ++i) sink->AddLine(point(corners[i]));
+        sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+        check(sink->Close());
+    }
+    const auto p = view.project(center(cell), float(map.at(cell).height));
+    D2D1_MATRIX_3X2_F previous;
+    target_->GetTransform(&previous);
+    target_->SetTransform(D2D1::Matrix3x2F::Scale(view.zoom, view.zoom) *
+        D2D1::Matrix3x2F::Translation(p.x, p.y) * previous);
+    brush_->SetColor(D2D1::ColorF(color, .7f * worldOpacity_));
+    target_->DrawGeometry(geometry.Get(), brush_.Get(), 1.f / view.zoom);
+    target_->SetTransform(previous);
+}
+
 void Renderer::terrainRow(const Map& map, int row, const WorldView& view, bool grid, bool fog) {
     const bool cropped = map.layoutSize() != Cell{};
     if (cropped) {
@@ -22,10 +53,9 @@ void Renderer::terrainRow(const Map& map, int row, const WorldView& view, bool g
     };
     const auto extent = size();
     const auto draw = [&](Cell cell) {
-        const auto p = view.project(center(cell), float(map.at(cell).height));
-        if (p.x <= -250 || p.x >= extent.x + 250 || p.y <= -100 || p.y >= extent.y + 180 || (fog && !fogMask_.covers(cell))) return;
+        if (!terrainCellVisible(map, cell, view, extent, fog ? &fogMask_ : nullptr)) return;
         worldOpacity_ = 1;
-        tile(map, cell, view, grid, fog);
+        tile(map, cell, view, extent, grid, fog);
     };
     const auto diagonal = [&](int depth, bool early) {
         const auto columns = terrainColumns(view, map.width(), map.height(), depth, -250, extent.x + 250);
@@ -62,7 +92,7 @@ void Renderer::updateFogMask(const Simulation& game) {
     }
 }
 
-void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog) {
+void Renderer::tile(const Map& map, Cell c, const WorldView& view, Vec2 extent, bool grid, bool fog) {
     const auto& tile = map.at(c);
     const std::array<Vec2, 4> world{{{float(c.x), float(c.y)}, {c.x + 1.0f, float(c.y)},
         {c.x + 1.0f, c.y + 1.0f}, {float(c.x), c.y + 1.0f}}};
@@ -139,13 +169,10 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
     // themselves so shore and grid outlines cannot leak into unexplored terrain.
     const auto boundary = [&](size_t edge, unsigned color, float width, float opacity = 1.0f) {
         const size_t next = (edge + 1) % 4;
-        const int segments = fog ? FogMask::pixelsPerCell : 1;
-        for (int i = 0; i < segments; ++i) {
-            const float a = float(i) / segments, b = float(i + 1) / segments;
-            const Vec2 sample = world[edge] + (world[next] - world[edge]) * ((a + b) * .5f);
-            worldOpacity_ = previousOpacity * opacity * (fog ? fogMask_.lightAt(sample) : 1.0f);
+        boundaryRuns(world[edge], world[next], fog ? &fogMask_ : nullptr, [&](float a, float b, float light) {
+            worldOpacity_ = previousOpacity * opacity * light;
             line(top[edge] + (top[next] - top[edge]) * a, top[edge] + (top[next] - top[edge]) * b, color, width);
-        }
+        });
         worldOpacity_ = previousOpacity;
     };
     constexpr std::array<Cell, 4> neighbors{{{0, -1}, {1, 0}, {0, 1}, {-1, 0}}};
@@ -155,7 +182,8 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bo
             boundary(edge, 0xaca17a, std::max(1.0f, 2 * view.zoom));
         else if (tile.surface != Surface::Land && map.at(adjacent).surface == Surface::Land)
             boundary(edge, 0xc5d3b3, std::max(1.0f, view.zoom), .4f);
-        if (grid) boundary(edge, 0xabc494, 1.0f, .25f);
+        if (grid && terrainGridEdge(map, c, edge, view, extent, fog ? &fogMask_ : nullptr))
+            boundary(edge, 0xabc494, 1.0f, .25f);
     }
 }
 }

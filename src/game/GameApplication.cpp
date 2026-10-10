@@ -1,4 +1,5 @@
 #include "GameApplication.hpp"
+#include "FrameMeter.hpp"
 #include "platform/WindowsSupport.hpp"
 #include <windowsx.h>
 #include <algorithm>
@@ -49,6 +50,7 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
     auto previous = Clock::now();
     const auto began = previous;
     double accumulator = 0.0;
+    FrameMeter frameMeter;
     MSG message{};
     bool running = true;
     while (running) {
@@ -80,13 +82,16 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
                 ui_.selection.prune(game_);
                 ui_.controlGroups.prune(game_);
                 if (!ui_.commandGroup.empty() && ui_.commandGroup != ui_.selection.activeGroup(game_).type) clearCommandMode();
+                renderer_.setFrameTiming(frameMeter.fps(), frameMeter.milliseconds());
                 renderer_.draw(game_, view_, hover, ui_, grid_, paused_);
+                frameMeter.completedFrame(Clock::now());
             } else {
+                frameMeter.reset();
                 accumulator = 0;
                 advanceMenu(elapsed);
                 renderer_.drawMenu(game_, menu_, definitions_, mouse_);
             }
-        } else { accumulator = 0; camera_.stop(view_); }
+        } else { accumulator = 0; camera_.stop(view_); frameMeter.reset(); }
         if (smoke && now - began > std::chrono::seconds(2)) DestroyWindow(window_);
         MsgWaitForMultipleObjectsEx(0, nullptr, 8, QS_ALLINPUT, MWMO_INPUTAVAILABLE);
     }

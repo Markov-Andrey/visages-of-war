@@ -34,6 +34,7 @@ void Renderer::ensureTarget() {
 }
 
 void Renderer::discardTarget() {
+    gridFootprints_.clear();
     worldIslands_.clear();
     waterTiles_.clear();
     occlusionLayer_.Reset();

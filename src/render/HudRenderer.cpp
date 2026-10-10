@@ -32,6 +32,14 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     panel({0, extent.y - 204, extent.x, 204}, 0x101c25);
     line({0, 58}, {extent.x, 58}, 0x31464c);
     line({0, extent.y - 204}, {extent.x, extent.y - 204}, 0x31464c);
+    // These are completed-frame intervals supplied by the game loop, not a
+    // simulation tick rate or a timer around individual drawing commands.
+    std::wostringstream frameText;
+    if (frameFps_ > 0) frameText << std::fixed << std::setprecision(0) << L"FPS " << frameFps_
+        << L"  |  " << std::setprecision(1) << frameMilliseconds_ << L" ms";
+    else frameText << L"FPS --  |  -- ms";
+    panel({extent.x - 198, 66, 180, 28}, 0x101c25);
+    text(frameText.str(), rect(extent.x - 188, 70, 165, 22), 0xaabfbd);
     panel(layout.menu, layout.menu.contains(ui.mouse) ? 0x304851 : 0x1d303a);
     text(L"Меню / Esc", rect(29, 19, 94, 25), 0xd0ddd8);
     const int minutes = static_cast<int>(game.clock().minuteOfDay());

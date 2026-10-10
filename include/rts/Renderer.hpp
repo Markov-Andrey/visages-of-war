@@ -26,6 +26,7 @@ public:
     explicit Renderer(Paths paths);
     void attach(HWND window);
     void resize(unsigned width, unsigned height);
+    void setFrameTiming(double fps, double milliseconds) { frameFps_ = fps; frameMilliseconds_ = milliseconds; }
     void draw(const Simulation& game, const WorldView& view, std::optional<Cell> hover,
               const GameplayUi& ui, bool grid, bool paused);
     void verifyAssets();
@@ -83,8 +84,12 @@ private:
     void buildingPortrait(const BuildingSpriteStage& stage, UiRect area, unsigned color, std::uint64_t tick = 0, bool training = false);
     void drawBuildingPortrait(const Simulation& game, const Building& building, const SelectionPanelLayout& layout);
     void drawCrystalPortrait(const Crystal& crystal, const SelectionPanelLayout& layout);
-    void tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog = false);
+    void tile(const Map& map, Cell c, const WorldView& view, Vec2 extent, bool grid, bool fog);
     void terrainRow(const Map& map, int row, const WorldView& view, bool grid, bool fog = false);
+    void gridFootprint(const Map& map, Cell cell, const WorldView& view, unsigned color);
+    // Unit-zoom shapes, relative to each cell's center. The key includes slope
+    // geometry, so map edits/replacement cannot reuse an obsolete contour.
+    std::map<std::array<float, 8>, ComPtr<ID2D1PathGeometry>> gridFootprints_;
     void environmentObject(const EnvironmentObject& object, const Map& map, const WorldView& view);
     bool beginUnitOcclusion(const Simulation& game, const WorldView& view, float depth, UiRect bounds);
     ComPtr<ID2D1Layer> occlusionLayer_;
@@ -172,5 +177,6 @@ private:
     unsigned teamColor_ = teamRgb(TeamColor::Blue);
     unsigned enemyColor_ = teamRgb(TeamColor::Red);
     float worldOpacity_ = 1;
+    double frameFps_{}, frameMilliseconds_{};
 };
 }

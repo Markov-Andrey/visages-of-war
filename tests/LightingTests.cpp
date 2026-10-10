@@ -1,9 +1,52 @@
 #include "TestSupport.hpp"
 #include "render/RenderSupport.hpp"
+#include "render/TerrainGrid.hpp"
 #include "rts/UnitOcclusion.hpp"
 
 namespace rts {
 struct RendererLightingTest {
+    static void gridContours(const tests::TestContext& context) {
+        using render::check;
+        using tests::require;
+        platform::ComApartment apartment;
+        Renderer renderer(Paths(context.assets, Paths::executable().parent_path() / "grid-test-data"));
+        Renderer::ComPtr<IWICBitmap> output;
+        constexpr UINT width = 256, height = 256;
+        check(renderer.wic_->CreateBitmap(width, height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, output.GetAddressOf()));
+        auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
+        properties.dpiX = properties.dpiY = 96;
+        check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
+        check(renderer.target_->CreateSolidColorBrush(D2D1::ColorF(0), renderer.brush_.GetAddressOf()));
+        Map map(8, 8);
+        const auto draw = [&](Cell c, const WorldView& view, bool cached) {
+            renderer.target_->BeginDraw(); renderer.target_->Clear(D2D1::ColorF(0));
+            if (cached) renderer.gridFootprint(map, c, view, 0xe16d65);
+            else {
+                const auto p = view.project(center(c), float(map.at(c).height));
+                auto corners = map.surfaceCorners(c, view);
+                for (auto& v : corners) v = p + (v - p) * .85f;
+                renderer.polygon(corners, 0xe16d65, .7f, false);
+            }
+            check(renderer.target_->EndDraw());
+            std::vector<BYTE> pixels(width * height * 4);
+            check(output->CopyPixels(nullptr, width * 4, UINT(pixels.size()), pixels.data()));
+            return pixels;
+        };
+        for (Cell c : {Cell{1, 1}, Cell{5, 6}}) for (int elevation : {-1, 3})
+            for (Cell ramp : {Cell{}, Cell{1, 0}, Cell{-1, 0}, Cell{0, 1}, Cell{0, -1}})
+                for (float zoom : {.35f, .85f, 2.f}) {
+                    map.at(c).height = elevation; map.at(c).ramp = ramp;
+                    WorldView view{{}, zoom};
+                    view.origin = Vec2{128.3f, 128.7f} - view.project(center(c), float(elevation));
+                    const auto expected = draw(c, view, false), actual = draw(c, view, true);
+                    int difference = 0;
+                    for (size_t i = 0; i < actual.size(); ++i) difference += std::abs(int(actual[i]) - int(expected[i]));
+                    require(difference < 1000, "Cached grid contour changed shape, position or stroke width after a terrain/camera edit");
+                }
+        require(renderer.gridFootprints_.size() == 5, "Contour cache grows with camera, elevation or cell position");
+        renderer.discardTarget();
+        require(renderer.gridFootprints_.empty(), "Discarded renderer retained grid resources");
+    }
     static void water(const tests::TestContext& context) {
         using render::check;
         using tests::require;
@@ -207,6 +250,49 @@ struct RendererLightingTest {
 };
 namespace tests {
 void lightingTests(TestSuite& test, const TestContext& context) {
+    test("Cached grid contours preserve ramps, camera transforms and one-pixel strokes", [&] { RendererLightingTest::gridContours(context); });
+    test("Grid shares flat edges but retains cliffs, ramps and viewport boundaries", [&] {
+        Map map(4, 4);
+        const WorldView view{{400, 100}, 1};
+        const Vec2 extent{1000, 700};
+        int edges = 0;
+        for (int y = 0; y < 4; ++y) for (int x = 0; x < 4; ++x) for (size_t edge = 0; edge < 4; ++edge)
+            edges += render::terrainGridEdge(map, {x, y}, edge, view, extent, nullptr);
+        require(edges == 40, "Flat grid repeats or loses a shared boundary");
+        map.at({2, 1}).height = 1;
+        require(render::terrainGridEdge(map, {1, 1}, 1, view, extent, nullptr), "Grid lost a cliff edge");
+        map.at({2, 1}).height = 0; map.at({2, 1}).ramp = {0, 1};
+        require(render::terrainGridEdge(map, {1, 1}, 1, view, extent, nullptr), "Grid lost a ramp edge");
+        map.at({2, 1}).ramp = {};
+        require(render::terrainGridEdge(map, {1, 1}, 1, {{1240, 100}, 1}, extent, nullptr), "Grid deferred an edge to a culled tile");
+    });
+    test("Joined grid strokes retain fog samples and refresh after exploration changes", [&] {
+        Map map(12, 12);
+        FogOfWar fog(12, 12); FogMask mask;
+        const std::array sources{VisionSource{{5, 5}, 3}};
+        fog.update(map, sources); mask.update(fog, 12, 12);
+        const auto checkSamples = [&] {
+            for (int y = 0; y < 12; ++y) for (int x = 0; x < 12; ++x) {
+                const Vec2 a{float(x), float(y)}, b{float(x + 1), float(y)};
+                std::array<float, 4> actual{};
+                render::boundaryRuns(a, b, &mask, [&](float start, float end, float light) {
+                    for (int i = int(start * 4); i < int(end * 4); ++i) actual[i] = light;
+                });
+                for (int i = 0; i < 4; ++i)
+                    require(actual[i] == mask.lightAt(a + (b - a) * ((i + .5f) / 4)), "Merged grid stroke exposed or brightened fog");
+            }
+        };
+        checkSamples();
+        fog.update(map, {}); mask.update(fog, 12, 12); checkSamples();
+        fog.revealAll(); mask.update(fog, 12, 12); checkSamples();
+        int runs = 0;
+        render::boundaryRuns({5, 5}, {6, 5}, &mask, [&](float start, float end, float light) {
+            ++runs; require(start == 0 && end == 1 && light == 1, "Fully lit boundary was not joined");
+        });
+        require(runs == 1, "Fully lit grid retained four separate draw calls");
+        FogOfWar dark(12, 12); mask.update(dark, 12, 12);
+        render::boundaryRuns({5, 5}, {6, 5}, &mask, [&](float, float, float) { require(false, "Grid draws through black mask after map replacement"); });
+    });
     test("Water renders a translucent bed and smooth editable depth boundary", [&] { RendererLightingTest::water(context); });
     test("Occlusion layer exposes units with a soft local window and preserves background objects", [&] { RendererLightingTest::occlusion(context); });
     test("Health sections, damage colour and death visibility stay readable at night", [&] { RendererLightingTest::healthBars(context); });
@@ -220,7 +306,7 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         Scenario site{Map(28, 28), {8, 11}, {11, 11}, {{{12, 12}, 1000}, {{13, 13}, 1000}}};
         for (const auto& crystal : site.crystals) site.map.occupy(crystal.cell);
         Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
-        renderer.snapshot(game, root / "lighting-night.png");
+        renderer.snapshot(game, root / "lighting-night.png", nullptr, true);
         WorldView shot{{},.85f}; shot.origin=Vec2{720,350}-shot.project(center(game.hall())+Vec2{1,2});
         const auto hidden=shot.project(center({2,18}));
         require(!game.fog().explored({2,18}),"Dark-pixel probe is no longer unexplored");

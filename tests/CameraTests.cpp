@@ -1,5 +1,6 @@
 #include "TestSupport.hpp"
 #include "game/CameraController.hpp"
+#include "game/FrameMeter.hpp"
 #include "rts/MenuBackdrop.hpp"
 #include "rts/TerrainVisibility.hpp"
 
@@ -13,6 +14,23 @@ void advance(game::CameraController& camera, WorldView& view, int frames, float 
 }
 void cameraTests(TestSuite& test) {
     using game::CameraController;
+    test("Frame meter measures elapsed wall time rather than averaging instantaneous FPS", [] {
+        game::FrameMeter meter;
+        auto now = game::FrameMeter::Clock::time_point{};
+        meter.completedFrame(now);
+        for (int i = 0; i < 20; ++i) meter.completedFrame(now += std::chrono::milliseconds(10));
+        require(meter.fps() == 0, "FPS published before collecting a measurement window");
+        for (int i = 0; i < 10; ++i) meter.completedFrame(now += std::chrono::milliseconds(30));
+        require(std::abs(meter.fps() - 60) < 1e-6 && std::abs(meter.milliseconds() - 1000. / 60) < 1e-6,
+            "FPS did not divide completed frame intervals by their total elapsed time");
+        meter.completedFrame(now += std::chrono::milliseconds(800));
+        require(meter.fps() == 1.25 && meter.milliseconds() == 800, "Frame meter hid a stall behind the simulation dt clamp");
+        meter.reset();
+        require(meter.fps() == 0 && meter.milliseconds() == 0, "Menu/minimize reset retained stale frame statistics");
+        meter.completedFrame(now += std::chrono::hours(1));
+        for (int i = 0; i < 50; ++i) meter.completedFrame(now += std::chrono::milliseconds(10));
+        require(meter.fps() == 100 && meter.milliseconds() == 10, "Minimized/menu time contaminated the next measurement");
+    });
     test("Terrain diagonal clipping preserves every on-screen cell across cameras and zooms", [] {
         for (const Cell size : {Cell{1, 1}, Cell{37, 83}, Cell{144, 144}, Cell{512, 512}})
             for (float zoom : {.08f, .6f, 1.f, 2.f})

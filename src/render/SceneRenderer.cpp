@@ -155,9 +155,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             if (!game.fog().explored(c)) continue;
             const auto p = view.project(center(c), float(map.at(c).height));
             if (!onScreen(p)) continue;
-            auto footprint = map.surfaceCorners(c, view);
-            for (auto& corner : footprint) corner = p + (corner - p) * .85f;
-            polygon(footprint, object.blocks(x, y) ? 0xe16d65 : 0x73ca91, .7f, false);
+            gridFootprint(map, c, view, object.blocks(x, y) ? 0xe16d65 : 0x73ca91);
         }
     }
     if (grid) for (const auto& u : game.units()) if (u.owner == game.player().id && ui.selection.contains(u.id)) {
