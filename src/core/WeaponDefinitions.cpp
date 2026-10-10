@@ -98,9 +98,10 @@ RallySpriteDefinition parseRallySprite(const Json& sprite) {
 }
 void parseBuildingSprite(EntityDefinition& e, const Json& sprite) {
     if (sprite.is_null()) return;
-    fields(sprite, {"scale", "stages"}, {"portrait", "icon", "portraitMask", "iconMask", "construction"});
+    fields(sprite, {"scale", "stages"}, {"portrait", "icon", "portraitMask", "iconMask", "construction", "healthBarWidth"});
     auto& s = e.buildingSprite;
     s.scale = real(sprite.at("scale"), .01f, 4);
+    if (sprite.contains("healthBarWidth")) s.healthBarWidth = real(sprite.at("healthBarWidth"), 8, 1024);
     if (sprite.contains("construction")) {
         const auto& effect = sprite.at("construction");
         fields(effect, {"image", "footprintScale", "anchor"}, {"contours", "revealMask"});

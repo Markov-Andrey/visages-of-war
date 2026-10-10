@@ -176,7 +176,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const_cast<Building&>(*game.building(*building)).health -= 10;
         game.command(ids, {5, 3}); ticks(game, 300);
         require(game.building(*building)->complete(), "Resumed construction never finished");
-        require(game.building(*building)->health == 690, "Construction completion healed damage instead of preserving it");
+        require(game.building(*building)->health == definitions.entity("human.barracks").maximumHealth - 10,
+            "Construction completion healed damage instead of preserving it");
         const auto tower = game.construct(ids, "human.watchtower", {3, 5});
         require(tower && game.storedCrystals() == 325, "Tower placement failed");
         require(game.cancelConstruction(*tower), "Cancellation failed");

@@ -106,7 +106,7 @@
         "supply": 2
       },
       "stats": {
-        "health": 380,
+        "health": 550,
         "damage": 12,
         "level": 1,
         "dayVision": 9,
@@ -266,7 +266,7 @@
         "supply": 5
       },
       "stats": {
-        "health": 600,
+        "health": 1000,
         "mana": 200,
         "damage": 24,
         "level": 1,
@@ -364,7 +364,7 @@
         "supply": 0
       },
       "stats": {
-        "health": 1000,
+        "health": 2500,
         "damage": 0,
         "level": 1,
         "dayVision": 11,
@@ -400,6 +400,7 @@
       "visual": "hall",
       "buildingSprite": {
         "scale": 0.24,
+        "healthBarWidth": 134.4,
         "stages": [
           {
             "from": 0,
@@ -719,7 +720,7 @@
         "supply": 0
       },
       "stats": {
-        "health": 700,
+        "health": 1500,
         "damage": 0,
         "level": 1,
         "dayVision": 9,
@@ -757,6 +758,7 @@
       "visual": "barracks",
       "buildingSprite": {
         "scale": 0.2,
+        "healthBarWidth": 134.4,
         "portrait": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-portrait.png",
         "portraitMask": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-portrait-mask.png",
         "icon": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-icon.png",
@@ -916,7 +918,7 @@
         "supply": 2
       },
       "stats": {
-        "health": 120,
+        "health": 375,
         "damage": 14,
         "level": 1,
         "dayVision": 10,

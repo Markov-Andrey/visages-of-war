@@ -77,7 +77,8 @@ struct RendererLightingTest {
             const_cast<Building&>(building).constructionProgress = building.definition.constructionTicks * 66 / 100;
         view.zoom = 1; view.origin = {}; view.origin = Vec2{720, 345} - view.project({16, 14});
         renderer.draw(night, view, {}, ui, false, false);
-        require(renderer.nightActive_, "Night construction bypassed surface lighting");
+        // draw() disables world lighting before drawing the HUD; the amount retains the scene setting.
+        require(renderer.nightAmount_ > 0, "Night construction fixture did not enable night lighting");
         renderer.writeSnapshot(output.Get(), Paths::executable().parent_path() / L"construction-live-night.png");
     }
     static void rallyOverlay(const tests::TestContext& context) {

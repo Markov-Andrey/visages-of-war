@@ -118,7 +118,8 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
     }
     if (selected || !b.complete()) {
         const float y = (stage || b.complete()) ? bounds.y - 12 : p.y - 100 * z;
-        drawHealthBar(b.health, type.maximumHealth, 0, {p.x - 48, y, 96, 6},
+        const float width = type.buildingSprite.healthBarWidth;
+        drawHealthBar(b.health, type.maximumHealth, 0, {p.x - width * .5f, y, width, 6},
             selectionColor(b.owner, game.player().id), true);
     }
 }

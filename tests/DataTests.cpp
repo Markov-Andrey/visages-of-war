@@ -488,7 +488,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         for (const auto& entity : defs.entities()) {
             require(!entity.displayName.empty() && !entity.description.empty() && entity.factionId == "humans", "Missing common metadata");
         }
-        require(defs.entity("human.hero").hero && defs.entity("human.hero").maximumHealth == 600 && defs.entity("human.hero").hero->healthPerLevel == 60 && defs.entity("human.hero").cost.supply == 5, "Hero common properties missing");
+        require(defs.entity("human.hero").hero && defs.entity("human.hero").maximumHealth == 1000 && defs.entity("human.hero").hero->healthPerLevel == 60 && defs.entity("human.hero").cost.supply == 5, "Hero common properties missing");
         require(defs.entity("human.hall").constructible && !defs.entity("human.hall").mobile && defs.entity("human.hall").cost.crystals == 200, "Building not in common catalog");
         require(defs.progression().thresholds.size() == 10, "External progression lost");
         fixture.rules["hero"]["thresholds"] = {0, 10, 30};
@@ -580,6 +580,8 @@ void dataTests(TestSuite& test, const TestContext& context) {
         rejects([](Json& a) { a["stages"][0]["source"][2] = 0; });
         rejects([](Json& a) { a["stages"][0]["anchor"][0] = 2; });
         rejects([](Json& a) { a["scale"] = 0; });
+        rejects([](Json& a) { a["healthBarWidth"] = 0; });
+        rejects([](Json& a) { a["healthBarWidth"] = 1025; });
         rejects([](Json& a) { a["construction"]["image"] = "../outside.png"; });
         rejects([](Json& a) { a["construction"]["contours"] = "C:/mask.png"; });
         rejects([](Json& a) { a["construction"]["revealMask"] = "../mask.png"; });
@@ -613,6 +615,9 @@ void dataTests(TestSuite& test, const TestContext& context) {
         fixture.entities["entities"][3]["buildingSprite"]["stages"][3]["emissionMask"] = "sprites/window-emission.png";
         const auto masked = fixture.load().entity("human.hall").buildingSprite.stages.back();
         require(masked.emissionMask == "sprites/window-emission.png" && !masked.teamMask.empty(), "Emission mask replaced the team mask");
+        require(fixture.load().entity("human.hall").buildingSprite.healthBarWidth == 134.4f, "Authored building health bar width lost");
+        fixture.entities["entities"][3]["buildingSprite"].erase("healthBarWidth");
+        require(fixture.load().entity("human.hall").buildingSprite.healthBarWidth == 96, "Building health bar width default changed");
     });
     test("Building layers loop on simulation ticks and keep training effects separate", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");

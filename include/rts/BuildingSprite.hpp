@@ -46,6 +46,7 @@ struct BuildingConstructionEffect {
 };
 struct BuildingSpriteDefinition {
     float scale = 1; // Display pixels per source pixel at zoom 1; never affects occupancy.
+    float healthBarWidth = 96; // Screen pixels, independent of sprite size and camera zoom.
     std::string portrait, icon, portraitMask, iconMask;
     std::vector<BuildingSpriteStage> stages;
     std::optional<BuildingConstructionEffect> construction;
