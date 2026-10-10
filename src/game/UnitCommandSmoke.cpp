@@ -6,7 +6,7 @@ void GameApplication::exerciseUnitCommands() {
     rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {{{12, 9}, 1000}}};
     scene.map.occupy({12, 9}); scene.extraWorkers = {{8, 9}};
     scene.units = {{"human.peacemaker", 0, {10, 10}}, {"human.catapult", 0, {11, 11}}, {"human.peacemaker", 1, {14, 11}},
-        {"human.archer", 0, {10, 12}}, {"human.peacemaker", 0, {9, 12}}};
+        {"human.slinger", 0, {10, 12}}, {"human.peacemaker", 0, {9, 12}}};
     scene.heroSpawn = rts::Cell{9, 8};
     game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), "human.hero");
     ui_ = {}; menu_.page = rts::MenuPage::Playing; resetCamera();
@@ -83,8 +83,8 @@ void GameApplication::exerciseUnitCommands() {
     preview.selection.ids = {first}; preview.buildMenu = true; preview.mouse = {-1, -1};
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"build-commands-preview.png", nullptr, false, &preview);
 
-    const auto archer = game_.units()[5].id, otherSoldier = game_.units()[6].id, hero = game_.hero()->id;
-    ui_ = {}; ui_.selection.ids = {siege, first, archer, hero, soldier, second, otherSoldier};
+    const auto slinger = game_.units()[5].id, otherSoldier = game_.units()[6].id, hero = game_.hero()->id;
+    ui_ = {}; ui_.selection.ids = {siege, first, slinger, hero, soldier, second, otherSoldier};
     const auto wholeSelection = ui_.selection.ids;
     const auto expectGroup = [&](const char* type, size_t members) {
         const auto group = ui_.selection.activeGroup(game_);
@@ -134,7 +134,7 @@ void GameApplication::exerciseUnitCommands() {
     onMessage(WM_KEYDOWN, 'S', 0); expectAll(rts::OrderKind::Stop);
     click({layout.commands[3].x + 10, layout.commands[3].y + 10}); expectAll(rts::OrderKind::Hold);
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"active-soldiers-preview.png", nullptr, false, &ui_);
-    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.archer", 1);
+    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.slinger", 1);
     onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.catapult", 1);
     onMessage(WM_KEYDOWN, 'T', 0); click(mini.project(rts::center({19, 16})));
     for (const auto id : wholeSelection) if (rts::unitOrder(*game_.unit(id)) !=

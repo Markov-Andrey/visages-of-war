@@ -100,7 +100,7 @@ bool Simulation::groupArrived(const Unit& u) const {
     if (groundLengthSquared(u.position - center(u.groupTarget)) > (u.groupRadius + .7f) * (u.groupRadius + .7f)) return false;
     if (groundLengthSquared(u.position - u.routeDestination) < .0025f) return true;
     // Arrival may relax within a role's band, but must not leave melee behind
-    // archers merely because an archer stopped across its personal destination.
+    // slingers merely because a slinger stopped across its personal destination.
     const auto [back, front] = roleBand(u, units_);
     const float current = formationDepth(u, u.position);
     if (current > front || current < back) return false;

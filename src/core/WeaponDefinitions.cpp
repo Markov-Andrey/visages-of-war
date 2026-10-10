@@ -154,13 +154,16 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
     else throw std::runtime_error("Unknown attack targets");
     const auto& projectile = attack.at("projectile");
     if (!projectile.is_null()) {
-        fields(projectile, {"targeting", "image", "source", "size", "rotationOffset", "speed", "arcHeight", "launchHeight", "impactHeight", "splashRadius", "friendlyFire"});
+        fields(projectile, {"targeting", "image", "source", "size", "rotationOffset", "speed", "arcHeight", "launchHeight", "impactHeight", "splashRadius", "friendlyFire"}, {"teamMask", "anchor", "launchAngle"});
         auto& p = e.projectile.emplace();
         const auto mode = string(projectile.at("targeting"));
         if (mode == "unit") p.targeting = ProjectileTargeting::Unit;
         else if (mode == "point") p.targeting = ProjectileTargeting::Point;
         else throw std::runtime_error("Unknown projectile targeting");
         p.image = imagePath(projectile.at("image"));
+        if (projectile.contains("teamMask")) p.teamMask = imagePath(projectile.at("teamMask"));
+        if (projectile.contains("anchor")) p.anchor = pair(projectile.at("anchor"), 0, 1);
+        if (projectile.contains("launchAngle")) p.launchAngle = real(projectile.at("launchAngle"), 0, 75);
         const auto& source = projectile.at("source");
         if (!source.is_array() || source.size() != 4) throw std::runtime_error("Projectile source requires four components");
         for (size_t i = 0; i < 4; ++i) p.source[i] = number(source[i], 0, 8192);
@@ -177,8 +180,8 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
             (p.targeting == ProjectileTargeting::Unit && (p.splashRadius != 0 || p.friendlyFire)))
             throw std::runtime_error("Point projectiles require a splash radius; unit projectiles have single-target damage");
     }
-    if (sprite.is_null()) return;
-    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance", "healthBarOffset"});
+    if (sprite.is_null()) { e.sprite.image.clear(); return; }
+    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance", "healthBarOffset", "projectileOrigins"});
     auto& s = e.sprite;
     s.image = imagePath(sprite.at("image"));
     if (sprite.contains("portrait") && !sprite.at("portrait").is_null()) s.portrait = imagePath(sprite.at("portrait"));
@@ -197,6 +200,14 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
     const auto& rows = sprite.at("rows");
     if (!rows.is_array() || rows.size() != 8) throw std::runtime_error("Sprite requires eight facing rows");
     for (size_t i = 0; i < 8; ++i) s.rows[i] = number(rows[i], 0, 255);
+    if (sprite.contains("projectileOrigins")) {
+        const auto& origins = sprite.at("projectileOrigins");
+        if (!origins.is_array() || origins.size() != 8 || !e.projectile ||
+            *std::max_element(s.rows.begin(), s.rows.end()) >= 8)
+            throw std::runtime_error("Projectile sockets require a ranged unit and eight sprite rows");
+        auto& sockets = s.projectileOrigins.emplace();
+        for (size_t i = 0; i < 8; ++i) sockets[i] = pair(origins[i], 0, 1);
+    }
     s.idle = number(sprite.at("idle"), 0, 255);
     s.walk = frames(sprite.at("walk")); s.windup = frames(sprite.at("windup")); s.recovery = frames(sprite.at("recovery"));
     if (sprite.contains("walkCycleDistance")) s.walkCycleDistance = real(sprite.at("walkCycleDistance"), .1f, 16);

@@ -750,7 +750,7 @@
       "id": "human.barracks",
       "factionId": "humans",
       "name": "Казарма",
-      "description": "Обучает миротворцев, лучников и катапульты. Точка сбора определяет, куда отправятся новые бойцы.",
+      "description": "Обучает миротворцев, пращников и катапульты. Точка сбора определяет, куда отправятся новые бойцы.",
       "cost": {
         "crystals": 100,
         "supply": 0
@@ -785,7 +785,7 @@
         "trainingTicks": 150,
         "trains": [
           "human.peacemaker",
-          "human.archer",
+          "human.slinger",
           "human.catapult"
         ]
       },
@@ -908,54 +908,14 @@
         "targets": "same_layer",
         "projectile": null
       },
-      "sprite": {
-        "image": "sprites/archer.png",
-        "frameSize": [
-          32,
-          32
-        ],
-        "size": [
-          80,
-          80
-        ],
-        "anchor": [
-          0.5,
-          0.7125
-        ],
-        "rows": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7
-        ],
-        "idle": 0,
-        "walk": [
-          0,
-          2,
-          1,
-          3
-        ],
-        "windup": [
-          8,
-          9
-        ],
-        "recovery": [
-          10,
-          11
-        ],
-        "teamMask": "purple"
-      }
+      "sprite": null
     },
     {
-      "id": "human.archer",
+      "id": "human.slinger",
       "canDecompose": true,
       "factionId": "humans",
-      "name": "Лучник",
-      "description": "Стреляет по наземным и воздушным целям. Выпущенная стрела следует за выбранной целью.",
+      "name": "Пращник",
+      "description": "Боец дальнего боя. Метает заряд из пращи по пологой дуге в наземные и воздушные цели.",
       "cost": {
         "crystals": 80,
         "supply": 2
@@ -1002,39 +962,51 @@
         "targets": "all",
         "projectile": {
           "targeting": "unit",
-          "image": "sprites/arrow.png",
+          "image": "sprites/units/slinger/slinger.png",
           "source": [
+            1024,
             0,
-            0,
-            0,
-            0
+            512,
+            512
           ],
           "size": [
-            6,
-            38
+            96,
+            96
           ],
           "rotationOffset": 90,
           "speed": 10,
-          "arcHeight": 0.75,
+          "arcHeight": 0,
           "launchHeight": 1.5,
           "impactHeight": 1.3,
           "splashRadius": 0,
-          "friendlyFire": false
+          "friendlyFire": false,
+          "teamMask": "sprites/units/slinger/slinger-mask.png",
+          "anchor": [
+            0.5,
+            0.5
+          ],
+          "launchAngle": 15
         }
       },
       "sprite": {
-        "image": "sprites/archer.png",
+        "image": "sprites/units/slinger/slinger.png",
+        "portrait": "sprites/units/slinger/slinger-portrait.png",
+        "icon": "sprites/units/slinger/slinger-icon.png",
+        "directionRecipe": "sprites/units/slinger/directions.json",
+        "healthBarOffset": 12,
+        "walkCycleDistance": 2,
+        "pixelArt": false,
         "frameSize": [
-          32,
-          32
+          512,
+          512
         ],
         "size": [
-          80,
-          80
+          126,
+          126
         ],
         "anchor": [
           0.5,
-          0.7125
+          0.84375
         ],
         "rows": [
           0,
@@ -1048,21 +1020,114 @@
         ],
         "idle": 0,
         "walk": [
-          0,
-          2,
           1,
-          3
+          2,
+          3,
+          4
         ],
         "windup": [
-          8,
-          9
+          5,
+          6
         ],
         "recovery": [
-          10,
-          11
+          7,
+          8
         ],
-        "teamMask": "purple"
-      }
+        "teamMask": "none",
+        "death": {
+          "image": "sprites/units/slinger/slinger.png",
+          "teamMask": "sprites/units/slinger/slinger-mask.png",
+          "scale": 0.24609375,
+          "ticksPerFrame": 6,
+          "frames": [
+            {
+              "source": [
+                0,
+                2560,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                344
+              ]
+            },
+            {
+              "source": [
+                512,
+                2560,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                344
+              ]
+            },
+            {
+              "source": [
+                1024,
+                2560,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                344
+              ]
+            },
+            {
+              "source": [
+                1536,
+                2560,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                344
+              ]
+            }
+          ]
+        },
+        "portraitMask": "sprites/units/slinger/slinger-portrait-mask.png",
+        "iconMask": "sprites/units/slinger/slinger-icon-mask.png",
+        "projectileOrigins": [
+          [
+            0.903332,
+            0.273438
+          ],
+          [
+            0.917969,
+            0.273438
+          ],
+          [
+            0.886982,
+            0.273438
+          ],
+          [
+            0.929688,
+            0.273438
+          ],
+          [
+            0.081916,
+            0.273438
+          ],
+          [
+            0.068359,
+            0.273438
+          ],
+          [
+            0.111065,
+            0.273438
+          ],
+          [
+            0.080078,
+            0.273438
+          ]
+        ]
+      },
+      "library": true
     },
     {
       "id": "human.catapult",

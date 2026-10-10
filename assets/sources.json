@@ -25,6 +25,30 @@
       "license": "CC0-1.0",
       "removed": "2026-10-09",
       "reason": "Replaced by catalog trees from Sunny Hills; no longer loaded, installed or restored."
+    },
+    {
+      "destination": "sprites/archer.png",
+      "archive": "characters.zip",
+      "entry": "Puny-Characters/Archer-Purple.png",
+      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
+      "source": "https://opengameart.org/content/puny-characters",
+      "author": "Shade",
+      "sha256": "788D53DE100ACEB025621AE4FC95A61A6CD08168205185871A6442AB7B131D26",
+      "imported": "2026-09-28",
+      "license": "CC0-1.0",
+      "removed": "2026-10-10",
+      "reason": "Archer removed; replaced by project owner Slinger artwork."
+    },
+    {
+      "destination": "sprites/arrow.png",
+      "url": "https://opengameart.org/sites/default/files/ornamented_arrow.png",
+      "source": "https://opengameart.org/content/simple-ornamented-arrow",
+      "author": "Nallebeorn / Benjamin Larsson",
+      "sha256": "C4DC6AA4022DE3F518C477472A1B46E3150D1FDAEC5856FD65B8983326728DA1",
+      "imported": "2026-09-28",
+      "license": "CC0-1.0",
+      "removed": "2026-10-10",
+      "reason": "Archer removed; replaced by project owner Slinger artwork."
     }
   ],
   "files": [
@@ -43,17 +67,6 @@
       "sha256": "DDCB515BAAF2B5B7A4C569BA23D7490C3E5221BB5E97D760CE67CE9C261A543D"
     },
     {
-      "destination": "sprites/archer.png",
-      "archive": "characters.zip",
-      "entry": "Puny-Characters/Archer-Purple.png",
-      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
-      "source": "https://opengameart.org/content/puny-characters",
-      "author": "Shade",
-      "sha256": "788D53DE100ACEB025621AE4FC95A61A6CD08168205185871A6442AB7B131D26",
-      "imported": "2026-09-28",
-      "license": "CC0-1.0"
-    },
-    {
       "destination": "sprites/catapult.png",
       "archive": "catapult.zip",
       "entry": "catapult_shoot.png",
@@ -61,15 +74,6 @@
       "source": "https://opengameart.org/content/catapult",
       "author": "yd",
       "sha256": "6B7C3523269376CF455C56AC864C4E1E20FA846FA65B104C2D3382E1E16D2674",
-      "imported": "2026-09-28",
-      "license": "CC0-1.0"
-    },
-    {
-      "destination": "sprites/arrow.png",
-      "url": "https://opengameart.org/sites/default/files/ornamented_arrow.png",
-      "source": "https://opengameart.org/content/simple-ornamented-arrow",
-      "author": "Nallebeorn / Benjamin Larsson",
-      "sha256": "C4DC6AA4022DE3F518C477472A1B46E3150D1FDAEC5856FD65B8983326728DA1",
       "imported": "2026-09-28",
       "license": "CC0-1.0"
     }

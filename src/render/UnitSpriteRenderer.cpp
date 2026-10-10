@@ -23,10 +23,21 @@ ID2D1Bitmap* Renderer::unitBitmap(const UnitSpriteDefinition& d, unsigned color)
 }
 void Renderer::unitImage(const UnitSpriteDefinition& d, int column, int row, Vec2 ground, float zoom, unsigned color) {
     const auto extent = d.size * zoom;
+    if (d.image.empty()) {
+        unitPortrait(d, ground - Vec2{extent.x * .5f, extent.y * .75f}, extent, color);
+        return;
+    }
     sprite(unitBitmap(d, color), rect(float(column * d.frameWidth), float(row * d.frameHeight), float(d.frameWidth), float(d.frameHeight)),
         ground - Vec2{extent.x * d.anchor.x, extent.y * d.anchor.y}, extent, d.pixelArt, .5f);
 }
 void Renderer::unitPortrait(const UnitSpriteDefinition& d, Vec2 topLeft, Vec2 extent, unsigned color) {
+    if (d.image.empty()) {
+        const float radius = std::min(extent.x, extent.y) * .22f;
+        const auto shape = D2D1::Ellipse(point(topLeft + extent * .5f), radius, radius);
+        brush_->SetColor(D2D1::ColorF(color, worldOpacity_)); target_->FillEllipse(shape, brush_.Get());
+        brush_->SetColor(D2D1::ColorF(0x222733, worldOpacity_)); target_->DrawEllipse(shape, brush_.Get(), 1.5f);
+        return;
+    }
     sprite(unitBitmap(d, color), rect(float(d.idle * d.frameWidth), float(d.rows[0] * d.frameHeight), float(d.frameWidth), float(d.frameHeight)), topLeft, extent, d.pixelArt);
 }
 void Renderer::unitHudPortrait(const UnitSpriteDefinition& d, UiRect bounds, unsigned color) {
@@ -97,7 +108,7 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                     throw std::runtime_error("Building layer emission mask dimensions must match image: " + e.id);
             }
         }
-        if (e.mobile) {
+        if (e.mobile && !e.sprite.image.empty()) {
             const auto& s = e.sprite; auto size = dimensions(s.image);
             if (!s.directionRecipe.empty()) {
                 const auto recipe = directionalRecipe(paths_, s);
@@ -134,6 +145,8 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
         }
         if (e.projectile) {
             const auto& p = *e.projectile; const auto size = dimensions(p.image);
+            if (!p.teamMask.empty() && dimensions(p.teamMask) != size)
+                throw std::runtime_error("Projectile team mask dimensions must match image: " + e.id);
             if (p.source[2] && (p.source[0] + p.source[2] > size.x || p.source[1] + p.source[3] > size.y))
                 throw std::runtime_error("Projectile source outside image: " + e.id);
         }

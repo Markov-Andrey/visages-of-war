@@ -1,6 +1,8 @@
 #include "CombatRules.hpp"
+#include "rts/UnitAnimation.hpp"
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 
 namespace rts {
 void Simulation::releaseAttack(Unit& u, const Unit& target, std::vector<Hit>& hits) {
@@ -20,8 +22,24 @@ void Simulation::releaseProjectile(Unit& u, Vec2 aim, float aimHeight, EntityId 
     p.target = target;
     p.damage = u.attackDamage(); p.start = p.position = p.previousPosition = u.position; p.aim = aim;
     p.startHeight = p.height = p.previousHeight = unitHeight(u) + p.definition.launchHeight;
+    if (const auto& sockets = u.definition.sprite.projectileOrigins) {
+        const auto& sprite = u.definition.sprite;
+        const auto socket = (*sockets)[locomotionFrame(u).row];
+        const Vec2 offset{(socket.x - sprite.anchor.x) * sprite.size.x, (socket.y - sprite.anchor.y) * sprite.size.y};
+        // Split the authored screen-plane socket into lateral ground displacement and elevation.
+        // UnitPresentation applies the common foot offset to both unit and projectile.
+        p.start = p.position = p.previousPosition = u.position + Vec2{offset.x, -offset.x} * (1 / (2 * WorldView::tileSize));
+        p.startHeight = p.height = p.previousHeight = unitHeight(u) - offset.y / WorldView::levelHeight;
+    }
     p.aimHeight = aimHeight + p.definition.impactHeight;
     const Vec2 distance = p.aim - p.start;
+    if (p.definition.launchAngle) {
+        const float length = groundLength(distance) * WorldView::tileSize / groundPlaneScale;
+        const float rise = p.aimHeight - p.startHeight;
+        const float slope = std::tan(*p.definition.launchAngle * std::numbers::pi_v<float> / 180);
+        // y(t) = lerp(start,end,t) + 4*h*t*(1-t). Steep uphill shots use the direct line.
+        p.definition.arcHeight = std::max(0.0f, (length * slope / WorldView::levelHeight - rise) * .25f);
+    }
     p.flightTicks = std::max(1, static_cast<int>(std::ceil(groundLength(distance) / p.definition.speed * ticksPerSecond)));
     projectiles_.push_back(std::move(p));
 }

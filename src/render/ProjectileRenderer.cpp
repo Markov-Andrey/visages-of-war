@@ -7,22 +7,22 @@ void Renderer::drawProjectiles(const Simulation& game, const WorldView& view) {
     for (const auto& p : game.projectiles()) {
         if (!game.fog().visible({int(std::floor(p.position.x)), int(std::floor(p.position.y))})) continue;
         const auto& d = p.definition;
-        const auto path = imagePath(d.image);
-        auto& bitmap = worldSprites_[path]; if (!bitmap) loadBitmap(paths_.asset(path), bitmap);
+        ID2D1Bitmap* bitmap{};
+        if (!d.teamMask.empty()) bitmap = maskedBitmap(d.image, d.teamMask, p.owner == game.player().id ? teamColor_ : enemyColor_);
+        else {
+            const auto path = imagePath(d.image);
+            auto& original = worldSprites_[path]; if (!original) loadBitmap(paths_.asset(path), original);
+            bitmap = original.Get();
+        }
         const auto imageSize = bitmap->GetSize();
         const auto source = d.source[2] ? rect(float(d.source[0]),float(d.source[1]),float(d.source[2]),float(d.source[3])) : rect(0,0,imageSize.width,imageSize.height);
         const auto position = projectileScreenPosition(view, p);
-        auto tangent = position - projectileScreenPosition(view, p, true);
-        if (p.elapsedTicks == 0) {
-            const auto aim = view.project(p.aim, p.aimHeight + 4 * d.arcHeight) +
-                unitScreenOffset(view) * (d.targeting == ProjectileTargeting::Unit ? 1.0f : 0.0f);
-            tangent = aim - position;
-        }
+        const auto tangent = projectileScreenTangent(view, p);
         const float rotation = std::atan2(tangent.y,tangent.x) * 180 / std::numbers::pi_v<float> + d.rotationOffset;
         D2D1_MATRIX_3X2_F previous; target_->GetTransform(&previous);
         target_->SetTransform(D2D1::Matrix3x2F::Rotation(rotation,point(position)) * previous);
         const auto extent = d.size * view.zoom;
-        sprite(bitmap.Get(),source,position - extent * .5f,extent,false,0);
+        sprite(bitmap,source,position - Vec2{extent.x * d.anchor.x, extent.y * d.anchor.y},extent,false,0);
         target_->SetTransform(previous);
     }
     for (const auto& hit : game.projectileImpacts()) {

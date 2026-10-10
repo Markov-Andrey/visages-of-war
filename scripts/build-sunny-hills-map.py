@@ -290,6 +290,13 @@ scenario['units'] = [{'asset': 'human.peacemaker', 'owner': 0, 'cell': [80, 33]}
                      {'asset': 'human.peacemaker', 'owner': 0, 'cell': [5, 32]},
                      {'asset': 'human.peacemaker', 'owner': 0, 'cell': [68, 7]},
                      {'asset': 'human.flying_soldier', 'owner': 0, 'cell': [19, 35]}]
+# A nearby sparring group, outside starting vision so the player chooses when to engage.
+scenario['units'] += [{'asset': 'human.slinger', 'owner': 0, 'cell': [21, 35]},
+                      {'asset': 'human.slinger', 'owner': 0, 'cell': [22, 36]},
+                      {'asset': 'human.peacemaker', 'owner': 1, 'cell': [32, 31]},
+                      {'asset': 'human.peacemaker', 'owner': 1, 'cell': [32, 32]},
+                      {'asset': 'human.slinger', 'owner': 1, 'cell': [34, 30]},
+                      {'asset': 'human.slinger', 'owner': 1, 'cell': [34, 31]}]
 for x, y in [(17, 39), (18, 39), (18, 40)]:
     assert (x, y) not in occupied
     scenario['resources'].append({'asset': 'crystal.small', 'cell': [x, y], 'remaining': 1000})

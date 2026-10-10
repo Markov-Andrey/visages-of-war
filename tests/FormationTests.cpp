@@ -30,11 +30,11 @@ void formationTests(TestSuite& test, const TestContext& context) {
         for (Cell direction : {Cell{1, 0}, {1, 1}, {-1, 0}, {1, -1}, {0, -1}}) {
             Scenario site{Map(64, 64), {1, 1}, {29, 29}, {}};
             EntityDefinition melee; melee.formationPriority = 1; melee.collisionRadius = .4f;
-            auto archer = melee; archer.id = "archer"; archer.formationPriority = 2;
+            auto slinger = melee; slinger.id = "slinger"; slinger.formationPriority = 2;
             auto siege = melee; siege.id = "siege"; siege.formationPriority = 3; siege.movementPerSecond = 2;
-            for (int i = 1; i < 12; ++i) site.units.push_back({i % 3 == 0 ? melee.id : i % 3 == 1 ? archer.id : siege.id,
+            for (int i = 1; i < 12; ++i) site.units.push_back({i % 3 == 0 ? melee.id : i % 3 == 1 ? slinger.id : siege.id,
                 0, {29 + i % 4, 29 + i / 4}});
-            Simulation game(std::move(site), {}, melee, {melee, archer, siege});
+            Simulation game(std::move(site), {}, melee, {melee, slinger, siege});
             auto ids = selected(game); std::reverse(ids.begin(), ids.end());
             for (int sign : {1, -1}) {
                 const Cell target{31 + sign * direction.x * 12, 31 + sign * direction.y * 12};

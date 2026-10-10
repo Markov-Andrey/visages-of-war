@@ -40,7 +40,7 @@ void Renderer::verifyAssets() {
         if (!icon.mask.empty()) images.push_back(std::filesystem::relative(icon.mask, paths_.assetRoot()));
     }
     for (const auto& e : definitions.entities()) {
-        if (e.mobile) {
+        if (e.mobile && !e.sprite.image.empty()) {
             images.push_back(imagePath(e.sprite.image));
             if (!e.sprite.portrait.empty()) images.push_back(imagePath(e.sprite.portrait));
             if (!e.sprite.icon.empty()) images.push_back(imagePath(e.sprite.icon));
@@ -51,7 +51,10 @@ void Renderer::verifyAssets() {
                 if (!e.sprite.death->teamMask.empty()) images.push_back(imagePath(e.sprite.death->teamMask));
             }
         }
-        if (e.projectile) images.push_back(imagePath(e.projectile->image));
+        if (e.projectile) {
+            images.push_back(imagePath(e.projectile->image));
+            if (!e.projectile->teamMask.empty()) images.push_back(imagePath(e.projectile->teamMask));
+        }
         for (const auto& stage : e.buildingSprite.stages) {
             images.push_back(imagePath(stage.image));
             if (!stage.teamMask.empty()) images.push_back(imagePath(stage.teamMask));

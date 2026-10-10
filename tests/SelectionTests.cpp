@@ -268,14 +268,14 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
         scene.heroSpawn = rts::Cell{9, 9};
-        scene.units = {{"human.archer", 0, {11, 10}}, {"human.peacemaker", 0, {10, 10}},
+        scene.units = {{"human.slinger", 0, {11, 10}}, {"human.peacemaker", 0, {10, 10}},
             {"human.peacemaker", 0, {10, 12}}, {"human.catapult", 0, {11, 11}}};
         rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), "human.hero");
         rts::Selection selection;
         for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
         std::reverse(selection.ids.begin(), selection.ids.end());
         const auto original = selection.ids;
-        const std::array<std::string, 5> expected{"human.hero", "human.peacemaker", "human.archer", "human.catapult", "human.worker"};
+        const std::array<std::string, 5> expected{"human.hero", "human.peacemaker", "human.slinger", "human.catapult", "human.worker"};
         const auto groups = selection.groups(game);
         require(groups.size() == expected.size() && groups[1].ids.size() == 2, "Types were not grouped together");
         for (const auto& type : expected) {

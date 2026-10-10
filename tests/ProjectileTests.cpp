@@ -21,6 +21,79 @@ Simulation stationary(EntityDefinition gun) {
 }
 }
 void projectileTests(TestSuite& test, const TestContext& context) {
+    test("Slinger releases from the authored attack socket in all eight directions", [&] {
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        auto gun = definitions.entity("human.slinger"); gun.dayVision = gun.nightVision = 20;
+        auto target = dummy();
+        for (Cell delta : {Cell{2,2}, {3,0}, {2,-2}, {0,-3}, {-2,-2}, {-3,0}, {-2,2}, {0,3}}) {
+            Scenario scene{Map(32,32), {1,1}, {16,16}, {}};
+            scene.units = {{target.id, 1, scene.worker + delta}};
+            Simulation game(std::move(scene), {}, gun, {gun, target});
+            game.order(std::array{game.worker().id}, OrderKind::Hold);
+            for (int t = 0; t < 30 && game.projectiles().empty(); ++t) game.tick();
+            require(game.projectiles().size() == 1, "Slinger did not release a single stone");
+            const auto& shot = game.projectiles().front();
+            const auto& unit = game.worker(); const auto frame = unitFrame(unit);
+            require(frame.column == 7 && shot.elapsedTicks == 0 && game.units()[1].health == 100,
+                "Release does not coincide with the third attack drawing or dealt early damage");
+            const auto socket = (*gun.sprite.projectileOrigins)[frame.row];
+            for (float zoom : {.4f, 1.0f, 1.8f}) {
+                const WorldView view{{173, -51}, zoom};
+                const Vec2 offset{(socket.x - gun.sprite.anchor.x) * gun.sprite.size.x * zoom,
+                    (socket.y - gun.sprite.anchor.y) * gun.sprite.size.y * zoom};
+                const auto expected = unitScreenAnchor(view, unit.position, game.unitHeight(unit)) + offset;
+                const auto error = projectileScreenPosition(view, shot) - expected;
+                require(std::hypot(error.x, error.y) < .002f,
+                    "Ball detached from the release-frame sling on facing or zoom");
+            }
+            const float distance = groundLength(shot.aim - shot.start) * WorldView::tileSize / groundPlaneScale;
+            const float rise = (shot.aimHeight - shot.startHeight + 4 * shot.definition.arcHeight) * WorldView::levelHeight;
+            require(std::abs(rise / distance - .267949192f) < .0001f, "Initial elevation is not 15 degrees");
+            const auto flight = shot.flightTicks;
+            for (int tick = 1; tick < flight; ++tick) {
+                game.tick(); const auto& moving = game.projectiles().front();
+                const float t = float(tick) / flight;
+                require(std::abs(moving.height - (std::lerp(moving.startHeight, moving.aimHeight, t) +
+                    4 * moving.definition.arcHeight * t * (1 - t))) < .001f, "Stone left its parabola");
+            }
+            game.tick();
+            require(game.projectiles().empty() && game.units()[1].health == 100 - gun.attackDamage,
+                "Stone failed to apply exactly one impact");
+        }
+    });
+    test("Shallow launch angle supports elevated targets without inverted gravity", [] {
+        for (float impactHeight : {0.0f, 3.0f, 8.0f}) {
+            auto gun = weapon(); gun.projectile->launchAngle = 15.0f; gun.projectile->impactHeight = impactHeight;
+            auto game = stationary(gun); ticks(game, 3);
+            require(game.projectiles().size() == 1, "Elevated shot was not released");
+            const auto& shot = game.projectiles().front();
+            require(std::isfinite(shot.definition.arcHeight) && shot.definition.arcHeight >= 0,
+                "Steep aim inverted gravity or generated an invalid curve");
+            if (impactHeight == 8) require(shot.definition.arcHeight == 0, "Steep uphill fallback must follow a direct line");
+            const int duration = shot.flightTicks; ticks(game, duration);
+            require(game.projectiles().empty() && game.units()[1].health == 80, "Elevated shot failed to land");
+        }
+    });
+    test("Projectile tail follows the parabola tangent including shifted ground shots", [] {
+        Projectile shot; shot.start = {4,8}; shot.aim = {11,9}; shot.startHeight = 3; shot.aimHeight = 1;
+        shot.flightTicks = 100; shot.definition.arcHeight = 2;
+        for (auto mode : {ProjectileTargeting::Unit, ProjectileTargeting::Point}) {
+            shot.definition.targeting = mode;
+            for (float zoom : {.4f, 1.0f, 1.8f}) for (int tick : {0, 25, 50, 75, 100}) {
+                const WorldView view{{170, -60}, zoom}; shot.elapsedTicks = tick;
+                const auto sample = [&](float t) {
+                    return view.project(shot.start + (shot.aim - shot.start) * t,
+                        std::lerp(shot.startHeight, shot.aimHeight, t) + 4 * shot.definition.arcHeight * t * (1 - t)) +
+                        unitScreenOffset(view) * (mode == ProjectileTargeting::Unit ? 1 : 1 - t);
+                };
+                const float t = tick / 100.0f;
+                const auto reference = (sample(t + .01f) - sample(t - .01f)) * 50;
+                const auto error = projectileScreenTangent(view, shot) - reference;
+                require(std::hypot(error.x, error.y) < .02f,
+                    "Tail points away from the flight tangent");
+            }
+        }
+    });
     test("Weapon reach and projectile time are equal at equal visible distances", [] {
         for (Cell delta : {Cell{5,-5}, {-5,5}, {10,10}, {-10,-10}, {10,2}, {-10,-2}, {2,10}, {-2,-10}}) {
             for (float reach : {11.0f,12.0f}) {
@@ -77,8 +150,8 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         require(shots > 2 && game.worker().cell != rts::Cell{4, 6}, "Siege did not approach or repeat its order");
         game.stop(std::array{id}); ticks(game, 180);
         require(game.projectiles().empty() && rts::unitOrder(game.worker()) == rts::OrderKind::Stop, "Stopped point fire kept releasing shots");
-        auto archer = weapon(); rts::Simulation bow(range(), {}, archer, {archer});
-        require(!bow.order(std::array{bow.worker().id}, rts::OrderKind::AttackGround, {10, 6}), "Non-siege unit accepted point fire");
+        auto slinger = weapon(); rts::Simulation ranged(range(), {}, slinger, {slinger});
+        require(!ranged.order(std::array{ranged.worker().id}, rts::OrderKind::AttackGround, {10, 6}), "Non-siege unit accepted point fire");
     });
     test("Manual point fire uses splash masks and preserves friendly fire settings", [] {
         for (const bool friendly : {false, true}) {
@@ -108,7 +181,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
             ticks(game,20); require(game.unit(enemy)->health == 80,"Shot applied twice");
         }
     });
-    test("Homing arrows follow moving targets; siege fixes its point at release and hits current occupants", [] {
+    test("Homing shots follow moving targets; siege fixes its point at release and hits current occupants", [] {
         for (const auto mode : {ProjectileTargeting::Unit,ProjectileTargeting::Point}) {
             auto gun = weapon(mode); auto s = range(); s.worker = {10,6};
             auto air = dummy(); air.id = "air"; air.movement = MovementType::Flying;
@@ -150,7 +223,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         require(std::abs(shot.aim.x - game.worker().position.x) < .001f && shot.aim.x > 11,"Aim fixed before release");
         require(std::abs(shot.aimHeight - game.unitHeight(game.worker())) < .001f && shot.aimHeight > 0,"Impact used reserved cell rather than ramp position");
     });
-    test("Arrow to a dead target expires harmlessly without retargeting", [] {
+    test("Shot to a dead target expires harmlessly without retargeting", [] {
         auto gun = weapon(); auto killer = dummy(); killer.id = "killer"; killer.projectile.reset();
         killer.attackDamage = 100; killer.attackRange = 1.5f; killer.attackWindupTicks = 4;
         auto s = range(); s.units = {{"dummy",1,{10,6}}, {killer.id,0,{9,6}}, {"dummy",1,{10,7}}};
@@ -159,7 +232,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         game.attack(std::array{game.worker().id,killerId},enemy);
         ticks(game,5); require(!game.unit(enemy) && !game.projectiles().empty(),"Fixture failed to kill target in flight");
         game.stop(std::array{killerId}); // Its long cooldown prevents another hit.
-        ticks(game,38); require(game.projectiles().empty() && game.unit(other)->health == 100,"Arrow retargeted");
+        ticks(game,38); require(game.projectiles().empty() && game.unit(other)->health == 100,"Shot retargeted");
     });
     test("Attack phases keep windup, recovery and cooldown distinct including zero-duration phases", [] {
         for (const auto times : {std::array{2,3,4},std::array{0,3,4},std::array{2,0,4},std::array{0,0,4},std::array{2,3,0},std::array{2,0,0}}) {
@@ -185,11 +258,11 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         ticks(game,8); require(game.projectiles().size() == 1,"Order accelerated next shot");
         game.tick(); require(game.projectiles().size() == 2,"Next shot never arrived");
     });
-    test("Weapon masks allow archers versus air while siege rejects air and fog hides targets", [] {
+    test("Weapon masks allow slingers versus air while siege rejects air and fog hides targets", [] {
         auto gun = weapon(); auto air = dummy(); air.id = "air"; air.movement = MovementType::Flying;
         auto s = range(); s.units = {{air.id,1,{10,6}}};
         Simulation game(s,{},gun,{gun,air});
-        require(game.attack(std::array{game.worker().id},game.units()[1].id),"Archer rejected air");
+        require(game.attack(std::array{game.worker().id},game.units()[1].id),"Slinger rejected air");
         ticks(game,41); require(game.units()[1].health == 80,"Arrow did not reach flight plane");
         gun = weapon(ProjectileTargeting::Point); Simulation siege(s,{},gun,{gun,air});
         require(!siege.attack(std::array{siege.worker().id},siege.units()[1].id),"Siege accepted air");
@@ -201,7 +274,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
     test("Combat catalog validates trajectories, animation and optional melee projectile", [&] {
         CatalogFixture original(context.assets);
         const auto defs = original.load();
-        require(!defs.entity("human.peacemaker").projectile && defs.entity("human.archer").projectile->targeting == ProjectileTargeting::Unit &&
+        require(!defs.entity("human.peacemaker").projectile && defs.entity("human.slinger").projectile->targeting == ProjectileTargeting::Unit &&
             defs.entity("human.catapult").projectile->targeting == ProjectileTargeting::Point,"Catalog weapon modes incorrect");
         const auto rejects = [&](const std::function<void(Json&)>& change) {
             auto f = original; change(f.entities["entities"][7]); mustThrow([&] { f.load(); });
@@ -227,12 +300,12 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         const auto site = game.construct(std::array{game.worker().id},"human.barracks",{6,8});
         require(site.has_value(),"Barracks fixture failed"); ticks(game,180);
         const int crystals = game.storedCrystals(), supply = game.armySupply().used();
-        require(game.train(*site,"human.archer") && game.train(*site,"human.catapult"),"Ranged roster unavailable");
+        require(game.train(*site,"human.slinger") && game.train(*site,"human.catapult"),"Ranged roster unavailable");
         require(!game.train(*site,"human.hero"),"Building trained an unsupported type");
         require(game.storedCrystals() == crystals - 240 && game.armySupply().used() == supply + 6,"Roster costs wrong");
         require(game.cancelTraining(*site) && game.storedCrystals() == crystals - 80 && game.armySupply().used() == supply + 2,"Roster refund wrong");
         ticks(game,180);
-        require(game.units().back().definitionId == "human.archer","Production ignored selected type");
+        require(game.units().back().definitionId == "human.slinger","Production ignored selected type");
         require(game.train(*site,"human.catapult"),"Siege recruitment failed"); ticks(game,300);
         require(game.units().back().definitionId == "human.catapult","Production lost siege definition");
     });

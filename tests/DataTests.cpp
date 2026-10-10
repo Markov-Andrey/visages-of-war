@@ -164,8 +164,11 @@ void dataTests(TestSuite& test, const TestContext& context) {
         CatalogFixture fixture(assets);
         auto defs = fixture.load();
         const auto published = rts::libraryEntries(defs, "humans");
-        require(rts::libraryFactions(defs).size() == 1 && published.size() == 2 &&
-            published[0]->id == "human.peacemaker" && published[1]->id == "human.hall", "Library lost its published entries or includes unfinished ones");
+        require(rts::libraryFactions(defs).size() == 1 && published.size() == 3 &&
+            std::any_of(published.begin(), published.end(), [](const auto* e) { return e->id == "human.peacemaker"; }) &&
+            std::any_of(published.begin(), published.end(), [](const auto* e) { return e->id == "human.slinger"; }) &&
+            std::any_of(published.begin(), published.end(), [](const auto* e) { return e->id == "human.hall"; }),
+            "Library lost its published entries or includes unfinished ones");
         fixture.catalog["factions"].push_back({{"id", "forest"}, {"name", "Лес"}, {"description", "Test faction"}});
         fixture.catalog["factions"].push_back({{"id", "empty"}, {"name", "Пусто"}, {"description", "Test faction"}});
         auto entity = fixture.entities["entities"][0];
@@ -406,7 +409,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(art.frames.size() == 6 && !art.teamMask.empty(), "Valeri lost six-frame masked rally art");
         for (std::uint64_t tick = 0; tick < 96; ++tick)
             require(&art.frame(tick) == &art.frames[(tick / 8) % 6], "Rally skipped, reordered or failed to loop a frame");
-        require(rts::libraryEntries(defs, "humans").size() == 2, "Rally marker became a library entry");
+        require(rts::libraryEntries(defs, "humans").size() == 3, "Rally marker became a library entry");
         const auto original = fixture.commanders["commanders"][0]["rallySprite"];
         const auto rejects = [&](const std::function<void(Json&)>& change) {
             auto invalid = original; change(invalid);
@@ -471,14 +474,17 @@ void dataTests(TestSuite& test, const TestContext& context) {
         CatalogFixture fixture(assets); const auto defs = fixture.load();
         require(defs.entities().size() == 9, "Unified catalog lost records");
         mustThrow([&] { defs.entity("human.soldier"); });
-        require(defs.entity("human.barracks").trainableUnits == std::vector<std::string>{"human.peacemaker", "human.archer", "human.catapult"},
+        require(defs.entity("human.barracks").trainableUnits == std::vector<std::string>{"human.peacemaker", "human.slinger", "human.catapult"},
             "Barracks did not replace the warrior with the Peacemaker");
         const auto& flyer = defs.entity("human.flying_soldier");
-        const auto& archer = defs.entity("human.archer");
-        require(airborne(flyer.movement) && !flyer.projectile && flyer.sprite.image == archer.sprite.image &&
-            flyer.sprite.rows == archer.sprite.rows && flyer.sprite.walk == archer.sprite.walk &&
-            flyer.sprite.windup == archer.sprite.windup && flyer.sprite.recovery == archer.sprite.recovery &&
-            flyer.sprite.teamMask == archer.sprite.teamMask, "Flyer lost its temporary archer art or changed its gameplay");
+        const auto& slinger = defs.entity("human.slinger");
+        require(airborne(flyer.movement) && !flyer.projectile && flyer.sprite.image.empty(),
+            "Flyer lost its placeholder or changed its gameplay");
+        mustThrow([&] { defs.entity("human.archer"); });
+        require(slinger.projectile && slinger.sprite.projectileOrigins && slinger.projectile->launchAngle == 15 &&
+            slinger.projectile->source == std::array<int, 4>{1024, 0, 512, 512} &&
+            slinger.projectile->anchor == Vec2{.5f, .5f} && !slinger.projectile->teamMask.empty(),
+            "Slinger lost its normal charge, ball pivot, mask or release sockets");
         for (const auto& entity : defs.entities()) {
             require(!entity.displayName.empty() && !entity.description.empty() && entity.factionId == "humans", "Missing common metadata");
         }
@@ -742,6 +748,22 @@ void dataTests(TestSuite& test, const TestContext& context) {
                 }
             }
         }
+    });
+    test("Projectile sockets and artwork reject invalid catalog values", [&] {
+        const CatalogFixture original(assets);
+        const auto rejects = [&](const std::function<void(Json&)>& change) {
+            auto fixture = original;
+            for (auto& entity : fixture.entities["entities"]) if (entity["id"] == "human.slinger") change(entity);
+            mustThrow([&] { fixture.load(); });
+        };
+        rejects([](Json& e) { e["sprite"]["projectileOrigins"] = {{.5, .5}}; });
+        rejects([](Json& e) { e["sprite"]["projectileOrigins"][0] = {1.1, .5}; });
+        rejects([](Json& e) { e["sprite"]["rows"][0] = 8; });
+        rejects([](Json& e) { e["attack"]["projectile"] = nullptr; });
+        rejects([](Json& e) { e["attack"]["projectile"]["anchor"] = {-.1, .5}; });
+        rejects([](Json& e) { e["attack"]["projectile"]["launchAngle"] = -1; });
+        rejects([](Json& e) { e["attack"]["projectile"]["launchAngle"] = 90; });
+        rejects([](Json& e) { e["attack"]["projectile"]["teamMask"] = "../mask.png"; });
     });
     test("Mobility, construction, flight and alternate forms are independent of race", [&] {
         CatalogFixture fixture(assets);

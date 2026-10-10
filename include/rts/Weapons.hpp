@@ -27,6 +27,7 @@ struct UnitSpriteDefinition {
     std::string icon; // Optional button artwork; independent of the large portrait.
     std::string portraitMask, iconMask; // Optional team paint for the respective UI artwork.
     std::string directionRecipe; // Optional two-view stand/walk/attack synthesis recipe.
+    std::optional<std::array<Vec2, 8>> projectileOrigins; // Normalized release-frame sockets, by facing row.
     bool pixelArt = true;
     int frameWidth = 32, frameHeight = 32;
     Vec2 size{80, 80}, anchor{.5f, .7125f};
@@ -41,11 +42,14 @@ struct UnitSpriteDefinition {
 struct ProjectileDefinition {
     ProjectileTargeting targeting = ProjectileTargeting::Unit;
     std::string image;
+    std::string teamMask;
     std::array<int, 4> source{}; // x, y, width, height; zero size = entire PNG.
     Vec2 size{32, 8};
+    Vec2 anchor{.5f, .5f}; // Rotation pivot in the source rectangle (centre of the projectile body).
     float rotationOffset{};
     float speed = 10; // Logical cells/second; determines the flight duration at launch.
     float arcHeight = 1; // Peak above the straight line, in terrain elevation units.
+    std::optional<float> launchAngle; // Degrees above the ground plane; derives arcHeight at release.
     float launchHeight = 1.5f, impactHeight = 1;
     float splashRadius{};
     bool friendlyFire{};

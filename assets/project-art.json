@@ -357,6 +357,48 @@
           "imported": "2026-10-03",
           "source": "Project owner neutral bones sheet; original bytes preserved. Eight shared variants and ground anchors in world/remains.json. No team recoloring.",
           "sha256": "A905A897C594CBFEC0A3D277A86DA8B6028D7C30023E1225E15B3146BA685844"
+        },
+        {
+          "original": "prachnik.png",
+          "path": "sprites/units/slinger/slinger.png",
+          "imported": "2026-10-10",
+          "source": "Project owner artwork; original PNG bytes preserved.",
+          "sha256": "846010973ECF9A7D2A7D869E5898054183743C4F5CB06E2259AA3848F561EB3B"
+        },
+        {
+          "original": "prachnik-mask.png",
+          "path": "sprites/units/slinger/slinger-mask.png",
+          "imported": "2026-10-10",
+          "source": "Project owner artwork; original PNG bytes preserved.",
+          "sha256": "D50AFB1D411C320AF16E7C9EF91ACBFFDA3E704EF308F445DCFB150491B00170"
+        },
+        {
+          "original": "slinger-portrait.png",
+          "path": "sprites/units/slinger/slinger-portrait.png",
+          "imported": "2026-10-10",
+          "source": "Project owner replacement with transparent background; supplied PNG bytes preserved. The 1254x1254 canvas retains alignment with slinger-portrait-mask.png.",
+          "sha256": "F339F036A9A0978B26E12D2622A67F564A857D8E789AD01648AF126D6D902352"
+        },
+        {
+          "original": "portrait-mask.png",
+          "path": "sprites/units/slinger/slinger-portrait-mask.png",
+          "imported": "2026-10-10",
+          "source": "Project owner artwork; original PNG bytes preserved.",
+          "sha256": "717F5D9756BC42A1523EF53C6A00B9E8C2B326D5C8959F57521F9C0F0E5FE6AB"
+        },
+        {
+          "original": "icon.png",
+          "path": "sprites/units/slinger/slinger-icon.png",
+          "imported": "2026-10-10",
+          "source": "Project owner artwork; original PNG bytes preserved.",
+          "sha256": "56FC9C31A30F97255EFEFE69348E31D14B1FDE80A5DE31E613F7F53E01815879"
+        },
+        {
+          "original": "icon-mask.png",
+          "path": "sprites/units/slinger/slinger-icon-mask.png",
+          "imported": "2026-10-10",
+          "source": "Project owner artwork; original PNG bytes preserved.",
+          "sha256": "F24BCF5455F84BD8DA8B459D3E0656D87DFAE88260F78A54C3FA26485578C1F4"
         }
     ]
 }

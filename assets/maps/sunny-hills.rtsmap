@@ -13469,6 +13469,36 @@
         44,
         73
       ]
+    },
+    {
+      "asset": "human.slinger",
+      "owner": 0,
+      "cell": [46, 72]
+    },
+    {
+      "asset": "human.slinger",
+      "owner": 0,
+      "cell": [47, 73]
+    },
+    {
+      "asset": "human.peacemaker",
+      "owner": 1,
+      "cell": [47, 63]
+    },
+    {
+      "asset": "human.peacemaker",
+      "owner": 1,
+      "cell": [48, 64]
+    },
+    {
+      "asset": "human.slinger",
+      "owner": 1,
+      "cell": [47, 61]
+    },
+    {
+      "asset": "human.slinger",
+      "owner": 1,
+      "cell": [48, 62]
     }
   ],
   "layoutSize": [
