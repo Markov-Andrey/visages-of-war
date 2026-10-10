@@ -1,4 +1,5 @@
 #include "TestSupport.hpp"
+#include <tuple>
 
 namespace rts::tests {
 namespace {
@@ -21,6 +22,72 @@ Simulation stationary(EntityDefinition gun) {
 }
 }
 void projectileTests(TestSuite& test, const TestContext& context) {
+    test("Splash hits building footprints once and respects ground targeting and friendly fire", [] {
+        for (const auto [owner, friendlyFire, targets, expected] : {
+            std::tuple{PlayerId{0}, false, AttackTargets::Ground, 1000},
+            std::tuple{PlayerId{0}, true, AttackTargets::Ground, 980},
+            std::tuple{PlayerId{1}, false, AttackTargets::Ground, 980},
+            std::tuple{PlayerId{1}, false, AttackTargets::Air, 1000},
+            std::tuple{neutralPlayer, false, AttackTargets::Ground, 1000}}) {
+            auto gun = weapon(ProjectileTargeting::Point); gun.projectile->friendlyFire = friendlyFire;
+            gun.attackTargets = targets; gun.projectile->speed = 100;
+            auto game = Simulation(range(), {}, gun, {gun});
+            auto& hall = const_cast<Building&>(game.buildings().front()); hall.owner = owner;
+            require(game.order(std::array{game.worker().id}, OrderKind::AttackGround, hall.origin), "Building bombardment was rejected");
+            ticks(game, 10);
+            require(hall.health == expected, "Building splash ignored ownership/layer or dealt damage per cell");
+        }
+    });
+    test("Destruction loses the whole queue without refunds and releases its reserved supply once", [] {
+        auto gun = weapon(ProjectileTargeting::Point); gun.attackDamage = 2000;
+        gun.projectile->friendlyFire = true; gun.projectile->splashRadius = .2f;
+        auto scene = range(); scene.startingCrystals = 1000;
+        Simulation game(std::move(scene), {}, gun, {gun});
+        const auto hall = game.buildings().front().id;
+        const Cell origin = game.buildings().front().origin;
+        require(game.order(std::array{game.worker().id}, OrderKind::AttackGround, origin), "Could not bombard the depot");
+        for (int i = 0; i < 30 && game.projectiles().empty(); ++i) game.tick();
+        require(!game.projectiles().empty(), "No building destruction projectile");
+        while (game.projectiles().front().elapsedTicks + 1 < game.projectiles().front().flightTicks) game.tick();
+        for (int i = 0; i < 10; ++i) require(game.train(hall), "Could not fill destruction queue");
+        auto& jobs = const_cast<Building&>(*game.building(hall)).production;
+        jobs.front().remainingTicks = 0; // Even a ready job must not spawn after destruction this tick.
+        const int balance = game.storedCrystals();
+        require(game.armySupply().used() == 11, "Queue supply fixture wrong");
+        game.takeEvents(); game.tick();
+        require(!game.building(hall) && game.units().size() == 1 && game.storedCrystals() == balance && game.armySupply().used() == 1,
+            "Destruction refunded crystals, retained supply or produced a queued unit");
+        for (int y = 0; y < 2; ++y) for (int x = 0; x < 3; ++x)
+            require(game.map().walkable(origin + Cell{x, y}), "Destroyed building retained its footprint");
+        const auto events = game.takeEvents();
+        require(std::count_if(events.begin(), events.end(), [&](const auto& event) {
+            const auto* destroyed = std::get_if<BuildingDestroyed>(&event);
+            return destroyed && destroyed->building == hall;
+        }) == 1, "Building destruction event missing or duplicated");
+        require(!game.cancelTraining(hall) && !game.cancelConstruction(hall), "Destroyed building could still be refunded");
+        ticks(game, 10);
+        require(game.armySupply().used() == 1 && game.storedCrystals() == balance, "Destruction released supply or refunded twice");
+    });
+    test("Destroyed construction releases its supply and stops the builder without refunding", [] {
+        auto gun = weapon(ProjectileTargeting::Point); gun.attackDamage = 2000;
+        gun.projectile->friendlyFire = true; gun.projectile->splashRadius = .2f;
+        auto builder = dummy(); builder.canBuild = true;
+        EntityDefinition tower; tower.id = "test.tower"; tower.mobile = false; tower.constructible = true;
+        tower.visual = EntityVisual::Tower; tower.cost = {75, 3}; tower.constructionTicks = 200;
+        auto scene = range(); scene.startingCrystals = 1000; scene.units = {{builder.id, 0, {6, 6}}};
+        Simulation game(std::move(scene), {}, gun, {gun, builder, tower});
+        const auto builderId = game.units().back().id;
+        const auto site = game.construct(std::array{builderId}, tower.id, {7, 7});
+        require(site.has_value(), "Could not place destructible construction");
+        for (int i = 0; i < 100 && game.building(*site)->constructionProgress == 0; ++i) game.tick();
+        require(game.building(*site)->constructionProgress > 0 && game.armySupply().used() == 5, "Builder/supply fixture not ready");
+        require(game.order(std::array{game.worker().id}, OrderKind::AttackGround, {7, 7}), "Could not bombard construction");
+        for (int i = 0; i < 60 && game.building(*site); ++i) game.tick();
+        require(!game.building(*site) && game.storedCrystals() == 925 && game.armySupply().used() == 2 && game.map().walkable({7, 7}),
+            "Destroyed construction refunded crystals or retained supply/occupancy");
+        require(game.unit(builderId)->state == UnitState::Idle && game.unit(builderId)->targetBuilding == 0,
+            "Builder retained its destroyed construction target");
+    });
     test("Slinger releases from the authored attack socket in all eight directions", [&] {
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         auto gun = definitions.entity("human.slinger"); gun.dayVision = gun.nightVision = 20;

@@ -67,6 +67,14 @@ void Simulation::tickProjectiles(std::vector<Hit>& hits) {
                 if (groundLengthSquared(delta) <= p.definition.splashRadius * p.definition.splashRadius)
                     hits.push_back({target.id, p.damage, p.owner});
             }
+            if (combat::accepts(p.targets, p.sourceAir, false)) for (const auto& target : buildings_) {
+                if (target.health <= 0 || (!p.definition.friendlyFire && !combat::hostile(p.owner, target.owner))) continue;
+                bool touched = false;
+                for (int y = 0; y < target.definition.height && !touched; ++y)
+                    for (int x = 0; x < target.definition.width && !touched; ++x)
+                        touched = sweptCircleIntersectsCell(p.aim, p.aim, p.definition.splashRadius, target.origin + Cell{x, y});
+                if (touched) hits.push_back({target.id, p.damage, p.owner});
+            }
         }
         projectileImpacts_.push_back({p.position, p.aimHeight, p.definition.splashRadius});
     }

@@ -211,8 +211,10 @@ void Simulation::tickUnit(Unit& u) {
         if (!b || b->complete()) { u.state = UnitState::Idle; return; }
         const auto positions = perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement);
         if (std::find(positions.begin(), positions.end(), u.cell) == positions.end()) { u.state = UnitState::Idle; return; }
+        const int previousHealth = std::max(1, b->definition.maximumHealth * b->constructionProgress / b->definition.constructionTicks);
         ++b->constructionProgress;
-        b->health = std::max(1, b->definition.maximumHealth * b->constructionProgress / b->definition.constructionTicks);
+        const int nextHealth = std::max(1, b->definition.maximumHealth * b->constructionProgress / b->definition.constructionTicks);
+        b->health = std::min(b->definition.maximumHealth, b->health + nextHealth - previousHealth);
         if (b->complete()) { events_.emplace_back(ConstructionFinished{b->id}); u.state = UnitState::Idle; setMessage(L"Здание готово."); }
         return;
     }

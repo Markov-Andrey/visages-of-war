@@ -126,6 +126,7 @@ struct Building {
 struct ConstructionFinished { EntityId building; };
 struct UnitProduced { EntityId building; EntityId unit; };
 struct UnitDied { EntityId unit; PlayerId owner; };
+struct BuildingDestroyed { EntityId building; PlayerId owner; };
 struct CorpseCreated { EntityId corpse, unit; PlayerId owner; };
 struct BonesCreated { EntityId bones, corpse; };
 struct RemainsRemoved { EntityId id; };
@@ -147,7 +148,7 @@ public:
     void revealMap();
     const std::string& mapName() const { return scenario_.name; }
     const std::vector<EnvironmentObject>& environment() const { return scenario_.environment; }
-    using WorldEvent = std::variant<DayPhaseChanged, ObjectDestroyed, ObjectRestored, ConstructionFinished, UnitProduced, UnitDied, HeroLevelChanged,
+    using WorldEvent = std::variant<DayPhaseChanged, ObjectDestroyed, ObjectRestored, ConstructionFinished, UnitProduced, UnitDied, BuildingDestroyed, HeroLevelChanged,
         CorpseCreated, BonesCreated, RemainsRemoved>;
     std::vector<WorldEvent> takeEvents();
     bool damageEnvironment(EntityId id, int damage);
