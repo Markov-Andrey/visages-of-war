@@ -14,7 +14,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     target_->Clear(D2D1::ColorF(0x081119));
     const auto extent = size();
     const BattleLayout layout(extent);
-    const auto hoverUnit = hoveredUnit(game, view, ui, layout);
+    const auto hoverEntity = hoveredEntity(game, view, ui, layout);
     const float commandAge = ui.commandFeedback.age();
     const auto feedbackAge = [&](EntityId id) { return id == ui.commandFeedback.target ? commandAge : -1.f; };
     prepareNightLighting(game, view, extent, ui);
@@ -36,7 +36,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     struct Item { float depth; Kind kind; size_t index; };
     std::vector<Item> items;
     std::vector<const Building*> groundSelections;
-    for (const auto& b : game.buildings()) if (b.health > 0 && buildingVisible(game, b) && (ui.selection.contains(b.id) || !b.complete()) &&
+    for (const auto& b : game.buildings()) if (b.health > 0 && buildingVisible(game, b) && (ui.selection.contains(b.id) || hoverEntity == b.id || !b.complete()) &&
         onScreen(view.project(center(b.origin), float(map.at(b.origin).height)))) groundSelections.push_back(&b);
     for (size_t i = 0; i < game.landscape().decorations.size(); ++i) {
         const auto p = game.landscape().decorations[i].position;
@@ -65,7 +65,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     for (int y = 0; y < map.width() + map.height(); ++y) {
         terrainRow(map, y, view, grid, true);
         worldOpacity_ = 1;
-        for (const auto* building : groundSelections) buildingGroundSelection(game, *building, view, y);
+        for (const auto* building : groundSelections) buildingGroundSelection(game, *building, view, y,
+            building->complete() && !ui.selection.contains(building->id));
         while (nextItem < items.size() && items[nextItem].depth < y + 1) {
             const auto item = items[nextItem++];
             worldOpacity_ = 1;
@@ -135,7 +136,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             case Kind::Unit: {
                 const auto& u = game.units()[item.index];
                 if (onScreen(unitScreenAnchor(view, u.position, game.unitHeight(u))))
-                    unitSprite(game, u, view, ui.selection.contains(u.id), hoverUnit == u.id, feedbackAge(u.id));
+                    unitSprite(game, u, view, ui.selection.contains(u.id), hoverEntity == u.id, feedbackAge(u.id));
                 break;
             }
             }
@@ -145,7 +146,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     std::vector<const Unit*> flyers;
     for (const auto& u : game.units()) if (airborne(u.definition.movement) && game.fog().visible(u.cell)) flyers.push_back(&u);
     std::stable_sort(flyers.begin(), flyers.end(), [](const Unit* a, const Unit* b) { return unitDrawDepth(a->position) < unitDrawDepth(b->position); });
-    for (const auto* u : flyers) unitSprite(game, *u, view, ui.selection.contains(u->id), hoverUnit == u->id, feedbackAge(u->id));
+    for (const auto* u : flyers) unitSprite(game, *u, view, ui.selection.contains(u->id), hoverEntity == u->id, feedbackAge(u->id));
     drawProjectiles(game, view);
     if (grid) for (size_t i = 0; i < game.environment().size(); ++i) {
         const auto& object = game.environment()[i];

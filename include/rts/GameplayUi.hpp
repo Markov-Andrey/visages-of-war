@@ -185,10 +185,10 @@ inline bool mouseInBattleWorld(const GameplayUi& ui, const BattleLayout& layout,
     return layout.world.contains(mouse) && !layout.army.contains(mouse) && !layout.hero.contains(mouse) &&
         !layout.idleWorker.contains(mouse) && !layout.minimap.contains(mouse) && !layout.commandPanel.contains(mouse);
 }
-inline EntityId hoveredUnit(const Simulation& game, const WorldView& view, const GameplayUi& ui, const BattleLayout& layout) {
-    if (ui.drag || !ui.placement.empty() || ui.rallyMode || ui.orderMode || !mouseInBattleWorld(ui, layout, ui.mouse)) return 0;
+inline EntityId hoveredEntity(const Simulation& game, const WorldView& view, const GameplayUi& ui, const BattleLayout& layout) {
+    if (ui.consoleOpen || ui.drag || !ui.placement.empty() || ui.rallyMode || ui.orderMode || !mouseInBattleWorld(ui, layout, ui.mouse)) return 0;
     const auto id = pickEntity(game, view, ui.mouse);
-    return id && game.unit(*id) ? *id : 0;
+    return id && (game.unit(*id) || game.building(*id)) ? *id : 0;
 }
 struct SelectionPanelLayout {
     UiRect portrait, health, mana, content;
@@ -198,6 +198,18 @@ struct SelectionPanelLayout {
         health = {portrait.x, portrait.y + side + 4, side, 20};
         mana = {portrait.x, health.y + 20, side, 20};
         content = {info.x + side + 16, info.y, info.width - side - 16, info.height};
+    }
+};
+struct ProductionQueueLayout {
+    std::array<UiRect, Building::productionQueueLimit> slots;
+    explicit ProductionQueueLayout(UiRect content) {
+        constexpr float gap = 4;
+        const size_t columns = content.width >= 10 * 36 + 9 * gap ? 10 : 5;
+        const size_t rows = (slots.size() + columns - 1) / columns;
+        const float side = std::max(1.f, std::min({48.f, (content.width - (columns - 1) * gap) / columns,
+            (content.height - 96 - (rows - 1) * gap) / rows}));
+        for (size_t i = 0; i < slots.size(); ++i)
+            slots[i] = {content.x + (i % columns) * (side + gap), content.y + 96 + (i / columns) * (side + gap), side, side};
     }
 };
 struct SelectionCard {

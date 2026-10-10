@@ -109,6 +109,7 @@ struct ProductionJob {
     int remainingTicks{}, totalTicks{}, paidCrystals{}, reservedSupply{};
 };
 struct Building {
+    static constexpr size_t productionQueueLimit = 10;
     EntityId id{};
     PlayerId owner{};
     EntityDefinition definition;

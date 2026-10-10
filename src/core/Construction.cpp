@@ -72,7 +72,7 @@ bool Simulation::cancelConstruction(EntityId id) {
 bool Simulation::train(EntityId id, const std::string& definitionId) {
     auto* b = mutableBuilding(id);
     if (!b || b->owner != player_.id || !b->complete() || b->definition.trainableUnits.empty()) return false;
-    if (b->production.size() >= 5) { setMessage(L"Очередь производства заполнена."); return false; }
+    if (b->production.size() >= Building::productionQueueLimit) { setMessage(L"Очередь производства заполнена."); return false; }
     const auto& choices = b->definition.trainableUnits;
     const auto& selected = definitionId.empty() ? choices.front() : definitionId;
     if (std::find(choices.begin(), choices.end(), selected) == choices.end()) return false;

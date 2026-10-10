@@ -359,8 +359,15 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto normal = flatScenario(); normal.startingCrystals = 1000;
         rts::Simulation queued(std::move(normal));
         const auto depot = queued.buildings()[0].id;
-        for (int i = 0; i < 5; ++i) require(queued.train(depot), "Queue rejected available slot");
-        require(!queued.train(depot) && queued.building(depot)->production.size() == 5, "Queue exceeded five slots");
+        const int initialBalance = queued.storedCrystals(), initialSupply = queued.armySupply().used();
+        for (int i = 0; i < 10; ++i) require(queued.train(depot), "Queue rejected available slot");
+        const int fullBalance = queued.storedCrystals(), fullSupply = queued.armySupply().used();
+        require(!queued.train(depot) && queued.building(depot)->production.size() == 10, "Queue exceeded ten slots");
+        require(queued.storedCrystals() == fullBalance && queued.armySupply().used() == fullSupply, "Full queue rejection consumed resources");
+        require(queued.cancelTraining(depot) && queued.train(depot), "Tenth queue slot could not be reused");
+        for (int i = 0; i < 10; ++i) require(queued.cancelTraining(depot), "Could not cancel the full queue");
+        require(queued.building(depot)->production.empty() && queued.storedCrystals() == initialBalance &&
+            queued.armySupply().used() == initialSupply, "Full queue cancellation did not refund resources");
     });
     test("Several workers conserve resources while sharing gathering and depot approaches", [] {
         auto s = flatScenario(73); s.extraWorkers = {{5, 3}, {4, 4}, {5, 4}};

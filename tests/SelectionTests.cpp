@@ -4,6 +4,59 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Building hover previews the click footprint without changing selection or bypassing fog and modes", [] {
+        Simulation game({Map(32, 32), {5, 5}, {12, 12}, {}});
+        auto& building = const_cast<Building&>(game.buildings().front());
+        auto& fog = const_cast<FogOfWar&>(game.fog());
+        const BattleLayout layout({1280, 900});
+        WorldView view{{}, .8f};
+        view.origin = Vec2{650, 350} - view.project(center(building.origin), 0);
+        const auto bounds = buildingBounds(game, building, view);
+        GameplayUi ui; ui.selection.ids = {game.worker().id};
+        ui.mouse = {bounds.x + bounds.width * .5f, bounds.y + bounds.height * .5f};
+        fog.update(game.map(), std::array{VisionSource{building.origin, 5, true}});
+        for (PlayerId owner : {game.player().id, PlayerId{1}, neutralPlayer}) {
+            building.owner = owner;
+            require(hoveredEntity(game, view, ui, layout) == building.id, "Visible building has no hover preview");
+            require(ui.selection.ids == std::vector{game.worker().id}, "Building hover changed selection");
+        }
+        ui.placement = "human.barracks";
+        require(!hoveredEntity(game, view, ui, layout), "Placement retained building hover"); ui.placement.clear();
+        ui.rallyMode = true;
+        require(!hoveredEntity(game, view, ui, layout), "Rally retained building hover"); ui.rallyMode = false;
+        ui.consoleOpen = true;
+        require(!hoveredEntity(game, view, ui, layout), "Console retained building hover"); ui.consoleOpen = false;
+        ui.drag = UiRect{0, 0, 20, 20};
+        require(!hoveredEntity(game, view, ui, layout), "Drag retained building hover"); ui.drag.reset();
+        ui.orderMode = OrderKind::AttackMove;
+        require(!hoveredEntity(game, view, ui, layout), "Targeting retained building hover"); ui.orderMode.reset();
+        const Vec2 minimap{layout.minimap.x + 40, layout.minimap.y + 40};
+        view.origin = view.origin + minimap - ui.mouse; ui.mouse = minimap;
+        require(pickEntity(game, view, ui.mouse) == building.id && !hoveredEntity(game, view, ui, layout), "Building hover passed through minimap");
+        const Vec2 world{650, 300}; view.origin = view.origin + world - ui.mouse; ui.mouse = world;
+        building.health = 0;
+        require(!hoveredEntity(game, view, ui, layout), "Destroyed building retained hover"); building.health = 1;
+        fog.update(game.map(), {});
+        require(!hoveredEntity(game, view, ui, layout), "Building hover revealed explored fog");
+    });
+    test("Ten production icons fit inside the selection panel at supported window sizes", [] {
+        for (Vec2 size : {Vec2{960, 640}, Vec2{1280, 900}, Vec2{1920, 1200}}) {
+            const auto content = SelectionPanelLayout(BattleLayout(size).info).content;
+            const ProductionQueueLayout queue(content);
+            require(queue.slots.size() == 10, "Queue layout does not expose ten slots");
+            for (size_t i = 0; i < queue.slots.size(); ++i) {
+                const auto slot = queue.slots[i];
+                require(slot.width >= 28 && slot.width == slot.height && slot.x >= content.x && slot.y >= content.y + 96 &&
+                    slot.x + slot.width <= content.x + content.width + .01f && slot.y + slot.height <= content.y + content.height + .01f,
+                    "Queue icon became unreadable or escaped the panel");
+                for (size_t j = 0; j < i; ++j) {
+                    const auto previous = queue.slots[j];
+                    require(slot.x >= previous.x + previous.width || slot.y >= previous.y + previous.height,
+                        "Queue icons overlap");
+                }
+            }
+        }
+    });
     test("Hover previews the visible click target for every owner without selecting through UI or fog", [] {
         EntityDefinition worker; worker.dayVision = worker.nightVision = 20;
         Scenario scene{Map(40, 32), {1, 1}, {8, 8}, {}};
@@ -17,21 +70,21 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             view.origin = Vec2{650, 350} - view.project(unit.position, game.unitHeight(unit));
             const auto b = unitBounds(game, unit, view);
             ui.mouse = {b.x + b.width * .5f, b.y + b.height * .5f};
-            require(hoveredUnit(game, view, ui, layout) == unit.id && pickEntity(game, view, ui.mouse) == unit.id,
+            require(hoveredEntity(game, view, ui, layout) == unit.id && pickEntity(game, view, ui.mouse) == unit.id,
                 "Hover did not match the visible unit under left click");
             require(ui.selection.ids == selection, "Hover changed actual selection");
             ui.drag = UiRect{0, 0, 20, 20};
-            require(!hoveredUnit(game, view, ui, layout), "Selection drag retained a hover ring"); ui.drag.reset();
+            require(!hoveredEntity(game, view, ui, layout), "Selection drag retained a hover ring"); ui.drag.reset();
             ui.orderMode = OrderKind::AttackMove;
-            require(!hoveredUnit(game, view, ui, layout), "Targeting cursor previewed a left-click selection"); ui.orderMode.reset();
+            require(!hoveredEntity(game, view, ui, layout), "Targeting cursor previewed a left-click selection"); ui.orderMode.reset();
         }
         const Vec2 minimap{layout.minimap.x + 40, layout.minimap.y + 40};
         view.origin = view.origin + minimap - ui.mouse; ui.mouse = minimap;
-        require(pickEntity(game, view, ui.mouse).has_value() && !hoveredUnit(game, view, ui, layout), "Hovered through the raised minimap");
+        require(pickEntity(game, view, ui.mouse).has_value() && !hoveredEntity(game, view, ui, layout), "Hovered through the raised minimap");
         const Vec2 world{650, 300}; view.origin = view.origin + world - ui.mouse; ui.mouse = world;
-        require(hoveredUnit(game, view, ui, layout) != 0, "Hover did not resume outside the HUD");
+        require(hoveredEntity(game, view, ui, layout) != 0, "Hover did not resume outside the HUD");
         const_cast<FogOfWar&>(game.fog()).update(game.map(), {});
-        require(!hoveredUnit(game, view, ui, layout), "Hover revealed a unit in logical fog");
+        require(!hoveredEntity(game, view, ui, layout), "Hover revealed a unit in logical fog");
     });
     test("Enemy and neutral units can only be inspected singly and never become command recipients", [] {
         rts::EntityDefinition worker;

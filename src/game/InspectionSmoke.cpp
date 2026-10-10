@@ -85,9 +85,35 @@ void GameApplication::exerciseInspection() {
     preview.origin = rts::Vec2{650, 340} - preview.project(game_.unit(enemy)->position, game_.unitHeight(*game_.unit(enemy)));
     const auto enemyBounds = rts::unitBounds(game_, *game_.unit(enemy), preview);
     ui_.mouse = {enemyBounds.x + enemyBounds.width * .5f, enemyBounds.y + enemyBounds.height * .5f};
-    if (rts::hoveredUnit(game_, preview, ui_, rts::BattleLayout(previewSize)) != enemy)
+    if (rts::hoveredEntity(game_, preview, ui_, rts::BattleLayout(previewSize)) != enemy)
         throw std::runtime_error("Feedback: hovered enemy disagreed with selection picking");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"unit-hover-feedback-preview.png",
         nullptr, false, &ui_, rts::MenuPage::Main, 0, nullptr, &preview, previewSize);
+    preview.origin = {};
+    preview.origin = rts::Vec2{650, 460} - preview.project(rts::center(building.origin), 0);
+    const auto hoverBounds = rts::buildingBounds(game_, building, preview);
+    ui_.mouse = {hoverBounds.x + hoverBounds.width * .5f, hoverBounds.y + hoverBounds.height * .5f};
+    if (rts::hoveredEntity(game_, preview, ui_, rts::BattleLayout(previewSize)) != building.id)
+        throw std::runtime_error("Feedback: hovered building disagreed with selection picking");
+    renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"building-hover-preview.png",
+        nullptr, false, &ui_, rts::MenuPage::Main, 0, nullptr, &preview, previewSize);
+
+    rts::Scenario production{rts::Map(32, 32), {5, 5}, {12, 12}, {}};
+    production.startingCrystals = 10000;
+    game_ = rts::Simulation(std::move(production), menu_.player, definitions_.entity("human.worker"), definitions_.entities());
+    auto& depot = const_cast<rts::Building&>(game_.buildings().front());
+    depot.definition.trainableUnits = {"human.peacemaker", "human.slinger"};
+    for (size_t i = 0; i < 10; ++i)
+        if (!game_.train(depot.id, depot.definition.trainableUnits[i % 2]))
+            throw std::runtime_error("Queue: could not fill ten mixed production slots");
+    for (int i = 0; i < 30; ++i) game_.tick();
+    ui_ = {}; ui_.selection.ids = {depot.id};
+    for (const auto size : {rts::Vec2{960, 640}, rts::Vec2{1920, 1200}}) {
+        preview.origin = {};
+        preview.origin = rts::Vec2{size.x * .5f, 340} - preview.project(rts::center(depot.origin), 0);
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() /
+            (size.x < 1000 ? L"production-queue-compact.png" : L"production-queue-wide.png"),
+            nullptr, false, &ui_, rts::MenuPage::Main, 0, nullptr, &preview, size);
+    }
 }
 }

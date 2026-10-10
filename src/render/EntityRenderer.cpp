@@ -44,8 +44,10 @@ void Renderer::environmentObject(const EnvironmentObject& object, const Map& map
     }
 }
 
-void Renderer::buildingGroundSelection(const Simulation& game, const Building& b, const WorldView& view, int row) {
+void Renderer::buildingGroundSelection(const Simulation& game, const Building& b, const WorldView& view, int row, bool preview) {
     const auto color = selectionColor(b.owner, game.player().id);
+    const float opacity = worldOpacity_;
+    if (preview) worldOpacity_ *= .5f;
     for (int y = 0; y < b.definition.height; ++y) for (int x = 0; x < b.definition.width; ++x) {
         const Cell cell = b.origin + Cell{x, y};
         if (cell.x + cell.y != row) continue;
@@ -56,6 +58,7 @@ void Renderer::buildingGroundSelection(const Simulation& game, const Building& b
         if (y + 1 == b.definition.height) line(corners[2], corners[3], color, 2);
         if (x == 0) line(corners[3], corners[0], color, 2);
     }
+    worldOpacity_ = opacity;
 }
 
 void Renderer::buildingSprite(const Simulation& game, const Building& b, const WorldView& view, bool selected) {

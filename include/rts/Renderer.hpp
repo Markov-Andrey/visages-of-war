@@ -109,7 +109,7 @@ private:
     void drawVitalBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
     void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected);
-    void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row);
+    void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row, bool preview);
     void unitSprite(const Simulation& game, const Unit& unit, const WorldView& view, bool selected, bool hovered = false, float commandAge = -1);
     void prepareLandscape(const Landscape& landscape, const Map& map);
     void paintedTile(Cell cell);

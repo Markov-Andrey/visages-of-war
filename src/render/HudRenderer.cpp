@@ -138,18 +138,30 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 labels[5] = L"Отменить обучение"; details[5] = L"Отменить последний заказ в очереди и вернуть ресурсы.";
                 icons[5] = "cancel"; buttonKeys[5] = L'X';
             }
-            text(L"Очередь  " + std::to_wstring(b.production.size()) + L" / 5", rect(content.x, content.y + 72, content.width, 24), 0x9eb6b7);
+            const bool blocked = !b.production.empty() && b.production.front().remainingTicks == 0;
+            text(blocked ? L"Освободите выход из здания" : L"Очередь  " + std::to_wstring(b.production.size()) +
+                L" / " + std::to_wstring(Building::productionQueueLimit),
+                rect(content.x, content.y + 70, content.width, 24), blocked ? 0xe4c388 : 0x9eb6b7);
+            const ProductionQueueLayout queue(content);
             for (size_t i = 0; i < b.production.size(); ++i) {
                 const auto& job = b.production[i];
-                const float step = std::min(55.f, content.width / 5), width = step - 7;
-                const float x = content.x + i * step;
-                panel({x, content.y + 102, width, 42}, i == 0 ? 0x315b53 : 0x20363d);
-                centeredText(std::to_wstring(i + 1), {x, content.y + 108, width, 25}, 0xd7e8df);
-                brush_->SetColor(D2D1::ColorF(0x88d2b6));
-                target_->FillRectangle(rect(x, content.y + 140, width * (1 - float(job.remainingTicks) / job.totalTicks), 4), brush_.Get());
+                const auto slot = queue.slots[i];
+                const auto& type = game.entityType(job.definitionId);
+                panel(slot, i == 0 ? 0x315b53 : 0x20363d);
+                unitIcon(type.sprite, {slot.x + 2, slot.y + 2, slot.width - 4, slot.height - 4},
+                    b.owner == game.player().id ? teamColor_ : enemyColor_);
+                brush_->SetColor(D2D1::ColorF(i == 0 ? 0x88d2b6 : 0x526c68));
+                target_->DrawRectangle(rect(slot.x, slot.y, slot.width, slot.height), brush_.Get());
+                if (i == 0) {
+                    const auto progress = rect(slot.x + 1, slot.y + slot.height - 5, slot.width - 2, 4);
+                    brush_->SetColor(D2D1::ColorF(0x101c25));
+                    target_->FillRectangle(progress, brush_.Get());
+                    brush_->SetColor(D2D1::ColorF(0x88d2b6));
+                    const float fraction = job.totalTicks > 0 ? 1 - float(job.remainingTicks) / job.totalTicks : 1;
+                    target_->FillRectangle(rect(progress.left, progress.top, (slot.width - 2) * fraction, 4), brush_.Get());
+                }
+                if (slot.contains(ui.mouse)) tooltip = &type;
             }
-            if (!b.production.empty() && b.production.front().remainingTicks == 0)
-                text(L"Освободите выход из здания", rect(content.x, content.y + 145, content.width, 23), 0xe4c388);
         } else text(L"Расширяет обзор днём и ночью", rect(content.x, content.y + 76, content.width, 30), 0x9eb6b7);
     } else if (unit) {
         const SelectionCards portraits(game, ui.selection, info);
