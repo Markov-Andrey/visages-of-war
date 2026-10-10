@@ -77,6 +77,7 @@ private:
     void text(const std::wstring& value, D2D1_RECT_F rect, unsigned color, bool heading = false);
     void sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel = false, float lighting = 1, ID2D1Bitmap* emission = nullptr);
     void buttonFrame(UiRect area);
+    void commandHotkey(UiRect area, wchar_t key, bool enabled);
     void centeredText(const std::wstring& value, UiRect bounds, unsigned color, bool heading = false);
     void portraitVitals(const SelectionPanelLayout& layout, int current, int maximum, unsigned color, int mana = 0, int maximumMana = 0);
     void buildingPortrait(const BuildingSpriteStage& stage, UiRect area, unsigned color, std::uint64_t tick = 0, bool training = false);
@@ -141,7 +142,7 @@ private:
     ComPtr<ID2D1Factory> factory_;
     ComPtr<IDWriteFactory> writeFactory_;
     ComPtr<IWICImagingFactory> wic_;
-    ComPtr<IDWriteTextFormat> bodyFormat_, titleFormat_;
+    ComPtr<IDWriteTextFormat> bodyFormat_, titleFormat_, hotkeyFormat_;
     ComPtr<ID2D1RenderTarget> target_;
     ComPtr<ID2D1HwndRenderTarget> windowTarget_;
     Vec2 offscreenSize_{};

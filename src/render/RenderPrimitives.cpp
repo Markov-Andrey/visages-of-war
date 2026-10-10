@@ -13,6 +13,16 @@ void Renderer::buttonFrame(UiRect area) {
         {area.x, area.y}, {area.width, area.height});
 }
 
+void Renderer::commandHotkey(UiRect area, wchar_t key, bool enabled) {
+    const auto square = rect(area.x + 2, area.y + 2, 18, 18);
+    brush_->SetColor(D2D1::ColorF(0x101821, .84f));
+    target_->FillRectangle(square, brush_.Get());
+    brush_->SetColor(D2D1::ColorF(enabled ? 0xb9a47b : 0x687477, .95f));
+    target_->DrawRectangle(square, brush_.Get(), 1);
+    brush_->SetColor(D2D1::ColorF(enabled ? 0xf3e6c7 : 0xa6afb3));
+    target_->DrawTextW(&key, 1, hotkeyFormat_.Get(), square, brush_.Get());
+}
+
 void Renderer::polygon(std::span<const Vec2> points, unsigned color, float opacity, bool fill) {
     if (points.size() < 3) return;
     ComPtr<ID2D1PathGeometry> geometry;

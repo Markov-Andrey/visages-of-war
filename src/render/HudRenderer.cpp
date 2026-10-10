@@ -218,7 +218,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         if (!labels[i].empty()) {
             worldOpacity_ = enabled[i] ? 1.0f : .3f;
             if (abilities[i]) {
-                centeredText(wide(abilities[i]->displayName).substr(0, 1), {b.x, b.y + 3, b.width, std::min(32.f, b.height - 22)},
+                centeredText(wide(abilities[i]->displayName).substr(0, 1), {b.x + 22, b.y + 3, b.width - 22, std::min(32.f, b.height - 22)},
                     enabled[i] ? 0xb3d4ff : 0x5a718c, b.height >= 48);
             } else if (icons[i]) {
                 icon(icons[i], {b.x, b.y}, b.width);
@@ -241,9 +241,8 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 brush_->SetColor(D2D1::ColorF(0x07101e, .8f));
                 target_->FillRectangle(rect(b.x, b.y, b.width, b.height * cooldown / ability->cooldownTicks), brush_.Get());
                 centeredText(std::to_wstring((cooldown + Simulation::ticksPerSecond - 1) / Simulation::ticksPerSecond),
-                    {b.x, b.y + 3, b.width, b.height - 22}, 0xe2eaff, b.height >= 48);
+                    {b.x + 22, b.y + 3, b.width - 22, b.height - 22}, 0xe2eaff, b.height >= 48);
             }
-            text(std::wstring(1, buttonKeys[i]), rect(b.x + 4, b.y + 1, 15, 20), 0xd8dfec);
             centeredText(std::to_wstring(ability->manaCost), {b.x, b.y + b.height - 19, b.width, 19},
                 unit->mana >= ability->manaCost ? 0x8bbaff : 0xed8b80);
         }
@@ -253,6 +252,9 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             target_->DrawRectangle(rect(b.x + 1, b.y + 1, b.width - 2, b.height - 2), brush_.Get(), 2);
         }
     }
+    // Keep hotkeys above the button frames and cooldown overlays.
+    for (size_t i = 0; i < layout.commandCount; ++i)
+        if (!labels[i].empty() && buttonKeys[i]) commandHotkey(layout.commands[i], buttonKeys[i], enabled[i]);
     for (size_t i = 0; i < controlGroupCount; ++i) {
         const auto& members = ui.controlGroups.members(i);
         if (members.empty()) continue;

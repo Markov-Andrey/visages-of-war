@@ -13,6 +13,9 @@ Renderer::Renderer(Paths paths) : paths_(std::move(paths)), worldAssets_(WorldAs
     };
     format(14.0f, DWRITE_FONT_WEIGHT_NORMAL, bodyFormat_);
     format(25.0f, DWRITE_FONT_WEIGHT_SEMI_BOLD, titleFormat_);
+    format(12.0f, DWRITE_FONT_WEIGHT_SEMI_BOLD, hotkeyFormat_);
+    hotkeyFormat_->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+    hotkeyFormat_->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
 }
 
 void Renderer::attach(HWND window) { window_ = window; }
