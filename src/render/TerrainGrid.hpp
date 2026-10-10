@@ -8,17 +8,6 @@ inline bool terrainCellVisible(const Map& map, Cell cell, const WorldView& view,
     return p.x > -250 && p.x < extent.x + 250 && p.y > -100 && p.y < extent.y + 180 && (!fog || fog->covers(cell));
 }
 
-// The foreground tile owns a shared flat edge. Keep both sides of cliffs and
-// ramps: those edges need not coincide, and their painter order is significant.
-inline bool terrainGridEdge(const Map& map, Cell cell, size_t edge, const WorldView& view, Vec2 extent, const FogMask* fog) {
-    if (edge != 1 && edge != 2) return true;
-    const Cell next = cell + (edge == 1 ? Cell{1, 0} : Cell{0, 1});
-    if (!map.contains(next)) return true;
-    const auto& a = map.at(cell);
-    const auto& b = map.at(next);
-    return a.height != b.height || a.ramp != Cell{} || b.ramp != Cell{} || !terrainCellVisible(map, next, view, extent, fog);
-}
-
 // Preserve the original fog samples exactly; only join adjacent samples whose
 // light is identical. No averaging across an explored/unexplored boundary.
 template<class Draw>

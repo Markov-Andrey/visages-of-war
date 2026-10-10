@@ -5,6 +5,74 @@
 
 namespace rts {
 struct RendererLightingTest {
+    static void gridPattern(const tests::TestContext& context) {
+        using render::check;
+        using tests::require;
+        platform::ComApartment apartment;
+        Renderer renderer(Paths(context.assets, Paths::executable().parent_path() / "grid-test-data"));
+        Renderer::ComPtr<IWICBitmap> output;
+        constexpr UINT width = 384, height = 320;
+        check(renderer.wic_->CreateBitmap(width, height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, output.GetAddressOf()));
+        auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
+        properties.dpiX = properties.dpiY = 96;
+        check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
+        check(renderer.target_->CreateSolidColorBrush(D2D1::ColorF(0), renderer.brush_.GetAddressOf()));
+        const auto pixels = [&] {
+            check(renderer.target_->EndDraw());
+            std::vector<UINT32> result(width * height);
+            check(output->CopyPixels(nullptr, width * 4, UINT(result.size() * 4), reinterpret_cast<BYTE*>(result.data())));
+            return result;
+        };
+        Map map(4, 4);
+        for (float zoom : {.08f, .35f, .85f, 2.f}) {
+            const WorldView view{{192.35f, 17.6f}, zoom};
+            const auto draw = [&](bool cells) {
+                renderer.target_->BeginDraw(); renderer.target_->Clear(D2D1::ColorF(0));
+                if (cells) {
+                    for (int y = 0; y < 4; ++y) for (int x = 0; x < 4; ++x)
+                        renderer.terrainGrid({x,y}, {}, view, map.surfaceCorners({x,y}, view));
+                } else {
+                    renderer.target_->SetTransform(render::surfaceTransform(map.surfaceCorners({0,0}, view), {0,0}));
+                    renderer.target_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+                    renderer.target_->FillRectangle(render::rect(0, 0, 4, 4), renderer.terrainGridBrush({}, zoom));
+                    renderer.target_->SetTransform(D2D1::Matrix3x2F::Identity());
+                    renderer.target_->SetAntialiasMode(D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+                }
+                return pixels();
+            };
+            const auto continuous = draw(false), tiled = draw(true);
+            int difference = 0, lit = 0;
+            for (size_t i = 0; i < tiled.size(); ++i) {
+                difference += std::abs(int(tiled[i] & 255) - int(continuous[i] & 255));
+                lit += (tiled[i] & 255) > 0;
+            }
+            require(lit > 20 && difference < 1500, "Clipping a continuous grid to cells introduced seams or duplicate edges");
+            for (Cell ramp : {Cell{1,0}, Cell{-1,0}, Cell{0,1}, Cell{0,-1}}) renderer.terrainGridBrush(ramp, zoom);
+            require(renderer.terrainGrids_.size() == 5, "Grid retained patterns from previous zoom levels");
+        }
+        const UINT32 ground = 0xff334433;
+        Renderer::ComPtr<ID2D1Bitmap> bitmap;
+        check(renderer.target_->CreateBitmap(D2D1::SizeU(1,1), &ground, 4,
+            D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),96,96), bitmap.GetAddressOf()));
+        check(renderer.target_->CreateBitmapBrush(bitmap.Get(), renderer.groundBrush_.GetAddressOf()));
+        Simulation game(Scenario{Map(32,32), {1,1}, {4,4}, {}});
+        const Cell probe{24,24};
+        WorldView view{{},1}; view.origin = Vec2{192,160} - view.project(center(probe));
+        const auto tile = [&](bool grid) {
+            renderer.target_->BeginDraw(); renderer.target_->Clear(D2D1::ColorF(0));
+            renderer.tile(game.map(), probe, view, grid, true);
+            return pixels();
+        };
+        renderer.updateFogMask(game);
+        require(!game.fog().explored(probe) && tile(false) == tile(true), "Periodic grid leaked through unexplored fog");
+        game.revealMap(); renderer.updateFogMask(game);
+        require(tile(false) != tile(true), "Grid failed to appear after exploration changed");
+        Simulation replacement(Scenario{Map(32,32), {1,1}, {4,4}, {}});
+        renderer.updateFogMask(replacement);
+        require(tile(false) == tile(true), "Grid retained visibility from a previous map");
+        renderer.discardTarget();
+        require(renderer.terrainGrids_.empty(), "Discarded renderer retained grid patterns");
+    }
     static void gridContours(const tests::TestContext& context) {
         using render::check;
         using tests::require;
@@ -251,22 +319,8 @@ struct RendererLightingTest {
 namespace tests {
 void lightingTests(TestSuite& test, const TestContext& context) {
     test("Cached grid contours preserve ramps, camera transforms and one-pixel strokes", [&] { RendererLightingTest::gridContours(context); });
-    test("Grid shares flat edges but retains cliffs, ramps and viewport boundaries", [&] {
-        Map map(4, 4);
-        const WorldView view{{400, 100}, 1};
-        const Vec2 extent{1000, 700};
-        int edges = 0;
-        for (int y = 0; y < 4; ++y) for (int x = 0; x < 4; ++x) for (size_t edge = 0; edge < 4; ++edge)
-            edges += render::terrainGridEdge(map, {x, y}, edge, view, extent, nullptr);
-        require(edges == 40, "Flat grid repeats or loses a shared boundary");
-        map.at({2, 1}).height = 1;
-        require(render::terrainGridEdge(map, {1, 1}, 1, view, extent, nullptr), "Grid lost a cliff edge");
-        map.at({2, 1}).height = 0; map.at({2, 1}).ramp = {0, 1};
-        require(render::terrainGridEdge(map, {1, 1}, 1, view, extent, nullptr), "Grid lost a ramp edge");
-        map.at({2, 1}).ramp = {};
-        require(render::terrainGridEdge(map, {1, 1}, 1, {{1240, 100}, 1}, extent, nullptr), "Grid deferred an edge to a culled tile");
-    });
-    test("Joined grid strokes retain fog samples and refresh after exploration changes", [&] {
+    test("Continuous grid survives cell clipping, zoom changes, fog and map replacement", [&] { RendererLightingTest::gridPattern(context); });
+    test("Joined terrain boundary strokes retain fog samples and refresh after exploration changes", [&] {
         Map map(12, 12);
         FogOfWar fog(12, 12); FogMask mask;
         const std::array sources{VisionSource{{5, 5}, 3}};

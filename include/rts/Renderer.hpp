@@ -84,8 +84,12 @@ private:
     void buildingPortrait(const BuildingSpriteStage& stage, UiRect area, unsigned color, std::uint64_t tick = 0, bool training = false);
     void drawBuildingPortrait(const Simulation& game, const Building& building, const SelectionPanelLayout& layout);
     void drawCrystalPortrait(const Crystal& crystal, const SelectionPanelLayout& layout);
-    void tile(const Map& map, Cell c, const WorldView& view, Vec2 extent, bool grid, bool fog);
+    void tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog);
     void terrainRow(const Map& map, int row, const WorldView& view, bool grid, bool fog = false);
+    ID2D1BitmapBrush* terrainGridBrush(Cell ramp, float zoom);
+    void terrainGrid(Cell cell, Cell ramp, const WorldView& view, const std::array<Vec2, 4>& top);
+    float gridZoom_{};
+    std::map<std::pair<int, int>, ComPtr<ID2D1BitmapBrush>> terrainGrids_;
     void gridFootprint(const Map& map, Cell cell, const WorldView& view, unsigned color);
     // Unit-zoom shapes, relative to each cell's center. The key includes slope
     // geometry, so map edits/replacement cannot reuse an obsolete contour.

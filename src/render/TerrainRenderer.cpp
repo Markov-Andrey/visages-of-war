@@ -55,7 +55,7 @@ void Renderer::terrainRow(const Map& map, int row, const WorldView& view, bool g
     const auto draw = [&](Cell cell) {
         if (!terrainCellVisible(map, cell, view, extent, fog ? &fogMask_ : nullptr)) return;
         worldOpacity_ = 1;
-        tile(map, cell, view, extent, grid, fog);
+        tile(map, cell, view, grid, fog);
     };
     const auto diagonal = [&](int depth, bool early) {
         const auto columns = terrainColumns(view, map.width(), map.height(), depth, -250, extent.x + 250);
@@ -92,7 +92,7 @@ void Renderer::updateFogMask(const Simulation& game) {
     }
 }
 
-void Renderer::tile(const Map& map, Cell c, const WorldView& view, Vec2 extent, bool grid, bool fog) {
+void Renderer::tile(const Map& map, Cell c, const WorldView& view, bool grid, bool fog) {
     const auto& tile = map.at(c);
     const std::array<Vec2, 4> world{{{float(c.x), float(c.y)}, {c.x + 1.0f, float(c.y)},
         {c.x + 1.0f, c.y + 1.0f}, {float(c.x), c.y + 1.0f}}};
@@ -155,6 +155,7 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, Vec2 extent, 
     }
     // Grade the surface before fog so blue ambient light cannot tint unexplored black.
     lightSurface(top);
+    if (grid) terrainGrid(c, tile.ramp, view, top);
     if (fog) {
         D2D1_MATRIX_3X2_F previous;
         target_->GetTransform(&previous);
@@ -182,8 +183,6 @@ void Renderer::tile(const Map& map, Cell c, const WorldView& view, Vec2 extent, 
             boundary(edge, 0xaca17a, std::max(1.0f, 2 * view.zoom));
         else if (tile.surface != Surface::Land && map.at(adjacent).surface == Surface::Land)
             boundary(edge, 0xc5d3b3, std::max(1.0f, view.zoom), .4f);
-        if (grid && terrainGridEdge(map, c, edge, view, extent, fog ? &fogMask_ : nullptr))
-            boundary(edge, 0xabc494, 1.0f, .25f);
     }
 }
 }
