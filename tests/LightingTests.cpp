@@ -5,6 +5,47 @@
 
 namespace rts {
 struct RendererLightingTest {
+    static void rallyOverlay(const tests::TestContext& context) {
+        using render::check;
+        using tests::require;
+        platform::ComApartment apartment;
+        Renderer renderer(Paths(context.assets, Paths::executable().parent_path() / "rally-test-data"));
+        Renderer::ComPtr<IWICBitmap> output;
+        constexpr UINT width = 800, height = 600;
+        renderer.offscreenSize_ = {float(width), float(height)};
+        check(renderer.wic_->CreateBitmap(width, height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, output.GetAddressOf()));
+        auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
+        properties.dpiX = properties.dpiY = 96;
+        check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
+        renderer.loadResources(); // Use the solid fallback flag to probe exact overlay pixels.
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        Simulation game(Scenario{Map(24, 24), {8, 8}, {14, 14}, {}}, {},
+            definitions.entity("human.worker"), definitions.entities());
+        auto& building = const_cast<Building&>(game.buildings().front());
+        building.rally = {8, 7};
+        WorldView view{{}, 1};
+        view.origin = Vec2{500, 250} - view.project(center(building.rally));
+        const Vec2 probe{508, 206}; // Interior of the flag behind the hall in ground depth.
+        require(buildingBounds(game, building, view).contains(probe), "Rally fixture misses the building sprite");
+        const auto draw = [&](bool selected) {
+            GameplayUi ui;
+            if (selected) ui.selection.ids = {building.id};
+            renderer.draw(game, view, {}, ui, false, false);
+            std::uint32_t pixel{};
+            const WICRect area{int(probe.x), int(probe.y), 1, 1};
+            check(output->CopyPixels(&area, 4, 4, reinterpret_cast<BYTE*>(&pixel)));
+            return pixel;
+        };
+        const int health = building.health;
+        building.health = 0;
+        const auto terrain = draw(false);
+        building.health = health;
+        const auto background = draw(false);
+        require(background != terrain, "Rally fixture probe is not covered by building artwork");
+        require(background != (0xff000000u | teamRgb(game.player().color)), "Rally fixture cannot distinguish the flag from the building");
+        require(draw(true) == (0xff000000u | teamRgb(game.player().color)), "Building covered the rally marker");
+        require(draw(false) == background, "Deselection left the overlay marker on screen");
+    }
     static void gridPattern(const tests::TestContext& context) {
         using render::check;
         using tests::require;
@@ -348,6 +389,7 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         render::boundaryRuns({5, 5}, {6, 5}, &mask, [&](float, float, float) { require(false, "Grid draws through black mask after map replacement"); });
     });
     test("Water renders a translucent bed and smooth editable depth boundary", [&] { RendererLightingTest::water(context); });
+    test("Rally marker overlays buildings and disappears on deselection", [&] { RendererLightingTest::rallyOverlay(context); });
     test("Occlusion layer exposes units with a soft local window and preserves background objects", [&] { RendererLightingTest::occlusion(context); });
     test("Health sections, damage colour and death visibility stay readable at night", [&] { RendererLightingTest::healthBars(context); });
     test("Night sprite composition preserves alpha, soft emission and foreground occlusion", [&] { RendererLightingTest::composite(context); });
