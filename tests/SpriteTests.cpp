@@ -7,7 +7,61 @@
 #include "platform/WindowsSupport.hpp"
 
 namespace rts::tests {
+namespace {
+SpritePixels readSpritePixels(const TestContext& context, IWICImagingFactory* wic, const std::string& name) {
+    Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
+    Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
+    Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
+    const auto path = context.worldPaths.asset(std::filesystem::path(std::u8string(name.begin(), name.end())));
+    require(SUCCEEDED(wic->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ,
+        WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf())), "Sprite decode failed");
+    require(SUCCEEDED(decoder->GetFrame(0, frame.GetAddressOf())), "Sprite frame missing");
+    require(SUCCEEDED(wic->CreateFormatConverter(converter.GetAddressOf())), "Sprite converter failed");
+    require(SUCCEEDED(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppPBGRA,
+        WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom)), "Sprite conversion failed");
+    UINT width{}, height{}; require(SUCCEEDED(converter->GetSize(&width, &height)), "Sprite size missing");
+    SpritePixels image{int(width), int(height), std::vector<std::uint8_t>(size_t(width) * height * 4)};
+    require(SUCCEEDED(converter->CopyPixels(nullptr, width * 4, UINT(image.bgra.size()), image.bgra.data())), "Sprite pixels missing");
+    return image;
+}
+}
+
 void spriteTests(TestSuite& test, const TestContext& context) {
+    test("Corps team masks retain canvas alignment and exclude masonry, poles and fire", [&] {
+        platform::ComApartment apartment;
+        Microsoft::WRL::ComPtr<IWICImagingFactory> wic;
+        require(SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+            IID_PPV_ARGS(wic.GetAddressOf()))), "WIC factory failed");
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        const auto& art = definitions.entity("human.barracks").buildingSprite;
+        const auto check = [&](const std::string& imageName, const std::string& maskName,
+            std::initializer_list<Cell> painted, std::initializer_list<Cell> preserved) {
+            const auto original = readSpritePixels(context, wic.Get(), imageName);
+            const auto mask = readSpritePixels(context, wic.Get(), maskName);
+            require(mask.width == original.width && mask.height == original.height, "Corps mask changed canvas size");
+            const auto alpha = [&](Cell point) { return mask.bgra[(size_t(point.y) * mask.width + point.x) * 4 + 3]; };
+            for (const auto point : painted) require(alpha(point) == 255, "Corps mask missed a red accent");
+            for (const auto point : preserved) require(alpha(point) == 0, "Corps mask paints a protected detail");
+            for (size_t i = 0; i < mask.bgra.size(); i += 4)
+                require(mask.bgra[i] == mask.bgra[i + 3] && mask.bgra[i + 1] == mask.bgra[i + 3] &&
+                    mask.bgra[i + 2] == mask.bgra[i + 3], "Corps mask is not white with alpha coverage");
+            for (const auto color : {teamRgb(TeamColor::Blue), 0xffffffu, 0u}) {
+                auto pixels = original.bgra;
+                applyTeamColorMask(pixels, mask.bgra, color);
+                for (size_t i = 0; i < pixels.size(); i += 4) {
+                    require(pixels[i + 3] == original.bgra[i + 3], "Corps recoloring changed source alpha");
+                    if (!mask.bgra[i + 3]) require(std::equal(pixels.begin() + i, pixels.begin() + i + 4,
+                        original.bgra.begin() + i), "Corps recoloring changed unmasked artwork");
+                }
+            }
+        };
+        check(art.stages.front().image, art.stages.front().teamMask,
+            {{800, 180}, {625, 458}, {419, 700}, {595, 790}},
+            {{805, 85}, {607, 530}, {600, 570}, {560, 260}, {500, 600}});
+        check(art.icon, art.iconMask, {{320, 230}, {500, 525}}, {{650, 220}, {615, 635}, {640, 850}});
+        check(art.portrait, art.portraitMask, {{300, 300}, {600, 250}, {288, 1250}},
+            {{735, 130}, {186, 800}, {333, 1100}, {650, 360}});
+    });
     test("Raw sheet island crops exclude interleaved neighboring sprites without changing source pixels", [] {
         SpritePixels sheet{8, 5, std::vector<std::uint8_t>(8 * 5 * 4)};
         const auto set=[&](int x,int y,std::uint8_t alpha) {
@@ -218,22 +272,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         Microsoft::WRL::ComPtr<IWICImagingFactory> wic;
         require(SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
             IID_PPV_ARGS(wic.GetAddressOf()))), "WIC factory failed");
-        const auto read = [&](const std::string& name) {
-            Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
-            Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
-            Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
-            const auto path = context.worldPaths.asset(std::filesystem::path(std::u8string(name.begin(), name.end())));
-            require(SUCCEEDED(wic->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ,
-                WICDecodeMetadataCacheOnLoad, decoder.GetAddressOf())), "Sprite decode failed");
-            require(SUCCEEDED(decoder->GetFrame(0, frame.GetAddressOf())), "Sprite frame missing");
-            require(SUCCEEDED(wic->CreateFormatConverter(converter.GetAddressOf())), "Sprite converter failed");
-            require(SUCCEEDED(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppPBGRA,
-                WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom)), "Sprite conversion failed");
-            UINT width{}, height{}; require(SUCCEEDED(converter->GetSize(&width, &height)), "Sprite size missing");
-            SpritePixels image{int(width), int(height), std::vector<std::uint8_t>(size_t(width) * height * 4)};
-            require(SUCCEEDED(converter->CopyPixels(nullptr, width * 4, UINT(image.bgra.size()), image.bgra.data())), "Sprite pixels missing");
-            return image;
-        };
+        const auto read = [&](const std::string& name) { return readSpritePixels(context, wic.Get(), name); };
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         const auto& sprite = definitions.entity("human.peacemaker").sprite;
         const auto recipe = render::directionalRecipe(context.worldPaths, sprite);

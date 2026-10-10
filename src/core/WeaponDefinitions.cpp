@@ -98,12 +98,18 @@ RallySpriteDefinition parseRallySprite(const Json& sprite) {
 }
 void parseBuildingSprite(EntityDefinition& e, const Json& sprite) {
     if (sprite.is_null()) return;
-    fields(sprite, {"scale", "stages"});
+    fields(sprite, {"scale", "stages"}, {"portrait", "icon", "portraitMask", "iconMask"});
     auto& s = e.buildingSprite;
     s.scale = real(sprite.at("scale"), .01f, 4);
+    if (sprite.contains("portrait")) s.portrait = imagePath(sprite.at("portrait"));
+    if (sprite.contains("icon")) s.icon = imagePath(sprite.at("icon"));
+    if (sprite.contains("portraitMask")) s.portraitMask = imagePath(sprite.at("portraitMask"));
+    if (sprite.contains("iconMask")) s.iconMask = imagePath(sprite.at("iconMask"));
+    if ((!s.portraitMask.empty() && s.portrait.empty()) || (!s.iconMask.empty() && s.icon.empty()))
+        throw std::runtime_error("Building UI mask requires its matching artwork");
     const auto& stages = sprite.at("stages");
-    if (!stages.is_array() || stages.size() < 2 || stages.size() > 101)
-        throw std::runtime_error("Building sprite requires construction and complete stages");
+    if (!stages.is_array() || stages.empty() || stages.size() > 101)
+        throw std::runtime_error("Building sprite requires a static stage or construction stages");
     int previous = -1;
     for (const auto& j : stages) {
         fields(j, {"from", "image", "teamMask", "source", "anchor"}, {"layers", "lights", "emissionMask", "emissive"});
@@ -135,8 +141,8 @@ void parseBuildingSprite(EntityDefinition& e, const Json& sprite) {
         }
         s.stages.push_back(std::move(stage));
     }
-    if (s.stages.front().from != 0 || s.stages.back().from != 100)
-        throw std::runtime_error("Building stages must start at 0 and end at 100 percent");
+    if (s.stages.front().from != 0 || (s.stages.size() > 1 && s.stages.back().from != 100))
+        throw std::runtime_error("Building stages must start at 0 and, when animated, end at 100 percent");
 }
 void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
     fields(attack, {"range", "windupTicks", "recoveryTicks", "cooldownTicks", "targets", "projectile"});

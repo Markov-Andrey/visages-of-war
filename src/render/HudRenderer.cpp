@@ -252,6 +252,8 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
                 if (type->mobile && !type->sprite.image.empty()) {
                     unitIcon(type->sprite, b, teamColor_);
+                } else if (!type->buildingSprite.icon.empty()) {
+                    uiImage(type->buildingSprite.icon, type->buildingSprite.iconMask, b, teamColor_);
                 } else if (const auto* stage = type->buildingSprite.stage(type->constructionTicks, type->constructionTicks)) {
                     const float scale = std::min(b.width / stage->source[2], b.height / stage->source[3]);
                     const float width = stage->source[2] * scale, height = stage->source[3] * scale;

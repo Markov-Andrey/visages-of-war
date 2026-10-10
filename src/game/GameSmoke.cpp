@@ -10,6 +10,24 @@
 namespace rts::game {
 void GameApplication::exerciseInterface() {
     cursor_.snapshot(rts::Paths::executable().parent_path() / L"cursors-preview.png");
+    for (const auto color : {rts::TeamColor::Blue, rts::TeamColor::White, rts::TeamColor::Black}) {
+        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
+        site.startingCrystals = 500;
+        rts::PlayerSettings player; player.color = color;
+        rts::Simulation corps(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities());
+        const std::array builders{corps.worker().id};
+        const auto id = corps.construct(builders, "human.barracks", {12, 11});
+        if (!id) throw std::runtime_error("Smoke: corps construction failed");
+        for (int i = 0; i < 700 && !corps.building(*id)->complete(); ++i) corps.tick();
+        if (!corps.building(*id)->complete() || !corps.train(*id, "human.peacemaker"))
+            throw std::runtime_error("Smoke: corps completion or training failed");
+        rts::GameplayUi ui; ui.selection.ids = {*id};
+        rts::WorldView view{{}, 1.25f};
+        view.origin = rts::Vec2{760, 350} - view.project(rts::center(corps.building(*id)->origin), 0);
+        renderer_.snapshot(corps, rts::Paths::executable().parent_path() /
+            (L"peacemaker-corps-" + std::to_wstring(static_cast<int>(color)) + L".png"),
+            nullptr, true, &ui, rts::MenuPage::Main, 0, nullptr, &view, {1280, 900});
+    }
     {
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
         rts::Simulation lit(site, {}, definitions_.entity("human.worker"), definitions_.entities(), {}, {}, {.startMinute = 22 * 60});
@@ -236,7 +254,17 @@ void GameApplication::exerciseInterface() {
     panning_ = false;
     ui_.selection.ids = {game_.worker().id};
     ui_.placement = "human.barracks";
-    mouse_ = view_.project(rts::center({17, 17}), 0);
+    // The catalog footprint may grow; find a free site near the original test location.
+    std::optional<rts::Cell> constructionSite;
+    for (int radius = 0; radius <= 6 && !constructionSite; ++radius)
+        for (int y = 17 - radius; y <= 17 + radius && !constructionSite; ++y)
+            for (int x = 17 - radius; x <= 17 + radius && !constructionSite; ++x) {
+                const rts::Cell cell{x, y};
+                if (!game_.canPlace(ui_.placement, cell)) continue;
+                mouse_ = view_.project(rts::center(cell), float(game_.map().at(cell).height));
+                if (mouseInWorld() && cursorKind() == rts::CursorKind::Build) constructionSite = cell;
+            }
+    if (!constructionSite) throw std::runtime_error("Smoke: no visible construction site");
     if (cursorKind() != rts::CursorKind::Build) throw std::runtime_error("Smoke: placement cursor failed");
     mouse_ = view_.project(rts::center(game_.hall()), 0);
     if (cursorKind() != rts::CursorKind::Blocked) throw std::runtime_error("Smoke: blocked cursor failed");
@@ -326,7 +354,7 @@ void GameApplication::exerciseInterface() {
     if (ui_.selection.ids.size() != 6) throw std::runtime_error("Smoke: drag selection failed");
     onMessage(WM_KEYDOWN, 'B', 0);
     onMessage(WM_KEYDOWN, 'B', 0);
-    click(view_.project(rts::center({17, 17}), 0));
+    click(view_.project(rts::center(*constructionSite), float(game_.map().at(*constructionSite).height)));
     if (game_.buildings().size() != 2) throw std::runtime_error("Smoke: construction placement failed");
     for (int tick = 0; tick < 700; ++tick) game_.tick();
     if (!game_.buildings().back().complete() || game_.units().size() != initialUnitCount + 1) throw std::runtime_error("Smoke: construction or training failed");

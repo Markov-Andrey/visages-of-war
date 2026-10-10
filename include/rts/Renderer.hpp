@@ -70,7 +70,7 @@ private:
     void bonesSprite(const Bones& bones, const WorldView& view);
     void unitPortrait(const UnitSpriteDefinition& definition, Vec2 topLeft, Vec2 extent, unsigned color);
     void unitIcon(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
-    void unitUiImage(const std::string& image, const std::string& mask, UiRect bounds, unsigned color);
+    void uiImage(const std::string& image, const std::string& mask, UiRect bounds, unsigned color, bool fill = false);
     void unitHudPortrait(const UnitSpriteDefinition& definition, UiRect bounds, unsigned color);
     void drawProjectiles(const Simulation& game, const WorldView& view);
     void polygon(std::span<const Vec2> points, unsigned color, float opacity = 1.0f, bool fill = true);

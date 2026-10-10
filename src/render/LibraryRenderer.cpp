@@ -86,7 +86,9 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     brush_->SetColor(D2D1::ColorF(0x796040, .13f));
     target_->FillEllipse(D2D1::Ellipse(point({518, 585}), 147, 24), brush_.Get());
     const auto* stage = entity.buildingSprite.stage(entity.constructionTicks, entity.constructionTicks);
-    if (stage) {
+    if (!entity.buildingSprite.portrait.empty()) {
+        uiImage(entity.buildingSprite.portrait, entity.buildingSprite.portraitMask, art, teamRgb(menu.player.color));
+    } else if (stage) {
         buildingPortrait(*stage, art, teamRgb(menu.player.color),
             static_cast<std::uint64_t>(menu.librarySeconds * Simulation::ticksPerSecond));
     } else if (entity.mobile && !entity.sprite.image.empty()) {

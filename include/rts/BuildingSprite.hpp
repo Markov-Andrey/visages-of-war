@@ -40,6 +40,7 @@ struct BuildingSpriteStage {
 };
 struct BuildingSpriteDefinition {
     float scale = 1; // Display pixels per source pixel at zoom 1; never affects occupancy.
+    std::string portrait, icon, portraitMask, iconMask;
     std::vector<BuildingSpriteStage> stages;
     const BuildingSpriteStage* stage(int progress, int duration) const {
         const BuildingSpriteStage* result = nullptr;

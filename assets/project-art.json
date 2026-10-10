@@ -399,6 +399,45 @@
           "imported": "2026-10-10",
           "source": "Project owner artwork; original PNG bytes preserved.",
           "sha256": "F24BCF5455F84BD8DA8B459D3E0656D87DFAE88260F78A54C3FA26485578C1F4"
+        },
+        {
+            "original":  "barracks-sprite.png",
+            "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps.png",
+            "imported":  "2026-10-10",
+            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon.",
+            "sha256":  "0171EF05B88941F5827166C9DC89156779DE979151A50D9F333712472F8A912B"
+        },
+        {
+            "original":  "barracks-ico.png",
+            "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-icon.png",
+            "imported":  "2026-10-10",
+            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon.",
+            "sha256":  "A62CBA7E0007EFB9019A9A32592FFFB8A0A4944F14667849297769EF5BCF0327"
+        },
+        {
+            "original":  "barracks-portrait.png",
+            "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-portrait.png",
+            "imported":  "2026-10-10",
+            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon.",
+            "sha256":  "8E3DB9244116057FE051F16187794FDEC4EB2512EE0B9FE46833FC928580C41A"
+        },
+        {
+            "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-mask.png",
+            "imported":  "2026-10-10",
+            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used.",
+            "sha256":  "383CBFC363422B9F5E938700D5E7A28B6235FB6481409F6732FD842D70A931AC"
+        },
+        {
+            "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-icon-mask.png",
+            "imported":  "2026-10-10",
+            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used.",
+            "sha256":  "60104916E9F7634D11523FE6C73D87AE2641A1A9480EF9946661759E38492930"
+        },
+        {
+            "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-portrait-mask.png",
+            "imported":  "2026-10-10",
+            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used.",
+            "sha256":  "4F6B2EB6C518590332CF9FF1A80D9DCF8754BC7D86F2AE9D4FC227A37888B084"
         }
     ]
 }

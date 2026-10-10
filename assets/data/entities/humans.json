@@ -749,7 +749,7 @@
     {
       "id": "human.barracks",
       "factionId": "humans",
-      "name": "Казарма",
+      "name": "Миротворческий корпус",
       "description": "Обучает миротворцев, пращников и катапульты. Точка сбора определяет, куда отправятся новые бойцы.",
       "cost": {
         "crystals": 100,
@@ -778,7 +778,7 @@
         "ticks": 180,
         "footprint": [
           3,
-          2
+          3
         ]
       },
       "production": {
@@ -792,6 +792,22 @@
       "depot": false,
       "hero": null,
       "visual": "barracks",
+      "buildingSprite": {
+        "scale": 0.2,
+        "portrait": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-portrait.png",
+        "portraitMask": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-portrait-mask.png",
+        "icon": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-icon.png",
+        "iconMask": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-icon-mask.png",
+        "stages": [
+          {
+            "from": 0,
+            "image": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps.png",
+            "teamMask": "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-mask.png",
+            "source": [0, 0, 1536, 1024],
+            "anchor": [0.58, 0.62]
+          }
+        ]
+      },
       "alternateForms": [],
       "attack": {
         "range": 1.5,

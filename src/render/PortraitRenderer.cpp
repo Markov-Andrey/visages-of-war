@@ -56,7 +56,9 @@ void Renderer::drawBuildingPortrait(const Simulation& game, const Building& buil
     drawPortraitBackdrop(p, color);
     target_->PushAxisAlignedClip(rect(art.x, art.y, art.width, art.height), D2D1_ANTIALIAS_MODE_ALIASED);
     const auto& type = building.definition;
-    if (const auto* stage = type.buildingSprite.stage(type.constructionTicks, type.constructionTicks)) {
+    if (!type.buildingSprite.portrait.empty()) {
+        uiImage(type.buildingSprite.portrait, type.buildingSprite.portraitMask, art, color, true);
+    } else if (const auto* stage = type.buildingSprite.stage(type.constructionTicks, type.constructionTicks)) {
         buildingPortrait(*stage, art, color, game.clock().elapsedTicks(), building.training());
     } else {
         // Reuse the world renderer for prototype buildings without authored artwork.

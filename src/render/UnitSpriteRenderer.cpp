@@ -45,13 +45,14 @@ void Renderer::unitHudPortrait(const UnitSpriteDefinition& d, UiRect bounds, uns
         unitPortrait(d, {bounds.x, bounds.y}, {bounds.width, bounds.height}, color);
         return;
     }
-    unitUiImage(d.portrait, d.portraitMask, bounds, color);
+    uiImage(d.portrait, d.portraitMask, bounds, color);
 }
 void Renderer::unitIcon(const UnitSpriteDefinition& d, UiRect bounds, unsigned color) {
     if (d.icon.empty()) unitPortrait(d, {bounds.x, bounds.y}, {bounds.width, bounds.height}, color);
-    else unitUiImage(d.icon, d.iconMask, bounds, color);
+    else uiImage(d.icon, d.iconMask, bounds, color);
 }
-void Renderer::unitUiImage(const std::string& image, const std::string& mask, UiRect bounds, unsigned color) {
+void Renderer::uiImage(const std::string& image, const std::string& mask, UiRect bounds, unsigned color, bool fill) {
+    if (bounds.width <= 0 || bounds.height <= 0) return;
     ID2D1Bitmap* bitmap{};
     if (!mask.empty()) bitmap = maskedBitmap(image, mask, color);
     else {
@@ -61,6 +62,14 @@ void Renderer::unitUiImage(const std::string& image, const std::string& mask, Ui
         bitmap = original.Get();
     }
     const auto pixels = bitmap->GetPixelSize();
+    if (fill) {
+        // Crop the already recolored bitmap, so portrait and mask share exact coordinates.
+        const float scale = std::max(bounds.width / pixels.width, bounds.height / pixels.height);
+        const float width = bounds.width / scale, height = bounds.height / scale;
+        sprite(bitmap, rect((pixels.width - width) * .5f, (pixels.height - height) * .5f, width, height),
+            {bounds.x, bounds.y}, {bounds.width, bounds.height}, false, 0);
+        return;
+    }
     const float scale = std::min(bounds.width / pixels.width, bounds.height / pixels.height);
     const Vec2 extent{pixels.width * scale, pixels.height * scale};
     sprite(bitmap, rect(0, 0, float(pixels.width), float(pixels.height)),
@@ -89,6 +98,13 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
         rallySprites.emplace(commander.id, sprite);
     }
     for (const auto& e : definitions.entities()) {
+        const auto& buildingArt = e.buildingSprite;
+        if (!buildingArt.portrait.empty()) dimensions(buildingArt.portrait);
+        if (!buildingArt.icon.empty()) dimensions(buildingArt.icon);
+        if (!buildingArt.portraitMask.empty() && dimensions(buildingArt.portraitMask) != dimensions(buildingArt.portrait))
+            throw std::runtime_error("Building portrait mask dimensions must match image: " + e.id);
+        if (!buildingArt.iconMask.empty() && dimensions(buildingArt.iconMask) != dimensions(buildingArt.icon))
+            throw std::runtime_error("Building icon mask dimensions must match image: " + e.id);
         for (const auto& stage : e.buildingSprite.stages) {
             const auto size = dimensions(stage.image);
             if (stage.source[0] + stage.source[2] > size.x || stage.source[1] + stage.source[3] > size.y)

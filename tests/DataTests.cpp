@@ -541,7 +541,11 @@ void dataTests(TestSuite& test, const TestContext& context) {
             require(art.stage(ticks, 300) && art.stage(ticks, 300)->from == from, "Construction art switched at the wrong tick");
         require(art.stage(99, 301)->from == 0 && art.stage(100, 301)->from == 33, "Fractional threshold was rounded early");
         require(art.stage(198, 301)->from == 33 && art.stage(199, 301)->from == 66, "66 percent rounded early");
-        require(!defs.entity("human.barracks").buildingSprite.stage(180, 180), "Unconfigured art lost fallback");
+        require(!defs.entity("human.watchtower").buildingSprite.stage(180, 180), "Unconfigured art lost fallback");
+        const auto& corps = defs.entity("human.barracks").buildingSprite;
+        require(corps.stages.size() == 1 && corps.stage(0, 180) == corps.stage(180, 180) &&
+            !corps.portrait.empty() && !corps.icon.empty() && !corps.portraitMask.empty() && !corps.iconMask.empty(),
+            "Static corps artwork or independent masked UI images missing");
         const auto original = fixture.entities["entities"][3]["buildingSprite"];
         const auto rejects = [&](const std::function<void(Json&)>& change) {
             auto invalid = original; change(invalid);
@@ -564,6 +568,12 @@ void dataTests(TestSuite& test, const TestContext& context) {
         rejects([](Json& a) { a["stages"][0]["source"][2] = 0; });
         rejects([](Json& a) { a["stages"][0]["anchor"][0] = 2; });
         rejects([](Json& a) { a["scale"] = 0; });
+        rejects([](Json& a) { a["stages"] = Json::array(); });
+        rejects([](Json& a) { a["stages"] = Json::array({a["stages"][3]}); });
+        rejects([](Json& a) { a["portrait"] = "../portrait.png"; });
+        rejects([](Json& a) { a["icon"] = "C:/icon.png"; });
+        rejects([](Json& a) { a["portraitMask"] = "mask.png"; });
+        rejects([](Json& a) { a["iconMask"] = "mask.png"; });
         rejects([](Json& a) { a["stages"][0]["typo"] = true; });
         rejects([](Json& a) { a["stages"][3]["lights"][0]["radius"] = 0; });
         rejects([](Json& a) { a["stages"][3]["lights"][0]["intensity"] = 1.1; });
