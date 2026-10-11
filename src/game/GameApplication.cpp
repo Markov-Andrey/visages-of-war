@@ -73,8 +73,7 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
                 accumulator += elapsed;
                 while (accumulator >= 1.0 / rts::Simulation::ticksPerSecond) {
                     game_.tick();
-                    // Future gameplay systems consume events here, after a simulation tick.
-                    game_.takeEvents();
+                    processWorldEvents();
                     accumulator -= 1.0 / rts::Simulation::ticksPerSecond;
                 }
             }

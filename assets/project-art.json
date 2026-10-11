@@ -4,51 +4,45 @@
     "rights":  "Project artwork; not part of the third-party CC0 asset catalog",
     "collections": [
         {"manifest": "ui/loading/manifest.json", "description": "Loading-screen parallax layers, square map frame and progress atlas; owner-supplied sources and imagegen alpha cleanup."},
-        {"manifest": "sprites/units/novice/manifest.json", "description": "Novice worker atlas, icon and portrait; owner-supplied source checksums and atlas layout."},
-        {"manifest": "world/tilesets/sunny-hills/manifest.json", "description": "Sunny Hills terrain, trees, shrubs, rocks, ruins, coast and retained vineyard artwork; original PNGs and SHA-256 checksums."}
+        {"manifest": "sprites/units/novice/manifest.json", "description": "Novice worker atlas, icon and portrait; owner-supplied sources and atlas layout."},
+        {"manifest": "world/tilesets/sunny-hills/manifest.json", "description": "Sunny Hills terrain, trees, shrubs, rocks, ruins, coast and retained vineyard artwork; original PNG sources."}
     ],
     "files":  [
         {
           "original": "builds.png",
           "path": "sprites/buildings/valeri/construction/invocation.png",
-          "source": "Project owner artwork; original PNG bytes preserved. Lamp and circle form one construction invocation layer.",
-          "sha256": "48805E423CA57A6C919D89B929FDA6F87AD28993AD7BDC15774D4F3D811F4F01"
+          "source": "Project owner artwork; original PNG bytes preserved. Lamp and circle form one construction invocation layer."
         },
         {
           "original": "crysal-medium.png",
           "path": "sprites/resources/crystal/medium.png",
           "imported": "2026-10-04",
-          "source": "Project owner artwork; original PNG bytes preserved. 12 variants, 2x2 logical footprint and 5500 crystals. Crops, ground anchors and scale are in world/resources.json.",
-          "sha256": "C8F5EEF3B6D589003F5005CF07DD5BD3EECB9ABECFCBA3BBB07BB538475769F5"
+          "source": "Project owner artwork; original PNG bytes preserved. 12 variants, 2x2 logical footprint and 5500 crystals. Crops, ground anchors and scale are in world/resources.json."
         },
         {
           "original": "crysal-big.png",
           "path": "sprites/resources/crystal/big.png",
           "imported": "2026-10-04",
-          "source": "Project owner artwork; original PNG bytes preserved. 4 variants, 3x3 logical footprint and 15000 crystals. Crops, ground anchors and scale are in world/resources.json.",
-          "sha256": "0454F0571957B9AA4DC47B74BC10370BF7ED2A0EAB4A99DE41B8DEEF1567F7A7"
+          "source": "Project owner artwork; original PNG bytes preserved. 4 variants, 3x3 logical footprint and 15000 crystals. Crops, ground anchors and scale are in world/resources.json."
         },
 
         {
           "original": "crystal-sprites.png",
           "path": "sprites/resources/crystal/variants.png",
           "imported": "2026-10-04",
-          "source": "Project owner crystal sheet; original PNG bytes preserved. The supplied 1536x1024 sheet contains 12 variants in four columns and three rows. Crops and ground anchors are in world/resources.json; each deposit occupies one logical cell.",
-          "sha256": "CE6A6C11E34EFF3AA117ACCC5282FE3E1B54EAC57BA80E479E9A3213DAA98BE6"
+          "source": "Project owner crystal sheet; original PNG bytes preserved. The supplied 1536x1024 sheet contains 12 variants in four columns and three rows. Crops and ground anchors are in world/resources.json; each deposit occupies one logical cell."
         },
         {
           "original": "crystal.png",
           "path": "ui/resources/crystal/icon.png",
           "imported": "2026-10-04",
-          "source": "Project owner crystal UI icon; original PNG bytes and black backing preserved.",
-          "sha256": "598E585863FF076E7E1EE0EAADB720498E626437F5808678CC7E6C11AB15F3CE"
+            "source": "Project owner crystal UI icon; exterior black background removed with built-in imagegen, original 1254x1254 canvas retained."
         },
         {
           "original": "limit-ico.png",
           "path": "ui/resources/supply/icon.png",
           "imported": "2026-10-04",
-          "source": "Project owner army supply UI icon; original PNG bytes preserved.",
-          "sha256": "A7C0DFEAA586FCA16F26BA87EE1A4DBFAB1421E4AA8534C2E31E3E0C99785BA2"
+            "source": "Project owner army supply UI icon; exterior black background removed with built-in imagegen, dark interior necks and original 1254x1254 canvas retained."
         },
                   {
                       "original":  "background.png",
@@ -64,78 +58,67 @@
                   },
                   {
                       "original":  "name.png",
-                      "path":  "ui/logo.png",
-                      "sha256":  "034425F2DF04EF04CD1DD66619E65A976073FD03FE637038A823485C1AC6C911"
+                      "path":  "ui/logo.png"
                   },
                   {
                       "original":  "icon.png",
-                      "path":  "ui/project-icon.png",
-                      "sha256":  "8A8C6BC8DFC71B8065F9A60050D2FC2E0305C352C548512BB3D2F25D1050DD8D"
+                      "path":  "ui/project-icon.png"
                   },
                   {
                       "original":  "cursor.png",
-                      "path":  "ui/cursors.png",
-                      "sha256":  "06A809F8C413B9CCC9977131C9EF0C84815F41CAD1F9EF10AC2192DF5CFF7D7E"
+                      "path":  "ui/cursors.png"
                   },
                   {
                       "original":  "tile-grass.png",
                       "retiredPath":  "textures/grass-ground.png",
-                      "status": "Replaced by Sunny Hills meadow",
-                      "sha256":  "ADE6589B390DA0B34726894A43A15A105AF96EF800B49AD6677CBC3C69EEDDFB"
+                      "status": "Replaced by Sunny Hills meadow"
                   },
                   {
                       "original": "ratusha-0.png",
                       "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-0.png",
                       "removed": "2026-10-09",
                       "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
-                      "imported": "2026-09-29",
-                      "sha256": "06FE2E219A9B10DB4D92C8E48BC22A49B80A6FE97CB1BC6077A8D193DBAE8A01"
+                      "imported": "2026-09-29"
                   },
                   {
                       "original": "ratusha-33.png",
                       "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-33.png",
                       "removed": "2026-10-09",
                       "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
-                      "imported": "2026-09-29",
-                      "sha256": "F52922D1A5298D02B43AFBBF9E4E76B2E03583026CDA8413ADA475B68496D331"
+                      "imported": "2026-09-29"
                   },
                   {
                       "original": "ratusha-66.png",
                       "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-66.png",
                       "removed": "2026-10-09",
                       "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
-                      "imported": "2026-09-29",
-                      "sha256": "A624B6AD053F28770B65EFE628960C7E6DF8EBE8F64C223E736E8F77DFB9B5FD"
+                      "imported": "2026-09-29"
                   },
                   {
                       "original": "ratusha.png",
                       "retiredPath": "sprites/buildings/valeri/ratusha/ratusha.png",
                       "removed": "2026-10-09",
                       "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
-                      "imported": "2026-09-29",
-                      "sha256": "51A6A8C237DA82B474564A20CC0A17DF1D38B45DF487C8F1AB3FBB672E2B4E8E"
+                      "imported": "2026-09-29"
                   },
                   {
                       "original": "ratusha-no-fire.png",
                       "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-no-fire.png",
                       "removed": "2026-10-09",
                       "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
-                      "imported": "2026-09-30",
-                      "sha256": "F58E87D796F1A5C4794E1AA469F5396E4838EC17FF1B7D14E61240FCAC0AD15C"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "ratusha-kupol.png",
                       "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-kupol.png",
                       "removed": "2026-10-09",
                       "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
-                      "imported": "2026-09-30",
-                      "sha256": "1EB18D04D93587347F11F1A491B7062B9324E4FB34E697D6FAFDC649CAEF5BC2"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "fire-ratusha.png",
                       "path": "sprites/buildings/valeri/ratusha/fire-ratusha.png",
-                      "imported": "2026-09-30",
-                      "sha256": "02AD30B7AD341538B44163FBB54054A18B07681012E9E5C5CB0C33B490C7C5B8"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "Generated solid-white coverage mask",
@@ -143,53 +126,46 @@
                       "retiredPath": "sprites/buildings/valeri/ratusha/ratusha-full-team-test.png",
                       "removed": "2026-10-09",
                       "status": "Removed obsolete original/test mask; replaced by aligned town hall layers and authored team mask.",
-                      "imported": "2026-09-30",
-                      "sha256": "4215A5974A2DF5EEA4B240AC936E54388B78036E3A57E39969966230B38F760F"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "graphics-export/ratusha/ratusha-0.png",
                       "source": "Project owner revision with aligned canvas; imported unchanged",
                       "retiredPath": "sprites/buildings/valeri/ratusha/aligned/ratusha-0.png",
                       "status": "Replaced by procedural construction using the finished building sprite.",
-                      "imported": "2026-09-30",
-                      "sha256": "AE595C1DC45A3C94DDE14B2F213E6753D021C635C836860E64FDECC3FCB3E00A"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "graphics-export/ratusha/ratusha-33.png",
                       "source": "Project owner revision with aligned canvas; imported unchanged",
                       "retiredPath": "sprites/buildings/valeri/ratusha/aligned/ratusha-33.png",
                       "status": "Replaced by procedural construction using the finished building sprite.",
-                      "imported": "2026-09-30",
-                      "sha256": "54C445E145E0BF69CA6E1278C3CEC379058A050B7F714E88B15AC98AEBB37143"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "graphics-export/ratusha/ratusha-66.png",
                       "source": "Project owner revision with aligned canvas; imported unchanged",
                       "retiredPath": "sprites/buildings/valeri/ratusha/aligned/ratusha-66.png",
                       "status": "Replaced by procedural construction using the finished building sprite.",
-                      "imported": "2026-09-30",
-                      "sha256": "16022014DC59BD7E79FE0EAC3550BE96C0DF28253154185654DF73564D6364C3"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "graphics-export/ratusha/ratusha-no-fire.png",
                       "source": "Project owner revision with aligned canvas; imported unchanged",
                       "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-no-fire.png",
-                      "imported": "2026-09-30",
-                      "sha256": "E118EAC13F4B66EEB8E70D970CB1C7D4E446F91AB7338E9FFEB89CE534DE11E8"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "graphics-export/ratusha/ratusha-kupol.png",
                       "source": "Project owner revision with aligned canvas; imported unchanged",
                       "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-kupol.png",
-                      "imported": "2026-09-30",
-                      "sha256": "970BF1D357024784270012A90A5C824777E27FA07DAB8F158A9574E01A026CDA"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "graphics-export/ratusha/ratusha-full-team-test.png",
                       "source": "Project owner painted white-on-transparent mask with soft alpha edges; imported unchanged as ratusha-team.png",
                       "path": "sprites/buildings/valeri/ratusha/aligned/ratusha-team.png",
-                      "imported": "2026-09-30",
-                      "sha256": "836C0B44FCD42DA8B8364D4D5947B2E359980E12A5D0685D634F55DA894BD5DD"
+                      "imported": "2026-09-30"
                   },
                   {
                       "original": "dragon-point-animations.png",
@@ -272,8 +248,7 @@
           "removed": "2026-10-09",
           "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
-          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
-          "sha256": "F5BDCE5BF191AFE22A97D66562C888491762CD091D384D373FE45E1A7FE76E10"
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json"
         },
         {
           "original": "peacemaker-nw-walk.png",
@@ -281,8 +256,7 @@
           "removed": "2026-10-09",
           "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
-          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
-          "sha256": "9517D1C04F7533C1442C8C0F0E949D3FEEEF60514581B422637ABF5057FBA759"
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json"
         },
         {
           "original": "peacemaker-se-attack.png",
@@ -290,8 +264,7 @@
           "removed": "2026-10-09",
           "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
-          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
-          "sha256": "C28EC7DB074B3954D8AEF0E8FF80051810241FC85BD0BD699BCAADD633A85742"
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json"
         },
         {
           "original": "peacemaker-se-walk.png",
@@ -299,8 +272,7 @@
           "removed": "2026-10-09",
           "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
-          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
-          "sha256": "0F0A372616C7BB92D5E0E79E205E0A328643F83A0C4C29D7D4DE6C32ACB49934"
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json"
         },
         {
           "original": "peacemaker-stand.png",
@@ -308,8 +280,7 @@
           "removed": "2026-10-09",
           "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
-          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json",
-          "sha256": "62A5B701D11A77B1ECA9EC0A8039A533D5E37F2B6600CC6C654EABDDADF2227F"
+          "source": "Project owner two-direction Peacemaker prototype; original bytes preserved. Runtime alignment and warp recipe: sprites/units/peacemaker/directions.json"
         },
         {
           "original": "peacemaker-death.png",
@@ -317,138 +288,118 @@
           "removed": "2026-10-09",
           "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
-          "source": "Project owner Peacemaker death animation; original bytes preserved. Four shared frames, last frame is the persistent corpse; crops and ground pivots in data/entities/church.json.",
-          "sha256": "22106E00329C5998C0F1778AA9B1555EF2C267357D98AAB0CECBC7069CBEFEF1"
+          "source": "Project owner Peacemaker death animation; original bytes preserved. Four shared frames, last frame is the persistent corpse; crops and ground pivots in data/entities/church.json."
         },
         {
           "original": "peacemaker-portrait.png",
           "path": "sprites/units/peacemaker/peacemaker-portrait.png",
           "imported": "2026-10-03",
-          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
-          "sha256": "E5E8850363C9572DDDA7F295AFE488676E24E823FA733069F1A033082303380C"
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon."
         },
         {
           "original": "peacemaker-icon.png",
           "path": "sprites/units/peacemaker/peacemaker-icon.png",
           "imported": "2026-10-03",
-          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
-          "sha256": "EF2D6C74F4739486591E22FCE7CCB79C9DB3C0B5008BDCDBEDE0EB5988007393"
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon."
         },
         {
           "original": "peacemaker.png",
           "path": "sprites/units/peacemaker/peacemaker.png",
           "imported": "2026-10-03",
-          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
-          "sha256": "18BCF446A482DFDE7D0151632C4F90F3734A23140E576699D34B52B972BE9233"
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon."
         },
         {
           "original": "peacemaker-mask.png",
           "path": "sprites/units/peacemaker/peacemaker-mask.png",
           "imported": "2026-10-03",
-          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
-          "sha256": "6904EC6DE2E537BC6E8A9A6ABD043330A8EF03ADA896343C7CE7BCBC81D8B78B"
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon."
         },
         {
           "original": "peacemaker-portrait-mask.png",
           "path": "sprites/units/peacemaker/peacemaker-portrait-mask.png",
           "imported": "2026-10-03",
-          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
-          "sha256": "1CF3DA8FBD00BE518716BFE7C711CF952F41D7F871D34D912A6E27EBCB414AFD"
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon."
         },
         {
           "original": "peacemaker-icon-mask.png",
           "path": "sprites/units/peacemaker/peacemaker-icon-mask.png",
           "imported": "2026-10-03",
-          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon.",
-          "sha256": "6109FCC1F794B36D1D4F0CEBA9E76AEDB93E9F02D6B8E218E4FCFF10B62BE641"
+          "source": "Project owner aligned Peacemaker pack; original PNG bytes preserved. 512x512 source cells, separate authored team masks for living/death art, portrait and icon."
         },
         {
           "original": "bones.png",
           "path": "sprites/remains/bones.png",
           "imported": "2026-10-03",
-          "source": "Project owner neutral bones sheet; original bytes preserved. Eight shared variants and ground anchors in world/remains.json. No team recoloring.",
-          "sha256": "A905A897C594CBFEC0A3D277A86DA8B6028D7C30023E1225E15B3146BA685844"
+          "source": "Project owner neutral bones sheet; original bytes preserved. Eight shared variants and ground anchors in world/remains.json. No team recoloring."
         },
         {
           "original": "prachnik.png",
           "path": "sprites/units/slinger/slinger.png",
           "imported": "2026-10-10",
-          "source": "Project owner artwork; original PNG bytes preserved.",
-          "sha256": "846010973ECF9A7D2A7D869E5898054183743C4F5CB06E2259AA3848F561EB3B"
+          "source": "Project owner artwork; original PNG bytes preserved."
         },
         {
           "original": "prachnik-mask.png",
           "path": "sprites/units/slinger/slinger-mask.png",
           "imported": "2026-10-10",
-          "source": "Project owner artwork; original PNG bytes preserved.",
-          "sha256": "D50AFB1D411C320AF16E7C9EF91ACBFFDA3E704EF308F445DCFB150491B00170"
+          "source": "Project owner artwork; original PNG bytes preserved."
         },
         {
           "original": "slinger-portrait.png",
           "path": "sprites/units/slinger/slinger-portrait.png",
           "imported": "2026-10-10",
-          "source": "Project owner replacement with transparent background; supplied PNG bytes preserved. The 1254x1254 canvas retains alignment with slinger-portrait-mask.png.",
-          "sha256": "F339F036A9A0978B26E12D2622A67F564A857D8E789AD01648AF126D6D902352"
+          "source": "Project owner replacement with transparent background; supplied PNG bytes preserved. The 1254x1254 canvas retains alignment with slinger-portrait-mask.png."
         },
         {
           "original": "portrait-mask.png",
           "path": "sprites/units/slinger/slinger-portrait-mask.png",
           "imported": "2026-10-10",
-          "source": "Project owner artwork; original PNG bytes preserved.",
-          "sha256": "717F5D9756BC42A1523EF53C6A00B9E8C2B326D5C8959F57521F9C0F0E5FE6AB"
+          "source": "Project owner artwork; original PNG bytes preserved."
         },
         {
           "original": "icon.png",
           "path": "sprites/units/slinger/slinger-icon.png",
           "imported": "2026-10-10",
-          "source": "Project owner artwork; original PNG bytes preserved.",
-          "sha256": "56FC9C31A30F97255EFEFE69348E31D14B1FDE80A5DE31E613F7F53E01815879"
+          "source": "Project owner artwork; original PNG bytes preserved."
         },
         {
           "original": "icon-mask.png",
           "path": "sprites/units/slinger/slinger-icon-mask.png",
           "imported": "2026-10-10",
-          "source": "Project owner artwork; original PNG bytes preserved.",
-          "sha256": "F24BCF5455F84BD8DA8B459D3E0656D87DFAE88260F78A54C3FA26485578C1F4"
+          "source": "Project owner artwork; original PNG bytes preserved."
         },
         {
             "original":  "barracks-sprite.png",
             "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps.png",
             "imported":  "2026-10-10",
-            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon.",
-            "sha256":  "0171EF05B88941F5827166C9DC89156779DE979151A50D9F333712472F8A912B"
+            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon."
         },
         {
             "original":  "barracks-ico.png",
             "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-icon.png",
             "imported":  "2026-10-10",
-            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon.",
-            "sha256":  "A62CBA7E0007EFB9019A9A32592FFFB8A0A4944F14667849297769EF5BCF0327"
+            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon."
         },
         {
             "original":  "barracks-portrait.png",
             "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-portrait.png",
             "imported":  "2026-10-10",
-            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon.",
-            "sha256":  "8E3DB9244116057FE051F16187794FDEC4EB2512EE0B9FE46833FC928580C41A"
+            "source":  "Project owner artwork; original PNG bytes preserved. Static Peacemaker Corps building, independent portrait and icon."
         },
         {
             "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-mask.png",
             "imported":  "2026-10-10",
-            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used.",
-            "sha256":  "383CBFC363422B9F5E938700D5E7A28B6235FB6481409F6732FD842D70A931AC"
+            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used."
         },
         {
             "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-icon-mask.png",
             "imported":  "2026-10-10",
-            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used.",
-            "sha256":  "60104916E9F7634D11523FE6C73D87AE2641A1A9480EF9946661759E38492930"
+            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used."
         },
         {
             "path":  "sprites/buildings/valeri/peacemaker-corps/peacemaker-corps-portrait-mask.png",
             "imported":  "2026-10-10",
-            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used.",
-            "sha256":  "4F6B2EB6C518590332CF9FF1A80D9DCF8754BC7D86F2AE9D4FC227A37888B084"
+            "source":  "Derived from project owner artwork by scripts/make-corps-masks.ps1. White-on-transparent red accent selection at original pixel coordinates; no generated-image artwork used."
         }
     ]
 }

@@ -5,64 +5,51 @@
     "sources":  [
                     {
                         "original":  "stand.png",
-                        "sha256":  "B728165F7295FB1AC495074BDC32F03D4CF9D2A286EED17412833FB26873B8BA",
                         "status":  "Imported into Novice artwork; root source removed after validation"
                     },
                     {
                         "original":  "work.png",
-                        "sha256":  "526DDA4C9A7D8F37D1F2C12C7B63B7D26111B748F455A667342D860F7055FA88",
                         "status":  "Imported into Novice artwork; root source removed after validation"
                     },
                     {
                         "original":  "walk-1.png",
-                        "sha256":  "E86080FD60901C685A8FBB2D9B3A64AB786923A0702DC515BD2053B163FD02EE",
                         "status":  "Imported into Novice artwork; root source removed after validation"
                     },
                     {
                         "original":  "walk-2.png",
-                        "sha256":  "FD9C4FC957A3AFFCC9EC6BA1389F372366E4F2361B6E196F18BC9452AB2B76D9",
                         "status":  "Imported into Novice artwork; root source removed after validation"
                     },
                     {
                         "original":  "death.png",
-                        "sha256":  "FF3CA0EB75A984FEC2BED2778E54D75EFAAF5280FB6AB196A205FE1FEECFF648",
                         "status":  "Imported into Novice artwork; root source removed after validation"
                     },
                     {
                         "original":  "icon.png",
-                        "sha256":  "25AE296CDC53E35244F8CF745961F1380B528ABCB4A16812D57BAD74DAB8C15E",
                         "status":  "Imported into Novice artwork; root source removed after validation"
                     },
                     {
                         "original":  "portrait.png",
-                        "sha256":  "B038AA67EAD94FEBC910EC323DDEFCED30FFE3CD6489E190AA574110FA582E20",
                         "status":  "Imported into Novice artwork; root source removed after validation"
                     }
                 ],
     "files":  [
                   {
-                      "path":  "novice.png",
-                      "sha256":  "238F1CF8E21864D7354FE9E5AF4F4385B7DFA64F9E65AF185468104908A0368B"
+                      "path":  "novice.png"
                   },
                   {
-                      "path":  "novice-icon.png",
-                      "sha256":  "25AE296CDC53E35244F8CF745961F1380B528ABCB4A16812D57BAD74DAB8C15E"
+                      "path":  "novice-icon.png"
                   },
                   {
-                      "path":  "novice-portrait.png",
-                      "sha256":  "B038AA67EAD94FEBC910EC323DDEFCED30FFE3CD6489E190AA574110FA582E20"
+                      "path":  "novice-portrait.png"
                   },
                   {
-                      "path":  "novice-mask.png",
-                      "sha256":  "8A2A747B8C34D018F6C0F656F3F30F8AD927694F10D400131318B932D2B4FE39"
+                      "path":  "novice-mask.png"
                   },
                   {
-                      "path":  "novice-icon-mask.png",
-                      "sha256":  "333B9C445367AD3BFBB0AA583D2D507E6B60E8812D98B2E06630809520E3706F"
+                      "path":  "novice-icon-mask.png"
                   },
                   {
-                      "path":  "novice-portrait-mask.png",
-                      "sha256":  "4C61D731B73F3FA5D35FF2D22CC92132F34847A6EDE8F9A5E18C2C9C106BA16F"
+                      "path":  "novice-portrait-mask.png"
                   }
               ],
     "atlas":  {

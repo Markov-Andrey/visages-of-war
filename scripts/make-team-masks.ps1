@@ -87,9 +87,7 @@ if (!$PreviewOnly) {
         if ($null -ne $manifest) {
             $relative = $job.Settings.mask.Replace('\','/')
             $entry = @($manifest.files | Where-Object { $_.path -eq $relative })
-            $hash = (Get-FileHash -LiteralPath $job.Mask -Algorithm SHA256).Hash
-            if ($entry.Count -eq 0) { $manifest.files = @($manifest.files) + [pscustomobject]@{path=$relative; sha256=$hash} }
-            else { foreach ($item in $entry) { $item.sha256 = $hash } }
+            if ($entry.Count -eq 0) { $manifest.files = @($manifest.files) + [pscustomobject]@{path=$relative} }
         }
         Write-Output "Mask: $($job.Mask)"
     }

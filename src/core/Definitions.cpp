@@ -131,13 +131,22 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
             number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), gathering ? 0 : 1, 1000000)};
         if (gathering) {
             if (ability.manaCost || ability.cooldownTicks) throw std::runtime_error("Harvest uses its interval, without mana or activation cooldown");
-            const auto& h = j.at("harvest"); fields(h, {"credit", "intervalTicks", "amount"});
+            const auto& h = j.at("harvest"); fields(h, {"credit", "intervalTicks", "amount"}, {"effect"});
             HarvestDefinition harvest;
             const auto credit = string(h.at("credit"));
             if (credit == "direct") harvest.credit = HarvestCredit::Direct;
             else if (credit != "cargo") throw std::runtime_error("Unknown harvest credit mode: " + credit);
             harvest.intervalTicks = number(h.at("intervalTicks"), 1, 1000000);
             harvest.amount = number(h.at("amount"), 1, 1000000);
+            if (h.contains("effect")) {
+                const auto& visual = h.at("effect"); fields(visual, {"color", "width", "arcHeight"});
+                auto& effect = harvest.effect.emplace();
+                const auto& rgb = visual.at("color");
+                if (!rgb.is_array() || rgb.size() != 3) throw std::runtime_error("Harvest color requires RGB components");
+                effect.color = (number(rgb[0], 0, 255) << 16) | (number(rgb[1], 0, 255) << 8) | number(rgb[2], 0, 255);
+                effect.width = real(visual.at("width"), .1f, 8);
+                effect.arcHeight = real(visual.at("arcHeight"), 0, 128);
+            }
             ability.harvest = harvest;
         }
         for (const auto& previous : result.abilities_) if (previous.id == ability.id) throw std::runtime_error("Duplicate ability ID");

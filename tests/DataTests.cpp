@@ -68,8 +68,9 @@ void dataTests(TestSuite& test, const TestContext& context) {
         const auto definitions = fixture.load();
         const auto& novice = definitions.entity("church.worker");
         require(novice.gatherAbility && novice.gatherAbility->id == 2 && novice.canGather() &&
-            novice.harvesting().credit == HarvestCredit::Direct && novice.harvesting().intervalTicks == 20 &&
-            novice.harvesting().amount == 1 && novice.carryCapacity == 0, "Direct harvest ability missing");
+            novice.harvesting().credit == HarvestCredit::Direct && novice.harvesting().intervalTicks == 300 &&
+            novice.harvesting().amount == 7 && novice.harvesting().effect && novice.sprite.workOrigins &&
+            novice.carryCapacity == 0, "Direct harvest ability missing");
         auto& worker = fixture.entities["entities"][0]["worker"];
         worker["gatherAbility"] = 3; mustThrow([&] { fixture.load(); });
         worker["carryCapacity"] = 10;

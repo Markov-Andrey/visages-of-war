@@ -144,6 +144,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     std::stable_sort(flyers.begin(), flyers.end(), [](const Unit* a, const Unit* b) { return unitDrawDepth(a->position) < unitDrawDepth(b->position); });
     for (const auto* u : flyers) unitSprite(game, *u, view, ui.selection.contains(u->id), hoverEntity == u->id, feedbackAge(u->id));
     drawProjectiles(game, view);
+    drawHarvestEffects(game, view);
     if (grid) for (size_t i = 0; i < game.environment().size(); ++i) {
         const auto& object = game.environment()[i];
         if (!game.knownEnvironment(i)) continue;
@@ -172,6 +173,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     // Rally markers are order indicators: terrain, entities and guide lines must not cover them.
     for (const auto& b : game.buildings()) if (rallyPointVisible(game, b, ui)) drawRallyPoint(game, b, view);
     nightActive_ = false;
+    drawFloatingNotifications(game, view, ui.floatingNotifications);
     if (!ui.placement.empty() && hover) {
         const auto& type = game.entityType(ui.placement);
         const unsigned colorPreview = game.canPlace(ui.placement, *hover) ? 0x7cdeb0 : 0xeb7c77;

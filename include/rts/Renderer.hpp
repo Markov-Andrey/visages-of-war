@@ -80,6 +80,8 @@ private:
     void drawRallyPoint(const Simulation& game, const Building& building, const WorldView& view);
     void drawCrystal(const Crystal& crystal, Vec2 ground, float zoom, bool glowing = false, std::uint64_t tick = 0);
     void drawResourceIcon(const std::string& id, UiRect bounds);
+    void drawHarvestEffects(const Simulation& game, const WorldView& view);
+    void drawFloatingNotifications(const Simulation& game, const WorldView& view, const FloatingNotifications& notifications);
     ID2D1Bitmap* unitBitmap(const UnitSpriteDefinition& definition, unsigned color);
     ID2D1Bitmap* worldBitmap(const WorldObjectDefinition& definition);
     void unitImage(const UnitSpriteDefinition& definition, int column, int row, Vec2 ground, float zoom, unsigned color);

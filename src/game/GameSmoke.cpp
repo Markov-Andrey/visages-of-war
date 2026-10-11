@@ -395,6 +395,7 @@ void GameApplication::exerciseInterface() {
     exerciseRangedCombat();
     exerciseUnitCommands();
     exerciseInspection();
+    exerciseHarvestFeedback();
     // Exercise the real Enter / WM_CHAR route, including accidental hotkeys and new-match reset.
     startBattle();
     const rts::Cell revealProbe{game_.map().width()-1,game_.map().height()-1};

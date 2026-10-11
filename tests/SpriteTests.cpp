@@ -1,11 +1,30 @@
 #include "TestSupport.hpp"
 #include "rts/DirectionalSprite.hpp"
 #include "rts/Renderer.hpp"
+#include "rts/HarvestVisual.hpp"
 #include "render/DirectionalSpriteAssets.hpp"
 #include "platform/WindowsSupport.hpp"
 
 namespace rts::tests {
 void spriteTests(TestSuite& test, const TestContext& context) {
+    test("Harvest channel stops with orders, death and hidden workers or deposits", [&] {
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        Scenario scene{Map(32, 32), {1, 1}, {6, 7}, {{{7, 7}, 23}, {{30, 30}, 23}}};
+        scene.map.occupy({7, 7}); scene.map.occupy({30, 30});
+        auto game = makeTestSimulation(std::move(scene), {}, definitions.entity("church.worker"));
+        require(game.command({7, 7}), "Harvest channel fixture rejected order");
+        for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
+        require(harvestEffectTarget(game, game.worker()), "Active harvesting channel missing");
+        auto unit = game.worker(); unit.health = 0;
+        require(!harvestEffectTarget(game, unit), "Dead worker still channels");
+        unit = game.worker(); unit.cell = {game.map().width() - 1, game.map().height() - 1};
+        require(!harvestEffectTarget(game, unit), "Hidden worker reveals channel");
+        unit = game.worker(); unit.targetCrystal = 1;
+        require(!harvestEffectTarget(game, unit), "Hidden deposit reveals channel");
+        unit = game.worker(); unit.targetCrystal = -1;
+        require(!harvestEffectTarget(game, unit), "Invalid harvest target accepted");
+        game.stop(); require(!harvestEffectTarget(game, game.worker()), "Stopped worker still channels");
+    });
     test("Novice uses a work pose without attack artwork and retains eight directions", [&] {
         platform::ComApartment apartment;
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");

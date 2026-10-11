@@ -28,6 +28,7 @@ struct UnitSpriteDefinition {
     std::string portraitMask, iconMask; // Optional team paint for the respective UI artwork.
     std::string directionRecipe; // Optional two-view stand/walk/attack/work synthesis recipe.
     std::optional<std::array<Vec2, 8>> projectileOrigins; // Normalized release-frame sockets, by facing row.
+    std::optional<std::array<Vec2, 8>> workOrigins; // Normalized work-pose sockets, by atlas row.
     bool pixelArt = true;
     int frameWidth = 32, frameHeight = 32;
     Vec2 size{80, 80}, anchor{.5f, .7125f};

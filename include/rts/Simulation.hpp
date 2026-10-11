@@ -129,6 +129,14 @@ struct BuildingDestroyed { EntityId building; PlayerId owner; };
 struct CorpseCreated { EntityId corpse, unit; PlayerId owner; };
 struct BonesCreated { EntityId bones, corpse; };
 struct RemainsRemoved { EntityId id; };
+struct CrystalsHarvested {
+    EntityId unit;
+    PlayerId owner;
+    Vec2 position;
+    float height;
+    int amount;
+    std::uint64_t tick;
+};
 
 class Simulation {
 public:
@@ -153,7 +161,7 @@ public:
     const std::string& mapName() const { return scenario_.name; }
     const std::vector<EnvironmentObject>& environment() const { return scenario_.environment; }
     using WorldEvent = std::variant<DayPhaseChanged, ObjectDestroyed, ObjectRestored, ConstructionFinished, UnitProduced, UnitDied, BuildingDestroyed, HeroLevelChanged,
-        CorpseCreated, BonesCreated, RemainsRemoved>;
+        CorpseCreated, BonesCreated, RemainsRemoved, CrystalsHarvested>;
     std::vector<WorldEvent> takeEvents();
     bool damageEnvironment(EntityId id, int damage);
     bool setEnvironmentHealth(EntityId id, int hitPoints);

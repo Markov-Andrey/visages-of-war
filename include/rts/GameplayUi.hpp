@@ -4,6 +4,7 @@
 #include "rts/Simulation.hpp"
 #include "rts/Minimap.hpp"
 #include "rts/CommandUi.hpp"
+#include "rts/FloatingNotifications.hpp"
 #include <chrono>
 #include <string_view>
 
@@ -106,6 +107,7 @@ struct GameplayUi {
     // Presentation cache: notification lifetime continues while the simulation is paused.
     mutable GameplayNotification notification;
     CommandFeedback commandFeedback;
+    FloatingNotifications floatingNotifications;
     Selection selection;
     ControlGroups controlGroups;
     std::optional<UiRect> drag;

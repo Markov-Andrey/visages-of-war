@@ -18,7 +18,7 @@
 - Resolve files through `Paths`. Assets are relative to the executable, never the working directory or source checkout.
 - Use Unicode Windows APIs and `std::filesystem::path`; do not hardcode machine-specific paths.
 - User data belongs under the Windows LocalAppData known folder, separate from installed assets.
-- Preserve source URLs, author credits, licenses and checksums when adding third-party assets.
+- Preserve source URLs, author credits and licenses when adding third-party assets. Do not store asset checksums.
 - Build/test with `scripts/build.ps1 -Configuration Debug -Test`; use Release for distributable packages.
 - Build output and temporary downloads belong under `out/`. Do not commit these or IDE state.
 - Keep platform entrypoints limited to startup/CLI. Gameplay controllers live in src/game; Forge controllers in src/forge. Split rendering by responsibility, sharing RenderSupport rather than duplicating graphics helpers.

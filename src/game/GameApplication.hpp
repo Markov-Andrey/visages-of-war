@@ -17,6 +17,8 @@ private:
     static RECT monitorBounds(HMONITOR monitor);
     void fitToMonitor(HMONITOR monitor);
     void startBattle();
+    void processWorldEvents();
+    void exerciseHarvestFeedback();
     void selectArmy();
     void selectHero();
     void menuClick();

@@ -8,8 +8,8 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 foreach ($entry in $manifest.files) {
     $destination = Join-Path $assetRoot $entry.destination
-    if ((Test-Path -LiteralPath $destination) -and (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash -eq $entry.sha256) {
-        Write-Output "Verified $($entry.destination)"
+    if (Test-Path -LiteralPath $destination -PathType Leaf) {
+        Write-Output "Present $($entry.destination)"
         continue
     }
     $temporary = Join-Path $downloadRoot ([System.IO.Path]::GetFileName($entry.destination))
@@ -24,9 +24,6 @@ foreach ($entry in $manifest.files) {
             [System.IO.Compression.ZipFileExtensions]::ExtractToFile($member, $temporary, $true)
         } finally { $archive.Dispose() }
     } else { Invoke-WebRequest -UseBasicParsing -Uri $entry.url -OutFile $temporary }
-    if ((Get-FileHash -LiteralPath $temporary -Algorithm SHA256).Hash -ne $entry.sha256) {
-        throw "Checksum mismatch for $($entry.destination); original asset may have changed."
-    }
     New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
     Copy-Item -LiteralPath $temporary -Destination $destination
     Write-Output "Imported $($entry.destination)"

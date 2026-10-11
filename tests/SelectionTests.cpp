@@ -4,6 +4,34 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Floating notifications isolate recipients and never backlog events hidden by fog", [] {
+        Map map(20, 20);
+        FogOfWar fog(20, 20);
+        FloatingNotification message;
+        message.position = {10.5f, 10.5f}; message.text = L"+7"; message.started = 100;
+        message.recipient = 1;
+        FloatingNotifications privateFeed;
+        privateFeed.publish(message, 0, fog);
+        require(privateFeed.entries().empty(), "Private income leaked to another player");
+        privateFeed.publish(message, 1, fog);
+        require(privateFeed.entries().size() == 1, "Recipient lost private feedback");
+        require(message.opacity(100) == 1 && message.opacity(145) > 0 && message.opacity(145) < 1 &&
+            message.opacity(160) == 0, "Popup does not fade and expire");
+        privateFeed.expire(160); require(privateFeed.entries().empty(), "Popup queue retains expired entries");
+        message.recipient.reset();
+        FloatingNotifications publicFeed;
+        publicFeed.publish(message, 0, fog);
+        require(publicFeed.entries().empty(), "Black mask revealed a public notification");
+        fog.update(map, std::array{VisionSource{{10, 10}, 2, false}});
+        require(publicFeed.entries().empty(), "Previously hidden notification appeared on exploration");
+        publicFeed.publish(message, 0, fog);
+        require(publicFeed.entries().size() == 1 && message.visibleTo(0, fog), "Visible public notification missing");
+        fog.update(map, {});
+        require(fog.explored({10, 10}) && !message.visibleTo(0, fog), "Explored fog still shows public notifications");
+        FloatingNotifications remembered;
+        remembered.publish(message, 0, fog);
+        require(remembered.entries().empty(), "Public notification entered queue through explored fog");
+    });
     test("Enemy and neutral units can only be inspected singly and never become command recipients", [] {
         rts::EntityDefinition worker;
         worker.dayVision = worker.nightVision = 12;

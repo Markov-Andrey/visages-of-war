@@ -80,6 +80,8 @@ add_library(rts_render
     src/render/UnitSpriteRenderer.cpp
     src/render/RemainsRenderer.cpp
     src/render/ResourceRenderer.cpp
+    src/render/HarvestRenderer.cpp
+    src/render/FloatingNotificationRenderer.cpp
     src/render/DirectionalSpriteAssets.cpp
     src/render/UnitDirectionPreview.cpp
     src/render/BuildingSpriteRenderer.cpp
@@ -138,6 +140,8 @@ add_visages_app(RTS "Visages of War" "Visages.Game"
     src/game/GameInput.cpp
     src/game/GameConsole.cpp
     src/game/GameSmoke.cpp
+    src/game/HarvestSmoke.cpp
+    src/game/GameFeedback.cpp
     src/game/RangedSmoke.cpp
     src/game/UnitCommandSmoke.cpp
     src/game/InspectionSmoke.cpp

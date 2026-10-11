@@ -107,11 +107,19 @@ void economyTests(TestSuite& test, const TestContext& context) {
                 "Harvest credited early or lost the work pose");
         }
         game.tick();
-        require(game.storedCrystals() == 1 && game.worker().cargo == 0 && game.worker().position == position,
+        require(game.storedCrystals() == 7 && game.worker().cargo == 0 && game.worker().position == position,
             "Direct harvest accumulated cargo or visited the depot");
-        ticks(game, interval * 30);
+        const auto events = game.takeEvents();
+        const auto income = std::find_if(events.begin(), events.end(), [](const auto& event) { return std::holds_alternative<CrystalsHarvested>(event); });
+        require(income != events.end() && std::get<CrystalsHarvested>(*income).amount == 7 &&
+            std::get<CrystalsHarvested>(*income).owner == game.worker().owner, "Income event lost its amount or recipient");
+        ticks(game, interval * 3);
         require(game.storedCrystals() == 23 && game.crystals()[0].remaining == 0 && game.worker().cargo == 0 &&
             game.worker().state == UnitState::Idle && game.map().walkable({7,7}), "Direct harvesting lost resources or failed to finish");
+        const auto finalEvents = game.takeEvents();
+        std::vector<int> amounts;
+        for (const auto& event : finalEvents) if (const auto* credit = std::get_if<CrystalsHarvested>(&event)) amounts.push_back(credit->amount);
+        require(amounts == std::vector<int>{7, 7, 2}, "Final partial batch reported more than it credited");
     });
     test("Direct harvest batches clamp to the reserve and Stop resets progress", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");

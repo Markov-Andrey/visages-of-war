@@ -93,10 +93,15 @@ struct ProgressionRules {
     std::vector<int> thresholds{0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200};
 };
 enum class HarvestCredit { Cargo, Direct };
+struct HarvestEffectDefinition {
+    unsigned color = 0xffc46a;
+    float width = 1.2f, arcHeight = 12; // Screen pixels at zoom 1.
+};
 struct HarvestDefinition {
     HarvestCredit credit = HarvestCredit::Cargo;
     int intervalTicks = simulationTicksPerSecond / 3;
     int amount = 1;
+    std::optional<HarvestEffectDefinition> effect;
 };
 struct AbilityDefinition {
     int id{};

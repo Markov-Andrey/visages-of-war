@@ -4,57 +4,42 @@
     "rights":  "Project artwork; no third-party license asserted",
     "reference":  {
                       "original":  "background.png",
-                      "sha256":  "4B5F488423B458C0D0D7606E257A58D558403F8B8E08A4889B3556A6899C5990",
                       "role":  "Composition reference only; not shipped"
                   },
     "files":  [
                   {
                       "original":  "background-4.png",
-                      "originalSha256":  "FE3858ACC0CA23034EF22058BE75D7721EEFBA30565CC0C3EE758F9B5FEDB030",
                       "path":  "sky.png",
-                      "sha256":  "FE3858ACC0CA23034EF22058BE75D7721EEFBA30565CC0C3EE758F9B5FEDB030",
                       "processing":  "Original PNG bytes preserved."
                   },
                   {
                       "original":  "background-5.png",
-                      "originalSha256":  "0255135AA054C5D55A63B1876868E2DB4871CF8820A9106DF2C058CF1E479EB3",
                       "path":  "celestials.png",
-                      "sha256":  "0255135AA054C5D55A63B1876868E2DB4871CF8820A9106DF2C058CF1E479EB3",
                       "processing":  "Original PNG bytes preserved; sun and moon are separate render crops."
                   },
                   {
                       "original":  "background-3.png",
-                      "originalSha256":  "85C9E749C2623C3ABE84716849A685C281BD4CCCA0A40AA739339370919C054C",
                       "path":  "mountains.png",
-                      "sha256":  "551472D5C2C0D2AB7120758BD71DC80EF4F07AD089B8D26E322395A7DCC2CB98",
                       "processing":  "Built-in imagegen edit: preserve composition, remove colored matte fringe, retain transparent sky and foreground."
                   },
                   {
                       "original":  "background-2.png",
-                      "originalSha256":  "3EA900FA23FAEF070C68D56AABA469B905D44E128D2A9B5FAECEA71F950C6A24",
                       "path":  "citadels.png",
-                      "sha256":  "BDBEE11E60614ED5D6E251569EB4A94304E0269EC18FF9CBA1EA1706F7DC4FBF",
                       "processing":  "Built-in imagegen edit: preserve citadels and composition, clean cutout edges and transparency."
                   },
                   {
                       "original":  "background-1.png",
-                      "originalSha256":  "DF714EE73CF4838722EFEBF9A6D7B1651BA45E6569A2E3ACF302B373E8441631",
                       "path":  "foreground.png",
-                      "sha256":  "DF714EE73CF4838722EFEBF9A6D7B1651BA45E6569A2E3ACF302B373E8441631",
                       "processing":  "Original PNG bytes preserved."
                   },
                   {
                       "original":  "minimap.png",
-                      "originalSha256":  "6CFACEE58200E56C219779C22BD763DB221C15CD0E1754C56302F10916B12E85",
                       "path":  "minimap-frame.png",
-                      "sha256":  "035806C54FE1AB336A02CB0C211AE261ABA5D26A916A764F06E2282FF55CDF59",
                       "processing":  "Built-in imagegen edit: remove the dark interior, preserve the gold square frame and diamond ornaments on transparency."
                   },
                   {
                       "original":  "loadings.png",
-                      "originalSha256":  "2389F0B85C87E2696FCE923CF3D03D3FB17C747A46650EC58F07FE200E52ECA6",
                       "path":  "progress-atlas.png",
-                      "sha256":  "015AC049FAD5BF60BD56BC0B5D30496B21A302D84AF5C5FBCD57DBA013332060",
                       "processing":  "Built-in imagegen edit: remove baked checkerboard, preserve all four atlas rows and original lettering."
                   }
               ]

@@ -12,7 +12,10 @@ void Simulation::harvest(Unit& u) {
         const int amount = std::min({ability.amount, crystal.remaining,
             direct ? crystal.remaining : std::max(0, u.definition.carryCapacity - u.cargo)});
         crystal.remaining -= amount;
-        if (direct) mutableEconomy(u.owner).crystals += amount;
+        if (direct) {
+            mutableEconomy(u.owner).crystals += amount;
+            if (amount > 0) events_.emplace_back(CrystalsHarvested{u.id, u.owner, u.position, unitHeight(u), amount, clock_.elapsedTicks()});
+        }
         else u.cargo += amount;
         if (crystal.remaining == 0)
             for (int y = 0; y < crystal.height; ++y) for (int x = 0; x < crystal.width; ++x)
