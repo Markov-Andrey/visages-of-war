@@ -24,7 +24,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             fighter.attackDamage = 10; fighter.dayVision = fighter.nightVision = 20;
             auto victim = fighter; victim.id = "victim"; victim.attackDamage = 0; victim.maximumHealth = 1000;
             site.units = {{victim.id, 1, {8, 8}}};
-            Simulation game(std::move(site), {}, fighter, {fighter, victim});
+            auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, victim});
             const auto enemy = game.units().back().id;
             require(game.attack(std::array{game.worker().id}, enemy), "Continuous attack rejected");
             for (int tick = 0; tick < 180; ++tick) { game.tick(); checkCombatMotion(game); }
@@ -39,7 +39,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         fighter.collisionRadius = .45f; fighter.dayVision = fighter.nightVision = 20;
         auto passive = fighter; passive.id = "passive"; passive.attackDamage = 0; passive.maximumHealth = 1000;
         site.units = {{passive.id, 0, {9, 9}}, {passive.id, 0, {9, 10}}, {passive.id, 0, {9, 11}}, {passive.id, 1, {12, 10}}};
-        Simulation game(std::move(site), {}, fighter, {fighter, passive});
+        auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, passive});
         const auto enemy = game.units().back().id;
         require(game.attack(std::array{game.worker().id}, enemy), "Screen attack rejected");
         for (int tick = 0; tick < 360; ++tick) {
@@ -57,7 +57,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         fighter.dayVision = fighter.nightVision = 20;
         auto victim = fighter; victim.id = "victim"; victim.attackDamage = 0; victim.maximumHealth = 1000;
         site.units = {{victim.id, 1, {8, 10}}, {victim.id, 1, {4, 14}}};
-        Simulation game(std::move(site), {}, fighter, {fighter, victim});
+        auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, victim});
         for (int tick = 0; tick < 240; ++tick) { game.tick(); checkCombatMotion(game); }
         require(game.units()[1].health == 1000 && game.units()[2].health < 1000, "Unreachable target pinned automatic combat");
     });
@@ -71,7 +71,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
                 if (i) site.units.push_back({fighter.id, 0, {14 + i % 4, 16 + i / 4}});
                 site.units.push_back({enemy.id, 1, {24 + i % 4, 16 + i / 4}});
             }
-            Simulation game(std::move(site), {}, fighter, {fighter, enemy});
+            auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, enemy});
             std::vector<EntityId> own;
             EntityId target{};
             for (const auto& u : game.units()) { if (u.owner == 0) own.push_back(u.id); else if (!target) target = u.id; }
@@ -88,7 +88,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         Scenario site{Map(32, 32), {1, 1}, {4, 6}, {}};
         site.heroSpawn = Cell{6, 6}; site.units = {{"human.hero", 1, {28, 28}}};
-        Simulation game(std::move(site), {}, definitions.entity("human.worker"), definitions.entities(), "human.hero");
+        Simulation game(std::move(site), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id, "human.hero");
         const auto id = game.units().back().id, foreign = game.units()[1].id;
         require(game.unit(id)->mana == 200 && game.worker().mana == 0, "Spawn did not initialize independent mana pools");
         require(game.order(std::array{id}, OrderKind::Move, {12, 6}), "Ability movement setup failed");
@@ -145,7 +145,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         attacker.attackRecoveryTicks = 0; attacker.attackCooldownTicks = 1000;
         auto victim = attacker; victim.id = "health.victim"; victim.maximumHealth = 150; victim.attackDamage = 0; victim.hero.emplace();
         site.units = {{victim.id, 1, {5, 3}}};
-        rts::Simulation game(std::move(site), {}, attacker, {attacker, victim});
+        auto game = makeTestSimulation(std::move(site), {}, attacker, {attacker, victim});
         const auto id = game.units().back().id;
         ticks(game, 2);
         require(game.unit(id)->health == 110 && game.unit(id)->healthFeedback.remaining(game.clock().elapsedTicks()) == 40,
@@ -164,7 +164,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             fighter.movementPerSecond = 4; fighter.dayVision = fighter.nightVision = 5;
             auto enemy = fighter; enemy.id = "enemy"; enemy.attackDamage = 0; enemy.maximumHealth = 30;
             site.units = {{enemy.id, 1, {10, 8}}};
-            rts::Simulation game(std::move(site), {}, fighter, {fighter, enemy});
+            auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, enemy});
             const auto target = game.units().back().id;
             require(game.order(std::array{game.worker().id}, kind, {23, 8}), "Travel order rejected");
             ticks(game, 600);
@@ -178,7 +178,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             rts::EntityDefinition fighter; fighter.attackDamage = 30; fighter.canBuild = false; fighter.carryCapacity = 0;
             auto enemy = fighter; enemy.id = "enemy"; enemy.attackDamage = 0; enemy.maximumHealth = 30;
             site.units = {{enemy.id, 1, target}};
-            rts::Simulation game(std::move(site), {}, fighter, {fighter, enemy});
+            auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, enemy});
             const auto victim = game.units().back().id;
             require(game.order(std::array{game.worker().id}, rts::OrderKind::Hold), "Hold rejected");
             ticks(game, 180);
@@ -193,7 +193,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         fighter.dayVision = fighter.nightVision = 4; fighter.canBuild = false; fighter.carryCapacity = 0;
         auto enemy = fighter; enemy.id = "enemy"; enemy.attackDamage = 0; enemy.maximumHealth = 30;
         site.units = {{enemy.id, 1, {10, 8}}};
-        rts::Simulation game(std::move(site), {}, fighter, {fighter, enemy});
+        auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, enemy});
         const auto id = game.worker().id, victim = game.units().back().id;
         require(game.order(std::array{id}, rts::OrderKind::Patrol, {20, 8}), "Patrol rejected");
         int turns = 0; bool outward = true;
@@ -209,7 +209,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(!game.order(std::array{id}, rts::OrderKind::Patrol, game.worker().cell), "Zero-length patrol was accepted");
     });
     test("Hold issued during movement stops at the actual position without teleporting", [] {
-        rts::Simulation game(flatScenario()); const auto id = game.worker().id;
+        auto game = makeTestSimulation(flatScenario()); const auto id = game.worker().id;
         require(game.order(std::array{id}, rts::OrderKind::Move, {8, 3}), "Move rejected");
         game.tick(); const auto position = game.worker().position;
         require(game.order(std::array{id}, rts::OrderKind::Hold), "Moving hold rejected");
@@ -224,7 +224,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition soldier;
         soldier.attackDamage = soldier.maximumHealth; soldier.canBuild = false; soldier.cost.supply = 2;
         scenario.units.push_back({soldier.id, 1, {5, 3}});
-        rts::Simulation game(std::move(scenario), {}, soldier);
+        auto game = makeTestSimulation(std::move(scenario), {}, soldier);
         const auto friendly = game.units()[0].id, enemy = game.units()[1].id;
         const std::array selection{friendly};
         require(game.attack(selection, enemy), "Visible enemy rejected");
@@ -268,7 +268,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             auto victim = fighter; victim.id = "test.victim"; victim.attackDamage = 0;
             rts::Scenario site{rts::Map(20, 20), {1, 1}, {8, 8}, {}};
             site.units = {{victim.id, 1, {9, 8}}};
-            rts::Simulation game(std::move(site), {}, fighter, {fighter, victim});
+            auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, victim});
             const auto enemy = game.units().back().id;
             require(game.attack(std::array{game.worker().id}, enemy), "Death fixture rejected attack");
             ticks(game, 2);
@@ -301,7 +301,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             auto killer = definitions.entity("human.peacemaker"); killer.attackDamage = 10000; killer.attackWindupTicks = 1;
             auto victim = definitions.entity(id); victim.id = "vanishing.victim"; victim.canDecompose = false; victim.attackDamage = 0;
             rts::Scenario site{rts::Map(20, 20), {1, 1}, {8, 8}, {}}; site.units = {{victim.id, 1, {9, 8}}};
-            rts::Simulation game(std::move(site), {}, killer, {killer, victim});
+            auto game = makeTestSimulation(std::move(site), {}, killer, {killer, victim});
             require(game.attack(std::array{game.worker().id}, game.units().back().id), "Vanish fixture rejected attack"); ticks(game, 2);
             require(game.corpses().size() == 1 && game.corpses().front().phase == rts::CorpsePhase::Vanishing, "Unit left a persistent body");
             const int duration = game.corpses().front().remainingTicks;
@@ -318,7 +318,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
     test("Hero progression crosses thresholds, caps at ten and leaves definitions unchanged", [] {
         rts::EntityDefinition hero;
         hero.hero.emplace(); hero.attackDamage = 24; hero.maximumHealth = 400;
-        rts::Simulation game(flatScenario(), {}, hero);
+        auto game = makeTestSimulation(flatScenario(), {}, hero);
         const auto id = game.worker().id;
         require(game.hero() && game.hero()->level() == 1, "Hero not initialized");
         require(!game.grantExperience(id, -1) && !game.grantExperience(id, 0), "Invalid XP accepted");
@@ -333,7 +333,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(!game.grantExperience(id, 50), "XP accepted at cap");
         const auto events = game.takeEvents();
         require(std::count_if(events.begin(), events.end(), [](const auto& e) { return std::holds_alternative<rts::HeroLevelChanged>(e); }) == 9, "Missing level events");
-        rts::Simulation next(flatScenario(), {}, hero);
+        auto next = makeTestSimulation(flatScenario(), {}, hero);
         require(next.hero()->level() == 1 && next.hero()->hero->experience == 0, "Progress leaked between matches");
     });
     test("Kills grant static-level XP to nearby heroes, shared once and never to ordinary units", [] {
@@ -342,7 +342,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         auto hero = soldier; hero.id = "hero"; hero.hero.emplace(); hero.attackDamage = 0;
         auto victim = soldier; victim.id = "victim"; victim.attackDamage = 0; victim.level = 3;
         scenario.units = {{victim.id, 1, {5, 3}}, {hero.id, 0, {4, 5}}, {hero.id, 0, {5, 5}}};
-        rts::Simulation game(std::move(scenario), {}, soldier, {soldier, hero, victim});
+        auto game = makeTestSimulation(std::move(scenario), {}, soldier, {soldier, hero, victim});
         const auto enemy = game.units()[1].id, first = game.units()[2].id, second = game.units()[3].id;
         ticks(game, 7);
         require(!game.unit(enemy), "Enemy survived lethal hit");
@@ -358,13 +358,13 @@ void combatTests(TestSuite& test, const TestContext& context) {
         auto victim = soldier; victim.id = "victim"; victim.attackDamage = 0;
         scenario.units = {{victim.id, 1, {5, 3}}, {hero.id, 0, {4, 6}}, {hero.id, 1, {6, 3}}};
         rts::ProgressionRules rules; rules.experienceRadius = 1;
-        rts::Simulation game(std::move(scenario), {}, soldier, {soldier, hero, victim}, {}, rules);
+        auto game = makeTestSimulation(std::move(scenario), {}, soldier, {soldier, hero, victim}, {}, rules);
         const auto far = game.units()[2].id, hostileHero = game.units()[3].id;
         ticks(game, 7);
         require(game.unit(far)->hero->experience == 0 && game.unit(hostileHero)->hero->experience == 0, "Wrong owner/radius reward");
         auto duel = flatScenario();
         soldier.hero.emplace(); duel.units = {{soldier.id, 1, {5, 3}}};
-        rts::Simulation trade(std::move(duel), {}, soldier);
+        auto trade = makeTestSimulation(std::move(duel), {}, soldier);
         const auto id = trade.worker().id;
         trade.grantExperience(id, 99);
         ticks(trade, 7);
@@ -378,7 +378,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         auto hero = support; hero.id = "hero"; hero.hero.emplace();
         auto killer = support; killer.id = "killer"; killer.attackDamage = 1000;
         scenario.units = {{hero.id, 0, {5, 5}}, {support.id, 0, {8, 8}}, {killer.id, 1, {6, 5}}};
-        rts::Simulation game(std::move(scenario), {}, worker, {worker, support, hero, killer});
+        auto game = makeTestSimulation(std::move(scenario), {}, worker, {worker, support, hero, killer});
         rts::Selection selection; selection.army(game);
         const auto heroId = game.hero()->id, supportId = game.units()[2].id;
         require(selection.ids.size() == 2 && selection.contains(heroId) && selection.contains(supportId), "Incorrect army filter");
@@ -389,16 +389,16 @@ void combatTests(TestSuite& test, const TestContext& context) {
     test("Selected commander spawns a fresh hero at the map marker", [&] {
         const auto defs = rts::Definitions::load(assets / "data/catalog.json");
         const auto& commander = defs.commanders().front();
-        rts::Simulation game(loadScenario(assets / "maps/demo.rtsmap"), {}, defs.entity(commander.startingWorker), defs.entities(), commander.startingHero);
+        rts::Simulation game(loadScenario(assets / "maps/demo.rtsmap"), {}, defs.entity(commander.startingWorker), defs.entities(), defs.startingDepot(defs.entity(commander.startingWorker).factionId).id, commander.startingHero);
         require(game.units().size() == 30 && game.hero() && game.hero()->cell == rts::Cell{17, 20}, "Hero spawn ignored");
         require(game.armySupply().used() == 49 && game.hero()->level() == 1, "Starting hero supply or level incorrect");
-        mustThrow([&] { rts::Simulation invalid(flatScenario(), {}, defs.entity(commander.startingWorker), defs.entities(), commander.startingHero); });
+        mustThrow([&] { rts::Simulation invalid(flatScenario(), {}, defs.entity(commander.startingWorker), defs.entities(), defs.startingDepot(defs.entity(commander.startingWorker).factionId).id, commander.startingHero); });
     });
     test("Hostile orders rejected and explicit move interrupts a swing", [] {
         auto scenario = flatScenario();
         rts::EntityDefinition soldier; soldier.attackDamage = 2; soldier.canBuild = false;
         scenario.units.push_back({soldier.id, 1, {5, 3}});
-        rts::Simulation game(std::move(scenario), {}, soldier);
+        auto game = makeTestSimulation(std::move(scenario), {}, soldier);
         const auto friendly = game.units()[0].id, enemy = game.units()[1].id;
         const std::array own{friendly}, hostile{enemy};
         require(!game.command(hostile, {9, 9}) && !game.attack(hostile, friendly), "Player controlled enemy");
@@ -416,7 +416,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition soldier; soldier.attackDamage = 12; soldier.canBuild = false;
         for (int y = 0; y < 10; ++y) for (int x = 0; x < 5; ++x) scenario.map.at({x, y}).height = 1;
         scenario.units.push_back({soldier.id, 1, {5, 3}});
-        rts::Simulation game(std::move(scenario), {}, soldier);
+        auto game = makeTestSimulation(std::move(scenario), {}, soldier);
         const std::array own{game.worker().id};
         require(game.attack(own, game.units()[1].id), "High ground observer should see low target");
         ticks(game, 180);
@@ -424,7 +424,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         auto airScenario = flatScenario();
         auto flyer = soldier; flyer.id = "test.flyer"; flyer.movement = rts::MovementType::Flying;
         airScenario.units.push_back({flyer.id, 1, {5, 3}});
-        rts::Simulation airGame(std::move(airScenario), {}, soldier, {soldier, flyer});
+        auto airGame = makeTestSimulation(std::move(airScenario), {}, soldier, {soldier, flyer});
         const std::array ground{airGame.worker().id};
         require(!airGame.attack(ground, airGame.units()[1].id), "Melee ordered against another movement layer");
         ticks(airGame, 180);
@@ -435,7 +435,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition soldier; soldier.attackDamage = 12; soldier.canBuild = false;
         for (int y = 0; y < 10; ++y) scenario.map.at({5, y}).height = 1;
         scenario.units.push_back({soldier.id, 1, {6, 3}});
-        rts::Simulation game(std::move(scenario), {}, soldier);
+        auto game = makeTestSimulation(std::move(scenario), {}, soldier);
         const std::array own{game.worker().id};
         require(!game.attack(own, game.units()[1].id), "Unseen enemy accepted");
         ticks(game, 60);
@@ -446,7 +446,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition soldier; soldier.attackDamage = 12; soldier.canBuild = false;
         auto dummy = soldier; dummy.id = "test.dummy"; dummy.attackDamage = 0;
         scenario.units.push_back({dummy.id, 1, {8, 3}});
-        rts::Simulation game(std::move(scenario), {}, soldier, {soldier, dummy});
+        auto game = makeTestSimulation(std::move(scenario), {}, soldier, {soldier, dummy});
         const std::array own{game.worker().id};
         const auto enemy = game.units()[1].id;
         require(game.command(own, {4, 8}), "Move rejected"); ticks(game, 2);
@@ -470,7 +470,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             if (i > 0) scenario.units.push_back({soldier.id, 0, {8 + i % 2, 8 + i / 2}});
             scenario.units.push_back({enemy.id, 1, {14 + i % 2, 8 + i / 2}});
         }
-        rts::Simulation game(std::move(scenario), {}, soldier, {soldier, enemy});
+        auto game = makeTestSimulation(std::move(scenario), {}, soldier, {soldier, enemy});
         std::vector<rts::EntityId> own;
         rts::EntityId target{};
         for (const auto& u : game.units()) { if (u.owner == 0) own.push_back(u.id); else if (!target) target = u.id; }

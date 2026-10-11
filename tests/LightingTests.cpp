@@ -19,7 +19,7 @@ struct RendererLightingTest {
         check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
         renderer.loadResources(); renderer.validateCombatAssets(definitions);
         Scenario site{Map(32, 32), {12, 15}, {17, 14}, {}}; site.startingCrystals = 1000;
-        Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         const std::array builders{game.worker().id};
         const auto corps = game.construct(builders, "human.barracks", {17, 10});
         require(corps.has_value(), "Construction rendering fixture failed");
@@ -71,7 +71,7 @@ struct RendererLightingTest {
             renderer.draw(game, view, {}, ui, false, false);
             renderer.writeSnapshot(output.Get(), Paths::executable().parent_path() / (zoom < 1 ? L"construction-live-far.png" : L"construction-live-near.png"));
         }
-        Simulation night(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
+        Simulation night(site, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id, {}, {}, {.startMinute = 22 * 60});
         night.revealMap();
         const std::array nightBuilders{night.worker().id};
         require(night.construct(nightBuilders, "human.barracks", {17, 10}).has_value(), "Night construction fixture failed");
@@ -98,7 +98,7 @@ struct RendererLightingTest {
         renderer.loadResources(); // Use the solid fallback flag to probe exact overlay pixels.
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         Simulation game(Scenario{Map(24, 24), {8, 8}, {14, 14}, {}}, {},
-            definitions.entity("human.worker"), definitions.entities());
+            definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         auto& building = const_cast<Building&>(game.buildings().front());
         building.rally = {8, 7};
         WorldView view{{}, 1};
@@ -174,7 +174,7 @@ struct RendererLightingTest {
         check(renderer.target_->CreateBitmap(D2D1::SizeU(1,1), &ground, 4,
             D2D1::BitmapProperties(D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),96,96), bitmap.GetAddressOf()));
         check(renderer.target_->CreateBitmapBrush(bitmap.Get(), renderer.groundBrush_.GetAddressOf()));
-        Simulation game(Scenario{Map(32,32), {1,1}, {4,4}, {}});
+        auto game = rts::tests::makeTestSimulation(Scenario{Map(32,32), {1,1}, {4,4}, {}});
         const Cell probe{24,24};
         WorldView view{{},1}; view.origin = Vec2{192,160} - view.project(center(probe));
         const auto tile = [&](bool grid) {
@@ -186,7 +186,7 @@ struct RendererLightingTest {
         require(!game.fog().explored(probe) && tile(false) == tile(true), "Periodic grid leaked through unexplored fog");
         game.revealMap(); renderer.updateFogMask(game);
         require(tile(false) != tile(true), "Grid failed to appear after exploration changed");
-        Simulation replacement(Scenario{Map(32,32), {1,1}, {4,4}, {}});
+        auto replacement = rts::tests::makeTestSimulation(Scenario{Map(32,32), {1,1}, {4,4}, {}});
         renderer.updateFogMask(replacement);
         require(tile(false) == tile(true), "Grid retained visibility from a previous map");
         renderer.discardTarget();
@@ -286,7 +286,7 @@ struct RendererLightingTest {
         renderer.discardTarget();
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         auto scene = loadScenario(context.assets / "maps/sunny-hills.rtsmap", context.worldAssets, context.hallFootprint);
-        Simulation game(std::move(scene), {}, definitions.entity("human.worker"), definitions.entities());
+        Simulation game(std::move(scene), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         game.revealMap();
         WorldView view{{}, 1.15f};
         view.origin = Vec2{700, 360} - view.project({41.5f,21.5f}, -1);
@@ -306,7 +306,7 @@ struct RendererLightingTest {
         check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
         check(renderer.target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), renderer.brush_.GetAddressOf()));
         auto scene = tests::flatScenario(); scene.worker = {3, 0};
-        Simulation game(std::move(scene));
+        auto game = rts::tests::makeTestSimulation(std::move(scene));
         WorldView view{{}, 1};
         const auto body = unitBounds(game, game.worker(), view);
         view.origin = Vec2{120, 90} - Vec2{body.x + body.width * .5f, body.y + body.height * .5f};
@@ -501,7 +501,7 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         renderer.validateCombatAssets(definitions);
         Scenario site{Map(28, 28), {8, 11}, {11, 11}, {{{12, 12}, 1000}, {{13, 13}, 1000}}};
         for (const auto& crystal : site.crystals) site.map.occupy(crystal.cell);
-        Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
+        Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id, {}, {}, {.startMinute = 22 * 60});
         renderer.snapshot(game, root / "lighting-night.png", nullptr, true);
         WorldView shot{{},.85f}; shot.origin=Vec2{720,350}-shot.project(center(game.hall())+Vec2{1,2});
         const auto hidden=shot.project(center({2,18}));
@@ -532,7 +532,7 @@ void lightingTests(TestSuite& test, const TestContext& context) {
         auto types = definitions.entities();
         for (auto& type : types) type.dayVision = type.nightVision = 20;
         auto worker = definitions.entity("human.worker"); worker.dayVision = worker.nightVision = 20;
-        Simulation game(std::move(site), {}, worker, types, {}, {}, {.startMinute = 22 * 60});
+        auto game = rts::tests::makeTestSimulation(std::move(site), {}, worker, types, {}, {}, {.startMinute = 22 * 60});
         GameplayUi ui;
         for (const auto& unit : game.units()) if (unit.owner == game.player().id) ui.selection.ids.push_back(unit.id);
         ticks(game, 8);

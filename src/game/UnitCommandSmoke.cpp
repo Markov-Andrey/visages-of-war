@@ -8,7 +8,7 @@ void GameApplication::exerciseUnitCommands() {
     scene.units = {{"human.peacemaker", 0, {10, 10}}, {"human.catapult", 0, {11, 11}}, {"human.peacemaker", 1, {14, 11}},
         {"human.slinger", 0, {10, 12}}, {"human.peacemaker", 0, {9, 12}}};
     scene.heroSpawn = rts::Cell{9, 8};
-    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), "human.hero");
+    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id, "human.hero");
     ui_ = {}; menu_.page = rts::MenuPage::Playing; resetCamera();
     const auto first = game_.units()[0].id, second = game_.units()[1].id;
     const auto soldier = game_.units()[2].id, siege = game_.units()[3].id, enemy = game_.units()[4].id;

@@ -1,4 +1,5 @@
 #pragma once
+#include "SimulationFixture.hpp"
 #include "rts/Paths.hpp"
 #include "rts/Simulation.hpp"
 #include "rts/Definitions.hpp"

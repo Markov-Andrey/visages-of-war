@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 namespace rts {
-struct FactionDefinition { std::string id, displayName, description; };
+struct FactionDefinition { std::string id, displayName, description, startingBuilding; };
 struct CommanderDefinition {
     std::string id, displayName, description;
     std::string factionId, factionName;

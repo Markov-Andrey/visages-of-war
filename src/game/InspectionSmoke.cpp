@@ -7,7 +7,7 @@ void GameApplication::exerciseInspection() {
     scene.extraWorkers = {{8, 7}};
     scene.units = {{"human.hero", 1, {11, 8}}, {"human.worker", rts::neutralPlayer, {10, 11}}, {"human.peacemaker", 0, {7, 10}}};
     scene.crystals.push_back({{12, 11}, 1000}); scene.map.occupy({12, 11});
-    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("human.worker"), definitions_.entities());
+    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
     ui_ = {}; menu_.page = rts::MenuPage::Playing; clearCommandMode();
     const rts::BattleLayout layout(renderer_.size());
     const auto at = [&](rts::Vec2 point) {
@@ -100,7 +100,7 @@ void GameApplication::exerciseInspection() {
 
     rts::Scenario production{rts::Map(32, 32), {5, 5}, {12, 12}, {}};
     production.startingCrystals = 10000;
-    game_ = rts::Simulation(std::move(production), menu_.player, definitions_.entity("human.worker"), definitions_.entities());
+    game_ = rts::Simulation(std::move(production), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
     auto& depot = const_cast<rts::Building&>(game_.buildings().front());
     depot.definition.trainableUnits = {"human.peacemaker", "human.slinger"};
     for (size_t i = 0; i < 10; ++i)

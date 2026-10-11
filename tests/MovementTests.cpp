@@ -10,7 +10,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
             for (Cell d : {Cell{5,-5}, {-5,5}, {10,10}, {-10,-10}, {10,2}, {-10,-2}, {2,10}, {-2,-10}}) {
                 Scenario s{Map(64,64), {1,1}, {30,30}, {}};
                 EntityDefinition type; type.movement = movement; type.movementPerSecond = 3;
-                Simulation game(std::move(s), {}, type);
+                auto game = makeTestSimulation(std::move(s), {}, type);
                 const auto id = game.worker().id;
                 const Vec2 start = game.worker().position;
                 const Cell goal = game.worker().cell + d;
@@ -77,7 +77,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         rts::Scenario s{rts::Map(20, 16), {1, 1}, {5, 5}, {}};
         s.extraWorkers = {{7, 6}};
         rts::EntityDefinition type; type.collisionRadius = .1f;
-        rts::Simulation game(std::move(s), {}, type);
+        auto game = makeTestSimulation(std::move(s), {}, type);
         const auto id = game.worker().id;
         require(game.order(std::span<const rts::EntityId>(&id, 1), rts::OrderKind::Move, {12, 7}), "Order rejected");
         bool shared = false;
@@ -93,7 +93,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         rts::Scenario s{rts::Map(24, 20), {1, 1}, {5, 8}, {}};
         rts::EntityDefinition large; large.id = "test.large"; large.collisionRadius = .5f; large.movementPerSecond = 15;
         s.units = {{large.id, 0, {12, 8}}};
-        rts::Simulation game(std::move(s), {}, {}, {large});
+        auto game = makeTestSimulation(std::move(s), {}, {}, {large});
         const auto a = game.units()[0].id, b = game.units()[1].id;
         game.order(std::span<const rts::EntityId>(&a, 1), rts::OrderKind::Move, {18, 8});
         game.order(std::span<const rts::EntityId>(&b, 1), rts::OrderKind::Move, {4, 8});
@@ -114,7 +114,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         require(game.unit(a)->cell == rts::Cell{18, 8} && game.unit(b)->cell == rts::Cell{4, 8}, "Crossing traffic stalled");
     });
     test("Mid-step replacement orders and stop do not teleport", [] {
-        rts::Simulation game(flatScenario());
+        auto game = makeTestSimulation(flatScenario());
         game.command({8, 3});
         ticks(game, 3);
         auto previous = game.worker().position;
@@ -152,7 +152,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
     test("Twelve units descend, cross a lowered ford and form up on the other bank", [] {
         auto s = shoreScenario();
         for (int x = 4; x < 10; ++x) for (int y : {10, 11}) if (rts::Cell{x, y} != s.worker) s.extraWorkers.push_back({x, y});
-        rts::Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         std::vector<rts::EntityId> ids;
         std::vector<rts::FormationMember> members;
         for (const auto& u : game.units()) { ids.push_back(u.id); members.push_back({u.id, u.cell}); }
@@ -234,7 +234,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
             for (int y = 0; y < 12; ++y) for (int x = 4; x < 14; ++x)
                 s.map.at({x, y}).surface = (x >= 7 && x <= 9) ? S::DeepWater : S::ShallowWater;
             rts::EntityDefinition type; type.movement = movement;
-            rts::Simulation game(std::move(s), {}, type);
+            auto game = makeTestSimulation(std::move(s), {}, type);
             require(!game.canPlace("human.hall", {5, 5}), "Building accepted shallow water");
             require(game.setRally(game.buildings()[0].id, {8, 5}) == (movement != M::Walking), "Rally ignored trained unit movement");
             require(game.command({12, 5}), "Water order rejected");
@@ -247,7 +247,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         for (int y = 0; y < 10; ++y) s.map.at({4, y}).surface = S::ShallowWater;
         rts::EntityDefinition ship; ship.id = "test.ship"; ship.movement = M::Swimming; ship.canBuild = false; ship.trainingTicks = 1;
         auto dock = testDepot("dock", ship.id);
-        rts::Simulation game(std::move(s), {}, {}, {dock, rts::EntityDefinition{}, ship});
+        auto game = makeTestSimulation(std::move(s), {}, {}, {dock, rts::EntityDefinition{}, ship});
         require(game.buildings()[0].rally == rts::Cell{4, 2}, "Default ship rally ignored water or perimeter order");
         require(game.setRally(game.buildings()[0].id, {4, 6}), "Ship rally rejected");
         require(!game.setRally(game.buildings()[0].id, {5, 6}), "Ship rally accepted land");
@@ -261,7 +261,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition flyer; flyer.id = "test.flyer"; flyer.movement = rts::MovementType::Flying;
         flyer.canBuild = false; flyer.carryCapacity = 0; flyer.movementPerSecond = 3.2f;
         for (int rank = 0; rank < 6; ++rank) for (int side = 0; side < 2; ++side) s.units.push_back({flyer.id, 0, {7 + rank, 9 + side}});
-        rts::Simulation game(std::move(s), {}, {}, {flyer});
+        auto game = makeTestSimulation(std::move(s), {}, {}, {flyer});
         std::vector<rts::EntityId> ids; std::vector<rts::FormationMember> members;
         for (const auto& u : game.units()) if (rts::airborne(u.definition.movement)) {
             ids.push_back(u.id); members.push_back({u.id, u.cell, u.definition.movement, u.definition.formationPriority});
@@ -291,7 +291,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         auto s = flatScenario(); s.startingCrystals = 100;
         rts::EntityDefinition flyer; flyer.id = "test.fly"; flyer.movement = rts::MovementType::Flying; flyer.trainingTicks = 1;
         auto hall = testDepot("hall", flyer.id);
-        rts::Simulation game(std::move(s), {}, {}, {hall, rts::EntityDefinition{}, flyer});
+        auto game = makeTestSimulation(std::move(s), {}, {}, {hall, rts::EntityDefinition{}, flyer});
         require(game.setRally(game.buildings()[0].id, game.worker().cell), "Air rally rejected ground unit");
         game.train(game.buildings()[0].id); ticks(game, 300);
         require(game.units().size() == 2 && game.units()[1].cell == game.worker().cell, "Ground unit blocked air");

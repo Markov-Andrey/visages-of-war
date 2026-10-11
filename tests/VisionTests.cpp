@@ -45,7 +45,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
             for (int lane=-1;lane<=1;++lane) scene.map.at(cell(0,lane)).ramp=direction;
             EntityDefinition worker; worker.dayVision=5; worker.nightVision=1;
             auto depot=testDepot("hall",worker.id); depot.dayVision=depot.nightVision=1;
-            Simulation game(std::move(scene),{},worker,{depot},{},{},{.startMinute=minute});
+            auto game = makeTestSimulation(std::move(scene),{},worker,{depot},{},{},{.startMinute=minute});
             const auto id=game.worker().id;
             Selection selection; selection.ids={id};
             require(!game.fog().visible(cell(2)), "Plateau fixture already visible from below");
@@ -103,7 +103,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         scenario.crystals={context.worldAssets.instantiateCrystal("crystal.small",{26,26})};
         scenario.units={{"human.peacemaker",1,{30,30}}};
         rebuildScenario(scenario,context.hallFootprint);
-        Simulation game(scenario,{},definitions.entity("human.worker"),definitions.entities());
+        Simulation game(scenario,{},definitions.entity("human.worker"),definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         FogMask mask; mask.update(game.fog(),32,32);
         const auto revision=mask.revision();
         require(!game.fog().explored({30,30})&&!game.knownEnvironment(0)&&game.knownCrystal(0)==0,"Reveal fixture already explored");
@@ -116,7 +116,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         for(int i=0;i<30;++i) game.tick();
         for(int y=0;y<32;++y) for(int x=0;x<32;++x)
             require(game.fog().at({x,y})==Visibility::Visible,"Fog returned after a tick or blocker refresh");
-        Simulation fresh(scenario,{},definitions.entity("human.worker"),definitions.entities());
+        Simulation fresh(scenario,{},definitions.entity("human.worker"),definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         require(!fresh.fog().explored({30,30}),"Reveal leaked into a new match");
         FogOfWar fog(32,32); fog.revealAll(); fog.update(scenario.map,{});
         require(fog.visible({31,31})&&fog.explored({0,0})&&!fog.visible({32,32}),"Observer-free reveal or map boundaries failed");
@@ -154,7 +154,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
     test("Flame light follows its animation frame and freezes with simulation", [&] {
         const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
-        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         const auto first = rts::buildingLights(game, {{0, 0}, 1})[1].intensity;
         ticks(game, 2);
         require(rts::buildingLights(game, {{0, 0}, 1})[1].intensity == first, "Light flickered inside a held flame frame");
@@ -167,7 +167,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         rts::Scenario site{rts::Map(32, 24), {1, 1}, {4, 3}, {}}; site.startingCrystals = 100;
         rts::EntityDefinition worker; worker.trainingTicks = 1; worker.dayVision = worker.nightVision = 3;
         auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 3;
-        rts::Simulation game(std::move(site), {}, worker, {depot});
+        auto game = makeTestSimulation(std::move(site), {}, worker, {depot});
         const auto hall = game.buildings().front().id;
         rts::GameplayUi ui; ui.selection.ids = {hall};
         const rts::Cell target{22, 18};
@@ -198,7 +198,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         for (const auto& crystal : site.crystals) site.map.occupy(crystal.cell);
         rts::EntityDefinition worker; worker.dayVision = worker.nightVision = 4;
         auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
-        rts::Simulation game(site, {}, worker, {depot}, {}, {}, {.startMinute = 22 * 60});
+        auto game = makeTestSimulation(site, {}, worker, {depot}, {}, {}, {.startMinute = 22 * 60});
         const rts::WorldView view{{0, 0}, 1};
         const auto lights = rts::crystalLights(game, view);
         require(lights.size() == 1, "Hidden crystal emitted light");
@@ -218,7 +218,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         require(game.crystals()[0].remaining == 0 && rts::crystalLights(game, view).empty(), "Exhausted crystal kept its glow");
         raster.update(game, view, {1536, 1280}, fog);
         require(sample(lights[0].position) == dark, "Exhausted crystal left a cached glow");
-        rts::Simulation remembered(site, {}, worker, {depot});
+        auto remembered = makeTestSimulation(site, {}, worker, {depot});
         remembered.command({3, 9}); ticks(remembered, 100);
         require(remembered.fog().explored({10, 9}) && !remembered.fog().visible({10, 9}) &&
             rts::crystalLights(remembered, view).empty(), "Remembered crystal exposed live glow");
@@ -227,7 +227,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
         site.startingCrystals = 500;
-        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities());
+        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         const auto hall = game.buildings().front().id;
         const rts::WorldView view{{0, 0}, 1};
         const auto lights = rts::buildingLights(game, view);
@@ -245,8 +245,8 @@ void visionTests(TestSuite& test, const TestContext& context) {
         require(game.building(*building)->complete() && rts::buildingLights(game, view).size() == 4, "Finished hall remained dark");
         auto unlitTypes = definitions.entities();
         for (auto& type : unlitTypes) for (auto& stage : type.buildingSprite.stages) stage.lights.clear();
-        rts::Simulation lit(site, {}, definitions.entity("human.worker"), definitions.entities());
-        rts::Simulation unlit(site, {}, definitions.entity("human.worker"), unlitTypes);
+        rts::Simulation lit(site, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
+        rts::Simulation unlit(site, {}, definitions.entity("human.worker"), unlitTypes, definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         for (int y = 0; y < 28; ++y) for (int x = 0; x < 28; ++x)
             require(lit.fog().at({x, y}) == unlit.fog().at({x, y}) && lit.map().walkable({x, y}) == unlit.map().walkable({x, y}), "Light changed logical vision or navigation");
         require(rts::buildingLights(unlit, view).empty(), "Unconfigured building emitted light");
@@ -254,7 +254,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
     test("Night lighting fades smoothly, respects fog and stays stable while paused", [&] {
         const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
-        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), {}, {}, {.startMinute = 22 * 60});
+        rts::Simulation game(site, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id, {}, {}, {.startMinute = 22 * 60});
         const rts::WorldView view{{900, 0}, 1}; const rts::Vec2 extent{1800, 1800};
         rts::FogMask fog; fog.update(game.fog(), 28, 28);
         rts::NightLightingRaster raster; raster.update(game, view, extent, fog);
@@ -323,7 +323,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
             for (int y = 0; y < object.height; ++y) for (int x = 0; x < object.width; ++x)
                 if (object.blocks(x, y)) scenario.map.occupy(object.origin + rts::Cell{x, y});
         scenario.map.at({6, 5}).blocked = true; // Terrain must survive object destruction.
-        rts::Simulation game(std::move(scenario));
+        auto game = makeTestSimulation(std::move(scenario));
         const auto path = rts::findPath(game.map(), {5, 4}, {5, 6});
         require(path && path->cost == 2500, "Arch opening blocked by visual extent");
         require(!game.map().walkable({4, 5}), "Arch pillar not blocking");
@@ -372,7 +372,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
         scene.units = {{worker.id, 1, {11, 8}}};
         rebuildScenario(scene, {depot.width, depot.height});
-        Simulation game(scene, {}, worker, {depot, worker});
+        auto game = makeTestSimulation(scene, {}, worker, {depot, worker});
         const auto enemy = game.units().back().id;
         const std::array attackers{game.worker().id};
         const auto hidden = [&] {
@@ -405,10 +405,10 @@ void visionTests(TestSuite& test, const TestContext& context) {
         require(memoryMap.update(game, memoryMask) && memoryMap.pixels() != remembered,
             "Revisiting did not clear the obsolete minimap obstacle");
         auto flanked = scene; flanked.extraWorkers = {{11, 6}};
-        Simulation flank(std::move(flanked), {}, worker, {depot, worker});
+        auto flank = makeTestSimulation(std::move(flanked), {}, worker, {depot, worker});
         require(flank.fog().visible({11, 8}) && flank.environmentVisible(1), "One observer's obstacle cancelled another observer's sight");
         auto flyer = worker; flyer.movement = MovementType::Flying;
-        Simulation air(scene, {}, flyer, {depot, flyer});
+        auto air = makeTestSimulation(scene, {}, flyer, {depot, flyer});
         require(air.fog().visible({11, 8}) && air.environmentVisible(1), "Ground obstacle hid entities from an air observer");
     });
     test("Forest and rock faces are visible but stop ground sight; air sees over them", [] {
@@ -442,7 +442,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         s.map.occupy({5, 5}); s.map.occupy({5, 5});
         rts::EntityDefinition worker; worker.dayVision = worker.nightVision = 7;
         auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
-        rts::Simulation game(std::move(s), {}, worker, {depot});
+        auto game = makeTestSimulation(std::move(s), {}, worker, {depot});
         require(game.environment()[0].kind == rts::EnvironmentKind::Tree && game.environment()[0].maximumHitPoints == 100, "Tree type or health missing");
         require(game.fog().visible({5, 5}) && !game.fog().visible({7, 5}), "Tree does not shadow the area behind it");
         require(game.setEnvironmentHealth(1000, 0) && game.map().occupancy({5, 5}) == 1 && game.map().blocksVision({5, 5}), "Removed another object's blockers");
@@ -535,7 +535,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         require(dusk && dusk->after == rts::DayPhase::Night && dusk->minute == 1080, "Sunset event");
         rts::WorldClock midnight({30, 48, 1439, 360, 1080});
         require(!midnight.tick() && midnight.minuteOfDay() == 0, "Midnight wraps incorrectly");
-        rts::Simulation game(flatScenario());
+        auto game = makeTestSimulation(flatScenario());
         require(game.clock().phase() == rts::DayPhase::Day && game.clock().minuteOfDay() == 12 * 60,
             "Default match did not start at noon");
         const auto before = game.clock().elapsedTicks();
@@ -566,7 +566,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
         type.dayVision = 3; type.nightVision = 1;
         auto depot = testDepot("hall", type.id, 60); depot.dayVision = 3; depot.nightVision = 1; depot.maximumHealth = 300;
         const std::vector<rts::EntityDefinition> buildings{depot};
-        rts::Simulation game(std::move(s), {}, type, buildings, {}, {}, {.startMinute = 22 * 60});
+        auto game = makeTestSimulation(std::move(s), {}, type, buildings, {}, {}, {.startMinute = 22 * 60});
         require(game.clock().phase() == rts::DayPhase::Night && !game.fog().visible({4, 5}), "Night radius missing at match start");
         ticks(game, 4800); // 22:00 -> 06:00 at 10 ticks per game minute.
         require(game.clock().phase() == rts::DayPhase::Day && game.fog().visible({4, 5}), "Day radius missing after dawn");

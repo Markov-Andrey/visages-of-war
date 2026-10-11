@@ -34,7 +34,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
             auto siege = melee; siege.id = "siege"; siege.formationPriority = 3; siege.movementPerSecond = 2;
             for (int i = 1; i < 12; ++i) site.units.push_back({i % 3 == 0 ? melee.id : i % 3 == 1 ? slinger.id : siege.id,
                 0, {29 + i % 4, 29 + i / 4}});
-            Simulation game(std::move(site), {}, melee, {melee, slinger, siege});
+            auto game = makeTestSimulation(std::move(site), {}, melee, {melee, slinger, siege});
             auto ids = selected(game); std::reverse(ids.begin(), ids.end());
             for (int sign : {1, -1}) {
                 const Cell target{31 + sign * direction.x * 12, 31 + sign * direction.y * 12};
@@ -128,7 +128,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         for (Cell direction : {Cell{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}}) {
             Scenario s{Map(64, 64), {1, 1}, {30, 30}, {}};
             for (int i = 1; i < 12; ++i) s.extraWorkers.push_back({30 + i % 4, 30 + i / 4});
-            Simulation game(std::move(s));
+            auto game = makeTestSimulation(std::move(s));
             auto ids = selected(game); std::reverse(ids.begin(), ids.end());
             const Cell target{31 + direction.x * 14, 31 + direction.y * 14};
             std::vector<float> distances(ids.size());
@@ -160,7 +160,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         Scenario s{Map(64, 48), {1, 1}, {10, 19}, {}};
         for (int i = 1; i < 12; ++i) s.extraWorkers.push_back({10 + i % 4, 19 + i / 4});
         for (int y = 0; y < 48; ++y) if (y != 20) s.map.at({30, y}).blocked = true;
-        Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         const auto ids = selected(game);
         require(game.command(ids, {46, 20}), "Gate order rejected");
         struct FacingTrace { Cell raw{0, 1}, shown{0, 1}; int rawTurn = -10, shownTurn = -10; };
@@ -200,7 +200,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         for (int count : {48, 100}) {
             Scenario s{Map(96, 96), {1, 1}, {20, 20}, {}};
             for (int i = 1; i < count; ++i) s.extraWorkers.push_back({20 + i % 10, 20 + i / 10});
-            Simulation game(std::move(s));
+            auto game = makeTestSimulation(std::move(s));
             const auto ids = selected(game);
             require(game.command(ids, {65, 60}), "Large order rejected");
             for (int tick = 0; tick < 800 && !settled(game); ++tick) { game.tick(); checkMotion(game); }
@@ -214,7 +214,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         for (bool reverse : {false, true}) {
             Scenario s{Map(40, 20), {1, 1}, {10, 10}, {}};
             s.extraWorkers = {{11, 10}, {12, 10}, {10, 11}, {11, 11}, {12, 11}};
-            Simulation game(std::move(s));
+            auto game = makeTestSimulation(std::move(s));
             const auto ids = selected(game);
             game.command(ids, {30, 10}); ticks(game, 40);
             const auto leader = game.units()[2].id;
@@ -230,7 +230,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         Scenario s{Map(24, 20), {1, 1}, {10, 10}, {}};
         s.extraWorkers = {{10, 11}};
         EntityDefinition type; type.collisionRadius = .1f;
-        Simulation game(std::move(s), {}, type);
+        auto game = makeTestSimulation(std::move(s), {}, type);
         const auto ids = selected(game);
         game.order(ids, OrderKind::Patrol, {14, 10});
         std::array<Vec2, 2> destinations{game.units()[0].routeDestination, game.units()[1].routeDestination};
@@ -256,7 +256,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
                 if ((!x && !y) || (open && x == 1 && y == 0)) continue;
                 s.units.push_back({blocker.id, 1, {10 + x, 10 + y}});
             }
-            Simulation game(std::move(s), {}, victim, {blocker});
+            auto game = makeTestSimulation(std::move(s), {}, victim, {blocker});
             const auto start = game.worker().position;
             const auto id = game.worker().id;
             game.command(std::span<const EntityId>(&id, 1), {17, 10});

@@ -10,7 +10,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             "Novice is not a direct gatherer");
         auto s = flatScenario(); s.worker = {6,7};
         for (int y = 0; y < s.map.height(); ++y) s.map.at({4,y}).blocked = true;
-        Simulation game(std::move(s), {}, type);
+        auto game = makeTestSimulation(std::move(s), {}, type);
         require(commandCapable(game.worker(), UnitCommand::Gather) && game.command({7,7}), "Zero-cargo worker cannot gather");
         for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
         require(game.worker().state == UnitState::Harvesting, "Novice did not reach the node");
@@ -35,7 +35,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         type.gatherAbility->harvest->intervalTicks = 4;
         type.gatherAbility->harvest->amount = 3;
         auto s = flatScenario(7); s.worker = {6,7};
-        Simulation game(std::move(s), {}, type);
+        auto game = makeTestSimulation(std::move(s), {}, type);
         const auto start = [&] {
             require(game.command({7,7}), "Gather rejected");
             for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
@@ -57,7 +57,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         type.gatherAbility = definitions.ability(3); type.carryCapacity = 10;
         type.gatherAbility->harvest->amount = 6;
         auto s = flatScenario(); s.worker = {6,7};
-        Simulation game(std::move(s), {}, type);
+        auto game = makeTestSimulation(std::move(s), {}, type);
         game.command({7,7});
         for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
         const int interval = type.harvesting().intervalTicks;
@@ -74,7 +74,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto type = definitions.entity("human.worker"); type.dayVision = type.nightVision = 32;
         auto s = gatheringScenario(); s.crystals[0].remaining = 7; s.crystals[2].remaining = 9;
         s.extraWorkers = {{4,7},{4,9},{3,8}};
-        Simulation game(std::move(s), {}, type);
+        auto game = makeTestSimulation(std::move(s), {}, type);
         std::vector<EntityId> ids; for (const auto& u : game.units()) ids.push_back(u.id);
         require(game.command(ids, {15,8}), "Direct group gather rejected");
         for (int i = 0; i < 2200; ++i) {
@@ -88,7 +88,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     });
     test("Construction rejects a neighbouring circle crossing its square footprint", [] {
         rts::Scenario s{rts::Map(20, 16), {1, 1}, {6, 6}, {}};
-        rts::Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         game.command({9, 6});
         for (int tick = 0; tick < 60 && game.worker().position.x < 7.75f; ++tick) game.tick();
         game.stop();
@@ -97,7 +97,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.canPlace("human.hall", {9, 6}), "Non-overlapping circle blocked construction");
     });
     test("Crystals are credited only at hall; last partial load is returned", [] {
-        rts::Simulation game(flatScenario());
+        auto game = makeTestSimulation(flatScenario());
         game.command({7, 7});
         for (int i = 0; i < 1000 && game.worker().cargo == 0; ++i) game.tick();
         require(game.worker().cargo > 0 && game.storedCrystals() == 0, "Credited before deposit");
@@ -114,7 +114,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             const auto node = s.crystals.front();
             rebuildScenario(s, {3, 2});
             auto worker = gatheringWorker(); worker.dayVision = worker.nightVision = 3;
-            Simulation game(std::move(s), {}, worker);
+            auto game = makeTestSimulation(std::move(s), {}, worker);
             const auto id = game.crystals().front().id;
             require(!game.fog().visible(node.cell) && game.crystalVisible(game.crystals().front()), "Partial footprint visibility lost");
             for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
@@ -132,7 +132,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto s = gatheringScenario();
         for (int y = 0; y < 16; ++y) if (y != 8) s.map.at({8, y}).blocked = true;
         s.extraWorkers = {{8, 8}};
-        rts::Simulation game(std::move(s), {}, gatheringWorker());
+        auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         const auto blocker = game.units()[1].id;
         require(game.command({15, 8}), "Gather command rejected");
         require(game.worker().targetCrystal == 0, "Temporary traffic redirected gathering to another field");
@@ -146,7 +146,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Full gathering slots select a neighbor of the clicked node and retain that area after delivery", [] {
         auto s = gatheringScenario();
         s.extraWorkers = {{14, 8}, {16, 8}, {15, 7}, {15, 9}};
-        rts::Simulation game(std::move(s), {}, gatheringWorker());
+        auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         game.command({15, 8});
         require(game.worker().targetCrystal == 2, "Chose worker-nearest crystal instead of target-nearest neighbor");
         ticks(game, 2200);
@@ -156,7 +156,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Saturated resource field waits for a slot without selecting a remote crystal", [] {
         auto s = gatheringScenario(false);
         s.extraWorkers = {{14, 8}, {16, 8}, {15, 7}, {15, 9}};
-        rts::Simulation game(std::move(s), {}, gatheringWorker());
+        auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         const auto blocker = game.units()[1].id;
         game.command({15, 8}); ticks(game, 450);
         require(game.worker().targetCrystal == 0 && game.worker().repeatGather, "Full deposit lost its gather order");
@@ -169,7 +169,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto s = gatheringScenario();
         s.crystals[0].remaining = 3; s.crystals[2].remaining = 4;
         s.crystals.push_back({{20, 8}, 1000}); s.map.occupy({20, 8});
-        rts::Simulation game(std::move(s), {}, gatheringWorker());
+        auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         game.command({15, 8}); ticks(game, 5000);
         require(game.storedCrystals() == 7 && game.worker().cargo == 0, "Did not finish original local deposits exactly");
         require(game.crystals()[1].remaining == 1000 && game.crystals()[3].remaining == 1000, "Gathering drifted beyond the original area");
@@ -183,7 +183,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         for (int y = 0; y < 16; ++y) if (y != 8) s.map.at({8, y}).blocked = true;
         auto tree = rts::makeEnvironment("TREE", 777, {8, 8});
         s.environment.push_back(tree); s.map.occupy(tree.origin);
-        rts::Simulation game(std::move(s), {}, gatheringWorker());
+        auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         require(game.fog().visible({15, 8}), "Observer did not reveal the gathering target");
         game.command({15, 8}); ticks(game, 180);
         require(game.worker().repeatGather && game.crystals()[1].remaining == 1000, "Static obstruction redirected gather order");
@@ -197,7 +197,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Group gathering reserves local slots and conserves resources without changing fields", [] {
         auto s = gatheringScenario();
         s.extraWorkers = {{4, 7}, {4, 9}, {3, 8}, {3, 7}, {3, 9}};
-        rts::Simulation game(std::move(s), {}, gatheringWorker());
+        auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         std::vector<rts::EntityId> ids;
         for (const auto& u : game.units()) ids.push_back(u.id);
         require(game.command(ids, {15, 8}), "Group gather rejected");
@@ -218,7 +218,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto s = gatheringScenario();
         s.worker = {14, 10}; s.extraWorkers = {{15, 7}}; s.crystals[0].remaining = 1;
         auto type = gatheringWorker(); type.movementPerSecond = .5f;
-        rts::Simulation game(std::move(s), {}, type);
+        auto game = makeTestSimulation(std::move(s), {}, type);
         const auto other = game.units()[1].id;
         game.command(std::span<const rts::EntityId>(&other, 1), {15, 8});
         game.command({14, 9}); ticks(game, 1);
@@ -233,7 +233,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Unreachable deposit preserves carried resources", [] {
         auto scenario = flatScenario(4); scenario.worker = {5, 3};
         for (int y = 0; y < 10; ++y) scenario.map.at({4, y}).blocked = true;
-        rts::Simulation game(std::move(scenario));
+        auto game = makeTestSimulation(std::move(scenario));
         game.command({7, 7});
         ticks(game, 1200);
         require(game.storedCrystals() == 0 && game.worker().cargo == 4, "Cargo lost on failed return path");
@@ -245,7 +245,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         for (auto& type : types) type.constructionMode = ConstructionMode::Worker;
 
         auto s = flatScenario(); s.startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), std::move(types));
+        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), std::move(types), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         const std::array<rts::EntityId, 1> ids{game.worker().id};
         require(!game.construct(ids, "human.barracks", {4, 3}), "Built on worker");
         require(!game.construct(ids, "human.barracks", {8, 8}), "Built outside map");
@@ -272,7 +272,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Summoning requires initiation, frees the worker and preserves duration and damage", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         auto s = flatScenario(); s.startingCrystals = 500;
-        Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities());
+        Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         const std::array ids{game.worker().id};
         const auto site = game.construct(ids, "human.barracks", {5, 3});
         require(site.has_value(), "Summoning site rejected");
@@ -316,7 +316,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Summoning cancellation before initiation refunds half and destruction never refunds", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         auto s = flatScenario(); s.startingCrystals = 500;
-        Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities());
+        Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         const std::array ids{game.worker().id};
         const auto pending = game.construct(ids, "human.barracks", {5, 3});
         require(pending && game.cancelConstruction(*pending) && game.storedCrystals() == 450 && game.map().walkable({5, 3}),
@@ -340,7 +340,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto types = definitions.entities();
         for (auto& type : types) if (type.id == "human.watchtower") type.cost.supply = 99;
         auto s = flatScenario(); s.startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), std::move(types));
+        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), std::move(types), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         const std::array<rts::EntityId, 1> ids{game.worker().id};
         const auto tower = game.construct(ids, "human.watchtower", {3, 5});
         require(tower && game.armySupply().used() == 100 && game.storedCrystals() == 425, "Building did not reserve its common cost");
@@ -359,7 +359,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             rts::Scenario s{rts::Map(16, 12), {2, 2}, {10, 8}, {}}; s.startingCrystals = 100;
             rts::EntityDefinition worker; worker.trainingTicks = 1;
             auto depot = testDepot("test.depot", worker.id); depot.width = size.x; depot.height = size.y;
-            rts::Simulation game(std::move(s), {}, worker, {depot});
+            auto game = makeTestSimulation(std::move(s), {}, worker, {depot});
             const auto hall = game.buildings().front().id;
             const rts::Cell exit{2, 2 + size.y};
             require(game.building(hall)->rally == exit, "Initial rally is not below the leftmost footprint cell");
@@ -377,7 +377,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition worker; worker.trainingTicks = 1;
         auto producer = testDepot("test.producer", worker.id);
         producer.acceptsCargo = false; producer.width = 2; producer.height = 3;
-        rts::Simulation game(std::move(s), {}, worker, {producer});
+        auto game = makeTestSimulation(std::move(s), {}, worker, {producer});
         const std::array<rts::EntityId, 1> builders{game.worker().id};
         const auto id = game.construct(builders, producer.id, {5, 3});
         require(id.has_value(), "Could not construct producer");
@@ -393,7 +393,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             if (mapEdge) s.hall = {1, 8};
             else s.map.at({1, 3}).blocked = true;
             rts::EntityDefinition worker; worker.trainingTicks = 1;
-            rts::Simulation game(std::move(s), {}, worker);
+            auto game = makeTestSimulation(std::move(s), {}, worker);
             const auto& hall = game.buildings().front();
             const rts::Cell expected = mapEdge ? rts::Cell{4, 9} : rts::Cell{2, 3};
             require(hall.rally == expected && game.map().walkable(hall.rally), "Default rally selected an unavailable exit");
@@ -413,7 +413,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             rts::Scenario s{rts::Map(16, 12), {2, 2}, {10, 8}, {}}; s.startingCrystals = 1000;
             rts::EntityDefinition worker; worker.trainingTicks = 1;
             auto depot = testDepot("test.depot", worker.id); depot.width = setup.size.x; depot.height = setup.size.y;
-            rts::Simulation game(std::move(s), {}, worker, {depot});
+            auto game = makeTestSimulation(std::move(s), {}, worker, {depot});
             const auto hall = game.buildings().front().id;
             rts::EntityId first{};
             for (const auto exit : setup.exits) {
@@ -448,7 +448,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         s.map.at({4, 2}).blocked = true;
         s.map.at({4, 1}).surface = rts::Surface::DeepWater;
         rts::EntityDefinition worker; worker.trainingTicks = 1;
-        rts::Simulation game(std::move(s), {}, worker);
+        auto game = makeTestSimulation(std::move(s), {}, worker);
         const auto hall = game.buildings().front().id;
         require(game.building(hall)->rally == rts::Cell{3, 0}, "Default rally selected forbidden terrain or skipped perimeter order");
         require(game.train(hall), "Could not train near terrain obstacles");
@@ -458,7 +458,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Production skips an exit intersecting a moving circle", [] {
         auto s = flatScenario(); s.startingCrystals = 100; s.worker = {1, 4};
         rts::EntityDefinition worker; worker.trainingTicks = 1;
-        rts::Simulation game(std::move(s), {}, worker);
+        auto game = makeTestSimulation(std::move(s), {}, worker);
         require(game.command({1, 3}), "Could not move worker into preferred exit");
         ticks(game, 5);
         require(!game.worker().route.empty() && game.worker().position != rts::center(game.worker().cell) && game.worker().cell == rts::Cell{1, 4}, "Worker did not approach the exit");
@@ -470,7 +470,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto definitions = rts::Definitions::load(assets / "data/catalog.json");
 
         auto s = flatScenario(); s.startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities());
+        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         const auto hall = game.buildings()[0].id;
         const std::array<rts::EntityId, 1> ids{game.worker().id};
         const auto barracks = game.construct(ids, "human.barracks", {5, 3});
@@ -493,7 +493,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Completed production waits for a blocked exit and can still be cancelled", [] {
         auto s = flatScenario(); s.startingCrystals = 300; s.worker = {1, 0};
         for (rts::Cell c : rts::perimeter(s.map, s.hall, 3, 2)) if (c != s.worker) s.map.at(c).blocked = true;
-        rts::Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         const auto hall = game.buildings()[0].id;
         require(game.train(hall), "Could not train");
         ticks(game, 150);
@@ -507,14 +507,14 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Queue limit and hard supply cap reject without consuming crystals", [] {
         auto s = flatScenario(); s.startingCrystals = 1000;
         rts::EntityDefinition type; type.cost.supply = 20;
-        rts::Simulation game(std::move(s), {}, type);
+        auto game = makeTestSimulation(std::move(s), {}, type);
         const auto hall = game.buildings()[0].id;
         for (int i = 0; i < 4; ++i) require(game.train(hall), "Could not reserve full army");
         const int balance = game.storedCrystals();
         require(!game.train(hall) && game.armySupply().used() == 100 && game.storedCrystals() == balance, "Army exceeded 100 or failed order charged");
         require(game.cancelTraining(hall) && game.train(hall), "Released supply not reusable");
         auto normal = flatScenario(); normal.startingCrystals = 1000;
-        rts::Simulation queued(std::move(normal));
+        auto queued = makeTestSimulation(std::move(normal));
         const auto depot = queued.buildings()[0].id;
         const int initialBalance = queued.storedCrystals(), initialSupply = queued.armySupply().used();
         for (int i = 0; i < 10; ++i) require(queued.train(depot), "Queue rejected available slot");
@@ -531,7 +531,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         EntityDefinition worker; worker.cost = {75, 1};
         auto second = worker; second.id = "test.second"; second.cost = {40, 2};
         auto third = worker; third.id = "test.third"; third.cost = {60, 3};
-        Simulation game(std::move(scene), {}, worker, {worker, second, third});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, second, third});
         auto& building = const_cast<Building&>(game.buildings().front());
         building.definition.trainableUnits = {worker.id, second.id, third.id};
         for (const auto& id : {worker.id, second.id, third.id, worker.id}) require(game.train(building.id, id), "Could not fill mixed queue");
@@ -559,7 +559,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     });
     test("Several workers conserve resources while sharing gathering and depot approaches", [] {
         auto s = flatScenario(73); s.extraWorkers = {{5, 3}, {4, 4}, {5, 4}};
-        rts::Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         std::vector<rts::EntityId> ids;
         for (const auto& u : game.units()) ids.push_back(u.id);
         game.command(ids, {7, 7});

@@ -5,7 +5,7 @@
 
 namespace rts {
 Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinition workerType,
-    std::vector<EntityDefinition> entityTypes, std::string startingHero, ProgressionRules progression, ClockSettings clock)
+    std::vector<EntityDefinition> entityTypes, std::string startingBuilding, std::string startingHero, ProgressionRules progression, ClockSettings clock)
     : scenario_(std::move(scenario)), player_(std::move(player)), workerType_(std::move(workerType)),
       entityTypes_(std::move(entityTypes)), progression_(std::make_shared<const ProgressionRules>(std::move(progression))), clock_(clock), fog_(map().width(), map().height()),
       knownCrystals_(crystals().size()), knownEnvironment_(environment().size()), stored_(scenario_.startingCrystals) {
@@ -17,18 +17,10 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
             !map().contains(node.cell) || !map().contains(node.cell + Cell{node.width - 1, node.height - 1}))
             throw std::invalid_argument("Invalid crystal reserve or footprint");
     if (std::none_of(entityTypes_.begin(), entityTypes_.end(), [&](const auto& type) { return type.id == workerType_.id; })) entityTypes_.push_back(workerType_);
-    if (std::none_of(entityTypes_.begin(), entityTypes_.end(), [](const auto& type) { return type.constructible && type.acceptsCargo; })) {
-        EntityDefinition depot;
-        depot.id = "human.hall"; depot.displayName = "Ратуша"; depot.factionId = workerType_.factionId;
-        depot.mobile = false; depot.movementPerSecond = 0; depot.canBuild = false; depot.carryCapacity = 0;
-        depot.constructible = true; depot.width = 3; depot.height = 2; depot.cost = {200, 0};
-        depot.constructionTicks = 300; depot.dayVision = 11; depot.nightVision = 8; depot.maximumHealth = 1000;
-        depot.acceptsCargo = true; depot.trainableUnits = {workerType_.id}; depot.visual = EntityVisual::Hall;
-        entityTypes_.push_back(std::move(depot));
-    }
     for (const auto& type : entityTypes_) if (type.constructible && type.factionId == workerType_.factionId) buildable_.push_back(&type);
-    const auto initial = std::find_if(buildable_.begin(), buildable_.end(), [](const auto* type) { return type->acceptsCargo; });
-    if (initial == buildable_.end()) throw std::invalid_argument("Initial scenario requires a resource depot");
+    const auto initial = std::find_if(buildable_.begin(), buildable_.end(), [&](const auto* type) { return type->id == startingBuilding; });
+    if (initial == buildable_.end() || (*initial)->mobile || !(*initial)->acceptsCargo)
+        throw std::invalid_argument("Invalid starting building for faction " + workerType_.factionId + ": " + startingBuilding);
     reserveScenarioHall(scenario_, {(*initial)->width, (*initial)->height});
     if (!supply_.reserve((*initial)->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
     buildings_.push_back({nextId_++, player_.id, **initial, hall(), (*initial)->maximumHealth, (*initial)->constructionTicks, defaultRally(**initial, hall()), {}});

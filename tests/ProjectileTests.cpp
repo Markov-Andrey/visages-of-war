@@ -18,7 +18,7 @@ EntityDefinition dummy() {
 Scenario range() { return {Map(24, 20), {1,1}, {4,6}, {}}; }
 Simulation stationary(EntityDefinition gun) {
     auto s = range(); s.units = {{"dummy",1,{10,6}}};
-    return Simulation(std::move(s),{},gun,{gun,dummy()});
+    return makeTestSimulation(std::move(s),{},gun,{gun,dummy()});
 }
 }
 void projectileTests(TestSuite& test, const TestContext& context) {
@@ -31,7 +31,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
             std::tuple{neutralPlayer, false, AttackTargets::Ground, 1000}}) {
             auto gun = weapon(ProjectileTargeting::Point); gun.projectile->friendlyFire = friendlyFire;
             gun.attackTargets = targets; gun.projectile->speed = 100;
-            auto game = Simulation(range(), {}, gun, {gun});
+            auto game = makeTestSimulation(range(), {}, gun, {gun});
             auto& hall = const_cast<Building&>(game.buildings().front()); hall.owner = owner;
             require(game.order(std::array{game.worker().id}, OrderKind::AttackGround, hall.origin), "Building bombardment was rejected");
             ticks(game, 10);
@@ -42,7 +42,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         auto gun = weapon(ProjectileTargeting::Point); gun.attackDamage = 2000;
         gun.projectile->friendlyFire = true; gun.projectile->splashRadius = .2f;
         auto scene = range(); scene.startingCrystals = 1000;
-        Simulation game(std::move(scene), {}, gun, {gun});
+        auto game = makeTestSimulation(std::move(scene), {}, gun, {gun});
         const auto hall = game.buildings().front().id;
         const Cell origin = game.buildings().front().origin;
         require(game.order(std::array{game.worker().id}, OrderKind::AttackGround, origin), "Could not bombard the depot");
@@ -75,7 +75,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         EntityDefinition tower; tower.id = "test.tower"; tower.mobile = false; tower.constructible = true;
         tower.visual = EntityVisual::Tower; tower.cost = {75, 3}; tower.constructionTicks = 200;
         auto scene = range(); scene.startingCrystals = 1000; scene.units = {{builder.id, 0, {6, 6}}};
-        Simulation game(std::move(scene), {}, gun, {gun, builder, tower});
+        auto game = makeTestSimulation(std::move(scene), {}, gun, {gun, builder, tower});
         const auto builderId = game.units().back().id;
         const auto site = game.construct(std::array{builderId}, tower.id, {7, 7});
         require(site.has_value(), "Could not place destructible construction");
@@ -95,7 +95,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         for (Cell delta : {Cell{2,2}, {3,0}, {2,-2}, {0,-3}, {-2,-2}, {-3,0}, {-2,2}, {0,3}}) {
             Scenario scene{Map(32,32), {1,1}, {16,16}, {}};
             scene.units = {{target.id, 1, scene.worker + delta}};
-            Simulation game(std::move(scene), {}, gun, {gun, target});
+            auto game = makeTestSimulation(std::move(scene), {}, gun, {gun, target});
             game.order(std::array{game.worker().id}, OrderKind::Hold);
             for (int t = 0; t < 30 && game.projectiles().empty(); ++t) game.tick();
             require(game.projectiles().size() == 1, "Slinger did not release a single stone");
@@ -167,7 +167,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
                 auto gun = weapon(); gun.attackRange = reach;
                 Scenario s{Map(64,64),{1,1},{30,30},{}};
                 s.units = {{"dummy",1,s.worker + delta}};
-                Simulation game(std::move(s),{},gun,{gun,dummy()});
+                auto game = makeTestSimulation(std::move(s),{},gun,{gun,dummy()});
                 game.order(std::array{game.worker().id},OrderKind::Hold);
                 ticks(game,3);
                 require(game.worker().position == center({30,30}), "Hold moved to extend range");
@@ -203,7 +203,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
     test("Manual siege fire approaches and repeatedly attacks a fixed empty point until stopped", [] {
         auto gun = weapon(ProjectileTargeting::Point); gun.attackCooldownTicks = 8;
         gun.dayVision = gun.nightVision = 2;
-        rts::Simulation game(range(), {}, gun, {gun});
+        auto game = makeTestSimulation(range(), {}, gun, {gun});
         const rts::Cell target{20, 14}; const auto id = game.worker().id;
         require(!game.fog().explored(target) && game.order(std::array{id}, rts::OrderKind::AttackGround, target), "Point fire required a visible unit target");
         int shots = 0;
@@ -217,7 +217,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         require(shots > 2 && game.worker().cell != rts::Cell{4, 6}, "Siege did not approach or repeat its order");
         game.stop(std::array{id}); ticks(game, 180);
         require(game.projectiles().empty() && rts::unitOrder(game.worker()) == rts::OrderKind::Stop, "Stopped point fire kept releasing shots");
-        auto slinger = weapon(); rts::Simulation ranged(range(), {}, slinger, {slinger});
+        auto slinger = weapon(); auto ranged = makeTestSimulation(range(), {}, slinger, {slinger});
         require(!ranged.order(std::array{ranged.worker().id}, rts::OrderKind::AttackGround, {10, 6}), "Non-siege unit accepted point fire");
     });
     test("Manual point fire uses splash masks and preserves friendly fire settings", [] {
@@ -225,7 +225,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
             auto gun = weapon(ProjectileTargeting::Point); gun.projectile->friendlyFire = friendly;
             auto air = dummy(); air.id = "air"; air.movement = MovementType::Flying;
             auto scene = range(); scene.units = {{"dummy", 1, {10, 6}}, {"dummy", 0, {10, 7}}, {"air", 1, {10, 6}}};
-            Simulation game(scene, {}, gun, {gun, dummy(), air});
+            auto game = makeTestSimulation(scene, {}, gun, {gun, dummy(), air});
             const auto enemy = game.units()[1].id, ally = game.units()[2].id, flyer = game.units()[3].id;
             require(game.order(std::array{game.worker().id}, OrderKind::AttackGround, {10, 6}), "Manual siege order rejected");
             ticks(game, 41);
@@ -253,7 +253,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
             auto gun = weapon(mode); auto s = range(); s.worker = {10,6};
             auto air = dummy(); air.id = "air"; air.movement = MovementType::Flying;
             s.units = {{gun.id,1,{4,6}}, {"dummy",0,{10,5}}, {"dummy",1,{11,6}}, {air.id,0,{10,6}}};
-            Simulation game(std::move(s),{},dummy(),{gun,dummy(),air});
+            auto game = makeTestSimulation(std::move(s),{},dummy(),{gun,dummy(),air});
             const auto moving = game.worker().id, splash = game.units()[2].id, ally = game.units()[3].id, flying = game.units()[4].id;
             ticks(game,3); require(game.projectiles().size() == 1,"Enemy did not fire");
             const auto aim = game.projectiles()[0].aim;
@@ -271,7 +271,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         killer.attackRange = 1.5f; killer.attackWindupTicks = 4; killer.dayVision = killer.nightVision = 2;
         auto hero = dummy(); hero.id = "hero"; hero.hero.emplace();
         auto s = range(); s.units = {{"dummy",1,{10,6}}, {killer.id,1,{4,7}}, {hero.id,0,{10,10}}};
-        Simulation game(std::move(s),{},gun,{gun,dummy(),killer,hero});
+        auto game = makeTestSimulation(std::move(s),{},gun,{gun,dummy(),killer,hero});
         const auto shooter = game.worker().id, enemy = game.units()[1].id;
         require(game.attack(std::array{shooter},enemy),"Explicit shot rejected");
         ticks(game,5); require(!game.unit(shooter) && game.projectiles().size() == 1,"Shot vanished with shooter");
@@ -283,7 +283,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         auto s = range(); s.worker = {10,6}; s.units = {{gun.id,1,{4,6}}};
         for (int y = 0; y < s.map.height(); ++y) for (int x = 12; x < s.map.width(); ++x) s.map.at({x,y}).height = 1;
         s.map.at({11,6}).ramp = {1,0};
-        Simulation game(std::move(s),{},target,{gun,target});
+        auto game = makeTestSimulation(std::move(s),{},target,{gun,target});
         require(game.command(std::array{game.worker().id},{14,6}),"Ramp movement failed");
         ticks(game,7); require(game.projectiles().size() == 1,"Siege failed to release at moving target");
         const auto& shot = game.projectiles()[0];
@@ -294,7 +294,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         auto gun = weapon(); auto killer = dummy(); killer.id = "killer"; killer.projectile.reset();
         killer.attackDamage = 100; killer.attackRange = 1.5f; killer.attackWindupTicks = 4;
         auto s = range(); s.units = {{"dummy",1,{10,6}}, {killer.id,0,{9,6}}, {"dummy",1,{10,7}}};
-        Simulation game(std::move(s),{},gun,{gun,killer,dummy()});
+        auto game = makeTestSimulation(std::move(s),{},gun,{gun,killer,dummy()});
         const auto enemy = game.units()[1].id, other = game.units()[3].id, killerId = game.units()[2].id;
         game.attack(std::array{game.worker().id,killerId},enemy);
         ticks(game,5); require(!game.unit(enemy) && !game.projectiles().empty(),"Fixture failed to kill target in flight");
@@ -328,14 +328,14 @@ void projectileTests(TestSuite& test, const TestContext& context) {
     test("Weapon masks allow slingers versus air while siege rejects air and fog hides targets", [] {
         auto gun = weapon(); auto air = dummy(); air.id = "air"; air.movement = MovementType::Flying;
         auto s = range(); s.units = {{air.id,1,{10,6}}};
-        Simulation game(s,{},gun,{gun,air});
+        auto game = makeTestSimulation(s,{},gun,{gun,air});
         require(game.attack(std::array{game.worker().id},game.units()[1].id),"Slinger rejected air");
         ticks(game,41); require(game.units()[1].health == 80,"Arrow did not reach flight plane");
-        gun = weapon(ProjectileTargeting::Point); Simulation siege(s,{},gun,{gun,air});
+        gun = weapon(ProjectileTargeting::Point); auto siege = makeTestSimulation(s,{},gun,{gun,air});
         require(!siege.attack(std::array{siege.worker().id},siege.units()[1].id),"Siege accepted air");
         ticks(siege,40); require(siege.projectiles().empty(),"Siege auto-acquired air");
         s.units = {{"dummy",1,{23,19}}}; gun.dayVision = gun.nightVision = 2;
-        Simulation fog(s,{},gun,{gun,dummy()});
+        auto fog = makeTestSimulation(s,{},gun,{gun,dummy()});
         require(!fog.attack(std::array{fog.worker().id},fog.units()[1].id),"Attack leaked fog target");
     });
     test("Combat catalog validates trajectories, animation and optional melee projectile", [&] {
@@ -363,7 +363,7 @@ void projectileTests(TestSuite& test, const TestContext& context) {
         auto s = range(); s.startingCrystals = 1000;
         auto types = defs.entities();
         for (auto& d : types) if (d.id == "human.barracks") d.constructionTicks = 1;
-        Simulation game(std::move(s),{},defs.entity("human.worker"),types);
+        Simulation game(std::move(s),{},defs.entity("human.worker"),types, defs.startingDepot(defs.entity("human.worker").factionId).id);
         const auto site = game.construct(std::array{game.worker().id},"human.barracks",{6,8});
         require(site.has_value(),"Barracks fixture failed"); ticks(game,180);
         const int crystals = game.storedCrystals(), supply = game.armySupply().used();

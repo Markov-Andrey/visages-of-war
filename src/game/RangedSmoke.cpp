@@ -7,7 +7,7 @@ void GameApplication::exerciseRangedCombat() {
     scene.units = {{"human.slinger",0,{14,14}}, {"human.catapult",0,{14,16}}, {"human.peacemaker",1,{19,15}}};
     auto types = definitions_.entities();
     for (auto& d : types) if (d.id == "human.peacemaker") { d.attackDamage = 0; d.maximumHealth = 10000; }
-    game_ = rts::Simulation(std::move(scene),menu_.player,definitions_.entity("human.worker"),std::move(types));
+    game_ = rts::Simulation(std::move(scene),menu_.player,definitions_.entity("human.worker"),std::move(types), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
     ui_ = {}; ui_.selection.army(game_);
     const auto enemy = game_.units().back().id;
     if (!game_.attack(ui_.selection.ids,enemy)) throw std::runtime_error("Ranged smoke: attack rejected");
@@ -31,7 +31,7 @@ void GameApplication::exerciseRangedCombat() {
     training.startingCrystals = 1000;
     types = definitions_.entities();
     for (auto& d : types) if (d.id == "human.barracks") d.constructionTicks = 1;
-    game_ = rts::Simulation(std::move(training),menu_.player,definitions_.entity("human.worker"),std::move(types));
+    game_ = rts::Simulation(std::move(training),menu_.player,definitions_.entity("human.worker"),std::move(types), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
     const auto site = game_.construct(std::array{game_.worker().id},"human.barracks",{14,14});
     if (!site) throw std::runtime_error("Ranged smoke: barracks construction failed");
     for (int t = 0; t < 120; ++t) game_.tick();

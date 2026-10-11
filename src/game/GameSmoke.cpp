@@ -14,7 +14,7 @@ void GameApplication::exerciseInterface() {
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
         site.startingCrystals = 500;
         rts::PlayerSettings player; player.color = color;
-        rts::Simulation corps(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities());
+        rts::Simulation corps(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
         const std::array builders{corps.worker().id};
         const auto id = corps.construct(builders, "human.barracks", {12, 11});
         if (!id) throw std::runtime_error("Smoke: corps construction failed");
@@ -30,10 +30,10 @@ void GameApplication::exerciseInterface() {
     }
     {
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
-        rts::Simulation lit(site, {}, definitions_.entity("human.worker"), definitions_.entities(), {}, {}, {.startMinute = 22 * 60});
+        rts::Simulation lit(site, {}, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id, {}, {}, {.startMinute = 22 * 60});
         auto unlitTypes = definitions_.entities();
         for (auto& type : unlitTypes) for (auto& stage : type.buildingSprite.stages) stage.lights.clear();
-        rts::Simulation unlit(site, {}, definitions_.entity("human.worker"), unlitTypes, {}, {}, {.startMinute = 22 * 60});
+        rts::Simulation unlit(site, {}, definitions_.entity("human.worker"), unlitTypes, definitions_.startingDepot(definitions_.entity("human.worker").factionId).id, {}, {}, {.startMinute = 22 * 60});
         renderer_.snapshot(unlit, rts::Paths::executable().parent_path() / L"ratusha-light-off.png");
         renderer_.snapshot(lit, rts::Paths::executable().parent_path() / L"ratusha-light-on.png");
     }
@@ -41,7 +41,7 @@ void GameApplication::exerciseInterface() {
         rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
         site.startingCrystals = 500;
         rts::PlayerSettings player; player.color = rts::TeamColor::Red;
-        rts::Simulation construction(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities());
+        rts::Simulation construction(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
         if (construction.clock().phase() != rts::DayPhase::Day || construction.clock().minuteOfDay() != 12 * 60)
             throw std::runtime_error("Smoke: match did not start at noon");
         const std::array builders{construction.worker().id};
@@ -85,7 +85,7 @@ void GameApplication::exerciseInterface() {
         auto forestTypes = definitions_.entities();
         for (auto& type : forestTypes) if (type.acceptsCargo) type.dayVision = type.nightVision = 1;
         auto observer = definitions_.entity("human.worker"); observer.dayVision = observer.nightVision = 7;
-        rts::Simulation forestGame(std::move(forest), {}, observer, std::move(forestTypes));
+        rts::Simulation forestGame(std::move(forest), {}, observer, std::move(forestTypes), definitions_.startingDepot(observer.factionId).id);
         rts::GameplayUi forestUi; forestUi.selection.ids = {forestGame.worker().id};
         const auto imagePath = rts::Paths::executable().parent_path();
         if (!forestGame.fog().visible({15, 14}) || forestGame.fog().visible({16, 14}) || forestGame.fog().visible({18, 15}))
@@ -422,7 +422,7 @@ void GameApplication::exerciseInterface() {
     onMessage(WM_MBUTTONUP, 0, at(screenCenter));
     auto arena = rts::loadScenario(paths_.asset(L"maps/demo.rtsmap"));
     arena.units = {{"human.peacemaker", 0, {15, 18}}, {"human.peacemaker", 1, {17, 19}}};
-    game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("human.worker"), definitions_.entities());
+    game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
     ui_ = {}; resetCamera();
     onMessage(WM_KEYDOWN, VK_F1, 0);
     if (ui_.selection.ids.size() != 1 || game_.unit(ui_.selection.ids.front())->owner != game_.player().id)
@@ -451,7 +451,7 @@ void GameApplication::exerciseInterface() {
     heroScenario.units = {{"human.hero", 0, {15, 18}}, {"human.peacemaker", 1, {16, 18}}};
     auto heroTypes = definitions_.entities();
     for (auto& type : heroTypes) if (type.id == "human.hero") { type.maximumHealth = 12; type.attackDamage = 0; }
-    game_ = rts::Simulation(std::move(heroScenario), menu_.player, definitions_.entity("human.worker"), std::move(heroTypes));
+    game_ = rts::Simulation(std::move(heroScenario), menu_.player, definitions_.entity("human.worker"), std::move(heroTypes), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
     onMessage(WM_KEYDOWN, VK_F2, 0);
     for (int tick = 0; tick < 30 && game_.hero(); ++tick) game_.tick();
     if (game_.hero() || !game_.heroFallen()) throw std::runtime_error("Smoke: hero did not die");

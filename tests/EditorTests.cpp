@@ -24,7 +24,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
         require(loaded.map.layoutSize()==rts::Cell{64,96} && loaded.map.groundMinimum()==scenario.map.groundMinimum(),"Roundtrip lost rectangular crop");
         for(int y=0;y<loaded.map.height();++y) for(int x=0;x<loaded.map.width();++x)
             require(loaded.map.playable({x,y})==scenario.map.playable({x,y}),"Roundtrip changed partial-cell navigation");
-        rts::Simulation game(loaded,{},definitions.entity("human.worker"),definitions.entities());
+        rts::Simulation game(loaded,{},definitions.entity("human.worker"),definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         game.revealMap();
         require(!game.canPlace("human.hall",border),"Game accepted a cropped building footprint");
         auto invalid=loaded; invalid.units.push_back({"human.flying_soldier",0,{64,32}});

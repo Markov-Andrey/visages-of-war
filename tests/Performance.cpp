@@ -1,4 +1,5 @@
 #include "rts/FogOfWar.hpp"
+#include "SimulationFixture.hpp"
 #include "rts/Navigation.hpp"
 #include "rts/Formation.hpp"
 #include "rts/Simulation.hpp"
@@ -81,7 +82,7 @@ void combatBenchmark() {
             if (i) site.units.push_back({fighter.id, 0, {30 + i % 5, 40 + i / 5}});
             site.units.push_back({fighter.id, 1, {42 + i % 5, 40 + i / 5}});
         }
-        rts::Simulation game(std::move(site), {}, fighter, {fighter});
+        auto game = rts::tests::makeTestSimulation(std::move(site), {}, fighter, {fighter});
         std::vector<rts::EntityId> own;
         rts::EntityId target{};
         for (const auto& u : game.units()) {
@@ -147,7 +148,7 @@ int main(int argc, char** argv) {
     for (rts::Cell direction : {rts::Cell{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}}) {
         rts::Scenario s{rts::Map(64, 64), {1, 1}, {30, 30}, {}};
         for (int i = 1; i < 12; ++i) s.extraWorkers.push_back({30 + i % 4, 30 + i / 4});
-        rts::Simulation game(std::move(s));
+        auto game = rts::tests::makeTestSimulation(std::move(s));
         std::vector<rts::EntityId> ids;
         for (const auto& u : game.units()) ids.push_back(u.id);
         game.command(ids, {31 + direction.x * 14, 31 + direction.y * 14});
@@ -176,7 +177,7 @@ int main(int argc, char** argv) {
     for (int count : {48, 100}) {
         rts::Scenario s{rts::Map(96, 96), {1, 1}, {20, 20}, {}};
         for (int i = 1; i < count; ++i) s.extraWorkers.push_back({20 + i % 10, 20 + i / 10});
-        rts::Simulation game(std::move(s));
+        auto game = rts::tests::makeTestSimulation(std::move(s));
         std::vector<rts::EntityId> ids;
         for (const auto& u : game.units()) ids.push_back(u.id);
         const auto commandStart = Clock::now();
@@ -200,7 +201,7 @@ int main(int argc, char** argv) {
         rts::Scenario s{rts::Map(64, 48), {1, 1}, {10, 19}, {}};
         for (int i = 1; i < 12; ++i) s.extraWorkers.push_back({10 + i % 4, 19 + i / 4});
         for (int y = 0; y < 48; ++y) if (y != 20) s.map.at({30, y}).blocked = true;
-        rts::Simulation game(std::move(s));
+        auto game = rts::tests::makeTestSimulation(std::move(s));
         std::vector<rts::EntityId> ids;
         for (const auto& u : game.units()) ids.push_back(u.id);
         game.command(ids, {46, 20});

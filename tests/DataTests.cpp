@@ -349,7 +349,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
     });
     test("Large demo: workers, friendly army, hostile camp and reachable plateaus", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");
-        rts::Simulation game(loadScenario(assets / "maps/demo.rtsmap"), {}, definitions.entity("human.worker"), definitions.entities());
+        rts::Simulation game(loadScenario(assets / "maps/demo.rtsmap"), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         require(game.map().width() == 64 && game.map().height() == 64 && game.units().size() == 29, "Wrong demo dimensions or army");
         require(game.storedCrystals() == 300 && game.armySupply().used() == 44, "Enemy army consumed player supply");
         int friendly = 0, hostile = 0;
@@ -428,7 +428,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         supply.release(15);
         require(supply.reserve(15) && supply.used() == 100, "Released supply was not reusable");
         mustThrow([&] { supply.release(101); });
-        rts::Simulation game(flatScenario());
+        auto game = makeTestSimulation(flatScenario());
         require(game.armySupply().used() == 1 && game.storedCrystals() == 0, "Initial worker supply");
     });
     test("Commander catalog accepts multiple commanders and resolves shared definitions", [&] {
@@ -439,7 +439,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         const auto defs = fixture.load();
         require(defs.commanders().size() == 2 && defs.commander("two").factionId == "humans", "Commanders hardcoded");
         const rts::PlayerSettings player{0, "two", rts::TeamColor::Purple};
-        rts::Simulation game(flatScenario(), player, defs.entity(defs.commander("two").startingWorker));
+        auto game = makeTestSimulation(flatScenario(), player, defs.entity(defs.commander("two").startingWorker));
         require(game.player().commanderId == "two" && game.worker().owner == 0, "Ownership lost");
         fixture.commanders["commanders"][1]["startingWorker"] = "missing";
         mustThrow([&] { fixture.load(); });
@@ -490,8 +490,8 @@ void dataTests(TestSuite& test, const TestContext& context) {
                 require(loadScenario(file).crystals[0].remaining == amount, "Valid resource reserve was not loaded");
             else mustThrow([&] { loadScenario(file); });
         }
-        mustThrow([] { rts::Simulation game(flatScenario(1001)); });
-        mustThrow([] { rts::Simulation game(flatScenario(-1)); });
+        mustThrow([] { auto game = makeTestSimulation(flatScenario(1001)); });
+        mustThrow([] { auto game = makeTestSimulation(flatScenario(-1)); });
         const auto demo = loadScenario(assets / "maps/demo.rtsmap");
         require(!demo.crystals.empty() && std::all_of(demo.crystals.begin(), demo.crystals.end(), [](const auto& c) { return c.remaining == c.capacity; }), "Demo deposits are not full");
     });
@@ -544,9 +544,70 @@ void dataTests(TestSuite& test, const TestContext& context) {
         fixture.rules["hero"]["experiencePerVictimLevel"] = 7;
         const auto changed = fixture.load();
         auto scenario = flatScenario(); scenario.heroSpawn = rts::Cell{5, 5};
-        rts::Simulation game(std::move(scenario), {}, changed.entity("human.worker"), changed.entities(), "human.hero", changed.progression());
+        rts::Simulation game(std::move(scenario), {}, changed.entity("human.worker"), changed.entities(), changed.startingDepot(changed.entity("human.worker").factionId).id, "human.hero", changed.progression());
         game.grantExperience(game.hero()->id, 30);
         require(game.hero()->level() == 3 && game.hero()->atMaxLevel(), "Match ignored external experience rules");
+    });
+    test("Faction selects its authored starting building independently of catalog order", [&] {
+        CatalogFixture fixture(assets);
+        fixture.catalog["factions"][0]["startingBuilding"] = "human.barracks";
+        for (auto& entity : fixture.entities["entities"]) if (entity["id"] == "human.barracks") {
+            entity["depot"] = true;
+            entity["stats"]["health"] = 1234;
+            entity["construction"]["footprint"] = {2, 2};
+        }
+        const auto definitions = fixture.load();
+        const auto& worker = definitions.entity("human.worker");
+        const auto& depot = definitions.startingDepot(worker.factionId);
+        require(depot.id == "human.barracks", "Catalog chose the first depot instead of startingBuilding");
+        auto types = definitions.entities();
+        for (int order = 0; order < 2; ++order) {
+            std::reverse(types.begin(), types.end());
+            auto site = flatScenario(); site.worker = {6,4};
+            Simulation game(site, {}, worker, types, depot.id);
+            const auto& building = game.buildings().front();
+            require(building.definition.id == depot.id && building.origin == site.hall && building.complete() &&
+                building.health == 1234 && building.definition.width == 2 && building.definition.height == 2,
+                "Starting building ignored authored type, position, health or footprint");
+            require(game.map().occupancy(site.hall + Cell{1,1}) == 1 && game.map().occupancy(site.hall + Cell{2,0}) == 0,
+                "Starting building reserved a hardcoded footprint");
+        }
+    });
+    test("Playable factions reject missing or invalid starting building references", [&] {
+        const CatalogFixture original(assets);
+        for (const Json value : {Json("missing"), Json("human.worker"), Json(""), Json(nullptr)}) {
+            auto fixture = original; fixture.catalog["factions"][0]["startingBuilding"] = value;
+            mustThrow([&] { fixture.load(); });
+        }
+        auto missing = original; missing.catalog["factions"][0].erase("startingBuilding");
+        mustThrow([&] { missing.load(); });
+        for (int invalid = 0; invalid < 4; ++invalid) {
+            auto fixture = original;
+            fixture.catalog["factions"].push_back({{"id", "foreign"}, {"name", "Foreign"}, {"description", "Test faction"}});
+            auto depot = fixture.entities["entities"][3]; depot["id"] = "test.start";
+            if (invalid == 0) depot["construction"]["enabled"] = false;
+            if (invalid == 1) { depot["mobility"]["enabled"] = true; depot["mobility"]["speed"] = 2; }
+            if (invalid == 2) depot["depot"] = false;
+            if (invalid == 3) depot["factionId"] = "foreign";
+            fixture.entities["entities"].push_back(depot);
+            fixture.catalog["factions"][0]["startingBuilding"] = "test.start";
+            mustThrow([&] { fixture.load(); });
+        }
+    });
+    test("Simulation never invents a missing starting building", [] {
+        const EntityDefinition worker;
+        const auto depot = fixtureDepot(worker);
+        for (const std::string id : {std::string{}, std::string("missing"), worker.id})
+            mustThrow([&] { Simulation game(flatScenario(), {}, worker, {worker, depot}, id); });
+        mustThrow([&] { Simulation game(flatScenario(), {}, worker, {worker}, depot.id); });
+        for (int invalid = 0; invalid < 4; ++invalid) {
+            auto type = depot;
+            if (invalid == 0) type.constructible = false;
+            if (invalid == 1) type.mobile = true;
+            if (invalid == 2) type.acceptsCargo = false;
+            if (invalid == 3) type.factionId = "foreign";
+            mustThrow([&] { Simulation game(flatScenario(), {}, worker, {worker, type}, type.id); });
+        }
     });
     test("Catalog depot footprints reserve every cell and can rebind loaded maps", [&] {
         CatalogFixture fixture(assets);
@@ -557,7 +618,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
             const auto definitions = fixture.load();
             const auto& depot = definitions.startingDepot("humans");
             require(depot.width == footprint.x && depot.height == footprint.y, "Depot lost catalog dimensions");
-            rts::Simulation game(s, {}, definitions.entity("human.worker"), definitions.entities());
+            rts::Simulation game(s, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
             for (int y = 0; y < 4; ++y) for (int x = 0; x < 5; ++x) {
                 const auto cell = s.hall + rts::Cell{x, y};
                 const bool inside = x < footprint.x && y < footprint.y;
@@ -576,9 +637,9 @@ void dataTests(TestSuite& test, const TestContext& context) {
         fixture.entities["entities"][3]["construction"]["footprint"] = {4, 3};
         const auto definitions = fixture.load();
         s.map.occupy({4, 3});
-        mustThrow([&] { rts::Simulation game(s, {}, definitions.entity("human.worker"), definitions.entities()); });
+        mustThrow([&] { rts::Simulation game(s, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id); });
         s.map.release({4, 3}); s.worker = {4, 3};
-        mustThrow([&] { rts::Simulation game(s, {}, definitions.entity("human.worker"), definitions.entities()); });
+        mustThrow([&] { rts::Simulation game(s, {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id); });
     });
     test("Building art switches at exact percentages and validates authored stages", [&] {
         CatalogFixture fixture(assets);
@@ -860,7 +921,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         const auto defs = fixture.load(); const auto& type = defs.entity("forest.floating");
         require(type.constructible && type.mobile && type.movement == rts::MovementType::Flying && type.factionId == "forest", "Capabilities became exclusive kinds");
         require(type.alternateForms.front() == "forest.rooted", "Form reference lost");
-        rts::Simulation game(flatScenario(), {}, defs.entity("human.worker"), defs.entities());
+        rts::Simulation game(flatScenario(), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id);
         require(game.buildingTypes().size() == 3 && !game.canPlace("forest.rooted", {5, 5}), "Another faction's building exposed");
         fixture.entities["entities"].back()["alternateForms"] = {"missing"};
         mustThrow([&] { fixture.load(); });

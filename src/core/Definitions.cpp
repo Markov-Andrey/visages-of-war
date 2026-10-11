@@ -100,11 +100,12 @@ EntityDefinition parseEntity(const Json& j) {
 }
 }
 const EntityDefinition& Definitions::startingDepot(const std::string& factionId) const {
-    const auto found = std::find_if(entities_.begin(), entities_.end(), [&](const auto& type) {
-        return type.constructible && type.acceptsCargo && type.factionId == factionId;
-    });
-    if (found == entities_.end()) throw std::runtime_error("Faction requires a starting resource depot: " + factionId);
-    return *found;
+    const auto& id = faction(factionId).startingBuilding;
+    if (id.empty()) throw std::runtime_error("Faction requires startingBuilding: " + factionId);
+    const auto& type = entity(id);
+    if (!type.constructible || type.mobile || !type.acceptsCargo || type.factionId != factionId)
+        throw std::runtime_error("Invalid startingBuilding for faction " + factionId + ": " + id);
+    return type;
 }
 Definitions Definitions::load(const std::filesystem::path& catalog) {
     Definitions result;
@@ -118,8 +119,9 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     fields(root, {"version", "factions", "entityFiles", "commandersFile", "rulesFile", "abilitiesFile"}); version(root);
     if (!root.at("factions").is_array() || root.at("factions").empty()) throw std::runtime_error("No factions");
     for (const auto& j : root.at("factions")) {
-        fields(j, {"id", "name", "description"});
+        fields(j, {"id", "name", "description"}, {"startingBuilding"});
         FactionDefinition faction{string(j.at("id")), string(j.at("name")), string(j.at("description"))};
+        if (j.contains("startingBuilding")) faction.startingBuilding = string(j.at("startingBuilding"));
         for (const auto& previous : result.factions_) if (previous.id == faction.id) throw std::runtime_error("Duplicate faction: " + faction.id);
         result.factions_.push_back(std::move(faction));
     }
@@ -210,6 +212,8 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
             if (id == e.id || !forms.insert(id).second) throw std::runtime_error("Invalid alternate form: " + id);
         }
     }
+    for (const auto& faction : result.factions_)
+        if (!faction.startingBuilding.empty()) result.startingDepot(faction.id);
     const auto commanders = read(resolve(root.at("commandersFile"))); fields(commanders, {"version", "commanders"}); version(commanders);
     if (!commanders.at("commanders").is_array()) throw std::runtime_error("Expected commander array");
     for (const auto& j : commanders.at("commanders")) {
@@ -217,6 +221,7 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         CommanderDefinition c;
         c.id = string(j.at("id")); c.displayName = string(j.at("name")); c.description = string(j.at("description"));
         c.factionId = string(j.at("factionId")); c.factionName = result.faction(c.factionId).displayName;
+        result.startingDepot(c.factionId);
         c.startingWorker = string(j.at("startingWorker")); c.startingHero = string(j.at("startingHero"), true);
         if (j.contains("rallySprite") && !j.at("rallySprite").is_null()) c.rallySprite = data::parseRallySprite(j.at("rallySprite"));
         const auto& worker = result.entity(c.startingWorker);

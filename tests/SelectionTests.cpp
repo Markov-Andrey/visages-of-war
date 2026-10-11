@@ -5,7 +5,7 @@
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
     test("Building hover previews the click footprint without changing selection or bypassing fog and modes", [] {
-        Simulation game({Map(32, 32), {5, 5}, {12, 12}, {}});
+        auto game = makeTestSimulation({Map(32, 32), {5, 5}, {12, 12}, {}});
         auto& building = const_cast<Building&>(game.buildings().front());
         auto& fog = const_cast<FogOfWar&>(game.fog());
         const BattleLayout layout({1280, 900});
@@ -64,7 +64,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         EntityDefinition worker; worker.dayVision = worker.nightVision = 20;
         Scenario scene{Map(40, 32), {1, 1}, {8, 8}, {}};
         scene.units = {{worker.id, 1, {12, 8}}, {worker.id, neutralPlayer, {16, 8}}};
-        Simulation game(std::move(scene), {}, worker, {worker});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker});
         GameplayUi ui; ui.selection.ids = {game.worker().id};
         const auto selection = ui.selection.ids;
         const BattleLayout layout({1280, 900});
@@ -98,7 +98,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         scene.extraWorkers = {{10, 8}};
         scene.units = {{worker.id, 1, {14, 8}}, {worker.id, 1, {18, 8}},
             {worker.id, rts::neutralPlayer, {14, 12}}, {worker.id, 1, {35, 25}}};
-        rts::Simulation game(std::move(scene), {}, worker, {worker});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker});
         const rts::WorldView view{{90, 70}, .8f};
         const auto point = [&](rts::EntityId id) {
             const auto b = rts::unitBounds(game, *game.unit(id), view);
@@ -139,7 +139,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(ui.selection.ids.empty(), "Enemy stayed selected after leaving vision");
     });
     test("Foreign building inspection uses the entire visible footprint and rejects commands", [] {
-        rts::Simulation game({rts::Map(24, 24), {2, 2}, {7, 7}, {}});
+        auto game = makeTestSimulation({rts::Map(24, 24), {2, 2}, {7, 7}, {}});
         // Configure a foreign runtime fixture; authored maps currently only spawn the player's depot.
         auto& building = const_cast<rts::Building&>(game.buildings().front());
         auto& fog = const_cast<rts::FogOfWar&>(game.fog());
@@ -178,7 +178,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
     test("HUD notifications expire after four real seconds and repeated messages restart the timer", [] {
         using namespace std::chrono;
         const rts::GameplayNotification::Clock::time_point began{};
-        rts::Simulation game({rts::Map(16, 16), {1, 1}, {5, 5}, {}});
+        auto game = makeTestSimulation({rts::Map(16, 16), {1, 1}, {5, 5}, {}});
         rts::GameplayNotification notice;
         require(notice.text(game, began).empty(), "Map start displayed an unsolicited notification");
         const auto rejectOrder = [&] { require(!game.order({}, rts::OrderKind::Move, {10, 10}), "Empty selection accepted an order"); };
@@ -210,7 +210,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             for (const auto& type : defs.entities()) if (type.mobile && type.id != "human.worker") {
                 scene.units.push_back({type.id, 0, {x, 15}}); x += 4;
             }
-            rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities());
+            rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id);
             for (const auto& u : game.units())
                 require(game.order(std::array{u.id}, rts::OrderKind::Move, u.cell + rts::Cell{1, 0}), "Unit failed to start moving");
             game.tick();
@@ -244,7 +244,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         rts::Scenario scene{rts::Map(40, 32), {1, 1}, {8, 8}, {}};
         scene.extraWorkers = {{10, 8}, {28, 8}, {10, 24}};
         scene.units = {{other.id, 0, {12, 8}}, {worker.id, 1, {9, 11}}, {worker.id, rts::neutralPlayer, {12, 11}}};
-        rts::Simulation game(std::move(scene), {}, worker, {worker, other});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, other});
         const auto first = game.units()[0].id, second = game.units()[1].id, distant = game.units()[2].id, different = game.units()[4].id;
         for (float zoom : {.4f, 1.0f, 1.8f}) {
             const rts::WorldView view{{120, -70}, zoom};
@@ -279,7 +279,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         auto soldier = worker; soldier.id = "soldier"; soldier.canBuild = false; soldier.carryCapacity = 0;
         auto scene = flatScenario();
         scene.units = {{soldier.id, 0, {5, 4}}, {soldier.id, 1, {8, 8}}};
-        rts::Simulation game(std::move(scene), {}, worker, {worker, soldier});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, soldier});
         rts::Selection selection;
         const auto a = game.worker().id, b = game.units()[1].id, enemy = game.units()[2].id;
         selection.ids = {a, b, a, enemy, game.buildings().front().id, 99999};
@@ -308,7 +308,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         killer.attackDamage = 100; killer.attackWindupTicks = 1;
         rts::Scenario scene{rts::Map(40, 32), {3, 3}, {22, 20}, {}};
         scene.extraWorkers = {{7, 9}}; scene.units = {{killer.id, 1, {23, 20}}};
-        rts::Simulation game(std::move(scene), {}, worker, {worker, killer});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, killer});
         const auto victim = game.worker().id, survivor = game.units()[1].id;
         rts::Selection selection; selection.ids = {victim, survivor};
         rts::ControlGroups groups; groups.bind(0, game, selection);
@@ -326,7 +326,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         scene.heroSpawn = rts::Cell{9, 9};
         scene.units = {{"human.slinger", 0, {11, 10}}, {"human.peacemaker", 0, {10, 10}},
             {"human.peacemaker", 0, {10, 12}}, {"human.catapult", 0, {11, 11}}};
-        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), "human.hero");
+        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id, "human.hero");
         rts::Selection selection;
         for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
         std::reverse(selection.ids.begin(), selection.ids.end());
@@ -359,7 +359,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         rts::Scenario scene{rts::Map(24, 24), {1, 1}, {4, 3}, {}};
         scene.extraWorkers = {{5, 3}};
         scene.units = {{"human.peacemaker", 0, {6, 4}}, {"human.peacemaker", 1, {7, 4}}};
-        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities());
+        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id);
         const auto first = game.worker().id, second = game.units()[1].id;
         const auto soldier = game.units()[2].id, enemy = game.units()[3].id;
         const std::vector whole{first, second, soldier};
@@ -394,7 +394,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
         scene.units = {{"human.peacemaker", 0, {10, 10}}, {"human.catapult", 0, {11, 11}},
             {secondWorker.id, 0, {8, 9}}, {secondSiege.id, 0, {12, 11}}, {"human.peacemaker", 1, {25, 25}}};
-        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), types);
+        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), types, defs.startingDepot(defs.entity("human.worker").factionId).id);
         rts::GameplayUi ui;
         for (const auto& unit : game.units()) if (unit.owner == game.player().id) ui.selection.ids.push_back(unit.id);
         const auto soldier = game.units()[1].id, siege = game.units()[2].id;
@@ -431,7 +431,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         killer.attackDamage = 100; killer.attackWindupTicks = 1;
         rts::Scenario scene{rts::Map(40, 32), {3, 3}, {22, 20}, {}};
         scene.units = {{other.id, 0, {7, 9}}, {killer.id, 1, {23, 20}}};
-        rts::Simulation game(std::move(scene), {}, worker, {worker, other, killer});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, other, killer});
         const auto victim = game.worker().id, survivor = game.units()[1].id;
         rts::GameplayUi ui; ui.selection.ids = {victim, survivor};
         ui.commandGroup = ui.selection.activeGroup(game).type; ui.orderMode = rts::OrderKind::Gather;
@@ -446,7 +446,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         rts::Scenario scene{rts::Map(64, 64), {1, 1}, {4, 3}, {}};
         for (int i = 0; i < 39; ++i) scene.extraWorkers.push_back({20 + i % 8, 20 + i / 8});
         scene.units = {{last.id, 0, {10, 10}}};
-        rts::Simulation game(std::move(scene), {}, worker, {worker, last});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, last});
         rts::Selection selection;
         for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
         for (rts::Vec2 extent : {rts::Vec2{800, 600}, rts::Vec2{1024, 768}, rts::Vec2{1060, 768}, rts::Vec2{1440, 900}, rts::Vec2{1920, 1080}}) {
@@ -503,7 +503,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         rts::EntityDefinition worker;
         auto soldier = worker; soldier.id = "soldier"; soldier.canBuild = false; soldier.carryCapacity = 0;
         scene.units = {{worker.id, 1, {8, 8}}, {soldier.id, 0, {5, 5}}};
-        rts::Simulation game(std::move(scene), {}, worker, {worker, soldier});
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, soldier});
         const auto a = game.units()[0].id, b = game.units()[1].id, c = game.units()[2].id;
         rts::Selection selection;
         require(selection.idleWorker(game) && selection.ids == std::vector{a}, "First idle worker wrong");
@@ -520,7 +520,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
     test("Rally points and links remain private even when a foreign building is selected", [&] {
         const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
         rts::Scenario scenario{rts::Map(28, 28), {1, 1}, {4, 3}, {}};
-        rts::Simulation game(std::move(scenario), {}, defs.entity("human.worker"), defs.entities());
+        rts::Simulation game(std::move(scenario), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id);
         auto building = game.buildings().front();
         building.rally = game.worker().cell;
         rts::GameplayUi ui; ui.selection.ids = {building.id};
@@ -553,7 +553,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         auto scenario = flatScenario();
         for (int y = 0; y < context.hallFootprint.y; ++y) for (int x = 0; x < context.hallFootprint.x; ++x)
             scenario.map.at(scenario.hall + rts::Cell{x, y}).height = 2;
-        rts::Simulation game(std::move(scenario), {}, definitions.entity("human.worker"), definitions.entities());
+        rts::Simulation game(std::move(scenario), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         auto building = game.buildings().front();
         const auto& art = building.definition.buildingSprite;
         for (float zoom : {.4f, 1.0f, 1.8f}) {
@@ -662,7 +662,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
     });
     test("Building sprite selection, box groups, additive selection and camera transforms", [] {
         auto s = flatScenario(); s.extraWorkers = {{5, 3}, {4, 4}};
-        rts::Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         rts::WorldView view{{500, 40}, 1.25f};
         rts::Selection selection;
         const auto bounds = rts::buildingBounds(game, game.buildings()[0], view);
@@ -680,7 +680,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
     });
     test("Crystal sprite selection is neutral, single and excluded from army groups", [] {
         auto s = flatScenario(rts::Crystal::defaultReserve); s.extraWorkers = {{5, 3}};
-        rts::Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         const auto& node = game.crystals().front();
         require(node.owner == rts::neutralPlayer && node.id && !game.unit(node.id) && !game.building(node.id), "Crystal has no independent neutral identity");
         require(game.crystal(node.id) == &node, "Crystal lookup lost identity");
@@ -708,7 +708,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         }
     });
     test("Crystal reserve updates on harvest and depletion removes selection", [] {
-        rts::Simulation game(flatScenario(2));
+        auto game = makeTestSimulation(flatScenario(2));
         const auto nodeId = game.crystals().front().id;
         const auto cell = game.crystals().front().cell;
         const rts::WorldView view{{100, 100}, 1};
@@ -733,7 +733,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         s.crystals.push_back({{9, 9}, 1000}); s.map.occupy({9, 9});
         rts::EntityDefinition worker; worker.dayVision = worker.nightVision = 3;
         auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
-        rts::Simulation game(std::move(s), {}, worker, {depot});
+        auto game = makeTestSimulation(std::move(s), {}, worker, {depot});
         const auto nodeId = game.crystals()[0].id, hiddenId = game.crystals()[1].id;
         const rts::WorldView view{{40, 80}, 1};
         const auto p = view.project(rts::center({7, 7})) + rts::Vec2{0, -25};
@@ -791,7 +791,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         }
     });
     test("Locomotion uses step frames, retains facing and pauses with actual movement", [] {
-        rts::Simulation game(flatScenario());
+        auto game = makeTestSimulation(flatScenario());
         game.command({8, 3});
         std::array<bool, 4> seen{};
         for (int tick = 0; tick < 25; ++tick) {
@@ -834,7 +834,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
     });
     test("Square-view entity picking respects north-south sprite overlap", [] {
         auto s = flatScenario(); s.worker = {3, 0}; s.extraWorkers = {{3, 3}};
-        rts::Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         const rts::WorldView view{{300, 200}, 1};
         const auto back = rts::unitScreenAnchor(view, game.units()[0].position, 0) + rts::Vec2{0, -25};
         require(rts::pickEntity(game, view, back) == game.units()[0].id, "Unit behind the building cannot be selected through its window");
@@ -843,7 +843,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
     });
     test("Occlusion windows share picking, camera scale and logical visibility", [] {
         Scenario s{Map(24, 24), {1, 1}, {3, 0}, {}};
-        Simulation game(std::move(s));
+        auto game = makeTestSimulation(std::move(s));
         const auto& unit = game.units()[0];
         const auto& building = game.buildings()[0];
         for (float zoom : {.35f, 1.f, 1.8f}) {

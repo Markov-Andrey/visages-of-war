@@ -246,7 +246,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
     test("Simulation applies stable motion facing without delaying reversal, stop or attack", [] {
         const Scenario site{Map(24, 18), {1, 1}, {6, 8}, {}};
         EntityDefinition fighter; fighter.attackDamage = 10; fighter.movementPerSecond = 3; fighter.attackRange = 2;
-        Simulation game(site, {}, fighter);
+        auto game = makeTestSimulation(site, {}, fighter);
         require(game.command({18, 8}), "Initial move rejected");
         ticks(game, 3);
         require(game.worker().facing == Cell{1, 0}, "Simulation did not face its movement");
@@ -260,7 +260,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         auto combatSite = site;
         auto enemy = fighter; enemy.id = "facing.enemy"; enemy.attackDamage = 0;
         combatSite.units = {{enemy.id, 1, {6, 7}}};
-        Simulation combat(std::move(combatSite), {}, fighter, {fighter, enemy});
+        auto combat = makeTestSimulation(std::move(combatSite), {}, fighter, {fighter, enemy});
         const auto id = combat.worker().id, target = combat.units().back().id;
         require(combat.command({18, 8}), "Combat setup move rejected"); ticks(combat, 3);
         require(combat.worker().facing == Cell{1, 0}, "Combat setup did not face east");
@@ -275,7 +275,8 @@ void spriteTests(TestSuite& test, const TestContext& context) {
             EntityDefinition normal; normal.movementPerSecond = 3.2f;
             auto slower = normal; slower.sprite.walkCycleDistance = 2;
             const Scenario site{Map(16, 16), {1, 1}, {4, 4}, {}};
-            Simulation baseline(site, {}, normal), adjusted(site, {}, slower);
+            auto baseline = makeTestSimulation(site, {}, normal);
+            auto adjusted = makeTestSimulation(site, {}, slower);
             baseline.command(destination); adjusted.command(destination);
             auto previous = adjusted.worker().position;
             float distance = 0;
@@ -390,7 +391,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         // Exercise the normal gameplay renderer, lighting, selection and HUD as well as the overview.
         Scenario site{Map(28, 28), {8, 11}, {11, 11}, {}};
         site.units = {{"human.peacemaker", 0, {13, 14}}};
-        Simulation game(std::move(site), {}, definitions.entity("human.worker"), definitions.entities());
+        Simulation game(std::move(site), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         GameplayUi ui; ui.selection.ids = {game.units().back().id};
         renderer.snapshot(game, output / "peacemaker-in-game.png", nullptr, false, &ui);
         ui.selection.ids.push_back(game.worker().id);
@@ -402,7 +403,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         }
         Scenario duel{Map(28, 28), {8, 11}, {11, 11}, {}};
         duel.units = {{"human.peacemaker", 0, {13, 14}}, {"human.peacemaker", 1, {14, 14}}};
-        Simulation battle(std::move(duel), {}, definitions.entity("human.worker"), types);
+        Simulation battle(std::move(duel), {}, definitions.entity("human.worker"), types, definitions.startingDepot(definitions.entity("human.worker").factionId).id);
         ticks(battle, 2);
         require(battle.corpses().size() == 2, "Death preview did not kill both differently-facing Peacemakers");
         const auto& death = *definition.sprite.death;

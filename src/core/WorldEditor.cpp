@@ -194,7 +194,8 @@ bool WorldEditor::applyOne(Vec2 p) {
         // Simulation is the authority for spawn movement layers, duplicate slots and supply.
         {
             const auto& commander=definitions_->commanders().front();
-            Simulation check(s,{},definitions_->entity(commander.startingWorker),definitions_->entities(),s.heroSpawn?commander.startingHero:std::string{},definitions_->progression());
+            Simulation check(s,{},definitions_->entity(commander.startingWorker),definitions_->entities(),
+                definitions_->startingDepot(commander.factionId).id,s.heroSpawn?commander.startingHero:std::string{},definitions_->progression());
         }
         scenario_=std::move(s); message=L"Изменение применено. Ctrl+Z — отмена, Ctrl+S — сохранить."; return true;
     } catch(const std::exception&) { message=L"Нельзя разместить здесь: проверьте поверхность, занятые места и лимит армии. Для рампы нужны 3 полосы у перепада +1."; return false; }
@@ -202,6 +203,7 @@ bool WorldEditor::applyOne(Vec2 p) {
 void WorldEditor::validateForPlay() const {
     auto s=scenario_; rebuild(s);
     const auto& commander=definitions_->commanders().front();
-    Simulation check(s,{},definitions_->entity(commander.startingWorker),definitions_->entities(),s.heroSpawn?commander.startingHero:std::string{},definitions_->progression());
+    Simulation check(s,{},definitions_->entity(commander.startingWorker),definitions_->entities(),
+        definitions_->startingDepot(commander.factionId).id,s.heroSpawn?commander.startingHero:std::string{},definitions_->progression());
 }
 }
