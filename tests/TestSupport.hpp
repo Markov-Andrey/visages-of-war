@@ -25,8 +25,10 @@ namespace rts::tests {
 inline void require(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
 inline nlohmann::json mapJson(int width=6,int height=6) {
     using J=nlohmann::json;
-    return {{"format","rts-world"},{"name","Тест"},{"size",{width,height}},
-        {"start",{{"hall",{0,0}},{"workers",J::array({{width-1,height-1}})},{"hero",nullptr},{"crystals",0}}},
+    auto slots=J::array();
+    for (const auto& slot : defaultPlayerSlots()) slots.push_back({{"state", slot.state==PlayerSlotState::Player ? "player" : slot.state==PlayerSlotState::AI ? "ai" : "empty"}, {"crystals",0}});
+    return {{"slots", slots},{"format","rts-world"},{"name","Тест"},{"size",{width,height}},
+        {"start",{{"hall",{0,0}},{"workers",J::array({{width-1,height-1}})},{"hero",nullptr}}},
         {"terrain",{{"base","grass"},{"heights",std::vector<std::string>(height,std::string(width,'0'))},{"blocked",std::vector<std::string>(height,std::string(width,'0'))},{"surfaces",std::vector<std::string>(height,std::string(width,'L'))},{"ramps",J::array()}}},
         {"paint",J::array()},{"environment",J::array()},{"decorations",J::array()},{"resources",J::array()},{"units",J::array()}};
 }

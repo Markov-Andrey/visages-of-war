@@ -20,7 +20,7 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
     bool deaths = false;
     for (const auto& u : units_) if (u.health == 0) {
         if (u.hero && u.owner == player_.id) heroFallen_ = true;
-        if (u.owner == player_.id) supply_.release(u.definition.cost.supply);
+        if (activePlayer(u.owner)) mutableEconomy(u.owner).supply.release(u.definition.cost.supply);
         leaveRemains(u);
         events_.emplace_back(UnitDied{u.id, u.owner});
         deaths = true;
@@ -29,9 +29,10 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
     bool buildingsDestroyed = false;
     for (const auto& b : buildings_) if (b.health == 0) {
         // Combat destruction never refunds crystals, including unfinished jobs.
-        if (b.owner == player_.id) {
-            supply_.release(b.definition.cost.supply);
-            for (const auto& job : b.production) supply_.release(job.reservedSupply);
+        if (activePlayer(b.owner)) {
+            auto& supply = mutableEconomy(b.owner).supply;
+            supply.release(b.definition.cost.supply);
+            for (const auto& job : b.production) supply.release(job.reservedSupply);
         }
         for (int y = 0; y < b.definition.height; ++y) for (int x = 0; x < b.definition.width; ++x)
             scenario_.map.release(b.origin + Cell{x, y});

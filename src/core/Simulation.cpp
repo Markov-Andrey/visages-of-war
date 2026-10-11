@@ -8,8 +8,11 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
     std::vector<EntityDefinition> entityTypes, std::string startingBuilding, std::string startingHero, ProgressionRules progression, ClockSettings clock)
     : scenario_(std::move(scenario)), player_(std::move(player)), workerType_(std::move(workerType)),
       entityTypes_(std::move(entityTypes)), progression_(std::make_shared<const ProgressionRules>(std::move(progression))), clock_(clock), fog_(map().width(), map().height()),
-      knownCrystals_(crystals().size()), knownEnvironment_(environment().size()), stored_(scenario_.startingCrystals) {
-    if (scenario_.playerSlots != 1 || player_.id != 0) throw std::invalid_argument("Invalid match setup");
+      knownCrystals_(crystals().size()), knownEnvironment_(environment().size()) {
+    validatePlayerSlots(scenario_.slots);
+    if (!activePlayer(player_.id) || scenario_.slots[player_.id].state != PlayerSlotState::Player)
+        throw std::invalid_argument("Local player requires a player slot");
+    for (size_t i = 0; i < maximumPlayers; ++i) economies_[i].crystals = scenario_.slots[i].startingCrystals;
     for (const auto& object : scenario_.environment) nextId_ = std::max(nextId_, object.id + 1);
     for (const auto& node : crystals())
         if (node.capacity < 1 || node.capacity > 1000000 || node.remaining < 0 || node.remaining > node.capacity ||
@@ -22,10 +25,10 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
     if (initial == buildable_.end() || (*initial)->mobile || !(*initial)->acceptsCargo)
         throw std::invalid_argument("Invalid starting building for faction " + workerType_.factionId + ": " + startingBuilding);
     reserveScenarioHall(scenario_, {(*initial)->width, (*initial)->height});
-    if (!supply_.reserve((*initial)->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
+    if (!mutableEconomy(player_.id).supply.reserve((*initial)->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
     buildings_.push_back({nextId_++, player_.id, **initial, hall(), (*initial)->maximumHealth, (*initial)->constructionTicks, defaultRally(**initial, hall()), {}});
-    spawn(workerType_, scenario_.worker, false);
-    for (Cell cell : scenario_.extraWorkers) spawn(workerType_, cell, false);
+    spawn(workerType_, scenario_.worker, false, player_.id);
+    for (Cell cell : scenario_.extraWorkers) spawn(workerType_, cell, false, player_.id);
     for (const auto& initialUnit : scenario_.units) spawn(entityType(initialUnit.definitionId), initialUnit.cell, false, initialUnit.owner);
     if (!startingHero.empty()) {
         if (!scenario_.heroSpawn || !entityType(startingHero).hero) throw std::invalid_argument("Missing hero spawn or progression");
@@ -35,6 +38,19 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
     scenario_.map.rebuildVisionBlockers(environment());
     updateVision();
 }
+bool Simulation::visibleTo(PlayerId id, Cell cell) const {
+    if (!activePlayer(id)) return false;
+    if (id == player_.id) return fog_.visible(cell);
+    const bool day = clock_.phase() == DayPhase::Day;
+    for (const auto& u : units_) if (u.owner == id && u.health > 0 &&
+        visionReaches(map(), {u.cell, day ? u.definition.dayVision : u.definition.nightVision,
+            airborne(u.definition.movement)}, cell)) return true;
+    for (const auto& b : buildings_) if (b.owner == id && b.health > 0) {
+        const int radius = b.complete() ? (day ? b.definition.dayVision : b.definition.nightVision) : 2;
+        if (visionReaches(map(), {b.origin + Cell{b.definition.width / 2, b.definition.height / 2}, radius}, cell)) return true;
+    }
+    return false;
+}
 const Unit* Simulation::unit(EntityId id) const { for (const auto& u : units_) if (u.id == id) return &u; return nullptr; }
 const Unit* Simulation::hero() const {
     for (const auto& u : units_) if (u.owner == player_.id && u.hero && u.health > 0) return &u;
@@ -43,8 +59,11 @@ const Unit* Simulation::hero() const {
 const Building* Simulation::building(EntityId id) const { for (const auto& b : buildings_) if (b.id == id) return &b; return nullptr; }
 const Crystal* Simulation::crystal(EntityId id) const { for (const auto& node : crystals()) if (node.id == id) return &node; return nullptr; }
 bool Simulation::crystalVisible(const Crystal& node) const {
+    return crystalVisibleTo(player_.id, node);
+}
+bool Simulation::crystalVisibleTo(PlayerId id, const Crystal& node) const {
     for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
-        if (fog_.visible(node.cell + Cell{x, y})) return true;
+        if (visibleTo(id, node.cell + Cell{x, y})) return true;
     return false;
 }
 Unit* Simulation::mutableUnit(EntityId id) { for (auto& u : units_) if (u.id == id) return &u; return nullptr; }
@@ -59,7 +78,8 @@ EntityId Simulation::spawn(const EntityDefinition& type, Cell cell, bool reserve
     if (!std::isfinite(type.collisionRadius) || type.collisionRadius < .05f || type.collisionRadius > .5f)
         throw std::invalid_argument("Collision radius must be in [0.05, 0.5] map units");
     if (!unitPositionFree(center(cell), type)) throw std::invalid_argument("Unit spawn is occupied");
-    if (owner == player_.id && !reserved && !supply_.reserve(type.cost.supply)) throw std::invalid_argument("Initial army exceeds supply cap");
+    if (owner != neutralPlayer && !activePlayer(owner)) throw std::invalid_argument("Unit owner requires an active player slot");
+    if (activePlayer(owner) && !reserved && !mutableEconomy(owner).supply.reserve(type.cost.supply)) throw std::invalid_argument("Initial army exceeds supply cap");
     Unit u;
     u.id = nextId_++; u.owner = owner; u.definitionId = type.id; u.definition = type;
     u.cell = cell; u.position = u.tickPosition = center(cell); u.health = type.maximumHealth; u.mana = type.maximumMana;

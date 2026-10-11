@@ -99,7 +99,7 @@ void GameApplication::exerciseInspection() {
         nullptr, false, &ui_, rts::MenuPage::Main, 0, nullptr, &preview, previewSize);
 
     rts::Scenario production{rts::Map(32, 32), {5, 5}, {12, 12}, {}};
-    production.startingCrystals = 10000;
+    production.slots[0].startingCrystals = 10000;
     game_ = rts::Simulation(std::move(production), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
     auto& depot = const_cast<rts::Building&>(game_.buildings().front());
     depot.definition.trainableUnits = {"church.peacemaker", "church.slinger"};
@@ -120,7 +120,7 @@ void GameApplication::exerciseInspection() {
         const auto slot = queue.slots[index];
         return rts::Vec2{slot.x + slot.width * .5f, slot.y + slot.height * .5f};
     };
-    const int beforeForeign = game_.storedCrystals();
+    const auto beforeForeign = game_.storedCrystals();
     depot.owner = 1;
     mouse_ = queuePoint(4);
     if (cursorKind() == rts::CursorKind::Hand) throw std::runtime_error("Queue: foreign icon has a clickable cursor");
@@ -131,7 +131,7 @@ void GameApplication::exerciseInspection() {
     for (size_t index : {size_t{4}, size_t{0}, size_t{7}}) {
         auto expected = depot.production;
         const auto job = expected[index]; expected.erase(expected.begin() + index);
-        const int queueBalance = game_.storedCrystals(), supply = game_.armySupply().used();
+        const auto queueBalance = game_.storedCrystals(); const int supply = game_.armySupply().used();
         mouse_ = queuePoint(index);
         if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Queue: production icon lacks a clickable cursor");
         click(mouse_);
@@ -142,7 +142,7 @@ void GameApplication::exerciseInspection() {
             if (depot.production[i].definitionId != expected[i].definitionId || depot.production[i].remainingTicks != expected[i].remainingTicks)
                 throw std::runtime_error("Queue: icon click changed another job or its progress");
     }
-    const int beforeEmpty = game_.storedCrystals();
+    const auto beforeEmpty = game_.storedCrystals();
     click(queuePoint(9));
     if (depot.production.size() != 7 || game_.storedCrystals() != beforeEmpty)
         throw std::runtime_error("Queue: empty slot changed production");
@@ -153,7 +153,7 @@ void GameApplication::exerciseInspection() {
 
     const auto site = game_.construct(std::array{game_.worker().id}, "church.barracks", {13, 12});
     if (!site) throw std::runtime_error("Cancellation: could not place construction fixture");
-    const int beforeCancel = game_.storedCrystals();
+    const auto beforeCancel = game_.storedCrystals();
     const int cost = game_.building(*site)->definition.cost.crystals;
     ui_.selection.ids = {*site};
     onMessage(WM_KEYDOWN, 'X', 0);

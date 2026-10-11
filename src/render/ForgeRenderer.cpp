@@ -117,7 +117,8 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
     std::wstring value=L"Высота: "+std::to_wstring(editor.height);
     if(editor.tool==EditorTool::Paint||editor.tool==EditorTool::ErasePaint) value=L"Жёсткость: "+std::to_wstring(int(editor.hardness*100))+L"%";
     if(editor.tool==EditorTool::Decoration) value=L"Размер: "+decimal(editor.scale);
-    if(editor.tool==EditorTool::Unit) value=editor.owner==0?L"Свой игрок":L"Противник";
+    if(editor.tool==EditorTool::Unit) value=L"Слот " + std::to_wstring(editor.owner + 1) +
+        (editor.scenario().slots.at(editor.owner).state==PlayerSlotState::AI ? L" — ИИ" : L" — игрок");
     if(editor.tool==EditorTool::Ramp) { constexpr std::array<const wchar_t*,4> directions{L"вправо",L"вниз",L"влево",L"вверх"}; value=L"Подъём "+std::wstring(directions[editor.direction%4]); }
     text(value,rect(layout.panel.x+52,641,180,25),0xe7cf9d);
     text(L"End / Home - overview / start\nR - rotate; [ ] - brush size\nK - grid; F5 - reload assets\nCtrl+Z / Y - undo / redo\nF9 - play; F10 - return",

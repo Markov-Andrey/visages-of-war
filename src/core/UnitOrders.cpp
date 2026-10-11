@@ -82,15 +82,17 @@ bool Simulation::command(std::span<const EntityId> ids, Cell c) {
     for (const auto& node : crystals()) if (node.contains(c) && node.remaining > 0 && crystalVisible(node)) kind = OrderKind::Gather;
     return order(ids, kind, c);
 }
-bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
+bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) { return orderFor(player_.id, ids, kind, c); }
+bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKind kind, Cell c) {
+    if (!activePlayer(actor)) return false;
     if (!map().contains(c)) return false;
     if (kind == OrderKind::Attack || kind == OrderKind::Build) return false;
     if (kind == OrderKind::Gather && std::none_of(crystals().begin(), crystals().end(),
-        [&](const Crystal& crystal) { return crystal.contains(c) && crystal.remaining > 0 && crystalVisible(crystal); })) return false;
+        [&](const Crystal& crystal) { return crystal.contains(c) && crystal.remaining > 0 && crystalVisibleTo(actor, crystal); })) return false;
     std::vector<FormationMember> members;
     for (EntityId id : ids) {
         auto* u = mutableUnit(id);
-        if (!u || u->owner != player_.id || std::any_of(members.begin(), members.end(), [&](const auto& m) { return m.id == id; })) continue;
+        if (!u || u->owner != actor || std::any_of(members.begin(), members.end(), [&](const auto& m) { return m.id == id; })) continue;
         if (kind == OrderKind::Gather && !u->definition.canGather()) continue;
         if (kind == OrderKind::AttackGround && (u->attackDamage() <= 0 || !u->definition.projectile ||
             u->definition.projectile->targeting != ProjectileTargeting::Point || u->definition.projectile->splashRadius <= 0)) continue;
@@ -186,7 +188,7 @@ void Simulation::arrived(Unit& u) {
     case UnitState::ToBuild: u.state = UnitState::Building; break;
     case UnitState::ToHall: {
         const auto* depot = building(u.targetBuilding);
-        if (depot && depot->complete() && depot->definition.acceptsCargo) { stored_ += u.cargo; u.cargo = 0; }
+        if (depot && depot->complete() && depot->definition.acceptsCargo && depot->owner == u.owner) { mutableEconomy(u.owner).crystals += u.cargo; u.cargo = 0; }
         u.state = UnitState::Idle;
         if (u.repeatGather) seekCrystal(u);
         break;

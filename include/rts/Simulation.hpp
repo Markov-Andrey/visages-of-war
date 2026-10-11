@@ -142,7 +142,11 @@ public:
     Simulation& operator=(Simulation&&) noexcept = default;
     const PlayerSettings& player() const { return player_; }
     const EntityDefinition& workerType() const { return workerType_; }
-    const ArmySupply& armySupply() const { return supply_; }
+    const PlayerSlots& playerSlots() const { return scenario_.slots; }
+    bool activePlayer(PlayerId id) const { return id < maximumPlayers && scenario_.slots[id].active(); }
+    const PlayerEconomy& economy(PlayerId id) const { return economies_.at(id); }
+    const ArmySupply& armySupply(PlayerId id) const { return economy(id).supply; }
+    const ArmySupply& armySupply() const { return armySupply(player_.id); }
     const WorldClock& clock() const { return clock_; }
     const FogOfWar& fog() const { return fog_; }
     void revealMap();
@@ -183,7 +187,8 @@ public:
     }
     bool knownEnvironment(size_t index) const { return knownEnvironment_.at(index); }
     const Landscape& landscape() const { return scenario_.landscape; }
-    int storedCrystals() const { return stored_; }
+    std::int64_t storedCrystals(PlayerId id) const { return economy(id).crystals; }
+    std::int64_t storedCrystals() const { return storedCrystals(player_.id); }
     const std::wstring& message() const { return message_; }
     std::uint64_t messageRevision() const { return messageRevision_; }
     float unitHeight(const Unit& unit) const;
@@ -191,23 +196,32 @@ public:
     bool command(Cell c);
     bool command(std::span<const EntityId> ids, Cell c);
     bool order(std::span<const EntityId> ids, OrderKind kind, Cell target = {});
+    bool orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKind kind, Cell target = {});
     bool attack(std::span<const EntityId> ids, EntityId target);
     bool activateAbility(EntityId unit, int ability);
     bool canAttack(const Unit& attacker, const Unit& target) const;
     void stop();
     void stop(std::span<const EntityId> ids);
     bool canPlace(const std::string& type, Cell origin) const;
+    bool canPlaceFor(PlayerId actor, const std::string& type, Cell origin) const;
     std::optional<EntityId> construct(std::span<const EntityId> builders, const std::string& type, Cell origin);
+    std::optional<EntityId> constructFor(PlayerId actor, std::span<const EntityId> builders, const std::string& type, Cell origin);
     bool cancelConstruction(EntityId id);
+    bool cancelConstructionFor(PlayerId actor, EntityId id);
     bool train(EntityId buildingId, const std::string& definitionId = {});
+    bool trainFor(PlayerId actor, EntityId buildingId, const std::string& definitionId = {});
     bool cancelTraining(EntityId buildingId, std::optional<size_t> queueIndex = std::nullopt);
+    bool cancelTrainingFor(PlayerId actor, EntityId buildingId, std::optional<size_t> queueIndex = std::nullopt);
     bool setRally(EntityId buildingId, Cell cell);
     void tick();
 private:
     void setMessage(std::wstring message) { message_ = std::move(message); ++messageRevision_; }
     Unit* mutableUnit(EntityId id);
     Building* mutableBuilding(EntityId id);
-    EntityId spawn(const EntityDefinition& definition, Cell cell, bool reserved, PlayerId owner = 0);
+    EntityId spawn(const EntityDefinition& definition, Cell cell, bool reserved, PlayerId owner);
+    PlayerEconomy& mutableEconomy(PlayerId id) { return economies_.at(id); }
+    bool visibleTo(PlayerId id, Cell cell) const;
+    bool crystalVisibleTo(PlayerId id, const Crystal& crystal) const;
     std::vector<Cell> productionExits(const EntityDefinition& building, Cell origin, MovementType movement) const;
     Cell defaultRally(const EntityDefinition& building, Cell origin) const;
     std::vector<Cell> occupied(const Unit& unit, bool claimDestinations = false, bool ignoreGroup = false) const;
@@ -254,7 +268,7 @@ private:
     std::vector<EntityDefinition> entityTypes_;
     std::vector<const EntityDefinition*> buildable_;
     std::shared_ptr<const ProgressionRules> progression_;
-    ArmySupply supply_;
+    std::array<PlayerEconomy, maximumPlayers> economies_;
     WorldClock clock_;
     FogOfWar fog_;
     std::vector<VisionSource> visionSources_;
@@ -270,7 +284,6 @@ private:
     EntityId nextId_ = 10000;
     uint64_t nextMoveGroup_ = 1;
     int combatSearchBudget_ = 8;
-    int stored_{};
     bool heroFallen_{};
     std::uint64_t messageRevision_{};
     std::wstring message_;

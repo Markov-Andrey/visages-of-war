@@ -3,6 +3,90 @@
 namespace rts::tests {
 void economyTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
+    test("Ten player economies reserve supply independently and reject inactive or invalid owners", [] {
+        Scenario scene{Map(40, 24), {1, 1}, {4, 3}, {}};
+        auto worker = fixtureWorker(); worker.cost.supply = 100;
+        for (PlayerId id = 0; id < maximumPlayers; ++id) {
+            scene.slots[id] = {id == 9 ? PlayerSlotState::Player : PlayerSlotState::AI, 100 + id};
+            if (id != 9) scene.units.push_back({worker.id, id, {8 + 2 * id, 10}});
+        }
+        auto game = makeTestSimulation(scene, {9}, worker);
+        require(game.worker().owner == 9 && game.buildings().front().owner == 9 && game.storedCrystals() == 109,
+            "Nonzero local player inherited player zero's entities or funds");
+        for (PlayerId id = 0; id < maximumPlayers; ++id)
+            require(game.storedCrystals(id) == 100 + id && game.armySupply(id).used() == 100, "Player economies share resources or supply");
+        require(!game.train(game.buildings().front().id) && game.storedCrystals() == 109, "Full supply charged a rejected order");
+        auto over = scene; over.units.push_back({worker.id, 3, {35, 18}});
+        mustThrow([&] { makeTestSimulation(over, {9}, worker); });
+        for (auto state : {PlayerSlotState::Empty, PlayerSlotState::Closed}) {
+            auto invalid = scene; invalid.slots[3] = {state, 0};
+            mustThrow([&] { makeTestSimulation(invalid, {9}, worker); });
+        }
+        scene.units.front().owner = 10;
+        mustThrow([&] { makeTestSimulation(scene, {9}, worker); });
+        require(!game.orderFor(10, std::array{game.worker().id}, OrderKind::Stop), "Invalid actor accepted");
+    });
+    test("Direct and delivered harvest credit only the owner's balance", [] {
+        for (const auto credit : {HarvestCredit::Direct, HarvestCredit::Cargo}) {
+            Scenario scene{Map(32, 24), {1, 1}, {5, 5}, {{{8, 5}, 7}, {{23, 15}, 11}}};
+            for (const auto& node : scene.crystals) scene.map.occupy(node.cell);
+            scene.slots[0].startingCrystals = 200; scene.slots[1].startingCrystals = 400;
+            auto worker = gatheringWorker(); worker.gatherAbility->harvest = {credit, 1, 3};
+            worker.trainingTicks = 3;
+            scene.units = {{worker.id, 1, {20, 15}}};
+            auto depot = fixtureDepot(worker); depot.constructionTicks = 1;
+            auto game = makeTestSimulation(scene, {}, worker, {worker, depot});
+            const auto own = game.worker().id, other = game.units().back().id;
+            const auto aiDepot = game.constructFor(1, std::array{other}, depot.id, {18, 12});
+            require(aiDepot.has_value(), "AI owner cannot build its depot");
+            for (int i = 0; i < 400 && !game.building(*aiDepot)->complete(); ++i) game.tick();
+            require(game.building(*aiDepot)->complete(), "AI depot never completed");
+            require(!game.order(std::array{other}, OrderKind::Gather, {23, 15}), "Local commands controlled foreign workers");
+            require(game.order(std::array{own}, OrderKind::Gather, {8, 5}) &&
+                game.orderFor(1, std::array{other}, OrderKind::Gather, {23, 15}), "Harvest order rejected");
+            for (int i = 0; i < 800 && (game.storedCrystals(0) != 207 || game.storedCrystals(1) != 211); ++i) game.tick();
+            require(game.storedCrystals(0) == 207 && game.storedCrystals(1) == 211 &&
+                game.crystals()[0].remaining == 0 && game.crystals()[1].remaining == 0,
+                "Harvest credited the wrong player or lost resources");
+        }
+    });
+    test("Foreign production refunds and destruction never change the local economy", [] {
+        Scenario scene{Map(32, 24), {1, 1}, {5, 5}, {}};
+        scene.slots[0].startingCrystals = 500; scene.slots[1].startingCrystals = 700;
+        auto worker = gatheringWorker(); worker.cost = {75, 2}; worker.trainingTicks = 3;
+        scene.units = {{worker.id, 1, {20, 15}}};
+        auto depot = fixtureDepot(worker); depot.cost = {101, 3}; depot.constructionTicks = 1;
+        auto game = makeTestSimulation(scene, {}, worker, {worker, depot});
+        const auto other = game.units().back().id;
+        auto site = game.constructFor(1, std::array{other}, depot.id, {18, 12});
+        require(site && !game.cancelConstruction(*site) && game.cancelConstructionFor(1, *site), "Foreign construction cancellation ownership failed");
+        require(game.storedCrystals(1) == 649 && game.armySupply(1).used() == 2, "Construction refund or supply is wrong");
+        site = game.constructFor(1, std::array{other}, depot.id, {18, 12});
+        require(site.has_value(), "Cannot rebuild cancelled construction");
+        for (int i = 0; i < 400 && !game.building(*site)->complete(); ++i) game.tick();
+        require(game.building(*site)->complete(), "Foreign production building incomplete");
+        require(!game.train(*site) && game.trainFor(1, *site), "Training ownership failed");
+        require(!game.cancelTraining(*site) && game.cancelTrainingFor(1, *site), "Queue cancellation ownership failed");
+        require(game.storedCrystals(1) == 510 && game.armySupply(1).used() == 5, "Queue refund credited wrong owner");
+        require(game.trainFor(1, *site), "Cannot queue replacement");
+        ticks(game, 4);
+        const auto produced = game.units().back().id;
+        require(game.units().back().owner == 1 && produced != other && game.armySupply(1).used() == 7,
+            "Production changed owner or reserved supply twice");
+        require(game.trainFor(1, *site) && game.trainFor(1, *site), "Cannot fill destruction queue");
+        const auto balance = game.storedCrystals(1);
+        const_cast<Building*>(game.building(*site))->health = 0;
+        const_cast<Unit*>(game.unit(produced))->health = 0;
+        game.tick();
+        require(!game.building(*site) && !game.unit(produced) && game.armySupply(1).used() == 2 && game.storedCrystals(1) == balance,
+            "Foreign destruction refunded crystals or retained supply");
+        ticks(game, 5);
+        require(game.storedCrystals(0) == 500 && game.armySupply(0).used() == 5 && game.armySupply(1).used() == 2,
+            "Foreign transactions changed the local economy or released supply twice");
+        require(!game.trainFor(2, game.buildings().front().id) && !game.cancelTrainingFor(neutralPlayer, game.buildings().front().id),
+            "Inactive slots accepted economic commands");
+    });
+
     test("Novice credits crystals in its work pose without cargo or a route to the depot", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         const auto type = definitions.entity("church.worker");
@@ -79,7 +163,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.command(ids, {15,8}), "Direct group gather rejected");
         for (int i = 0; i < 2200; ++i) {
             game.tick();
-            int total = game.storedCrystals(); for (const auto& node : game.crystals()) total += node.remaining;
+            auto total = game.storedCrystals(); for (const auto& node : game.crystals()) total += node.remaining;
             for (const auto& u : game.units()) require(u.cargo == 0 && u.state != UnitState::ToHall &&
                 u.gatherOriginCrystal == 0 && u.targetCrystal != 1, "Direct gathering returned cargo or drifted to another field");
             require(total == 1016, "Concurrent harvesting lost or duplicated reserves");
@@ -217,7 +301,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         annex.width = annex.height = 1; annex.cost = {75, 0}; annex.constructionMode = ConstructionMode::Worker;
         types.push_back(annex);
 
-        auto s = flatScenario(); s.startingCrystals = 500;
+        auto s = flatScenario(); s.slots[0].startingCrystals = 500;
         rts::Simulation game(std::move(s), {}, definitions.entity("church.worker"), std::move(types), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array<rts::EntityId, 1> ids{game.worker().id};
         require(!game.construct(ids, "church.barracks", {4, 3}), "Built on worker");
@@ -244,7 +328,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     });
     test("Summoning requires initiation, frees the worker and preserves duration and damage", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
-        auto s = flatScenario(); s.startingCrystals = 500;
+        auto s = flatScenario(); s.slots[0].startingCrystals = 500;
         Simulation game(std::move(s), {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array ids{game.worker().id};
         const auto site = game.construct(ids, "church.barracks", {5, 3});
@@ -288,7 +372,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     });
     test("Summoning cancellation before initiation refunds half and destruction never refunds", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
-        auto s = flatScenario(); s.startingCrystals = 500;
+        auto s = flatScenario(); s.slots[0].startingCrystals = 500;
         Simulation game(std::move(s), {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array ids{game.worker().id};
         const auto pending = game.construct(ids, "church.barracks", {5, 3});
@@ -313,7 +397,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto types = definitions.entities();
         auto annex = definitions.entity("church.hall"); annex.id = "test.annex";
         annex.width = annex.height = 1; annex.cost = {75, 99}; types.push_back(annex);
-        auto s = flatScenario(); s.startingCrystals = 500;
+        auto s = flatScenario(); s.slots[0].startingCrystals = 500;
         rts::Simulation game(std::move(s), {}, definitions.entity("church.worker"), std::move(types), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array<rts::EntityId, 1> ids{game.worker().id};
         const auto extra = game.construct(ids, annex.id, {3, 5});
@@ -329,7 +413,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(!game.cancelConstruction(*extra) && game.storedCrystals() == 462, "Cancellation refunded twice");
     });
     test("Production skips cliffs, ramps, obstacles and incompatible water in perimeter order", [] {
-        auto s = flatScenario(); s.startingCrystals = 100;
+        auto s = flatScenario(); s.slots[0].startingCrystals = 100;
         s.map.at({1, 3}).height = -1;
         s.map.at({2, 3}).ramp = {0, 1};
         s.map.at({3, 3}).height = 1;
@@ -346,7 +430,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Production reserves supply, refunds cancellation and follows per-building rally", [&] {
         auto definitions = rts::Definitions::load(assets / "data/catalog.json");
 
-        auto s = flatScenario(); s.startingCrystals = 500;
+        auto s = flatScenario(); s.slots[0].startingCrystals = 500;
         rts::Simulation game(std::move(s), {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const auto hall = game.buildings()[0].id;
         const std::array<rts::EntityId, 1> ids{game.worker().id};
@@ -368,7 +452,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(!game.setRally(*barracks, {7, 7}), "Rally accepted blocked crystal");
     });
     test("Completed production waits for a blocked exit and can still be cancelled", [] {
-        auto s = flatScenario(); s.startingCrystals = 300; s.worker = {1, 0};
+        auto s = flatScenario(); s.slots[0].startingCrystals = 300; s.worker = {1, 0};
         for (rts::Cell c : rts::perimeter(s.map, s.hall, 3, 2)) if (c != s.worker) s.map.at(c).blocked = true;
         auto game = makeTestSimulation(std::move(s));
         const auto hall = game.buildings()[0].id;
@@ -382,20 +466,20 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.units().size() == 2 && game.armySupply().used() == 2, "Production did not resume after exit cleared");
     });
     test("Queue limit and hard supply cap reject without consuming crystals", [] {
-        auto s = flatScenario(); s.startingCrystals = 1000;
+        auto s = flatScenario(); s.slots[0].startingCrystals = 1000;
         rts::EntityDefinition type; type.cost.supply = 20;
         auto game = makeTestSimulation(std::move(s), {}, type);
         const auto hall = game.buildings()[0].id;
         for (int i = 0; i < 4; ++i) require(game.train(hall), "Could not reserve full army");
-        const int balance = game.storedCrystals();
+        const auto balance = game.storedCrystals();
         require(!game.train(hall) && game.armySupply().used() == 100 && game.storedCrystals() == balance, "Army exceeded 100 or failed order charged");
         require(game.cancelTraining(hall) && game.train(hall), "Released supply not reusable");
-        auto normal = flatScenario(); normal.startingCrystals = 1000;
+        auto normal = flatScenario(); normal.slots[0].startingCrystals = 1000;
         auto queued = makeTestSimulation(std::move(normal));
         const auto depot = queued.buildings()[0].id;
-        const int initialBalance = queued.storedCrystals(), initialSupply = queued.armySupply().used();
+        const auto initialBalance = queued.storedCrystals(); const int initialSupply = queued.armySupply().used();
         for (int i = 0; i < 10; ++i) require(queued.train(depot), "Queue rejected available slot");
-        const int fullBalance = queued.storedCrystals(), fullSupply = queued.armySupply().used();
+        const auto fullBalance = queued.storedCrystals(); const int fullSupply = queued.armySupply().used();
         require(!queued.train(depot) && queued.building(depot)->production.size() == 10, "Queue exceeded ten slots");
         require(queued.storedCrystals() == fullBalance && queued.armySupply().used() == fullSupply, "Full queue rejection consumed resources");
         require(queued.cancelTraining(depot) && queued.train(depot), "Tenth queue slot could not be reused");
@@ -404,7 +488,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             queued.armySupply().used() == initialSupply, "Full queue cancellation did not refund resources");
     });
     test("Indexed cancellation removes only the chosen job, refunds half and preserves other progress", [] {
-        auto scene = flatScenario(); scene.startingCrystals = 1000;
+        auto scene = flatScenario(); scene.slots[0].startingCrystals = 1000;
         EntityDefinition worker; worker.cost = {75, 1};
         auto second = worker; second.id = "test.second"; second.cost = {40, 2};
         auto third = worker; third.id = "test.third"; third.cost = {60, 3};

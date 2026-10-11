@@ -15,6 +15,31 @@ inline constexpr int simulationTicksPerSecond = 30;
 using EntityId = std::uint32_t;
 using PlayerId = std::uint8_t;
 inline constexpr PlayerId neutralPlayer = 255;
+inline constexpr size_t maximumPlayers = 10;
+enum class PlayerSlotState { Empty, Closed, Player, AI };
+struct PlayerSlot {
+    PlayerSlotState state = PlayerSlotState::Empty;
+    int startingCrystals{};
+    bool active() const { return state == PlayerSlotState::Player || state == PlayerSlotState::AI; }
+    bool operator==(const PlayerSlot&) const = default;
+};
+using PlayerSlots = std::array<PlayerSlot, maximumPlayers>;
+// One local player and scripted opponents in the prototype's default map setup.
+inline PlayerSlots defaultPlayerSlots() {
+    PlayerSlots slots{};
+    slots[0].state = PlayerSlotState::Player;
+    slots[1].state = PlayerSlotState::AI;
+    return slots;
+}
+inline void validatePlayerSlots(const PlayerSlots& slots) {
+    for (const auto& slot : slots) {
+        if (slot.state != PlayerSlotState::Empty && slot.state != PlayerSlotState::Closed &&
+            slot.state != PlayerSlotState::Player && slot.state != PlayerSlotState::AI)
+            throw std::invalid_argument("Invalid player slot state");
+        if (slot.startingCrystals < 0 || slot.startingCrystals > 1000000 || (!slot.active() && slot.startingCrystals != 0))
+            throw std::invalid_argument("Invalid player starting resources");
+    }
+}
 enum class TeamColor {
     Blue, Red, Green, Purple, Orange, Cyan,
     Gold, Yellow, Lime, Emerald, Mint, Teal,
@@ -58,6 +83,10 @@ private:
     int used_{};
 };
 struct HeroDefinition { int healthPerLevel = 40; int damagePerLevel = 4; };
+struct PlayerEconomy {
+    std::int64_t crystals{};
+    ArmySupply supply;
+};
 struct ProgressionRules {
     int experienceRadius = 8;
     int experiencePerVictimLevel = 50;

@@ -40,8 +40,10 @@ surfaces = [['L'] * WIDTH for _ in range(HEIGHT)]
 ramps, occupied, reserved = {}, set(), set()
 scenario = {'format': 'rts-world', 'name': 'Sunny Hills - Vineyard Village & Asset Bench',
             'size': [WIDTH, HEIGHT],
+            'slots': [{'state': 'player' if i == 0 else 'ai' if i == 1 else 'empty',
+                       'crystals': 1500 if i == 0 else 0} for i in range(10)],
             'start': {'hall': [16, 28], 'workers': [[18, 33], [19, 33], [20, 33]],
-                      'hero': [21, 34], 'crystals': 1500},
+                      'hero': [21, 34]},
             'terrain': {}, 'paint': [], 'environment': [], 'decorations': [], 'resources': [], 'units': []}
 next_id = 1000
 

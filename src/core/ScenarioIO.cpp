@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iomanip>
 #include <set>
+#include <algorithm>
 #include <stdexcept>
 
 namespace rts {
@@ -56,7 +57,7 @@ void rebuildScenario(Scenario& s, Cell hallFootprint) {
     if (hallFootprint != Cell{}) s.hallFootprint = hallFootprint;
     auto& m = s.map;
     m.clearOccupancy();
-    if (s.playerSlots != 1 || s.startingCrystals < 0 || s.startingCrystals > 1000000) throw std::runtime_error("Invalid map player settings");
+    validatePlayerSlots(s.slots);
     for (int y = 0; y < m.height(); ++y) for (int x = 0; x < m.width(); ++x) {
         const Cell c{x,y}; const auto& t = m.at(c);
         if (t.height < -1 || t.height > 3) throw std::runtime_error("Terrain height must be in [-1, 3]");
@@ -83,7 +84,7 @@ void rebuildScenario(Scenario& s, Cell hallFootprint) {
     for (const auto c : [&] { auto cells=s.extraWorkers; cells.push_back(s.worker); return cells; }())
         if (!m.walkable(c, MovementType::Amphibious) || !workers.insert({c.x,c.y}).second) throw std::runtime_error("Invalid worker spawn");
     if (s.heroSpawn && !m.playable(*s.heroSpawn)) throw std::runtime_error("Hero spawn outside map");
-    for (const auto& u : s.units) if (!m.playable(u.cell) || u.owner >= neutralPlayer || u.definitionId.empty()) throw std::runtime_error("Invalid unit spawn");
+    for (const auto& u : s.units) if (!m.playable(u.cell) || (u.owner >= maximumPlayers || !s.slots[u.owner].active()) || u.definitionId.empty()) throw std::runtime_error("Invalid unit spawn");
     for (const auto& d : s.landscape.decorations) {
         validateDecoration(m,d);
         if (!ids.insert(d.id).second) throw std::runtime_error("Invalid decoration placement");
@@ -112,7 +113,19 @@ Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& asse
         s.map = std::move(map);
     }
     s.name = j.at("name").get<std::string>();
-    s.startingCrystals = j.at("start").at("crystals").get<int>();
+    const auto& slots = j.at("slots");
+    if (!slots.is_array() || slots.size() != maximumPlayers) throw std::runtime_error("Map requires exactly ten player slots");
+    constexpr std::array<std::string_view, 4> states{"empty", "closed", "player", "ai"};
+    for (size_t i = 0; i < maximumPlayers; ++i) {
+        const auto state = slots[i].at("state").get<std::string>();
+        const auto found = std::find(states.begin(), states.end(), state);
+        if (found == states.end()) throw std::runtime_error("Unknown player slot state");
+        const auto& crystals = slots[i].at("crystals");
+        if (!crystals.is_number_integer() || crystals < 0 || crystals > 1000000)
+            throw std::runtime_error("Invalid player starting resources");
+        s.slots[i] = {static_cast<PlayerSlotState>(found - states.begin()), crystals.get<int>()};
+    }
+    validatePlayerSlots(s.slots);
     const auto& workers = j.at("start").at("workers");
     if (workers.empty()) throw std::runtime_error("Map requires a starting worker");
     s.worker = cell(workers[0]);
@@ -155,7 +168,11 @@ Scenario loadScenario(const std::filesystem::path& path, const WorldAssets& asse
         s.crystals.push_back(std::move(node));
     }
     for (const auto& u : j.at("units")) {
-        const int owner=u.at("owner").get<int>(); if (owner<0 || owner>=neutralPlayer) throw std::runtime_error("Invalid unit owner");
+        const auto& ownerValue = u.at("owner");
+        if (!ownerValue.is_number_integer() || ownerValue < 0 || ownerValue >= maximumPlayers)
+            throw std::runtime_error("Invalid unit owner");
+        const int owner=ownerValue.get<int>();
+        if (!s.slots[owner].active()) throw std::runtime_error("Unit owner requires an active player slot");
         s.units.push_back({u.at("asset").get<std::string>(),static_cast<PlayerId>(owner),cell(u.at("cell"))});
     }
     rebuildScenario(s, hallFootprint); return s;
@@ -164,7 +181,11 @@ void saveScenario(const Scenario& s, const std::filesystem::path& path) {
     auto checked=s; rebuildScenario(checked);
     Json j{{"format","rts-world"},{"name",s.name},{"size",Json::array({s.map.width(),s.map.height()})}};
     if (s.map.layoutSize() != Cell{}) j["layoutSize"] = xy(s.map.layoutSize());
-    auto& start=j["start"]; start["hall"]=xy(s.hall); start["crystals"]=s.startingCrystals;
+    constexpr std::array<std::string_view, 4> states{"empty", "closed", "player", "ai"};
+    j["slots"] = Json::array();
+    for (const auto& slot : s.slots)
+        j["slots"].push_back({{"state", states[static_cast<size_t>(slot.state)]}, {"crystals", slot.startingCrystals}});
+    auto& start=j["start"]; start["hall"]=xy(s.hall);
     start["workers"]=Json::array({xy(s.worker)}); for(auto c:s.extraWorkers) start["workers"].push_back(xy(c));
     start["hero"]=s.heroSpawn ? xy(*s.heroSpawn) : Json(nullptr);
     auto& terrain=j["terrain"]; terrain["base"]=s.landscape.baseMaterial;

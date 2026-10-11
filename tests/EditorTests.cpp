@@ -7,6 +7,22 @@ void editorTests(TestSuite& test, const TestContext& context) {
     const auto& worldPaths=context.worldPaths;
     const auto& worldAssets=context.worldAssets;
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
+    test("Map slots reject invalid counts states resources and owners", [&] {
+        const auto file = worldPaths.writable(L"invalid-player-slots.rtsmap");
+        const auto check = [&](auto mutate) { auto j=mapJson(); mutate(j); writeMap(file,j); mustThrow([&] { loadScenario(file); }); };
+        check([](auto& j) { j["slots"].erase(9); });
+        check([](auto& j) { j["slots"].push_back(j["slots"][0]); });
+        check([](auto& j) { j["slots"][0]["state"]="unknown"; });
+        check([](auto& j) { j["slots"][0]["crystals"]=-1; });
+        check([](auto& j) { j["slots"][0]["crystals"]=1.5; });
+        check([](auto& j) { j["slots"][0]["crystals"]=1000001; });
+        check([](auto& j) { j["slots"][2]["crystals"]=10; });
+        check([](auto& j) { j["units"].push_back({{"asset","church.worker"},{"owner",0.5},{"cell",{4,3}}}); });
+        for (const auto owner : {2, 10, 255, -1}) check([&](auto& j) {
+            j["units"].push_back({{"asset","church.worker"},{"owner",owner},{"cell",{4,3}}});
+        });
+        check([](auto& j) { j["slots"][1]["state"]="closed"; j["units"].push_back({{"asset","church.worker"},{"owner",1},{"cell",{4,3}}}); });
+    });
     test("Rectangular map saves its crop and rejects footprints crossing partial diamonds", [&] {
         const auto definitions=rts::Definitions::load(assets/"data/catalog.json");
         rts::Scenario scenario{rts::Map::rectangular(64,96),{55,55},{60,60},{}};
@@ -31,7 +47,9 @@ void editorTests(TestSuite& test, const TestContext& context) {
         mustThrow([&] { rts::rebuildScenario(invalid); });
     });
     test("Authored map round trips all landscape layers and preserves files on invalid save", [&] {
-        rts::Scenario s{rts::Map(24,24),{1,1},{4,3},{}}; s.name="Поляна — тест"; s.heroSpawn=rts::Cell{5,3}; s.startingCrystals=300;
+        rts::Scenario s{rts::Map(24,24),{1,1},{4,3},{}}; s.name="Поляна — тест"; s.heroSpawn=rts::Cell{5,3}; s.slots[0].startingCrystals=300;
+        s.slots[1].startingCrystals=700; s.slots[2].state=PlayerSlotState::Closed;
+        s.slots[9]={PlayerSlotState::Player,900};
         for(int y=0;y<24;++y) for(int x=16;x<24;++x) s.map.at({x,y}).height=1;
         for(int y=10;y<=12;++y) s.map.at({15,y}).ramp={1,0};
         s.map.at({5,18})={-1,false,{},rts::Surface::ShallowWater}; s.map.at({6,18})={-1,false,{},rts::Surface::DeepWater};
@@ -45,6 +63,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
         rts::rebuildScenario(s, context.hallFootprint);
         const auto file=worldPaths.writable(L"карты с пробелами/Лесная поляна.rtsmap");
         rts::saveScenario(s,file); const auto loaded=loadScenario(file);
+        require(loaded.slots==s.slots, "Player slots or individual starting balances changed after saving");
         require(loaded.name==s.name && loaded.landscape.baseMaterial=="dark_grass" && loaded.landscape.paint==s.landscape.paint,"Terrain paint changed after saving");
         const auto& d=loaded.landscape.decorations.front();
         require(d.id==1700 && d.position==s.landscape.decorations[0].position && d.rotation==35 && d.scale==.7f,"Free decoration transform changed");
@@ -75,7 +94,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
         const auto loaded = rts::loadScenario(file, worldAssets, {4, 3});
         require(loaded.hallFootprint == rts::Cell{4, 3} && loaded.map.occupancy({13, 12}) == 1, "Map reload lost catalog footprint");
         std::ifstream input(file); const auto document = Json::parse(input);
-        require(document.at("start").size() == 4 && !document.contains("hallFootprint"), "Derived depot dimensions leaked into the authored map");
+        require(document.at("start").size() == 3 && !document.contains("hallFootprint"), "Derived depot dimensions leaked into the authored map");
         fixture.entities["entities"][3]["construction"]["footprint"] = {3, 2};
         const auto smaller = fixture.load(); editor.reloadDefinitions(worldAssets, smaller);
         require(editor.scenario().map.walkable({13, 12}) && editor.scenario().map.occupancy({12, 11}) == 1, "Catalog reload retained larger collision");

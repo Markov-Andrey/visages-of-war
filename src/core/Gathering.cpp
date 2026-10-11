@@ -3,7 +3,7 @@
 
 namespace rts {
 void Simulation::harvest(Unit& u) {
-    if (u.state != UnitState::Harvesting || u.targetCrystal < 0 || !u.definition.canGather()) return;
+    if (!activePlayer(u.owner) || u.state != UnitState::Harvesting || u.targetCrystal < 0 || !u.definition.canGather()) return;
     auto& crystal = scenario_.crystals[static_cast<size_t>(u.targetCrystal)];
     const auto ability = u.definition.harvesting();
     const bool direct = ability.credit == HarvestCredit::Direct;
@@ -12,7 +12,7 @@ void Simulation::harvest(Unit& u) {
         const int amount = std::min({ability.amount, crystal.remaining,
             direct ? crystal.remaining : std::max(0, u.definition.carryCapacity - u.cargo)});
         crystal.remaining -= amount;
-        if (direct) { if (u.owner == player_.id) stored_ += amount; }
+        if (direct) mutableEconomy(u.owner).crystals += amount;
         else u.cargo += amount;
         if (crystal.remaining == 0)
             for (int y = 0; y < crystal.height; ++y) for (int x = 0; x < crystal.width; ++x)
@@ -58,7 +58,8 @@ bool Simulation::seekCrystal(Unit& u) {
     };
     std::vector<size_t> candidates;
     for (size_t i = 0; i < crystals().size(); ++i)
-        if (crystals()[i].remaining > 0 && (int(i) == u.gatherOriginCrystal || knownCrystals_[i] > 0) &&
+        if (crystals()[i].remaining > 0 && (int(i) == u.gatherOriginCrystal ||
+            (u.owner == player_.id ? knownCrystals_[i] > 0 : crystalVisibleTo(u.owner, crystals()[i]))) &&
             distance(i) <= neighborRadius * neighborRadius) candidates.push_back(i);
     std::sort(candidates.begin(), candidates.end(), [&](size_t a, size_t b) {
         return distance(a) != distance(b) ? distance(a) < distance(b) : a < b;

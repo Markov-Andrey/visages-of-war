@@ -142,7 +142,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
             else require(game.worker().cell == rts::Cell{12, 5}, "Non-walker did not cross deep water");
             if (movement == M::Flying) require(game.unitHeight(game.worker()) == 5, "Flight altitude follows cliffs");
         }
-        auto s = flatScenario(); s.startingCrystals = 100; s.worker = {5, 3};
+        auto s = flatScenario(); s.slots[0].startingCrystals = 100; s.worker = {5, 3};
         for (int y = 0; y < 10; ++y) s.map.at({4, y}).surface = S::ShallowWater;
         rts::EntityDefinition ship; ship.id = "test.ship"; ship.movement = M::Swimming; ship.canBuild = false; ship.trainingTicks = 1;
         auto dock = testDepot("dock", ship.id);
@@ -155,7 +155,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         require(game.units().size() == 2 && game.units()[1].cell == rts::Cell{4, 6}, "Ship did not spawn in water and reach rally");
     });
     test("Flying units share ground cells but reserve their own flight layer", [] {
-        auto s = flatScenario(); s.startingCrystals = 100;
+        auto s = flatScenario(); s.slots[0].startingCrystals = 100;
         rts::EntityDefinition flyer; flyer.id = "test.fly"; flyer.movement = rts::MovementType::Flying; flyer.trainingTicks = 1;
         auto hall = testDepot("hall", flyer.id);
         auto game = makeTestSimulation(std::move(s), {}, {}, {hall, rts::EntityDefinition{}, flyer});

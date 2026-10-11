@@ -36,7 +36,7 @@
 - Keep terrain/base material, free texture paint, and placed objects separate. Paint and fractional-position cosmetic decorations never alter navigation or sight.
 - World assets come from assets/world/catalog.json; extend data catalogs instead of adding per-asset switches. Paths must resolve relative to executable assets.
 - Editor undo is per stroke. Rebuild derived occupancy/vision after object edits; serialize IDs and transforms, not render caches.
-- The test map has exactly one player slot and selectable team color. Select commanders from a data catalog; race is a commander attribute, not a hardcoded gameplay switch.
+- Maps have ten authored slots (empty, closed, player, AI); only active player/AI slots own entities and independent economies. The prototype UI controls one local player with selectable team color. Select commanders from a data catalog; race is a commander attribute, not a hardcoded gameplay switch.
 - Army supply has a hard maximum of 100; keep resource balance separate.
 - Day/night is a simulation clock with phase-change events, independent of lighting.
 - Keep commander meta-progression separate from in-match hero progression. Future abilities, passives, auras and items use shared effect systems; see docs/GAME_SYSTEMS.md.

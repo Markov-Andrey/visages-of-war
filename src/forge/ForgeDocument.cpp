@@ -89,7 +89,7 @@ void ForgeApplication::editorAction(size_t action) {
             const Cell hall=middle-Cell{depot.width/2,depot.height/2};
             const Cell worker=hall+Cell{depot.width+1,depot.height/2};
             rts::Scenario blank{std::move(map),hall,worker,{}};
-            blank.heroSpawn=worker+Cell{0,2}; blank.startingCrystals=300;
+            blank.heroSpawn=worker+Cell{0,2}; blank.slots[0].startingCrystals=300;
             editor_->replace(std::move(blank)); editor_->file.clear(); editor_->dirty=true; resetCamera();
         }
         if(action==2 && confirmEditorChanges()) {

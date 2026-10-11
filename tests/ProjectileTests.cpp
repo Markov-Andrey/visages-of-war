@@ -41,7 +41,7 @@ void projectileTests(TestSuite& test, const TestContext&) {
     test("Destruction loses the whole queue without refunds and releases its reserved supply once", [] {
         auto gun = weapon(ProjectileTargeting::Point); gun.attackDamage = 2000;
         gun.projectile->friendlyFire = true; gun.projectile->splashRadius = .2f;
-        auto scene = range(); scene.startingCrystals = 1000;
+        auto scene = range(); scene.slots[0].startingCrystals = 1000;
         auto game = makeTestSimulation(std::move(scene), {}, gun, {gun});
         const auto hall = game.buildings().front().id;
         const Cell origin = game.buildings().front().origin;
@@ -52,7 +52,7 @@ void projectileTests(TestSuite& test, const TestContext&) {
         for (int i = 0; i < 10; ++i) require(game.train(hall), "Could not fill destruction queue");
         auto& jobs = const_cast<Building&>(*game.building(hall)).production;
         jobs.front().remainingTicks = 0; // Even a ready job must not spawn after destruction this tick.
-        const int balance = game.storedCrystals();
+        const auto balance = game.storedCrystals();
         require(game.armySupply().used() == 11, "Queue supply fixture wrong");
         game.takeEvents(); game.tick();
         require(!game.building(hall) && game.units().size() == 1 && game.storedCrystals() == balance && game.armySupply().used() == 1,
@@ -73,7 +73,7 @@ void projectileTests(TestSuite& test, const TestContext&) {
         gun.projectile->friendlyFire = true; gun.projectile->splashRadius = .2f;
         auto builder = dummy(); builder.canBuild = true;
         EntityDefinition structure; structure.id = "test.structure"; structure.mobile = false; structure.constructible = true; structure.cost = {75, 3}; structure.constructionTicks = 200;
-        auto scene = range(); scene.startingCrystals = 1000; scene.units = {{builder.id, 0, {6, 6}}};
+        auto scene = range(); scene.slots[0].startingCrystals = 1000; scene.units = {{builder.id, 0, {6, 6}}};
         auto game = makeTestSimulation(std::move(scene), {}, gun, {gun, builder, structure});
         const auto builderId = game.units().back().id;
         const auto site = game.construct(std::array{builderId}, structure.id, {7, 7});

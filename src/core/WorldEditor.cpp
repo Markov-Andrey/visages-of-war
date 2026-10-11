@@ -152,6 +152,8 @@ bool WorldEditor::applyOne(Vec2 p) {
         } else if(tool==EditorTool::Unit) {
             const auto& d=definitions_->entity(id);
             if(!s.map.walkable(c,d.movement)) throw std::runtime_error("Unit cannot stand on this surface");
+            if (owner < 0 || owner >= maximumPlayers || !s.slots[owner].active())
+                throw std::runtime_error("Unit owner requires an active player slot");
             s.units.push_back({id,static_cast<PlayerId>(owner),c}); changed=true;
         } else if(tool==EditorTool::Start) {
             if(id=="hall") s.hall=c; else if(id=="worker") s.worker=c; else s.heroSpawn=c; changed=true;

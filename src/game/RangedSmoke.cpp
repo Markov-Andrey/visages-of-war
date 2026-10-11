@@ -28,7 +28,7 @@ void GameApplication::exerciseRangedCombat() {
     if (game_.unit(enemy)->health >= 10000 - 45) throw std::runtime_error("Ranged smoke: no projectile damage");
     rts::Scenario training{rts::Map(32,32),{10,10},{12,14},{}};
     training.units = {{"church.flying_soldier",0,{12,17}}};
-    training.startingCrystals = 1000;
+    training.slots[0].startingCrystals = 1000;
     types = definitions_.entities();
     for (auto& d : types) if (d.id == "church.barracks") d.constructionTicks = 1;
     game_ = rts::Simulation(std::move(training),menu_.player,definitions_.entity("church.worker"),std::move(types), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);

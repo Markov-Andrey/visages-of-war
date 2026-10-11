@@ -84,10 +84,9 @@ struct Scenario {
     Cell worker;
     std::vector<Crystal> crystals;
     std::vector<EnvironmentObject> environment;
-    int playerSlots = 1;
+    PlayerSlots slots = defaultPlayerSlots();
     std::vector<Cell> extraWorkers;
-    int startingCrystals{};
-    std::vector<UnitSpawn> units; // Includes scripted hostile forces, independent of playable slots.
+    std::vector<UnitSpawn> units; // Owners must reference active player/AI slots.
     std::optional<Cell> heroSpawn; // Uses the selected commander's hero definition.
     Landscape landscape;
     std::string name = "Новая карта";

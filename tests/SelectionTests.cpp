@@ -71,7 +71,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             selection.click(game, view, point, true);
             require(selection.ids == std::vector{building.id} && rts::selectableEntity(game, building.id), "Foreign building did not replace army selection");
             const auto rally = building.rally;
-            const int balance = game.storedCrystals();
+            const auto balance = game.storedCrystals();
             require(!game.train(building.id) && !game.setRally(building.id, {10, 10}) && !game.cancelTraining(building.id),
                 "Foreign building accepted production or rally control");
             require(building.rally == rally && game.storedCrystals() == balance && building.production.empty(), "Foreign building command changed state");

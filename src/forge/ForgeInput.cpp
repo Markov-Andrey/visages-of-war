@@ -36,7 +36,12 @@ void ForgeApplication::editorValue(int step) {
     using T=rts::EditorTool;
     if(editor_->tool==T::Paint || editor_->tool==T::ErasePaint) editor_->hardness=std::clamp(editor_->hardness+step*.1f,0.0f,1.0f);
     else if(editor_->tool==T::Decoration) editor_->scale=std::clamp(editor_->scale+step*.1f,.1f,8.0f);
-    else if(editor_->tool==T::Unit) editor_->owner=1-editor_->owner;
+    else if(editor_->tool==T::Unit) {
+        for (int i=1;i<=int(maximumPlayers);++i) {
+            const int candidate=(editor_->owner+(step>0?i:-i)+int(maximumPlayers))%int(maximumPlayers);
+            if(editor_->scenario().slots[candidate].active()) { editor_->owner=candidate; break; }
+        }
+    }
     else if(editor_->tool==T::Ramp) editor_->direction=(editor_->direction+step+4)%4;
     else editor_->height=std::clamp(editor_->height+step,-1,3);
 }

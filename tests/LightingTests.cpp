@@ -16,7 +16,7 @@ struct RendererLightingTest {
         properties.dpiX = properties.dpiY = 96;
         check(renderer.factory_->CreateWicBitmapRenderTarget(output.Get(), properties, renderer.target_.GetAddressOf()));
         renderer.loadResources(); renderer.validateCombatAssets(definitions);
-        Scenario site{Map(32, 32), {12, 15}, {17, 14}, {}}; site.startingCrystals = 1000;
+        Scenario site{Map(32, 32), {12, 15}, {17, 14}, {}}; site.slots[0].startingCrystals = 1000;
         Simulation game(site, {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array builders{game.worker().id};
         const auto corps = game.construct(builders, "church.barracks", {17, 10});

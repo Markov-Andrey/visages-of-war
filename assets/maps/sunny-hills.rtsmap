@@ -5,6 +5,7 @@
     112,
     112
   ],
+  "slots": [{"state": "player", "crystals": 1500}, {"state": "ai", "crystals": 0}, {"state": "empty", "crystals": 0}, {"state": "empty", "crystals": 0}, {"state": "empty", "crystals": 0}, {"state": "empty", "crystals": 0}, {"state": "empty", "crystals": 0}, {"state": "empty", "crystals": 0}, {"state": "empty", "crystals": 0}, {"state": "empty", "crystals": 0}],
   "start": {
     "hall": [
       36,
@@ -27,8 +28,7 @@
     "hero": [
       45,
       71
-    ],
-    "crystals": 1500
+    ]
   },
   "terrain": {
     "base": "sunny_hills_ink.meadow",
