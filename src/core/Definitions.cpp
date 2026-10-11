@@ -58,10 +58,16 @@ EntityDefinition parseEntity(const Json& j) {
     else if (movement == "amphibious") e.movement = MovementType::Amphibious;
     else if (movement == "flying") e.movement = MovementType::Flying;
     else throw std::runtime_error("Unknown movement type: " + movement);
-    const auto& worker = j.at("worker"); fields(worker, {"builder", "carryCapacity"});
+    const auto& worker = j.at("worker"); fields(worker, {"builder", "carryCapacity"}, {"gatherAbility"});
     e.canBuild = worker.at("builder").get<bool>(); e.carryCapacity = number(worker.at("carryCapacity"), 0, 1000000);
-    const auto& construction = j.at("construction"); fields(construction, {"enabled", "ticks", "footprint"});
+    const auto& construction = j.at("construction"); fields(construction, {"enabled", "ticks", "footprint"}, {"mode"});
     e.constructible = construction.at("enabled").get<bool>(); e.constructionTicks = number(construction.at("ticks"), 1, 1000000);
+    if (construction.contains("mode")) {
+        const auto mode = string(construction.at("mode"));
+        if (mode == "worker") e.constructionMode = ConstructionMode::Worker;
+        else if (mode == "summoning") e.constructionMode = ConstructionMode::Summoning;
+        else throw std::runtime_error("Unknown construction mode: " + mode);
+    }
     const auto& footprint = construction.at("footprint");
     if (!footprint.is_array() || footprint.size() != 2) throw std::runtime_error("Footprint must contain width and height");
     e.width = number(footprint[0], 1, 8); e.height = number(footprint[1], 1, 8);
@@ -121,10 +127,23 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     fields(abilities, {"version", "abilities"}); version(abilities);
     if (!abilities.at("abilities").is_array()) throw std::runtime_error("Expected ability array");
     for (const auto& j : abilities.at("abilities")) {
-        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks"});
-        if (string(j.at("targeting")) != "none") throw std::runtime_error("Only immediate untargeted abilities are implemented");
+        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks"}, {"harvest"});
+        const bool gathering = j.contains("harvest");
+        if (string(j.at("targeting")) != (gathering ? "crystal" : "none"))
+            throw std::runtime_error("Harvest abilities target crystals; immediate abilities use none");
         AbilityDefinition ability{number(j.at("id"), 1, 1000000), string(j.at("name")), string(j.at("description")),
-            number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), 1, 1000000)};
+            number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), gathering ? 0 : 1, 1000000)};
+        if (gathering) {
+            if (ability.manaCost || ability.cooldownTicks) throw std::runtime_error("Harvest uses its interval, without mana or activation cooldown");
+            const auto& h = j.at("harvest"); fields(h, {"credit", "intervalTicks", "amount"});
+            HarvestDefinition harvest;
+            const auto credit = string(h.at("credit"));
+            if (credit == "direct") harvest.credit = HarvestCredit::Direct;
+            else if (credit != "cargo") throw std::runtime_error("Unknown harvest credit mode: " + credit);
+            harvest.intervalTicks = number(h.at("intervalTicks"), 1, 1000000);
+            harvest.amount = number(h.at("amount"), 1, 1000000);
+            ability.harvest = harvest;
+        }
         for (const auto& previous : result.abilities_) if (previous.id == ability.id) throw std::runtime_error("Duplicate ability ID");
         result.abilities_.push_back(std::move(ability));
     }
@@ -149,6 +168,14 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         for (const auto& j : content.at("entities")) {
             try {
                 auto entity = parseEntity(j);
+                const auto& worker = j.at("worker");
+                if (worker.contains("gatherAbility")) {
+                    entity.gatherAbility = result.ability(number(worker.at("gatherAbility"), 1, 1000000));
+                    if (!entity.mobile || !entity.gatherAbility->harvest)
+                        throw std::runtime_error("gatherAbility requires a mobile unit and a harvest ability");
+                    if (entity.harvesting().credit == HarvestCredit::Cargo && entity.carryCapacity == 0)
+                        throw std::runtime_error("Cargo harvesting requires positive carryCapacity");
+                }
                 if (j.contains("abilities")) {
                     const auto& ids = j.at("abilities");
                     if (!ids.is_array() || ids.size() > 3 || (!entity.mobile && !ids.empty()))
@@ -157,7 +184,9 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
                     for (const auto& value : ids) {
                         const int id = number(value, 1, 1000000);
                         if (!unique.insert(id).second) throw std::runtime_error("Duplicate unit ability");
-                        entity.abilities.push_back(result.ability(id));
+                        const auto& ability = result.ability(id);
+                        if (ability.harvest) throw std::runtime_error("Assign harvesting through worker.gatherAbility, not active ability slots");
+                        entity.abilities.push_back(ability);
                     }
                 }
                 entity.factionName = result.faction(entity.factionId).displayName;

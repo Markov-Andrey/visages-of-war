@@ -2,6 +2,26 @@
 #include <algorithm>
 
 namespace rts {
+void Simulation::harvest(Unit& u) {
+    if (u.state != UnitState::Harvesting || u.targetCrystal < 0 || !u.definition.canGather()) return;
+    auto& crystal = scenario_.crystals[static_cast<size_t>(u.targetCrystal)];
+    const auto ability = u.definition.harvesting();
+    const bool direct = ability.credit == HarvestCredit::Direct;
+    if (crystal.remaining > 0 && ++u.harvestTicks >= ability.intervalTicks) {
+        u.harvestTicks = 0;
+        const int amount = std::min({ability.amount, crystal.remaining,
+            direct ? crystal.remaining : std::max(0, u.definition.carryCapacity - u.cargo)});
+        crystal.remaining -= amount;
+        if (direct) { if (u.owner == player_.id) stored_ += amount; }
+        else u.cargo += amount;
+        if (crystal.remaining == 0)
+            for (int y = 0; y < crystal.height; ++y) for (int x = 0; x < crystal.width; ++x)
+                scenario_.map.release(crystal.cell + Cell{x, y});
+    }
+    if (crystal.remaining == 0 || (!direct && u.cargo >= u.definition.carryCapacity)) {
+        if (!direct && u.cargo > 0) returnCargo(u); else seekCrystal(u);
+    }
+}
 bool Simulation::returnCargo(Unit& u) {
     std::optional<Path> best;
     EntityId depot{};

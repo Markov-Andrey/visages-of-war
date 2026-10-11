@@ -3,6 +3,7 @@
     "source":  "Artwork supplied by the project owner",
     "rights":  "Project artwork; not part of the third-party CC0 asset catalog",
     "collections": [
+        {"manifest": "sprites/units/novice/manifest.json", "description": "Novice worker atlas, icon and portrait; owner-supplied source checksums and atlas layout."},
         {"manifest": "world/tilesets/sunny-hills/manifest.json", "description": "Sunny Hills terrain, trees, shrubs, rocks, ruins, coast and retained vineyard artwork; original PNGs and SHA-256 checksums."}
     ],
     "files":  [

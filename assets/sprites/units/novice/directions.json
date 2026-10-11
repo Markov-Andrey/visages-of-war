@@ -1,0 +1,263 @@
+{
+  "version": 1,
+  "frameSize": [
+    512,
+    512
+  ],
+  "pivot": [
+    256,
+    448
+  ],
+  "se": {
+    "stand": [
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "pivot": [
+          256,
+          448
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      }
+    ],
+    "walk": [
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          0,
+          1024,
+          512,
+          512
+        ],
+        "pivot": [
+          256,
+          1472
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      },
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          512,
+          1024,
+          512,
+          512
+        ],
+        "pivot": [
+          768,
+          1472
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      },
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          1024,
+          1024,
+          512,
+          512
+        ],
+        "pivot": [
+          1280,
+          1472
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      },
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          1536,
+          1024,
+          512,
+          512
+        ],
+        "pivot": [
+          1792,
+          1472
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      }
+    ],
+    "work": [
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          1024,
+          0,
+          512,
+          512
+        ],
+        "pivot": [
+          1280,
+          448
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      }
+    ]
+  },
+  "nw": {
+    "stand": [
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "pivot": [
+          768,
+          448
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      }
+    ],
+    "walk": [
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "pivot": [
+          256,
+          960
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      },
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "pivot": [
+          768,
+          960
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      },
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          1024,
+          512,
+          512,
+          512
+        ],
+        "pivot": [
+          1280,
+          960
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      },
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          1536,
+          512,
+          512,
+          512
+        ],
+        "pivot": [
+          1792,
+          960
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      }
+    ],
+    "work": [
+      {
+        "image": "sprites/units/novice/novice.png",
+        "source": [
+          1536,
+          0,
+          512,
+          512
+        ],
+        "pivot": [
+          1792,
+          448
+        ],
+        "scale": 1,
+        "teamMask": "sprites/units/novice/novice-mask.png"
+      }
+    ]
+  },
+  "warp": {
+    "south": {
+      "width": [
+        0.96,
+        1,
+        1.08,
+        1.04,
+        1,
+        1
+      ],
+      "shift": [
+        -0.025,
+        -0.025,
+        -0.025,
+        -0.012,
+        0,
+        0
+      ]
+    },
+    "east": {
+      "width": [
+        0.88,
+        0.84,
+        0.86,
+        0.92,
+        1,
+        1
+      ],
+      "shift": [
+        0.035,
+        0.035,
+        0.03,
+        0.012,
+        0,
+        0
+      ]
+    },
+    "north": {
+      "width": [
+        0.96,
+        1,
+        1.06,
+        1.03,
+        1,
+        1
+      ],
+      "shift": [
+        0.02,
+        0.02,
+        0.025,
+        0.012,
+        0,
+        0
+      ]
+    }
+  }
+}

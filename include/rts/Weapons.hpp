@@ -22,11 +22,11 @@ struct UnitDeathSprite {
     int ticksPerFrame = 6;
 };
 struct UnitSpriteDefinition {
-    std::string image = "sprites/worker.png";
+    std::string image;
     std::string portrait; // Optional standalone HUD artwork; empty uses the idle icon.
     std::string icon; // Optional button artwork; independent of the large portrait.
     std::string portraitMask, iconMask; // Optional team paint for the respective UI artwork.
-    std::string directionRecipe; // Optional two-view stand/walk/attack synthesis recipe.
+    std::string directionRecipe; // Optional two-view stand/walk/attack/work synthesis recipe.
     std::optional<std::array<Vec2, 8>> projectileOrigins; // Normalized release-frame sockets, by facing row.
     bool pixelArt = true;
     int frameWidth = 32, frameHeight = 32;
@@ -36,6 +36,7 @@ struct UnitSpriteDefinition {
     std::vector<int> walk{0, 2, 1, 3}, windup{4, 5}, recovery{6, 7};
     float walkCycleDistance = 1; // Logical cells travelled per full walk animation cycle.
     int idle{};
+    int work = -1; // Optional stationary gathering/building pose; negative uses idle.
     SpriteTeamMask teamMask = SpriteTeamMask::Blue;
     std::optional<UnitDeathSprite> death; // One shared sequence, final frame persists as a corpse.
 };

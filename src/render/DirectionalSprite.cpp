@@ -43,15 +43,17 @@ DirectionalSpriteRecipe loadDirectionalSpriteRecipe(const Paths& paths, const st
     size_t direction = 0;
     for (const auto key : {"se", "nw"}) {
         const auto& source = j.at(key);
-        fields(source, {"stand", "walk", "attack"});
-        size_t column = 0;
-        for (const auto animation : {"stand", "walk", "attack"}) {
+        fields(source, {"stand", "walk"}, {"attack", "work"});
+        for (const auto animation : {"stand", "walk", "attack", "work"}) {
+            if (source.contains(animation) != j.at("se").contains(animation))
+                throw std::runtime_error("Directional source views require matching animation sequences");
+            if (!source.contains(animation)) continue;
             const auto& sequence = source.at(animation);
-            const size_t count = std::string_view(animation) == "stand" ? 1 : 4;
-            if (!sequence.is_array() || sequence.size() != count) throw std::runtime_error("Expected stand + four walk + four attack frames");
+            const size_t count = std::string_view(animation) == "stand" || std::string_view(animation) == "work" ? 1 : 4;
+            if (!sequence.is_array() || sequence.size() != count) throw std::runtime_error("Expected one stand/work pose or four walk/attack frames");
             for (const auto& item : sequence) {
                 fields(item, {"image", "source", "pivot", "scale"}, {"teamMask"});
-                auto& frame = result.sources[direction][column++];
+                auto& frame = result.sources[direction].emplace_back();
                 frame.image = string(item.at("image"));
                 paths.asset(utf8Path(frame.image)); // Includes traversal and Unicode validation.
                 if (item.contains("teamMask") && !item.at("teamMask").is_null()) {
@@ -118,17 +120,20 @@ SpritePixels warpSprite(const SpritePixels& source, const SpriteWarp& warp, floa
 }
 
 SpritePixels assembleDirectionalSprite(const DirectionalSpriteRecipe& recipe,
-    const std::array<std::array<SpritePixels, 9>, 2>& frames) {
+    const std::array<std::vector<SpritePixels>, 2>& frames) {
     if (recipe.width < 1 || recipe.height < 1 || recipe.width > 512 || recipe.height > 512)
         throw std::invalid_argument("Invalid directional canvas size");
-    SpritePixels atlas{recipe.width * 9, recipe.height * 8, {}};
+    const size_t columns = frames[0].size();
+    if (columns == 0 || columns > 10 || frames[1].size() != columns)
+        throw std::invalid_argument("Directional frame sequences must have matching lengths");
+    SpritePixels atlas{recipe.width * int(columns), recipe.height * 8, {}};
     atlas.bgra.resize(size_t(atlas.width) * atlas.height * 4);
     const SpriteWarp identity;
     struct View { size_t source; bool mirror; const SpriteWarp* warp; };
     const std::array<View, 8> views{{
         {0, false, &recipe.south}, {0, false, &identity}, {0, false, &recipe.east}, {1, true, &identity},
         {1, false, &recipe.north}, {1, false, &identity}, {0, true, &recipe.east}, {0, true, &identity}}};
-    for (size_t row = 0; row < views.size(); ++row) for (size_t column = 0; column < 9; ++column) {
+    for (size_t row = 0; row < views.size(); ++row) for (size_t column = 0; column < columns; ++column) {
         const auto& view = views[row]; const auto& original = frames[view.source][column];
         if (original.width != recipe.width || original.height != recipe.height) throw std::invalid_argument("Directional frame canvas mismatch");
         const auto image = warpSprite(original, *view.warp, recipe.pivot.x, view.mirror);

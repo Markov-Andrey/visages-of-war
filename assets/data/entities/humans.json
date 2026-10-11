@@ -5,8 +5,8 @@
       "id": "human.worker",
       "canDecompose": true,
       "factionId": "humans",
-      "name": "Рабочий",
-      "description": "Добывает кристаллы и относит их в ратушу. Строит и восстанавливает работу на стройплощадках.",
+      "name": "Послушница",
+      "description": "Служительница Церкви Святого Пламени. Медленно добывает кристаллы, сразу отправляя их в запас игрока. Начинает призыв зданий, после чего они достраиваются самостоятельно.",
       "cost": {
         "crystals": 40,
         "supply": 1
@@ -27,7 +27,8 @@
       },
       "worker": {
         "builder": true,
-        "carryCapacity": 10
+        "carryCapacity": 0,
+        "gatherAbility": 2
       },
       "construction": {
         "enabled": false,
@@ -54,18 +55,21 @@
         "projectile": null
       },
       "sprite": {
-        "image": "sprites/worker.png",
+        "image": "sprites/units/novice/novice.png",
+        "portrait": "sprites/units/novice/novice-portrait.png",
+        "icon": "sprites/units/novice/novice-icon.png",
+        "directionRecipe": "sprites/units/novice/directions.json",
         "frameSize": [
-          32,
-          32
+          512,
+          512
         ],
         "size": [
-          80,
-          80
+          126,
+          126
         ],
         "anchor": [
           0.5,
-          0.7125
+          0.875
         ],
         "rows": [
           0,
@@ -79,20 +83,80 @@
         ],
         "idle": 0,
         "walk": [
-          0,
-          2,
           1,
-          3
+          2,
+          3,
+          4
         ],
+        "work": 5,
         "windup": [
-          4,
-          5
+          0
         ],
         "recovery": [
-          6,
-          7
+          0
         ],
-        "teamMask": "blue"
+        "walkCycleDistance": 2,
+        "healthBarOffset": 12,
+        "pixelArt": false,
+        "teamMask": "none",
+        "death": {
+          "image": "sprites/units/novice/novice.png",
+          "scale": 0.24609375,
+          "ticksPerFrame": 6,
+          "frames": [
+            {
+              "source": [
+                0,
+                1536,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                448
+              ]
+            },
+            {
+              "source": [
+                512,
+                1536,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                448
+              ]
+            },
+            {
+              "source": [
+                1024,
+                1536,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                448
+              ]
+            },
+            {
+              "source": [
+                1536,
+                1536,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                448
+              ]
+            }
+          ],
+          "teamMask": "sprites/units/novice/novice-mask.png"
+        },
+        "iconMask": "sprites/units/novice/novice-icon-mask.png",
+        "portraitMask": "sprites/units/novice/novice-portrait-mask.png"
       }
     },
     {
@@ -256,7 +320,9 @@
     },
     {
       "id": "human.hero",
-      "abilities": [1],
+      "abilities": [
+        1
+      ],
       "canDecompose": false,
       "factionId": "humans",
       "name": "Рыцарь",
@@ -312,18 +378,24 @@
         "projectile": null
       },
       "sprite": {
-        "image": "sprites/worker.png",
+        "image": "sprites/units/peacemaker/peacemaker.png",
+        "portrait": "sprites/units/peacemaker/peacemaker-portrait.png",
+        "icon": "sprites/units/peacemaker/peacemaker-icon.png",
+        "directionRecipe": "sprites/units/peacemaker/directions.json",
+        "healthBarOffset": 12,
+        "walkCycleDistance": 2,
+        "pixelArt": false,
         "frameSize": [
-          32,
-          32
+          512,
+          512
         ],
         "size": [
-          80,
-          80
+          126,
+          126
         ],
         "anchor": [
           0.5,
-          0.7125
+          0.84375
         ],
         "rows": [
           0,
@@ -337,20 +409,78 @@
         ],
         "idle": 0,
         "walk": [
-          0,
-          2,
           1,
-          3
+          2,
+          3,
+          4
         ],
         "windup": [
-          4,
-          5
+          5,
+          6
         ],
         "recovery": [
-          6,
-          7
+          7,
+          8
         ],
-        "teamMask": "blue"
+        "teamMask": "none",
+        "death": {
+          "image": "sprites/units/peacemaker/peacemaker.png",
+          "teamMask": "sprites/units/peacemaker/peacemaker-mask.png",
+          "scale": 0.24609375,
+          "ticksPerFrame": 6,
+          "frames": [
+            {
+              "source": [
+                0,
+                2560,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                336
+              ]
+            },
+            {
+              "source": [
+                512,
+                2560,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                336
+              ]
+            },
+            {
+              "source": [
+                1024,
+                2560,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                272
+              ]
+            },
+            {
+              "source": [
+                1536,
+                2560,
+                512,
+                512
+              ],
+              "anchor": [
+                256,
+                256
+              ]
+            }
+          ]
+        },
+        "portraitMask": "sprites/units/peacemaker/peacemaker-portrait-mask.png",
+        "iconMask": "sprites/units/peacemaker/peacemaker-icon-mask.png"
       }
     },
     {
@@ -383,6 +513,7 @@
       },
       "construction": {
         "enabled": true,
+        "mode": "summoning",
         "ticks": 300,
         "footprint": [
           3,
@@ -739,6 +870,7 @@
       },
       "construction": {
         "enabled": true,
+        "mode": "summoning",
         "ticks": 180,
         "footprint": [
           3,
@@ -829,6 +961,7 @@
       },
       "construction": {
         "enabled": true,
+        "mode": "summoning",
         "ticks": 150,
         "footprint": [
           1,

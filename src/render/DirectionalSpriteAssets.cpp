@@ -15,8 +15,9 @@ DirectionalSpriteRecipe directionalRecipe(const Paths& paths, const UnitSpriteDe
 SpritePixels loadDirectionalSprite(const Paths& paths, IWICImagingFactory* wic, const UnitSpriteDefinition& sprite, unsigned color) {
     const auto recipe = directionalRecipe(paths, sprite);
     std::map<std::pair<std::string, std::string>, ComPtr<IWICBitmapSource>> images;
-    std::array<std::array<SpritePixels, 9>, 2> frames;
-    for (size_t direction = 0; direction < 2; ++direction) for (size_t column = 0; column < 9; ++column) {
+    std::array<std::vector<SpritePixels>, 2> frames;
+    for (size_t direction = 0; direction < 2; ++direction) frames[direction].resize(recipe.sources[direction].size());
+    for (size_t direction = 0; direction < 2; ++direction) for (size_t column = 0; column < frames[direction].size(); ++column) {
         const auto& frame = recipe.sources[direction][column];
         auto& image = images[{frame.image, frame.teamMask}];
         if (!image) {

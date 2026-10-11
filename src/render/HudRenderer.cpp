@@ -200,6 +200,10 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             const size_t i = command.slot;
             if (!unitCommandVisible(game, ui, i)) continue;
             labels[i] = command.label; details[i] = command.description; buttonKeys[i] = command.key; icons[i] = command.icon;
+            if (command.command == UnitCommand::Gather && unit->definition.gatherAbility) {
+                labels[i] = wide(unit->definition.gatherAbility->displayName);
+                details[i] = wide(unit->definition.gatherAbility->description);
+            }
             if (command.command != UnitCommand::Back) details[i] += command.scope == CommandScope::ActiveGroup ?
                 L"\nДля активной группы." : L"\nДля всего выделения.";
             enabled[i] = true;

@@ -49,6 +49,18 @@
       "license": "CC0-1.0",
       "removed": "2026-10-10",
       "reason": "Archer removed; replaced by project owner Slinger artwork."
+    },
+    {
+      "destination": "sprites/worker.png",
+      "archive": "characters.zip",
+      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
+      "entry": "Puny-Characters/Soldier-Blue.png",
+      "sha256": "DDCB515BAAF2B5B7A4C569BA23D7490C3E5221BB5E97D760CE67CE9C261A543D",
+      "source": "https://opengameart.org/content/puny-characters",
+      "author": "Shade",
+      "license": "CC0-1.0",
+      "removed": "2026-10-11",
+      "reason": "Replaced by project owner Novice artwork; no longer installed or restored."
     }
   ],
   "files": [
@@ -58,13 +70,6 @@
       "url": "https://opengameart.org/sites/default/files/building_pack_02_single.zip",
       "entry": "building_2/64x32_no_shadow/building2_64x32_no_shadow_00.png",
       "sha256": "1E721DB4826928B9B61A23F1D6546CC37F19FC95AA42A6734837819471A0EC84"
-    },
-    {
-      "destination": "sprites/worker.png",
-      "archive": "characters.zip",
-      "url": "https://opengameart.org/sites/default/files/puny-characters.zip",
-      "entry": "Puny-Characters/Soldier-Blue.png",
-      "sha256": "DDCB515BAAF2B5B7A4C569BA23D7490C3E5221BB5E97D760CE67CE9C261A543D"
     },
     {
       "destination": "sprites/catapult.png",

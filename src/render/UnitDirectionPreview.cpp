@@ -7,7 +7,9 @@ void Renderer::snapshotUnitDirections(const UnitSpriteDefinition& definition, co
     if (definition.directionRecipe.empty()) throw std::invalid_argument("Direction overview requires a synthesis recipe");
     discardTarget();
     constexpr float label = 132, cell = 168, header = 52, rowHeight = 192;
-    constexpr UINT width = 1644, height = 1588;
+    const auto recipe = directionalRecipe(paths_, definition);
+    const int columnCount = int(recipe.sources[0].size());
+    const UINT width = UINT(label + cell * columnCount), height = 1588;
     ComPtr<IWICBitmap> canvas;
     check(wic_->CreateBitmap(width, height, GUID_WICPixelFormat32bppPBGRA, WICBitmapCacheOnLoad, canvas.GetAddressOf()));
     auto properties = D2D1::RenderTargetProperties(D2D1_RENDER_TARGET_TYPE_SOFTWARE);
@@ -15,16 +17,18 @@ void Renderer::snapshotUnitDirections(const UnitSpriteDefinition& definition, co
     check(factory_->CreateWicBitmapRenderTarget(canvas.Get(), properties, target_.GetAddressOf()));
     check(target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), brush_.GetAddressOf()));
     auto* atlas = unitBitmap(definition, teamColor_);
-    const std::array<const wchar_t*, 9> columns{L"Stand", L"Walk 1", L"Walk 2", L"Walk 3", L"Walk 4", L"Attack 1", L"Attack 2", L"Attack 3", L"Attack 4"};
+    std::vector<std::wstring> columns{L"Stand", L"Walk 1", L"Walk 2", L"Walk 3", L"Walk 4"};
+    for (int i = 5; i < columnCount; ++i)
+        columns.push_back(i == definition.work ? L"Work" : L"Attack " + std::to_wstring(i - 4));
     const std::array<const wchar_t*, 8> rows{L"S / warp", L"SE / source", L"E / warp", L"NE / mirror", L"N / warp", L"NW / source", L"W / warp", L"SW / mirror"};
     target_->BeginDraw();
     target_->Clear(D2D1::ColorF(0x202a31));
-    for (int column = 0; column < 9; ++column)
+    for (int column = 0; column < columnCount; ++column)
         text(columns[column], rect(label + column * cell + 12, 15, cell - 12, 26), 0xf5e8cf);
     for (int row = 0; row < 8; ++row) {
         const float top = header + row * rowHeight;
         text(rows[row], rect(8, top + 75, label - 12, 40), row == 1 || row == 5 ? 0xffce70 : 0xc5d9e2);
-        for (int column = 0; column < 9; ++column) {
+        for (int column = 0; column < columnCount; ++column) {
             const float left = label + column * cell;
             brush_->SetColor(D2D1::ColorF((row + column) % 2 ? 0x34434a : 0x3b4b50));
             target_->FillRectangle(rect(left, top, cell, rowHeight), brush_.Get());

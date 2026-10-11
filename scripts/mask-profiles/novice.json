@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "assetRoot": "assets/sprites/units/novice",
+  "selection": {
+    "minimumRed": 32,
+    "minimumRedGreenDifference": 16,
+    "redDominance": 2,
+    "warmHueSlope": 0.2,
+    "warmHueOffset": 1
+  },
+  "edge": {
+    "darkRedLimit": 24,
+    "darkOtherLimit": 16,
+    "minimumRedGreenDifference": 5,
+    "redDominance": 1.6,
+    "warmHueSlope": 0.22,
+    "warmHueOffset": 1
+  },
+  "jobs": [
+    {
+      "image": "novice.png",
+      "mask": "novice-mask.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "excludePolygons": [],
+      "backgroundSeedRects": []
+    },
+    {
+      "image": "novice-icon.png",
+      "mask": "novice-icon-mask.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "excludePolygons": [
+        "430,596 740,464 930,360 1080,465 1140,635 1098,814 914,929 831,1000 750,1046 698,1035 638,986 625,1142 531,1094 420,984 385,779",
+        "280,483 338,473 371,560 350,620 310,597"
+      ],
+      "backgroundSeedRects": []
+    },
+    {
+      "image": "novice-portrait.png",
+      "mask": "novice-portrait-mask.png",
+      "size": [
+        1024,
+        1536
+      ],
+      "excludePolygons": [
+        "434,332 548,247 760,153 877,209 945,349 921,539 786,653 744,610 694,611 641,616 568,577 508,535 451,439",
+        "435,430 506,531 641,613 566,654 521,675 487,672 455,610",
+        "203,857 248,859 242,991 209,1003"
+      ],
+      "backgroundSeedRects": [
+        [
+          0,
+          0,
+          1024,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          1100
+        ]
+      ]
+    }
+  ]
+}

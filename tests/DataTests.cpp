@@ -4,6 +4,52 @@
 
 namespace rts::tests {
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Harvest abilities resolve from the catalog and validate mode timing and capacity", [&] {
+        CatalogFixture fixture(context.assets);
+        const auto definitions = fixture.load();
+        const auto& novice = definitions.entity("human.worker");
+        require(novice.gatherAbility && novice.gatherAbility->id == 2 && novice.canGather() &&
+            novice.harvesting().credit == HarvestCredit::Direct && novice.harvesting().intervalTicks == 20 &&
+            novice.harvesting().amount == 1 && novice.carryCapacity == 0, "Direct harvest ability missing");
+        auto& worker = fixture.entities["entities"][0]["worker"];
+        worker["gatherAbility"] = 3; mustThrow([&] { fixture.load(); });
+        worker["carryCapacity"] = 10;
+        require(fixture.load().entity("human.worker").harvesting().credit == HarvestCredit::Cargo, "Cargo ability unavailable");
+        for (const auto& id : {Json(1),Json(999),Json(0),Json(2.5),Json(nullptr)}) {
+            worker["gatherAbility"] = id; mustThrow([&] { fixture.load(); });
+        }
+        worker.erase("gatherAbility");
+        require(fixture.load().entity("human.worker").canGather() &&
+            fixture.load().entity("human.worker").harvesting().credit == HarvestCredit::Cargo, "Default cargo gathering changed");
+        worker["gatherAbility"] = 2;
+        const auto original = fixture.abilities;
+        for (const auto* field : {"intervalTicks", "amount"}) for (const auto& value : {Json(0),Json(-1),Json(1000001),Json(1.5),Json("1"),Json(nullptr)}) {
+            fixture.abilities = original; fixture.abilities["abilities"][1]["harvest"][field] = value;
+            mustThrow([&] { fixture.load(); });
+        }
+        fixture.abilities = original; fixture.abilities["abilities"][1]["harvest"]["credit"] = "other";
+        mustThrow([&] { fixture.load(); });
+        fixture.abilities = original; fixture.abilities["abilities"][1]["targeting"] = "none";
+        mustThrow([&] { fixture.load(); });
+        fixture.abilities = original; fixture.abilities["abilities"][1]["manaCost"] = 1;
+        mustThrow([&] { fixture.load(); });
+        fixture.abilities = original; fixture.entities["entities"][0]["abilities"] = Json::array({2});
+        mustThrow([&] { fixture.load(); });
+    });
+    test("Construction mode is catalog data with worker-driven default and strict validation", [&] {
+        CatalogFixture fixture(context.assets);
+        const auto definitions = fixture.load();
+        for (const auto& type : definitions.entities()) if (type.constructible)
+            require(type.constructionMode == ConstructionMode::Summoning, "Church building is not summoned");
+        auto& construction = fixture.entities["entities"][3]["construction"];
+        construction["mode"] = "worker";
+        require(fixture.load().entity("human.hall").constructionMode == ConstructionMode::Worker, "Worker construction cannot be selected");
+        construction.erase("mode");
+        require(fixture.load().entity("human.hall").constructionMode == ConstructionMode::Worker, "Missing mode must preserve worker construction");
+        for (const auto& value : {Json("automatic"), Json(1), Json(true), Json(nullptr)}) {
+            construction["mode"] = value; mustThrow([&] { fixture.load(); });
+        }
+    });
     test("Mana and untargeted abilities resolve from their data catalogs with strict validation", [&] {
         CatalogFixture fixture(context.assets);
         const auto definitions = fixture.load();
@@ -128,6 +174,8 @@ void dataTests(TestSuite& test, const TestContext& context) {
         };
         auto& sprite = fixture.entities["entities"][0]["sprite"];
         for (const auto* field : {"portrait", "icon"}) {
+            sprite.erase(std::string(field) + "Mask");
+            sprite.erase(field);
             require(read(field).empty(), "Existing units lost the stand fallback");
             sprite[field] = "portraits/Рабочий.png";
             require(read(field) == "portraits/Рабочий.png", "Unit UI image path did not load");
@@ -146,6 +194,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         auto& sprite = fixture.entities["entities"][0]["sprite"];
         for (const auto* field : {"portrait", "icon"}) {
             const auto mask = std::string(field) + "Mask";
+            sprite.erase(field);
             sprite[mask] = "portraits/Маска.png";
             mustThrow([&] { fixture.load(); });
             sprite[field] = "portraits/Рабочий.png";

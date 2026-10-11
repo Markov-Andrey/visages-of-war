@@ -136,6 +136,8 @@ void Simulation::tick() {
     combatSearchBudget_ = 8;
     const auto phase = clock_.tick();
     if (phase) events_.emplace_back(*phase);
+    // Run before workers: a newly initiated summon gets only its first tick from the builder.
+    tickConstruction();
     // Advance the front of each moving group first, so IDs do not make a convoy wait backwards.
     std::vector<Unit*> updateOrder;
     for (auto& u : units_) {

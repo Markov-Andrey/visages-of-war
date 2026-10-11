@@ -198,7 +198,7 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
             throw std::runtime_error("Point projectiles require a splash radius; unit projectiles have single-target damage");
     }
     if (sprite.is_null()) { e.sprite.image.clear(); return; }
-    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance", "healthBarOffset", "projectileOrigins"});
+    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance", "healthBarOffset", "projectileOrigins", "work"});
     auto& s = e.sprite;
     s.image = imagePath(sprite.at("image"));
     if (sprite.contains("portrait") && !sprite.at("portrait").is_null()) s.portrait = imagePath(sprite.at("portrait"));
@@ -226,6 +226,7 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
         for (size_t i = 0; i < 8; ++i) sockets[i] = pair(origins[i], 0, 1);
     }
     s.idle = number(sprite.at("idle"), 0, 255);
+    if (sprite.contains("work")) s.work = number(sprite.at("work"), 0, 255);
     s.walk = frames(sprite.at("walk")); s.windup = frames(sprite.at("windup")); s.recovery = frames(sprite.at("recovery"));
     if (sprite.contains("walkCycleDistance")) s.walkCycleDistance = real(sprite.at("walkCycleDistance"), .1f, 16);
     const auto mask = string(sprite.at("teamMask"));
@@ -254,9 +255,8 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
     }
     if (!s.directionRecipe.empty()) {
         if (s.teamMask != SpriteTeamMask::None || s.idle != 0 || s.walk != std::vector<int>{1, 2, 3, 4} ||
-            s.windup != std::vector<int>{5, 6} || s.recovery != std::vector<int>{7, 8} ||
             s.rows != std::array<int, 8>{0, 1, 2, 3, 4, 5, 6, 7})
-            throw std::runtime_error("Two-direction sprite needs unpainted stand/walk/attack columns and standard facing rows");
+            throw std::runtime_error("Two-direction sprite needs unpainted stand/walk columns and standard facing rows");
     }
 }
 }

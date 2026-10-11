@@ -44,6 +44,9 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     if (order.kind == OrderKind::Build) {
         const auto* b = building(order.target);
         if (!b || b->owner != u.owner || b->complete() || !u.definition.canBuild) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
+        if (b->definition.constructionMode == ConstructionMode::Summoning && b->constructionProgress > 0) {
+            applyOrder(u, {OrderKind::Stop}); return;
+        }
         u.targetBuilding = b->id;
         if (!setRoute(u, perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement), UnitState::ToBuild))
             setMessage(L"Рабочий не может добраться до стройки.");
@@ -57,12 +60,14 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
             return;
         }
     }
-    if (order.kind == OrderKind::Gather && u.definition.carryCapacity > 0) {
+    if (order.kind == OrderKind::Gather && u.definition.canGather()) {
         for (size_t i = 0; i < crystals().size(); ++i) {
             // Keep the clicked deposit as the origin throughout this gathering order.
             if (!crystals()[i].contains(order.cell)) continue;
             u.targetCrystal = u.gatherOriginCrystal = static_cast<int>(i); u.repeatGather = true;
-            if (u.cargo >= u.definition.carryCapacity) returnCargo(u); else seekCrystal(u);
+            if (u.definition.harvesting().credit == HarvestCredit::Cargo && u.cargo >= u.definition.carryCapacity)
+                returnCargo(u);
+            else seekCrystal(u);
             return;
         }
     }
@@ -86,7 +91,7 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) {
     for (EntityId id : ids) {
         auto* u = mutableUnit(id);
         if (!u || u->owner != player_.id || std::any_of(members.begin(), members.end(), [&](const auto& m) { return m.id == id; })) continue;
-        if (kind == OrderKind::Gather && u->definition.carryCapacity <= 0) continue;
+        if (kind == OrderKind::Gather && !u->definition.canGather()) continue;
         if (kind == OrderKind::AttackGround && (u->attackDamage() <= 0 || !u->definition.projectile ||
             u->definition.projectile->targeting != ProjectileTargeting::Point || u->definition.projectile->splashRadius <= 0)) continue;
         members.push_back({id, u->cell,
@@ -168,7 +173,16 @@ void Simulation::arrived(Unit& u) {
     }
     switch (u.state) {
     case UnitState::ToAttack: u.state = UnitState::Attacking; break;
-    case UnitState::ToCrystal: u.state = UnitState::Harvesting; u.harvestTicks = 0; break;
+    case UnitState::ToCrystal: {
+        u.state = UnitState::Harvesting; u.harvestTicks = 0;
+        if (u.targetCrystal >= 0) {
+            const auto& node = crystals()[static_cast<size_t>(u.targetCrystal)];
+            const Vec2 delta = Vec2{node.cell.x + node.width * .5f, node.cell.y + node.height * .5f} - u.position;
+            const Cell facing{delta.x > .2f ? 1 : delta.x < -.2f ? -1 : 0, delta.y > .2f ? 1 : delta.y < -.2f ? -1 : 0};
+            if (facing != Cell{}) u.facing = facing;
+        }
+        break;
+    }
     case UnitState::ToBuild: u.state = UnitState::Building; break;
     case UnitState::ToHall: {
         const auto* depot = building(u.targetBuilding);
@@ -190,6 +204,13 @@ void Simulation::arrived(Unit& u) {
     }
 }
 void Simulation::tickUnit(Unit& u) {
+    if (u.state == UnitState::ToBuild || u.state == UnitState::Building) {
+        const auto* b = building(u.targetBuilding);
+        if (!b || b->complete() || u.health <= 0 ||
+            (b->definition.constructionMode == ConstructionMode::Summoning && b->constructionProgress > 0)) {
+            issue(u, {OrderKind::Stop}); return;
+        }
+    }
     if (u.state == UnitState::Idle && u.moveGroup) yieldFormation(u);
     if (u.state == UnitState::Idle && !u.targetUnit &&
         (u.currentOrder.kind == OrderKind::Patrol || u.currentOrder.kind == OrderKind::AttackMove) && ++u.blockedTicks >= 15)
@@ -211,23 +232,11 @@ void Simulation::tickUnit(Unit& u) {
         if (!b || b->complete()) { u.state = UnitState::Idle; return; }
         const auto positions = perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement);
         if (std::find(positions.begin(), positions.end(), u.cell) == positions.end()) { u.state = UnitState::Idle; return; }
-        const int previousHealth = std::max(1, b->definition.maximumHealth * b->constructionProgress / b->definition.constructionTicks);
-        ++b->constructionProgress;
-        const int nextHealth = std::max(1, b->definition.maximumHealth * b->constructionProgress / b->definition.constructionTicks);
-        b->health = std::min(b->definition.maximumHealth, b->health + nextHealth - previousHealth);
-        if (b->complete()) { events_.emplace_back(ConstructionFinished{b->id}); u.state = UnitState::Idle; setMessage(L"Здание готово."); }
+        advanceConstruction(*b);
+        if (b->complete() || b->definition.constructionMode == ConstructionMode::Summoning)
+            issue(u, {OrderKind::Stop});
         return;
     }
-    if (u.state != UnitState::Harvesting || u.targetCrystal < 0) return;
-    auto& crystal = scenario_.crystals[static_cast<size_t>(u.targetCrystal)];
-    if (crystal.remaining > 0 && ++u.harvestTicks >= ticksPerSecond / 3) {
-        u.harvestTicks = 0; --crystal.remaining; ++u.cargo;
-        if (crystal.remaining == 0)
-            for (int y = 0; y < crystal.height; ++y) for (int x = 0; x < crystal.width; ++x)
-                scenario_.map.release(crystal.cell + Cell{x, y});
-    }
-    if (u.cargo >= u.definition.carryCapacity || crystal.remaining == 0) {
-        if (u.cargo > 0) returnCargo(u); else seekCrystal(u);
-    }
+    harvest(u);
 }
 }

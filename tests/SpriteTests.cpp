@@ -27,6 +27,47 @@ SpritePixels readSpritePixels(const TestContext& context, IWICImagingFactory* wi
 }
 
 void spriteTests(TestSuite& test, const TestContext& context) {
+    test("Novice uses a work pose without attack artwork and retains eight directions", [&] {
+        platform::ComApartment apartment;
+        const auto definitions = Definitions::load(context.assets / "data/catalog.json");
+        const auto& type = definitions.entity("human.worker");
+        const auto& sprite = type.sprite;
+        require(type.displayName == "Послушница" && type.attackDamage == 0 && sprite.work == 5 &&
+            sprite.teamMask == SpriteTeamMask::None && !sprite.portraitMask.empty() && !sprite.iconMask.empty(),
+            "Novice gained an attack, lost its UI masks or work pose");
+        require(sprite.frameWidth == 512 && sprite.frameHeight == 512 && !sprite.portrait.empty() && !sprite.icon.empty() &&
+            sprite.death && sprite.death->frames.size() == 4 && !sprite.death->teamMask.empty(), "Novice artwork is incomplete");
+        const auto recipe = render::directionalRecipe(context.worldPaths, sprite);
+        require(recipe.sources[0].size() == 6 && recipe.sources[1].size() == 6 &&
+            recipe.sources[0][5].source == std::array<int,4>{1024,0,512,512} &&
+            recipe.sources[1][5].source == std::array<int,4>{1536,0,512,512}, "Work views were replaced with attack frames");
+        for (const auto& direction : recipe.sources) for (const auto& frame : direction)
+            require(frame.teamMask == sprite.death->teamMask, "Novice animation lost its aligned team mask");
+        Unit unit; unit.definition = type; unit.facing = {1,0};
+        for (const auto state : {UnitState::Harvesting, UnitState::Building}) {
+            unit.state = state; require(unitFrame(unit).column == 5 && unitFrame(unit).row == 1, "Work pose not selected");
+        }
+        for (const auto state : {UnitState::Idle, UnitState::ToCrystal, UnitState::ToBuild, UnitState::ToHall}) {
+            unit.state = state; require(unitFrame(unit).column == 0, "Work pose leaked into travel or idle");
+        }
+        unit.state = UnitState::Moving; unit.route = {{1,0}}; unit.position = {.1f,0}; unit.walkCycle = .5f;
+        require(unitFrame(unit).column == 3, "Novice lost its four-frame walk");
+        unit.definition.sprite.work = -1; unit.route.clear(); unit.state = UnitState::Harvesting;
+        require(unitFrame(unit).column == 0, "Existing units lost their idle fallback while working");
+        Renderer renderer(context.worldPaths);
+        renderer.snapshotUnitDirections(sprite, Paths::executable().parent_path() / "novice-directions.png");
+        Corpse corpse; corpse.sprite = sprite;
+        require(corpseFrame(corpse)->source == sprite.death->frames.front().source, "Novice death starts at the wrong frame");
+        CatalogFixture fixture(context.assets); auto& art = fixture.entities["entities"][0]["sprite"];
+        art.erase("work"); require(fixture.load().entity("human.worker").sprite.work == -1, "Optional work pose has no fallback");
+        for (const auto& value : {Json(-1),Json(256),Json(1.5),Json("5"),Json(nullptr)}) {
+            art["work"] = value; mustThrow([&] { fixture.load(); });
+        }
+        auto malformed = recipe;
+        std::array<std::vector<SpritePixels>,2> frames;
+        frames[0].resize(6); frames[1].resize(5);
+        mustThrow([&] { assembleDirectionalSprite(malformed, frames); });
+    });
     test("Corps team masks retain canvas alignment and exclude masonry, poles and fire", [&] {
         platform::ComApartment apartment;
         Microsoft::WRL::ComPtr<IWICImagingFactory> wic;
@@ -119,7 +160,8 @@ void spriteTests(TestSuite& test, const TestContext& context) {
     test("Eight rows retain two originals and the correct mirrored facings for every animation", [&] {
         DirectionalSpriteRecipe recipe; recipe.width = 8; recipe.height = 10; recipe.pivot = {4, 9};
         recipe.east.width = {.8f, .8f, .8f, .9f, 1, 1};
-        std::array<std::array<SpritePixels, 9>, 2> frames;
+        std::array<std::vector<SpritePixels>, 2> frames;
+        for (auto& direction : frames) direction.resize(9);
         for (size_t direction = 0; direction < 2; ++direction) for (size_t column = 0; column < 9; ++column) {
             auto& image = frames[direction][column]; image = {8, 10, std::vector<std::uint8_t>(8 * 10 * 4)};
             for (int y = 0; y < 10; ++y) for (int x = 0; x < 8; ++x) {
@@ -259,6 +301,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
     test("Walk cycle distance is optional, positive and configurable per sprite", [&] {
         CatalogFixture fixture(context.assets);
         auto& sprite = fixture.entities["entities"][0]["sprite"];
+        sprite.erase("walkCycleDistance");
         require(fixture.load().entity("human.worker").sprite.walkCycleDistance == 1, "Default walk tempo changed");
         require(fixture.load().entity("human.peacemaker").sprite.walkCycleDistance == 2, "Peacemaker lost its calmer gait");
         sprite["walkCycleDistance"] = 2;
@@ -394,8 +437,8 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         for (const auto* mask : {"portraitMask", "iconMask", "teamMask"}) {
             CatalogFixture invalid(context.assets);
             for (auto& type : invalid.entities["entities"]) if (type["id"] == definition.id) {
-                if (std::string_view(mask) == "teamMask") type["sprite"]["death"][mask] = "sprites/worker.png";
-                else type["sprite"][mask] = "sprites/worker.png";
+                if (std::string_view(mask) == "teamMask") type["sprite"]["death"][mask] = "sprites/hall.png";
+                else type["sprite"][mask] = "sprites/hall.png";
             }
             mustThrow([&] { renderer.validateCombatAssets(invalid.load()); });
         }

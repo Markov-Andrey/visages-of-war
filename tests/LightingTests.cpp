@@ -26,6 +26,8 @@ struct RendererLightingTest {
         game.revealMap();
         WorldView view{{}, 1}; view.origin = Vec2{720, 345} - view.project({16, 14});
         GameplayUi ui;
+        // Pixel comparisons must not depend on the placement notification's wall-clock expiry.
+        ui.notification.text(game, GameplayNotification::Clock::now() - std::chrono::seconds(5));
         const auto read = [&] {
             std::vector<BYTE> pixels(1440 * 900 * 4);
             check(output->CopyPixels(nullptr, 1440 * 4, UINT(pixels.size()), pixels.data()));

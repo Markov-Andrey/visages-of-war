@@ -51,7 +51,13 @@ int ForgeApplication::run(HINSTANCE instance,bool smoke) {
             moveCamera(elapsed); refreshCursor(); renderer_.drawEditor(*editor_,view_,mouse_,grid_);
         }
         if(smoke&&testFinished_) DestroyWindow(window_);
-        if(smoke&&now-began>std::chrono::seconds(20)) throw std::runtime_error("Forge smoke test timed out waiting for game");
+        // Debug synthesizes and lights the directional atlases without optimization.
+#ifdef _DEBUG
+        constexpr auto smokeTimeout = std::chrono::seconds(90);
+#else
+        constexpr auto smokeTimeout = std::chrono::seconds(30);
+#endif
+        if(smoke&&now-began>smokeTimeout) throw std::runtime_error("Forge smoke test timed out waiting for game");
         MsgWaitForMultipleObjectsEx(0,nullptr,8,QS_ALLINPUT,MWMO_INPUTAVAILABLE);
     }
     if(callbackError_) std::rethrow_exception(callbackError_);

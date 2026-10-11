@@ -259,7 +259,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
     test("World asset catalog can grow and rejects escaping paths and cosmetic collision", [&] {
         const auto root=worldPaths.writable(L"catalog-test/world/catalog.json").parent_path().parent_path();
         const rts::Paths fixture(root,root/"user");
-        std::filesystem::copy_file(assets/"sprites/worker.png",root/"image.png",std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::copy_file(assets/"sprites/units/novice/novice-icon.png",root/"image.png",std::filesystem::copy_options::overwrite_existing);
         writeMap(root/"world/catalog.json",{{"materialFiles",{"world/materials.json"}},{"objectFiles",{"world/objects.json"}},{"remainsFile","world/remains.json"},{"resourcesFile","world/resources.json"}});
         std::ifstream resourceFile(assets/"world/resources.json"); auto resources=Json::parse(resourceFile);
         for (auto& icon : resources["icons"]) icon="image.png";

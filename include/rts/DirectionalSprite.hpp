@@ -27,12 +27,12 @@ struct DirectionalSourceFrame {
 struct DirectionalSpriteRecipe {
     int width{}, height{};
     Vec2 pivot{};
-    // Each source contains stand, four walk frames, four attack frames.
-    std::array<std::array<DirectionalSourceFrame, 9>, 2> sources; // SE, NW.
+    // Stand, four walk frames, optional four attack frames, optional work pose.
+    std::array<std::vector<DirectionalSourceFrame>, 2> sources; // SE, NW; matching sequences.
     SpriteWarp south, east, north;
 };
 DirectionalSpriteRecipe loadDirectionalSpriteRecipe(const Paths& paths, const std::string& recipe);
 SpritePixels warpSprite(const SpritePixels& source, const SpriteWarp& warp, float pivotX, bool mirror = false);
 SpritePixels assembleDirectionalSprite(const DirectionalSpriteRecipe& recipe,
-    const std::array<std::array<SpritePixels, 9>, 2>& frames);
+    const std::array<std::vector<SpritePixels>, 2>& frames);
 }

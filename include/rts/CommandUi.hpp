@@ -61,7 +61,7 @@ inline bool commandCapable(const Unit& unit, UnitCommand command) {
     case UnitCommand::Attack: return unit.attackDamage() > 0;
     case UnitCommand::AttackGround: return unit.attackDamage() > 0 && unit.definition.projectile &&
         unit.definition.projectile->targeting == ProjectileTargeting::Point && unit.definition.projectile->splashRadius > 0;
-    case UnitCommand::Gather: return unit.definition.carryCapacity > 0;
+    case UnitCommand::Gather: return unit.definition.canGather();
     case UnitCommand::Build: return unit.definition.canBuild;
     case UnitCommand::Back: return false;
     default: return true;

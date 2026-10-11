@@ -23,6 +23,8 @@ inline SpriteFrame locomotionFrame(const Unit& unit) {
 inline SpriteFrame unitFrame(const Unit& unit) {
     auto frame = locomotionFrame(unit);
     const auto& d = unit.definition;
+    if (d.sprite.work >= 0 && (unit.state == UnitState::Harvesting || unit.state == UnitState::Building) &&
+        unit.next >= unit.route.size()) frame.column = d.sprite.work;
     const bool windup = unit.attackPhase == AttackPhase::Windup;
     if (windup || unit.attackPhase == AttackPhase::Recovery) {
         const auto& frames = windup ? d.sprite.windup : d.sprite.recovery;

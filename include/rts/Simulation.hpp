@@ -11,7 +11,6 @@
 #include <memory>
 
 namespace rts {
-inline constexpr int simulationTicksPerSecond = 30;
 enum class EntityKind { Unit, Building };
 enum class UnitState { Idle, Moving, ToCrystal, Harvesting, ToHall, ToBuild, Building, WaitingForCrystal, ToAttack, Attacking };
 enum class OrderKind { Move, Interact, Stop, Build, Gather, Attack, AttackMove, Hold, Patrol, AttackGround };
@@ -221,10 +220,13 @@ private:
     bool setRoute(Unit& unit, std::span<const Cell> goals, UnitState state, bool waitForTraffic = true);
     bool seekCrystal(Unit& unit);
     bool returnCargo(Unit& unit);
+    void harvest(Unit& unit);
     void arrived(Unit& unit);
     void issue(Unit& unit, Order order);
     void applyOrder(Unit& unit, Order order, std::optional<Path> path = {});
     void tickUnit(Unit& unit);
+    void advanceConstruction(Building& building);
+    void tickConstruction();
     void tickProduction();
     void tickCombat();
     void leaveRemains(const Unit& unit);

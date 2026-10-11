@@ -11,6 +11,7 @@
 #include <vector>
 
 namespace rts {
+inline constexpr int simulationTicksPerSecond = 30;
 using EntityId = std::uint32_t;
 using PlayerId = std::uint8_t;
 inline constexpr PlayerId neutralPlayer = 255;
@@ -62,16 +63,24 @@ struct ProgressionRules {
     int experiencePerVictimLevel = 50;
     std::vector<int> thresholds{0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200};
 };
+enum class HarvestCredit { Cargo, Direct };
+struct HarvestDefinition {
+    HarvestCredit credit = HarvestCredit::Cargo;
+    int intervalTicks = simulationTicksPerSecond / 3;
+    int amount = 1;
+};
 struct AbilityDefinition {
     int id{};
     std::string displayName, description;
     int manaCost{}, cooldownTicks{};
+    std::optional<HarvestDefinition> harvest;
 };
 struct AbilityCooldown { int abilityId{}, remainingTicks{}; };
 struct ResourceCost { int crystals{}, supply{}; };
 // Cancellation returns half of the paid crystals, rounded down to whole crystals.
 inline constexpr int cancellationRefund(int paidCrystals) { return paidCrystals / 2; }
 enum class EntityVisual { Unit, Hall, Barracks, Tower };
+enum class ConstructionMode { Worker, Summoning };
 struct EntityDefinition {
     std::string id = "human.worker";
     std::string factionId = "humans";
@@ -85,6 +94,7 @@ struct EntityDefinition {
     float movementPerSecond = 2.8f;
     float collisionRadius = .35f; // Logical map units, independent of sprite size.
     int carryCapacity = 10;
+    std::optional<AbilityDefinition> gatherAbility; // Uses the Gather command slot, not Q/W/E.
     int trainingTicks = 90;
     int dayVision = 8, nightVision = 6;
     int maximumHealth = 60;
@@ -102,11 +112,16 @@ struct EntityDefinition {
     BuildingSpriteDefinition buildingSprite;
     int level = 1;
     std::optional<HeroDefinition> hero;
-    bool isWorker() const { return canBuild || carryCapacity > 0; }
+    bool canGather() const { return (gatherAbility && gatherAbility->harvest) || carryCapacity > 0; }
+    HarvestDefinition harvesting() const {
+        return gatherAbility && gatherAbility->harvest ? *gatherAbility->harvest : HarvestDefinition{};
+    }
+    bool isWorker() const { return canBuild || canGather(); }
     // Construction and mobility are independent capabilities, not exclusive kinds.
     bool constructible{};
     int width = 1, height = 1;
     int constructionTicks = 180;
+    ConstructionMode constructionMode = ConstructionMode::Worker;
     bool acceptsCargo{};
     std::vector<std::string> trainableUnits;
     EntityVisual visual = EntityVisual::Unit;

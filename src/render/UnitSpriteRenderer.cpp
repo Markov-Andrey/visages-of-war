@@ -160,7 +160,7 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                     if (frame.source[0] + frame.source[2] > deathSize.x || frame.source[1] + frame.source[3] > deathSize.y)
                         throw std::runtime_error("Death frame outside image: " + e.id);
             }
-            int column = s.idle;
+            int column = std::max(s.idle, s.work);
             for (const auto* frames : {&s.walk, &s.windup, &s.recovery}) column = std::max(column, *std::max_element(frames->begin(), frames->end()));
             const int row = *std::max_element(s.rows.begin(), s.rows.end());
             if ((column + 1) * s.frameWidth > size.x || (row + 1) * s.frameHeight > size.y)

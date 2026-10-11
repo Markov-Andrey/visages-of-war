@@ -41,10 +41,13 @@ void Renderer::drawUnitStats(const Unit& unit, UiRect b) {
     if (unit.hero) {
         extra = L"Уровень " + std::to_wstring(unit.level()) + (unit.atMaxLevel() ? L"  ·  Максимум" :
             L"  ·  Опыт " + std::to_wstring(unit.experienceInLevel()) + L" / " + std::to_wstring(unit.experienceToLevel()));
+    } else if (d.canGather() && d.harvesting().credit == HarvestCredit::Direct) {
+        const auto harvest = d.harvesting();
+        extra = L"Добыча  " + amount(float(harvest.amount) * Simulation::ticksPerSecond / harvest.intervalTicks) + L" кр/с";
     } else if (d.carryCapacity > 0) {
         extra = L"Кристаллы  " + std::to_wstring(unit.cargo) + L" / " + std::to_wstring(d.carryCapacity);
     } else extra = L"Уровень " + std::to_wstring(unit.level()) + L"  ·  Лимит " + std::to_wstring(d.cost.supply);
-    const char* resourceIcon = unit.hero ? nullptr : d.carryCapacity > 0 ? "crystal" : "supply";
+    const char* resourceIcon = unit.hero ? nullptr : d.canGather() ? "crystal" : "supply";
     if (resourceIcon) drawResourceIcon(resourceIcon, {b.x, b.y + 137, 22, 22});
     const float extraInset = resourceIcon ? 28.f : 0.f;
     text(extra, rect(b.x + extraInset, b.y + 137, width - extraInset, 24), unit.hero ? 0xd6c38a : 0xe4d4a5);

@@ -1,6 +1,7 @@
 # RTS project conventions
 
 - Keep documentation focused on current contracts and workflows. Use catalogs as the source for balance and asset inventories; keep change history in Git, remove completed TODO entries, and avoid appending dated test reports or duplicating rules across guides.
+- For team-color sprite masks, follow [ASSET_QUICKSTART.md](ASSET_QUICKSTART.md). Reuse `scripts/make-team-masks.ps1` and JSON profiles in `scripts/mask-profiles/`; keep hand corrections in profiles. These are offline maintenance tools, not game code.
 
 - Target Windows 10/11 x64 only; C++20, MSVC, CMake. Project name is RTS.
 - Keep simulation in logical map coordinates, independent of render pixels and camera.
@@ -12,7 +13,7 @@
 - Author map ramps at least two cells wide (normally 2–3); wide ramps allow lateral movement between matching adjacent lanes. Keep isolated one-cell ramps available for navigation tests.
 - Group orders form compact circular crowds in continuous map coordinates, with spacing derived from collision radii, never cell-centre slots. Lower formation priorities prefer the front; arrival may relax personal destinations to avoid circling settled friends. Keep matching independent of selection order; IDs only break geometric ties.
 - Unit collision remains solid for allies and enemies, including moving neighbours. Never push, teleport or phase units through a closed surround. Buildings and blocking environment footprints stay square.
-- Resources are crystals: workers harvest finite nodes and carry cargo to the town hall before crediting the balance.
+- Resources are finite crystals. Harvest abilities choose direct credit or cargo delivery through data; preserve both modes and conserve reserves. Church workers credit directly while using their work pose; cargo workers credit only on delivery.
 - Explicit gathering retains the clicked deposit as its origin across traffic retries and deliveries. Fallback nodes must stay near that origin, never be chosen globally by distance from the worker.
 - Resolve files through `Paths`. Assets are relative to the executable, never the working directory or source checkout.
 - Use Unicode Windows APIs and `std::filesystem::path`; do not hardcode machine-specific paths.

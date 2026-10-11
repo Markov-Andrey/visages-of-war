@@ -8,6 +8,32 @@
       "targeting": "none",
       "manaCost": 25,
       "cooldownTicks": 150
+    },
+    {
+      "id": 2,
+      "name": "Сбор кристаллов",
+      "description": "Медленно извлекать кристаллы из выбранной залежи и сразу отправлять их в запас. Возвращаться к ратуше не требуется.",
+      "targeting": "crystal",
+      "manaCost": 0,
+      "cooldownTicks": 0,
+      "harvest": {
+        "credit": "direct",
+        "intervalTicks": 20,
+        "amount": 1
+      }
+    },
+    {
+      "id": 3,
+      "name": "Добыча кристаллов",
+      "description": "Добывать кристаллы из выбранной залежи и доставлять груз в готовую ратушу.",
+      "targeting": "crystal",
+      "manaCost": 0,
+      "cooldownTicks": 0,
+      "harvest": {
+        "credit": "cargo",
+        "intervalTicks": 10,
+        "amount": 1
+      }
     }
   ]
 }

@@ -109,6 +109,24 @@ bool Simulation::setRally(EntityId id, Cell c) {
     }
     b->rally = c; setMessage(L"Точка сбора установлена."); return true;
 }
+void Simulation::advanceConstruction(Building& b) {
+    if (b.health <= 0 || b.complete()) return;
+    const auto builtHealth = [&] {
+        return std::max(1, int(std::int64_t(b.definition.maximumHealth) * b.constructionProgress / b.definition.constructionTicks));
+    };
+    const int previousHealth = builtHealth();
+    ++b.constructionProgress;
+    b.health = std::min(b.definition.maximumHealth, b.health + builtHealth() - previousHealth);
+    if (b.complete()) {
+        events_.emplace_back(ConstructionFinished{b.id});
+        setMessage(L"Здание готово.");
+    }
+}
+void Simulation::tickConstruction() {
+    for (auto& b : buildings_)
+        if (b.definition.constructionMode == ConstructionMode::Summoning && b.constructionProgress > 0)
+            advanceConstruction(b);
+}
 void Simulation::tickProduction() {
     for (auto& b : buildings_) {
         if (!b.complete() || b.production.empty()) continue;

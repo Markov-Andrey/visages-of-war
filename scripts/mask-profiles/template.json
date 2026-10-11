@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "assetRoot": "assets/sprites/units/your-unit",
+  "selection": {
+    "minimumRed": 32,
+    "minimumRedGreenDifference": 16,
+    "redDominance": 2,
+    "warmHueSlope": 0.2,
+    "warmHueOffset": 1
+  },
+  "edge": {
+    "darkRedLimit": 24,
+    "darkOtherLimit": 16,
+    "minimumRedGreenDifference": 5,
+    "redDominance": 1.6,
+    "warmHueSlope": 0.22,
+    "warmHueOffset": 1
+  },
+  "jobs": [
+    {
+      "image": "your-unit.png",
+      "mask": "your-unit-mask.png",
+      "size": [
+        2048,
+        2048
+      ],
+      "excludePolygons": [],
+      "backgroundSeedRects": []
+    }
+  ]
+}

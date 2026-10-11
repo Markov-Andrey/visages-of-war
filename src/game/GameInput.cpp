@@ -87,7 +87,7 @@ rts::CursorKind GameApplication::cursorKind() const {
         return selected([&](const rts::Unit& u) { return game_.canAttack(u, enemy); }) ? CursorKind::Attack : CursorKind::Blocked;
     }
     for (const auto& crystal : game_.crystals()) if (crystal.contains(*target) && crystal.remaining > 0 && game_.crystalVisible(crystal)) {
-        if (selected([](const rts::Unit& u) { return u.definition.carryCapacity > 0; })) return CursorKind::Gather;
+        if (selected([](const rts::Unit& u) { return u.definition.canGather(); })) return CursorKind::Gather;
     }
     if (const auto id = rts::pickEntity(game_, view_, mouse_)) {
         const auto* site = game_.building(*id);

@@ -3,6 +3,89 @@
 namespace rts::tests {
 void economyTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
+    test("Novice credits crystals in its work pose without cargo or a route to the depot", [&] {
+        const auto definitions = Definitions::load(assets / "data/catalog.json");
+        const auto type = definitions.entity("human.worker");
+        require(type.canGather() && type.carryCapacity == 0 && type.harvesting().credit == HarvestCredit::Direct,
+            "Novice is not a direct gatherer");
+        auto s = flatScenario(); s.worker = {6,7};
+        for (int y = 0; y < s.map.height(); ++y) s.map.at({4,y}).blocked = true;
+        Simulation game(std::move(s), {}, type);
+        require(commandCapable(game.worker(), UnitCommand::Gather) && game.command({7,7}), "Zero-cargo worker cannot gather");
+        for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
+        require(game.worker().state == UnitState::Harvesting, "Novice did not reach the node");
+        const auto position = game.worker().position;
+        const int interval = type.harvesting().intervalTicks;
+        require(interval > HarvestDefinition{}.intervalTicks, "Direct mining must be slower than default cargo mining");
+        for (int i = 1; i < interval; ++i) {
+            game.tick();
+            require(game.storedCrystals() == 0 && unitFrame(game.worker()).column == type.sprite.work,
+                "Harvest credited early or lost the work pose");
+        }
+        game.tick();
+        require(game.storedCrystals() == 1 && game.worker().cargo == 0 && game.worker().position == position,
+            "Direct harvest accumulated cargo or visited the depot");
+        ticks(game, interval * 30);
+        require(game.storedCrystals() == 23 && game.crystals()[0].remaining == 0 && game.worker().cargo == 0 &&
+            game.worker().state == UnitState::Idle && game.map().walkable({7,7}), "Direct harvesting lost resources or failed to finish");
+    });
+    test("Direct harvest batches clamp to the reserve and Stop resets progress", [&] {
+        const auto definitions = Definitions::load(assets / "data/catalog.json");
+        auto type = definitions.entity("human.worker");
+        type.gatherAbility->harvest->intervalTicks = 4;
+        type.gatherAbility->harvest->amount = 3;
+        auto s = flatScenario(7); s.worker = {6,7};
+        Simulation game(std::move(s), {}, type);
+        const auto start = [&] {
+            require(game.command({7,7}), "Gather rejected");
+            for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
+            require(game.worker().state == UnitState::Harvesting, "Worker did not start harvesting");
+        };
+        start(); ticks(game, 2); game.stop(); ticks(game, 12);
+        require(game.storedCrystals() == 0 && game.crystals()[0].remaining == 7 &&
+            unitFrame(game.worker()).column == type.sprite.idle, "Stop retained gathering or work animation");
+        start(); ticks(game, 3);
+        require(game.storedCrystals() == 0, "New order retained cancelled harvest progress");
+        game.tick(); require(game.storedCrystals() == 3, "Configured batch amount ignored");
+        ticks(game, 4); require(game.storedCrystals() == 6, "Second batch failed");
+        ticks(game, 4); require(game.storedCrystals() == 7 && game.worker().cargo == 0 && game.map().walkable({7,7}),
+            "Final partial batch duplicated or lost crystals");
+    });
+    test("Catalog cargo harvesting still fills capacity and credits only on delivery", [&] {
+        const auto definitions = Definitions::load(assets / "data/catalog.json");
+        auto type = definitions.entity("human.worker");
+        type.gatherAbility = definitions.ability(3); type.carryCapacity = 10;
+        type.gatherAbility->harvest->amount = 6;
+        auto s = flatScenario(); s.worker = {6,7};
+        Simulation game(std::move(s), {}, type);
+        game.command({7,7});
+        for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
+        const int interval = type.harvesting().intervalTicks;
+        ticks(game, interval);
+        require(game.worker().cargo == 6 && game.storedCrystals() == 0, "Cargo harvest credited immediately");
+        ticks(game, interval);
+        require(game.worker().cargo == 10 && game.storedCrystals() == 0 && game.crystals()[0].remaining == 13,
+            "Batch exceeded cargo capacity or lost surplus crystals");
+        ticks(game, 3000);
+        require(game.storedCrystals() == 23 && game.worker().cargo == 0, "Catalog cargo mode lost its final partial delivery");
+    });
+    test("Direct group gathering conserves resources and stays near the clicked deposit", [&] {
+        const auto definitions = Definitions::load(assets / "data/catalog.json");
+        auto type = definitions.entity("human.worker"); type.dayVision = type.nightVision = 32;
+        auto s = gatheringScenario(); s.crystals[0].remaining = 7; s.crystals[2].remaining = 9;
+        s.extraWorkers = {{4,7},{4,9},{3,8}};
+        Simulation game(std::move(s), {}, type);
+        std::vector<EntityId> ids; for (const auto& u : game.units()) ids.push_back(u.id);
+        require(game.command(ids, {15,8}), "Direct group gather rejected");
+        for (int i = 0; i < 2200; ++i) {
+            game.tick();
+            int total = game.storedCrystals(); for (const auto& node : game.crystals()) total += node.remaining;
+            for (const auto& u : game.units()) require(u.cargo == 0 && u.state != UnitState::ToHall &&
+                u.gatherOriginCrystal == 0 && u.targetCrystal != 1, "Direct gathering returned cargo or drifted to another field");
+            require(total == 1016, "Concurrent harvesting lost or duplicated reserves");
+        }
+        require(game.storedCrystals() == 16 && game.crystals()[1].remaining == 1000, "Local direct gathering did not finish");
+    });
     test("Construction rejects a neighbouring circle crossing its square footprint", [] {
         rts::Scenario s{rts::Map(20, 16), {1, 1}, {6, 6}, {}};
         rts::Simulation game(std::move(s));
@@ -158,9 +241,11 @@ void economyTests(TestSuite& test, const TestContext& context) {
     });
     test("Construction validates site, charges once, resumes and releases only its footprint", [&] {
         auto definitions = rts::Definitions::load(assets / "data/catalog.json");
+        auto types = definitions.entities();
+        for (auto& type : types) type.constructionMode = ConstructionMode::Worker;
 
         auto s = flatScenario(); s.startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities());
+        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), std::move(types));
         const std::array<rts::EntityId, 1> ids{game.worker().id};
         require(!game.construct(ids, "human.barracks", {4, 3}), "Built on worker");
         require(!game.construct(ids, "human.barracks", {8, 8}), "Built outside map");
@@ -184,6 +269,72 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.map().walkable({3, 5}) && game.storedCrystals() == 362, "Cancellation did not refund half rounded down or release occupancy");
         require(!game.map().walkable({5, 3}) && !game.cancelConstruction(*building), "Cancellation touched completed building");
     });
+    test("Summoning requires initiation, frees the worker and preserves duration and damage", [&] {
+        const auto definitions = Definitions::load(assets / "data/catalog.json");
+        auto s = flatScenario(); s.startingCrystals = 500;
+        Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities());
+        const std::array ids{game.worker().id};
+        const auto site = game.construct(ids, "human.barracks", {5, 3});
+        require(site.has_value(), "Summoning site rejected");
+        game.stop(ids); ticks(game, 200);
+        require(game.building(*site)->constructionProgress == 0 && game.building(*site)->health == 1,
+            "Summoning started before the worker reached the site");
+        game.command(ids, {5, 3});
+        for (int i = 0; i < 100 && game.building(*site)->constructionProgress == 0; ++i) game.tick();
+        require(game.building(*site)->constructionProgress == 1, "Initiation skipped or advanced construction twice");
+        require(game.worker().state == UnitState::Idle && game.worker().targetBuilding == 0 &&
+            game.worker().currentOrder.kind == OrderKind::Stop, "Summoning retained the builder");
+        const auto start = game.worker().position;
+        require(game.command(ids, {4, 8}), "Freed worker could not take a new order");
+        ticks(game, 30);
+        require(groundLengthSquared(game.worker().position - start) > .1f && game.building(*site)->constructionProgress == 31,
+            "Summoning depends on worker position or advances at the wrong rate");
+        const_cast<Building&>(*game.building(*site)).health -= 10;
+        game.command(ids, {5, 3}); ticks(game, 1);
+        require(game.building(*site)->constructionProgress == 32 && game.worker().targetBuilding == 0,
+            "Reassigning a worker restarted or accelerated summoning");
+        const_cast<Unit&>(game.worker()).health = 0;
+        game.tick();
+        require(game.units().empty(), "Worker death fixture failed");
+        const int duration = game.building(*site)->definition.constructionTicks;
+        ticks(game, duration - 34);
+        require(!game.building(*site)->complete() && game.building(*site)->constructionProgress == duration - 1,
+            "Summoning finished early or stopped after worker death");
+        game.tick();
+        require(game.building(*site)->complete() && game.building(*site)->health == definitions.entity("human.barracks").maximumHealth - 10,
+            "Summoning did not finish exactly or healed combat damage");
+        require(game.storedCrystals() == 400 && !game.cancelConstruction(*site), "Completion changed cost or allowed a refund");
+        auto events = game.takeEvents();
+        require(std::count_if(events.begin(), events.end(), [&](const auto& event) {
+            const auto* finished = std::get_if<ConstructionFinished>(&event); return finished && finished->building == *site;
+        }) == 1, "Summoning completion event missing or duplicated");
+        ticks(game, 10); events = game.takeEvents();
+        require(std::none_of(events.begin(), events.end(), [](const auto& event) {
+            return std::holds_alternative<ConstructionFinished>(event);
+        }), "Completed summoning emitted repeated events");
+    });
+    test("Summoning cancellation before initiation refunds half and destruction never refunds", [&] {
+        const auto definitions = Definitions::load(assets / "data/catalog.json");
+        auto s = flatScenario(); s.startingCrystals = 500;
+        Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities());
+        const std::array ids{game.worker().id};
+        const auto pending = game.construct(ids, "human.barracks", {5, 3});
+        require(pending && game.cancelConstruction(*pending) && game.storedCrystals() == 450 && game.map().walkable({5, 3}),
+            "Uninitiated summoning did not refund half or release occupancy");
+        const auto site = game.construct(ids, "human.barracks", {5, 3});
+        require(site.has_value(), "Could not reuse cancelled site");
+        ticks(game, 30);
+        require(game.building(*site)->constructionProgress > 0, "Destruction fixture did not start summoning");
+        const_cast<Building&>(*game.building(*site)).health = 0;
+        game.tick();
+        require(!game.building(*site) && game.storedCrystals() == 350 && game.map().walkable({5, 3}),
+            "Summoning revived a destroyed building or refunded its cost");
+        ticks(game, 200);
+        const auto events = game.takeEvents();
+        require(std::none_of(events.begin(), events.end(), [](const auto& event) {
+            return std::holds_alternative<ConstructionFinished>(event);
+        }), "Cancelled or destroyed summoning completed later");
+    });
     test("Building cancellation refunds half the crystals and releases all reserved supply", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");
         auto types = definitions.entities();
@@ -197,7 +348,9 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.map().walkable({4, 5}) && game.storedCrystals() == 425 && game.buildings().size() == 2, "Rejected construction changed world or resources");
         for (int i = 0; i < 300 && game.building(*tower)->constructionProgress < game.building(*tower)->definition.constructionTicks / 2; ++i) game.tick();
         require(game.building(*tower)->constructionProgress > 0 && !game.building(*tower)->complete(), "Partial construction fixture did not advance");
+        game.command(ids, {4, 8});
         require(game.cancelConstruction(*tower), "Could not cancel supply-consuming construction");
+        require(game.worker().currentOrder.kind == OrderKind::Move, "Cancelling summoning stopped the freed worker's new order");
         require(game.map().walkable({3, 5}) && game.armySupply().used() == 1 && game.storedCrystals() == 462, "Cancellation did not release footprint/supply and refund half the crystals");
         require(!game.cancelConstruction(*tower) && game.storedCrystals() == 462, "Cancellation refunded twice");
     });
