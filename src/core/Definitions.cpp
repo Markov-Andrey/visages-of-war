@@ -28,7 +28,7 @@ Json read(const std::filesystem::path& file) {
 }
 void version(const Json& root) { if (number(root.at("version"), 1, 1) != 1) throw std::runtime_error("Unsupported catalog version"); }
 EntityDefinition parseEntity(const Json& j) {
-    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "visual", "alternateForms", "attack", "sprite"}, {"buildingSprite", "library", "canDecompose", "abilities"});
+    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "alternateForms", "attack", "sprite"}, {"buildingSprite", "library", "canDecompose", "abilities"});
     EntityDefinition e;
     e.id = string(j.at("id")); e.factionId = string(j.at("factionId"));
     e.displayName = string(j.at("name")); e.description = string(j.at("description"));
@@ -88,14 +88,9 @@ EntityDefinition parseEntity(const Json& j) {
         if (e.level != 1) throw std::runtime_error("Hero must start at level one");
         e.hero = HeroDefinition{number(hero.at("healthPerLevel"), 0, 100000), number(hero.at("damagePerLevel"), 0, 100000)};
     }
-    const auto visual = string(j.at("visual"));
-    if (visual == "unit") e.visual = EntityVisual::Unit;
-    else if (visual == "hall") e.visual = EntityVisual::Hall;
-    else if (visual == "barracks") e.visual = EntityVisual::Barracks;
-    else if (visual == "tower") e.visual = EntityVisual::Tower;
-    else throw std::runtime_error("Unknown visual: " + visual);
     e.alternateForms = j.at("alternateForms").get<std::vector<std::string>>();
     if (j.contains("buildingSprite")) data::parseBuildingSprite(e, j.at("buildingSprite"));
+    if (e.constructible && e.buildingSprite.stages.empty()) throw std::runtime_error("Constructible entity requires buildingSprite stages");
     return e;
 }
 }

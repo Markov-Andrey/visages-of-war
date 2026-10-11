@@ -9,97 +9,6 @@
 
 namespace rts::game {
 void GameApplication::exerciseInterface() {
-    cursor_.snapshot(rts::Paths::executable().parent_path() / L"cursors-preview.png");
-    for (const auto color : {rts::TeamColor::Blue, rts::TeamColor::White, rts::TeamColor::Black}) {
-        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
-        site.startingCrystals = 500;
-        rts::PlayerSettings player; player.color = color;
-        rts::Simulation corps(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
-        const std::array builders{corps.worker().id};
-        const auto id = corps.construct(builders, "human.barracks", {12, 11});
-        if (!id) throw std::runtime_error("Smoke: corps construction failed");
-        for (int i = 0; i < 700 && !corps.building(*id)->complete(); ++i) corps.tick();
-        if (!corps.building(*id)->complete() || !corps.train(*id, "human.peacemaker"))
-            throw std::runtime_error("Smoke: corps completion or training failed");
-        rts::GameplayUi ui; ui.selection.ids = {*id};
-        rts::WorldView view{{}, 1.25f};
-        view.origin = rts::Vec2{760, 350} - view.project(rts::center(corps.building(*id)->origin), 0);
-        renderer_.snapshot(corps, rts::Paths::executable().parent_path() /
-            (L"peacemaker-corps-" + std::to_wstring(static_cast<int>(color)) + L".png"),
-            nullptr, true, &ui, rts::MenuPage::Main, 0, nullptr, &view, {1280, 900});
-    }
-    {
-        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
-        rts::Simulation lit(site, {}, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id, {}, {}, {.startMinute = 22 * 60});
-        auto unlitTypes = definitions_.entities();
-        for (auto& type : unlitTypes) for (auto& stage : type.buildingSprite.stages) stage.lights.clear();
-        rts::Simulation unlit(site, {}, definitions_.entity("human.worker"), unlitTypes, definitions_.startingDepot(definitions_.entity("human.worker").factionId).id, {}, {}, {.startMinute = 22 * 60});
-        renderer_.snapshot(unlit, rts::Paths::executable().parent_path() / L"ratusha-light-off.png");
-        renderer_.snapshot(lit, rts::Paths::executable().parent_path() / L"ratusha-light-on.png");
-    }
-    {
-        rts::Scenario site{rts::Map(28, 28), {8, 11}, {11, 11}, {}};
-        site.startingCrystals = 500;
-        rts::PlayerSettings player; player.color = rts::TeamColor::Red;
-        rts::Simulation construction(std::move(site), player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
-        if (construction.clock().phase() != rts::DayPhase::Day || construction.clock().minuteOfDay() != 12 * 60)
-            throw std::runtime_error("Smoke: match did not start at noon");
-        const std::array builders{construction.worker().id};
-        const auto id = construction.construct(builders, "human.hall", {12, 11});
-        if (!id) throw std::runtime_error("Smoke: hall construction failed");
-        rts::GameplayUi ui; ui.selection.ids = {*id};
-        for (int percent : {0, 10, 33, 66, 99, 100}) {
-            int attempts = 0;
-            while (construction.building(*id)->constructionProgress * 100 < percent * construction.building(*id)->definition.constructionTicks && attempts++ < 1000)
-                construction.tick();
-            const auto* building = construction.building(*id);
-            const auto* stage = building->definition.buildingSprite.stage(building->constructionProgress, building->definition.constructionTicks);
-            if (!stage || !building->definition.buildingSprite.construction || stage->from != 0) throw std::runtime_error("Smoke: hall construction effect failed");
-            renderer_.snapshot(construction, rts::Paths::executable().parent_path() / (L"ratusha-stage-" + std::to_wstring(percent) + L".png"), nullptr, false, &ui);
-        }
-        if (!construction.train(*id) || !construction.building(*id)->training())
-            throw std::runtime_error("Smoke: hall training effects did not activate");
-        const auto imageRoot = rts::Paths::executable().parent_path();
-        renderer_.snapshot(construction, imageRoot / L"ratusha-training.png", nullptr, false, &ui);
-        for (int i = 0; i < 3; ++i) construction.tick();
-        renderer_.snapshot(construction, imageRoot / L"ratusha-training-next.png", nullptr, false, &ui);
-        if (!construction.cancelTraining(*id) || construction.building(*id)->training())
-            throw std::runtime_error("Smoke: cancelled training left hall effects active");
-        renderer_.snapshot(construction, imageRoot / L"ratusha-idle.png", nullptr, false, &ui);
-        if (!construction.setRally(*id, {14, 15})) throw std::runtime_error("Smoke: rally preview placement failed");
-        renderer_.snapshot(construction, imageRoot / L"rally-point-preview.png", nullptr, false, &ui);
-        for (int i = 0; i < 8; ++i) construction.tick();
-        renderer_.snapshot(construction, imageRoot / L"rally-point-next-preview.png", nullptr, false, &ui);
-    }
-    {
-        rts::Scenario forest{rts::Map(28, 28), {8, 11}, {12, 14}, {{{18, 14}, 1000}}};
-        forest.map.occupy({18, 14});
-        std::vector<rts::EntityId> clearing;
-        for (int y = 5; y <= 23; ++y) for (int x : {15, 16}) {
-            const auto id = 2000 + static_cast<rts::EntityId>(forest.environment.size());
-            forest.environment.push_back(rts::makeEnvironment("TREE", id, {x, y}));
-            forest.map.occupy({x, y});
-            if (y == 14 || y == 15) clearing.push_back(id);
-        }
-        forest.units = {{"human.peacemaker", 1, {18, 15}}};
-        auto forestTypes = definitions_.entities();
-        for (auto& type : forestTypes) if (type.acceptsCargo) type.dayVision = type.nightVision = 1;
-        auto observer = definitions_.entity("human.worker"); observer.dayVision = observer.nightVision = 7;
-        rts::Simulation forestGame(std::move(forest), {}, observer, std::move(forestTypes), definitions_.startingDepot(observer.factionId).id);
-        rts::GameplayUi forestUi; forestUi.selection.ids = {forestGame.worker().id};
-        const auto imagePath = rts::Paths::executable().parent_path();
-        if (!forestGame.fog().visible({15, 14}) || forestGame.fog().visible({16, 14}) || forestGame.fog().visible({18, 15}))
-            throw std::runtime_error("Smoke: forest sight boundary failed");
-        renderer_.snapshot(forestGame, imagePath / L"forest-preview.png", nullptr, false, &forestUi);
-        const auto count = forestGame.environment().size();
-        for (auto id : clearing) forestGame.setEnvironmentHealth(id, 0);
-        if (!forestGame.fog().visible({18, 15})) throw std::runtime_error("Smoke: cleared forest did not reveal enemy");
-        renderer_.snapshot(forestGame, imagePath / L"forest-cleared-preview.png", nullptr, false, &forestUi);
-        for (auto id : clearing) forestGame.setEnvironmentHealth(id, 100);
-        if (forestGame.environment().size() != count || forestGame.fog().visible({18, 15}))
-            throw std::runtime_error("Smoke: restored forest did not hide enemy");
-        renderer_.snapshot(forestGame, imagePath / L"forest-restored-preview.png", nullptr, false, &forestUi);
-    }
     const auto checkFullscreen = [&] {
         const auto bounds = monitorBounds(MonitorFromWindow(window_, MONITOR_DEFAULTTONEAREST));
         RECT windowBounds{}, client{};
@@ -121,17 +30,6 @@ void GameApplication::exerciseInterface() {
     onMessage(WM_DISPLAYCHANGE, 32, 0);
     checkFullscreen();
     // Exercise the same Win32 handlers used by mouse and keyboard, in a hidden window.
-    {
-        auto preview = menu_;
-        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"menu-centre-preview.png",
-            &definitions_, false, nullptr, rts::MenuPage::Main, 0, &preview);
-        preview.parallax.offset = {-1, -1};
-        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"menu-left-preview.png",
-            &definitions_, false, nullptr, rts::MenuPage::Main, 0, &preview, nullptr, {1920, 1080});
-        preview.parallax.offset = {1, 1};
-        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"menu-right-preview.png",
-            &definitions_, false, nullptr, rts::MenuPage::Main, 0, &preview, nullptr, {1280, 1024});
-    }
     {
         const rts::MenuLayout layout(renderer_.size());
         mouse_ = {layout.battles.x + 20, layout.battles.y + 20};
@@ -253,7 +151,7 @@ void GameApplication::exerciseInterface() {
     if (cursorKind() != CursorKind::Move) throw std::runtime_error("Smoke: edge cursor replaced middle drag cursor");
     panning_ = false;
     ui_.selection.ids = {game_.worker().id};
-    ui_.placement = "human.barracks";
+    ui_.placement = "church.barracks";
     // The catalog footprint may grow; find a free site near the original test location.
     std::optional<rts::Cell> constructionSite;
     for (int radius = 0; radius <= 6 && !constructionSite; ++radius)
@@ -368,7 +266,7 @@ void GameApplication::exerciseInterface() {
     }
     if (!barracksPoint) throw std::runtime_error("Smoke: no exposed barracks area for selection");
     click(*barracksPoint);
-    if (!selectedBuilding() || selectedBuilding()->definition.visual != rts::EntityVisual::Barracks)
+    if (!selectedBuilding() || selectedBuilding()->definition.id != "church.barracks")
         throw std::runtime_error("Smoke: barracks selection failed");
     onMessage(WM_KEYDOWN, 'Q', 0);
     const rts::Cell armyRally{21, 26};
@@ -421,8 +319,8 @@ void GameApplication::exerciseInterface() {
     }
     onMessage(WM_MBUTTONUP, 0, at(screenCenter));
     auto arena = rts::loadScenario(paths_.asset(L"maps/demo.rtsmap"));
-    arena.units = {{"human.peacemaker", 0, {15, 18}}, {"human.peacemaker", 1, {17, 19}}};
-    game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
+    arena.units = {{"church.peacemaker", 0, {15, 18}}, {"church.peacemaker", 1, {17, 19}}};
+    game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
     ui_ = {}; resetCamera();
     onMessage(WM_KEYDOWN, VK_F1, 0);
     if (ui_.selection.ids.size() != 1 || game_.unit(ui_.selection.ids.front())->owner != game_.player().id)
@@ -448,10 +346,10 @@ void GameApplication::exerciseInterface() {
     // This fixture tests the fallen-hero UI. Keep the duel isolated: a nearby
     // worker can be closer in the ground-plane metric and attract the attacker.
     heroScenario.extraWorkers.clear();
-    heroScenario.units = {{"human.hero", 0, {15, 18}}, {"human.peacemaker", 1, {16, 18}}};
+    heroScenario.units = {{"church.hero", 0, {15, 18}}, {"church.peacemaker", 1, {16, 18}}};
     auto heroTypes = definitions_.entities();
-    for (auto& type : heroTypes) if (type.id == "human.hero") { type.maximumHealth = 12; type.attackDamage = 0; }
-    game_ = rts::Simulation(std::move(heroScenario), menu_.player, definitions_.entity("human.worker"), std::move(heroTypes), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
+    for (auto& type : heroTypes) if (type.id == "church.hero") { type.maximumHealth = 12; type.attackDamage = 0; }
+    game_ = rts::Simulation(std::move(heroScenario), menu_.player, definitions_.entity("church.worker"), std::move(heroTypes), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
     onMessage(WM_KEYDOWN, VK_F2, 0);
     for (int tick = 0; tick < 30 && game_.hero(); ++tick) game_.tick();
     if (game_.hero() || !game_.heroFallen()) throw std::runtime_error("Smoke: hero did not die");

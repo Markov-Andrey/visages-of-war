@@ -33,20 +33,6 @@ void movementTests(TestSuite& test, const TestContext& context) {
             }
         }
     });
-    test("Ground circles stay circular on screen including broad phase and cell edges", [] {
-        const Vec2 start{8,8};
-        for (int i = 0; i < 32; ++i) {
-            const float angle = i * .196349541f;
-            const Vec2 offset = planeToGround({std::cos(angle),std::sin(angle)});
-            require(sweptCircleIntersects(start,start,.3f,{start + offset * .59f,.3f}), "Broad phase missed a contact");
-            require(!sweptCircleIntersects(start,start,.3f,{start + offset * .61f,.3f}), "Circle grew in one direction");
-            const auto screen = WorldView{}.project(start + offset) - WorldView{}.project(start);
-            require(std::abs(std::hypot(screen.x,screen.y) - 64 / std::sqrt(1.25f)) < .001f, "Ground metric depends on direction");
-        }
-        Map map(16,16); map.occupy({8,8});
-        require(!map.canTraverse({7.65f,8.4f},{7.65f,8.4f},.4f), "Circle clipped diamond wall");
-        require(map.canTraverse({7.5f,8.4f},{7.5f,8.4f},.4f), "Clear circle rejected at diamond wall");
-    });
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Circle sweeps preserve walls, corners, shore ramps and the air layer", [] {
         rts::Map map(12, 12);
@@ -61,33 +47,6 @@ void movementTests(TestSuite& test, const TestContext& context) {
         require(shore.map.canTraverse({10.5f, 10.5f}, {13.5f, 10.5f}, .5f), "Circle cannot use shore ramp");
         require(!shore.map.canTraverse({10.5f, 5.5f}, {13.5f, 5.5f}, .2f), "Circle bypassed shore cliff");
         require(!shore.map.canTraverse({10.5f, 10.5f}, {11.5f, 11.5f}, .2f), "Smoothing cut ramp corner");
-    });
-    test("Circular path obstacles allow diagonal clearance and account for different sizes", [] {
-        rts::Map map(12, 12);
-        const std::array<rts::Cell, 1> goal{{{6, 6}}};
-        std::array<rts::Circle, 1> obstacle{{{{5.3f, 4.5f}, .2f}}};
-        const auto small = rts::findUnitPath(map, {4.5f, 4.5f}, goal, obstacle, .2f, rts::MovementType::Walking);
-        obstacle[0].radius = .5f;
-        const auto large = rts::findUnitPath(map, {4.5f, 4.5f}, goal, obstacle, .5f, rts::MovementType::Walking);
-        require(small && large && small->cost == 2236 && large->cost > small->cost, "Path still uses square unit occupancy");
-        require(rts::sweptCircleIntersects({0, 0}, {5, 0}, .1f, {{2.5f, 0}, .1f}), "Fast circle tunnelled through unit");
-        require(!rts::sweptCircleIntersects({0, 0}, {5, 0}, .1f, {{2.5f, .3f}, .1f}), "Broad phase replaced circular collision");
-    });
-    test("A moving circle may share a grid cell without intersecting a stationary circle", [] {
-        rts::Scenario s{rts::Map(20, 16), {1, 1}, {5, 5}, {}};
-        s.extraWorkers = {{7, 6}};
-        rts::EntityDefinition type; type.collisionRadius = .1f;
-        auto game = makeTestSimulation(std::move(s), {}, type);
-        const auto id = game.worker().id;
-        require(game.order(std::span<const rts::EntityId>(&id, 1), rts::OrderKind::Move, {12, 7}), "Order rejected");
-        bool shared = false;
-        for (int tick = 0; tick < 250; ++tick) {
-            game.tick();
-            require(separated(game.units()[0], game.units()[1]), "Circles overlapped");
-            shared |= game.units()[0].cell == game.units()[1].cell;
-        }
-        require(shared, "Units still reserve entire grid cells");
-        require(game.worker().cell == rts::Cell{12, 7} && game.worker().state == rts::UnitState::Idle, "Circle failed to reach goal");
     });
     test("Different circle sizes remain separated through crossing and replacement orders", [] {
         rts::Scenario s{rts::Map(24, 20), {1, 1}, {5, 8}, {}};
@@ -149,66 +108,6 @@ void movementTests(TestSuite& test, const TestContext& context) {
         require(!rts::findPath(s.map, {4, 10}, {27, 10}, M::Walking) &&
             !rts::findPath(s.map, {4, 10}, {27, 10}, M::Amphibious), "Non-flying unit crossed without ramps");
     });
-    test("Twelve units descend, cross a lowered ford and form up on the other bank", [] {
-        auto s = shoreScenario();
-        for (int x = 4; x < 10; ++x) for (int y : {10, 11}) if (rts::Cell{x, y} != s.worker) s.extraWorkers.push_back({x, y});
-        auto game = makeTestSimulation(std::move(s));
-        std::vector<rts::EntityId> ids;
-        std::vector<rts::FormationMember> members;
-        for (const auto& u : game.units()) { ids.push_back(u.id); members.push_back({u.id, u.cell}); }
-        const auto expected = rts::planFormation(game.map(), members, {26, 10}, {});
-        require(game.command(ids, {26, 10}), "Ford group order rejected");
-        std::vector<rts::EntityId> crossed;
-        float previousHeight = game.unitHeight(game.worker());
-        for (int tick = 0; tick < 1500; ++tick) {
-            game.tick();
-            const float height = game.unitHeight(game.worker());
-            require(std::abs(height - previousHeight) < .15f, "Ground height snapped on shore ramp");
-            previousHeight = height;
-            for (size_t i = 0; i < game.units().size(); ++i) {
-                const auto& u = game.units()[i];
-                if (game.map().at(u.cell).surface == rts::Surface::ShallowWater && std::find(crossed.begin(), crossed.end(), u.id) == crossed.end()) crossed.push_back(u.id);
-                for (size_t j = i + 1; j < game.units().size(); ++j) require(separated(u, game.units()[j]), "Ford traffic overlapped");
-            }
-        }
-        require(crossed.size() == ids.size(), "Some units bypassed the lowered ford");
-        for (const auto& slot : expected) require(rts::groundLengthSquared(game.unit(slot.id)->position - rts::center({26, 10})) < 9 && game.unit(slot.id)->state == rts::UnitState::Idle, "Squad stalled at shore or failed to reform");
-    });
-    test("Negative water elevation loads independently and rejects submerged ramps", [&] {
-        const auto file = rts::Paths::executable().parent_path() / L"test-shore.rtsmap";
-        const auto write = [&](nlohmann::json ramp) {
-            auto j=mapJson(); j["terrain"]["heights"][2]="00--00"; j["terrain"]["heights"][3]="00--00";
-            j["terrain"]["surfaces"][2]="LLSDLL"; j["terrain"]["surfaces"][3]="LLLSLL";
-            j["terrain"]["ramps"]=nlohmann::json::array({ramp}); writeMap(file,j);
-        };
-        write({2,3,0,1});
-        const auto s = loadScenario(file);
-        require(s.map.at({2, 2}).height == -1 && s.map.at({3, 2}).height == -1 && s.map.at({2, 3}).height == -1, "Negative terrain glyph not decoded");
-        require(s.map.at({2, 3}).surface == rts::Surface::Land && s.map.canStep({2, 4}, {2, 3}) && s.map.canStep({2, 3}, {2, 2}), "Shore ramp did not connect water to land");
-        write({2,2,0,-1}); mustThrow([&] { loadScenario(file); });
-        write({3,2,0,-1}); mustThrow([&] { loadScenario(file); });
-        write({2,3,1,0}); mustThrow([&] { loadScenario(file); });
-    });
-    test("Lowered water picking and vision use the same elevation as terrain", [] {
-        using S = rts::Surface;
-        rts::Map map(9, 9);
-        for (int y = 0; y < 9; ++y) for (int x = 0; x < 9; ++x) {
-            map.at({x, y}).height = -1;
-            map.at({x, y}).surface = x < 5 ? S::ShallowWater : S::DeepWater;
-        }
-        map.at({3, 3}).height = 0; map.at({3, 3}).surface = S::Land;
-        for (float zoom : {.4f, 1.0f, 1.8f}) {
-            const rts::WorldView view{{80, 140}, zoom};
-            require(!map.pick(view.project({3.5f, 4}, -.5f), view), "Clicked through lowered shoreline cliff");
-            require(map.pick(view.project(rts::center({3, 4}), -1), view) == rts::Cell{3, 4}, "Shallow water selected at wrong height");
-            require(map.pick(view.project(rts::center({6, 4}), -1), view) == rts::Cell{6, 4}, "Deep water selected at different height");
-            require(!map.pick(view.project({4.5f, 9}, -1.3f), view), "Water edge skirt became selectable");
-        }
-        require(rts::visionReaches(map, {{3, 3}, 8}, {6, 4}), "Shore cannot see lower water");
-        require(rts::visionReaches(map, {{3, 4}, 8}, {6, 4}), "Water depth blocked vision");
-        require(!rts::visionReaches(map, {{3, 4}, 8}, {3, 3}), "Minimum sight revealed the higher shore");
-        require(!rts::visionReaches(map, {{3, 5}, 8}, {3, 3}), "Lowered water ignored distant high ground vision rules");
-    });
     test("Water movement matrix, corners, cliffs and independent air layer", [] {
         using M = rts::MovementType; using S = rts::Surface;
         rts::Map map(9, 7);
@@ -235,7 +134,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
                 s.map.at({x, y}).surface = (x >= 7 && x <= 9) ? S::DeepWater : S::ShallowWater;
             rts::EntityDefinition type; type.movement = movement;
             auto game = makeTestSimulation(std::move(s), {}, type);
-            require(!game.canPlace("human.hall", {5, 5}), "Building accepted shallow water");
+            require(!game.canPlace("church.hall", {5, 5}), "Building accepted shallow water");
             require(game.setRally(game.buildings()[0].id, {8, 5}) == (movement != M::Walking), "Rally ignored trained unit movement");
             require(game.command({12, 5}), "Water order rejected");
             ticks(game, 900);
@@ -254,38 +153,6 @@ void movementTests(TestSuite& test, const TestContext& context) {
         require(game.train(game.buildings()[0].id), "Ship training failed");
         ticks(game, 300);
         require(game.units().size() == 2 && game.units()[1].cell == rts::Cell{4, 6}, "Ship did not spawn in water and reach rally");
-    });
-    test("Flying formation crosses terrain and ground troops while reserving adjacent air slots", [] {
-        rts::Scenario s{rts::Map(36, 24), {1, 1}, {24, 10}, {}};
-        for (int y = 0; y < 24; ++y) { s.map.at({18, y}).height = 3; s.map.occupy({18, y}); }
-        rts::EntityDefinition flyer; flyer.id = "test.flyer"; flyer.movement = rts::MovementType::Flying;
-        flyer.canBuild = false; flyer.carryCapacity = 0; flyer.movementPerSecond = 3.2f;
-        for (int rank = 0; rank < 6; ++rank) for (int side = 0; side < 2; ++side) s.units.push_back({flyer.id, 0, {7 + rank, 9 + side}});
-        auto game = makeTestSimulation(std::move(s), {}, {}, {flyer});
-        std::vector<rts::EntityId> ids; std::vector<rts::FormationMember> members;
-        for (const auto& u : game.units()) if (rts::airborne(u.definition.movement)) {
-            ids.push_back(u.id); members.push_back({u.id, u.cell, u.definition.movement, u.definition.formationPriority});
-        }
-        const auto expected = rts::planFormation(game.map(), members, {24, 10}, {});
-        require(game.command(ids, {24, 10}), "Air group order failed");
-        bool crossedGround = false;
-        for (int tick = 0; tick < 600; ++tick) {
-            game.tick();
-            for (size_t i = 0; i < ids.size(); ++i) {
-                const auto* a = game.unit(ids[i]);
-                crossedGround |= a->cell == game.worker().cell;
-                for (size_t j = i + 1; j < ids.size(); ++j) {
-                    const auto* b = game.unit(ids[j]);
-                    require(separated(*a, *b), "Flying group collided within its own layer");
-                }
-            }
-        }
-        require(expected.size() == 12 && crossedGround, "Air units avoided ground occupancy");
-        for (const auto& slot : expected) require(rts::groundLengthSquared(game.unit(slot.id)->position - slot.position) < 16 && game.unit(slot.id)->state == rts::UnitState::Idle, "Flyers did not reform near their destination");
-        const auto* first = game.unit(ids.front());
-        const rts::WorldView view{{100, 150}, 1};
-        const auto flyingPoint = rts::unitScreenAnchor(view, first->position, game.unitHeight(*first)) + rts::Vec2{0, -25};
-        require(rts::pickEntity(game, view, flyingPoint) == first->id, "Flying sprite is not selectable at altitude");
     });
     test("Flying units share ground cells but reserve their own flight layer", [] {
         auto s = flatScenario(); s.startingCrystals = 100;

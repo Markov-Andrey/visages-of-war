@@ -58,7 +58,6 @@ void Renderer::drawEditor(const WorldEditor& editor,const WorldView& view,Vec2 m
                 const auto p=view.project({s.hall.x+depot.width*.5f,s.hall.y+depot.height*.5f},float(map.at(s.hall).height));
                 const auto* stage=depot.buildingSprite.stage(depot.constructionTicks,depot.constructionTicks);
                 if(stage) buildingImage(*stage,buildingStageBounds(*stage,depot.buildingSprite.scale,p,view.zoom),teamColor_);
-                else sprite(hall_.Get(),rect(96,104,312,344),p+Vec2{-96,-145}*view.zoom,Vec2{192,212}*view.zoom);
             }
             if(item.kind==4) drawUnit(units[item.index]);
         }

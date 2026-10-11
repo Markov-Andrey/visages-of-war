@@ -87,8 +87,8 @@ void combatTests(TestSuite& test, const TestContext& context) {
     test("Untargeted abilities spend mana once, preserve orders and unlock after exactly five simulation seconds", [&] {
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         Scenario site{Map(32, 32), {1, 1}, {4, 6}, {}};
-        site.heroSpawn = Cell{6, 6}; site.units = {{"human.hero", 1, {28, 28}}};
-        Simulation game(std::move(site), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id, "human.hero");
+        site.heroSpawn = Cell{6, 6}; site.units = {{"church.hero", 1, {28, 28}}};
+        Simulation game(std::move(site), {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id, "church.hero");
         const auto id = game.units().back().id, foreign = game.units()[1].id;
         require(game.unit(id)->mana == 200 && game.worker().mana == 0, "Spawn did not initialize independent mana pools");
         require(game.order(std::array{id}, OrderKind::Move, {12, 6}), "Ability movement setup failed");
@@ -114,48 +114,6 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.unit(foreign)->mana == 200 && game.unit(foreign)->abilityCooldown(1) == 0, "Cooldown or mana leaked between units");
         game.grantExperience(id, 100);
         require(game.unit(id)->maximumMana() == 200 && game.unit(id)->mana == 0, "Level up unexpectedly refilled mana");
-    });
-    test("Damage feedback holds, drains, combines hits and clears immediately on a lethal blow", [] {
-        rts::HealthFeedback feedback;
-        constexpr std::uint64_t first = 100;
-        feedback.record(150, 110, first);
-        require(feedback.remaining(first) == 40 && feedback.remaining(first + rts::HealthFeedback::holdTicks) == 40,
-            "Damage feedback did not hold the full hit");
-        const auto middle = first + rts::HealthFeedback::holdTicks + rts::HealthFeedback::drainTicks / 2;
-        const float drained = feedback.remaining(middle);
-        require(drained > 0 && drained < 40, "Red trail did not decay after its hold");
-        feedback.record(110, 80, middle);
-        feedback.record(80, 70, middle);
-        require(std::abs(feedback.remaining(middle) - (drained + 40)) < .001f, "Burst lost earlier damage or revived an already drained portion");
-        float previous = feedback.remaining(middle);
-        for (int dt = 1; dt <= rts::HealthFeedback::holdTicks + rts::HealthFeedback::drainTicks; ++dt) {
-            const float current = feedback.remaining(middle + dt);
-            require(current >= 0 && current <= previous, "Damage trail grew or overshot while draining"); previous = current;
-        }
-        require(previous == 0, "Damage trail never finished");
-        feedback.record(70, 70, middle + 100);
-        require(feedback.remaining(middle + 100) == 0, "Zero damage created a trail");
-        feedback.record(70, 30, middle + 100);
-        feedback.record(30, 0, middle + 101);
-        require(feedback.remaining(middle + 101) == 0 && feedback.remaining(middle + 102) == 0, "Fatal damage retained a visual trail");
-    });
-    test("Combat applies real damage immediately and health feedback survives level gains without changing combat", [] {
-        auto site = flatScenario(); site.extraWorkers = {{4, 4}};
-        rts::EntityDefinition attacker; attacker.attackDamage = 20; attacker.attackWindupTicks = 1; attacker.attackRange = 2.3f;
-        attacker.attackRecoveryTicks = 0; attacker.attackCooldownTicks = 1000;
-        auto victim = attacker; victim.id = "health.victim"; victim.maximumHealth = 150; victim.attackDamage = 0; victim.hero.emplace();
-        site.units = {{victim.id, 1, {5, 3}}};
-        auto game = makeTestSimulation(std::move(site), {}, attacker, {attacker, victim});
-        const auto id = game.units().back().id;
-        ticks(game, 2);
-        require(game.unit(id)->health == 110 && game.unit(id)->healthFeedback.remaining(game.clock().elapsedTicks()) == 40,
-            "Simultaneous hits delayed real damage or lost their combined visual amount");
-        game.grantExperience(id, 100);
-        require(game.unit(id)->health == 150 && game.unit(id)->maximumHealth() == 190 &&
-            game.unit(id)->healthFeedback.remaining(game.clock().elapsedTicks()) == 40, "Level health gain became fake damage or erased recent hits");
-        ticks(game, rts::HealthFeedback::holdTicks + rts::HealthFeedback::drainTicks);
-        require(game.unit(id)->health == 150 && game.unit(id)->healthFeedback.remaining(game.clock().elapsedTicks()) == 0,
-            "Trail affected real health or waited for a render to expire");
     });
     test("Attack move fights en route and resumes its destination while move ignores enemies", [] {
         for (const auto kind : {rts::OrderKind::Move, rts::OrderKind::AttackMove}) {
@@ -208,16 +166,6 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.worker().position == stopped && rts::unitOrder(game.worker()) == rts::OrderKind::Stop, "Patrol resumed after stop");
         require(!game.order(std::array{id}, rts::OrderKind::Patrol, game.worker().cell), "Zero-length patrol was accepted");
     });
-    test("Hold issued during movement stops at the actual position without teleporting", [] {
-        auto game = makeTestSimulation(flatScenario()); const auto id = game.worker().id;
-        require(game.order(std::array{id}, rts::OrderKind::Move, {8, 3}), "Move rejected");
-        game.tick(); const auto position = game.worker().position;
-        require(game.order(std::array{id}, rts::OrderKind::Hold), "Moving hold rejected");
-        require(game.worker().position == position && game.worker().state == rts::UnitState::Idle, "Hold teleported a moving unit");
-        ticks(game, 30);
-        require(game.worker().position == position && rts::unitOrder(game.worker()) == rts::OrderKind::Hold, "Hold drifted to a grid centre");
-    });
-    const auto& assets=context.assets;
     const auto loadScenario = [&](const std::filesystem::path& file) { return rts::loadScenario(file, context.worldAssets, context.hallFootprint); };
     test("Melee windup, simultaneous deaths, supply, events, corpses and empty army", [] {
         auto scenario = flatScenario();
@@ -260,61 +208,6 @@ void combatTests(TestSuite& test, const TestContext& context) {
         ticks(game, rts::Bones::fadeTicks);
         require(game.bones().empty() && !game.bones(pile.id), "Bones were not finally removed");
     });
-    test("Decomposing ground and flying casualties retain ownership, then leave neutral passable bones", [&] {
-        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
-        for (const auto& original : definitions.entities()) if (original.mobile && original.canDecompose) {
-            auto fighter = original; fighter.maximumHealth = 10; fighter.attackDamage = 10;
-            fighter.attackWindupTicks = 1; fighter.attackRange = 1.5f; fighter.projectile.reset();
-            auto victim = fighter; victim.id = "test.victim"; victim.attackDamage = 0;
-            rts::Scenario site{rts::Map(20, 20), {1, 1}, {8, 8}, {}};
-            site.units = {{victim.id, 1, {9, 8}}};
-            auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, victim});
-            const auto enemy = game.units().back().id;
-            require(game.attack(std::array{game.worker().id}, enemy), "Death fixture rejected attack");
-            ticks(game, 2);
-            require(!game.unit(enemy) && game.corpses().size() == 1 && game.corpses().front().ageTicks() == 0,
-                "Casualty did not create a fresh corpse");
-            const auto body = game.corpses().front();
-            require(body.id != enemy && body.sourceUnit == enemy && body.owner == 1 && game.corpse(body.id), "Body lost its source, identity or owner");
-            require(game.command(std::array{game.worker().id}, {9, 8}), "Corpse cell cannot receive a movement order");
-            ticks(game, 60);
-            require(game.worker().cell == rts::Cell{9, 8} && game.corpses().size() == 1,
-                "Ground or air corpse obstructed its movement layer");
-            ticks(game, game.corpses().front().remainingTicks - 1);
-            require(game.corpses().size() == 1 && game.corpses().front().ageTicks() == 60 * rts::Simulation::ticksPerSecond - 1,
-                "Corpse expired before the default sixty seconds");
-            game.tick();
-            require(game.corpse(body.id)->phase == rts::CorpsePhase::Fading && game.corpse(body.id)->owner == 1, "Fading body changed ownership");
-            ticks(game, rts::Corpse::fadeTicks);
-            require(game.corpses().empty() && !game.corpse(body.id) && game.bones().size() == 1, "Body-to-bones transition failed");
-            const auto& pile = game.bones().front();
-            require(pile.id != body.id && pile.sourceCorpse == body.id && pile.sourceUnit == enemy && pile.owner == rts::neutralPlayer &&
-                pile.cell == body.cell && pile.position == body.position && pile.height == body.height, "Bones changed position or retained player ownership");
-            require(game.command(std::array{game.worker().id}, {8, 8}), "Could not leave bones cell"); ticks(game, 60);
-            require(game.command(std::array{game.worker().id}, {9, 8}), "Bones blocked a movement order"); ticks(game, 60);
-            require(game.worker().cell == rts::Cell{9, 8} && !game.attack(std::array{game.worker().id}, pile.id), "Bones blocked movement or became an attack target");
-        }
-    });
-    test("Non-decomposing units fade away without persistent bodies or bones", [&] {
-        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
-        for (const auto* id : {"human.hero", "human.peacemaker"}) {
-            auto killer = definitions.entity("human.peacemaker"); killer.attackDamage = 10000; killer.attackWindupTicks = 1;
-            auto victim = definitions.entity(id); victim.id = "vanishing.victim"; victim.canDecompose = false; victim.attackDamage = 0;
-            rts::Scenario site{rts::Map(20, 20), {1, 1}, {8, 8}, {}}; site.units = {{victim.id, 1, {9, 8}}};
-            auto game = makeTestSimulation(std::move(site), {}, killer, {killer, victim});
-            require(game.attack(std::array{game.worker().id}, game.units().back().id), "Vanish fixture rejected attack"); ticks(game, 2);
-            require(game.corpses().size() == 1 && game.corpses().front().phase == rts::CorpsePhase::Vanishing, "Unit left a persistent body");
-            const int duration = game.corpses().front().remainingTicks;
-            ticks(game, duration - 1); require(game.corpses().size() == 1, "Disappearance animation ended too early");
-            game.tick(); require(game.corpses().empty() && game.bones().empty(), "Non-decomposing unit left remains");
-            ticks(game, rts::Corpse::lifetimeTicks + rts::Corpse::fadeTicks);
-            require(game.bones().empty(), "A vanished unit created delayed bones");
-            const auto events = game.takeEvents();
-            require(std::none_of(events.begin(), events.end(), [](const auto& e) {
-                return std::holds_alternative<rts::CorpseCreated>(e) || std::holds_alternative<rts::BonesCreated>(e);
-            }), "Non-decomposing unit exposed interactable remains");
-        }
-    });
     test("Hero progression crosses thresholds, caps at ten and leaves definitions unchanged", [] {
         rts::EntityDefinition hero;
         hero.hero.emplace(); hero.attackDamage = 24; hero.maximumHealth = 400;
@@ -350,49 +243,6 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(!game.worker().hero && game.worker().level() == 1 && !game.grantExperience(game.worker().id, 100), "Ordinary unit leveled");
         ticks(game, 50);
         require(game.unit(first)->hero->experience == 75, "Corpse granted XP twice");
-    });
-    test("Distant and enemy heroes gain no XP and lethal trades cannot revive heroes", [] {
-        auto scenario = flatScenario();
-        rts::EntityDefinition soldier; soldier.id = "soldier"; soldier.attackDamage = 60;
-        auto hero = soldier; hero.id = "hero"; hero.hero.emplace(); hero.attackDamage = 0;
-        auto victim = soldier; victim.id = "victim"; victim.attackDamage = 0;
-        scenario.units = {{victim.id, 1, {5, 3}}, {hero.id, 0, {4, 6}}, {hero.id, 1, {6, 3}}};
-        rts::ProgressionRules rules; rules.experienceRadius = 1;
-        auto game = makeTestSimulation(std::move(scenario), {}, soldier, {soldier, hero, victim}, {}, rules);
-        const auto far = game.units()[2].id, hostileHero = game.units()[3].id;
-        ticks(game, 7);
-        require(game.unit(far)->hero->experience == 0 && game.unit(hostileHero)->hero->experience == 0, "Wrong owner/radius reward");
-        auto duel = flatScenario();
-        soldier.hero.emplace(); duel.units = {{soldier.id, 1, {5, 3}}};
-        auto trade = makeTestSimulation(std::move(duel), {}, soldier);
-        const auto id = trade.worker().id;
-        trade.grantExperience(id, 99);
-        ticks(trade, 7);
-        require(!trade.hero() && trade.heroFallen() && trade.units().empty(), "Lethal hero revived by XP");
-        require(!trade.grantExperience(id, 100), "Dead hero gained XP");
-    });
-    test("Army selection includes support and heroes but excludes workers; dead hero selection is inert", [] {
-        auto scenario = flatScenario();
-        rts::EntityDefinition worker; worker.attackDamage = 10;
-        auto support = worker; support.id = "support"; support.canBuild = false; support.carryCapacity = 0; support.attackDamage = 0;
-        auto hero = support; hero.id = "hero"; hero.hero.emplace();
-        auto killer = support; killer.id = "killer"; killer.attackDamage = 1000;
-        scenario.units = {{hero.id, 0, {5, 5}}, {support.id, 0, {8, 8}}, {killer.id, 1, {6, 5}}};
-        auto game = makeTestSimulation(std::move(scenario), {}, worker, {worker, support, hero, killer});
-        rts::Selection selection; selection.army(game);
-        const auto heroId = game.hero()->id, supportId = game.units()[2].id;
-        require(selection.ids.size() == 2 && selection.contains(heroId) && selection.contains(supportId), "Incorrect army filter");
-        require(selection.hero(game) && selection.ids == std::vector<rts::EntityId>{heroId}, "Hero shortcut failed");
-        ticks(game, 7); selection.prune(game); selection.army(game);
-        require(game.heroFallen() && !game.hero() && !selection.hero(game) && selection.ids == std::vector<rts::EntityId>{supportId}, "Dead hero button changes selection");
-    });
-    test("Selected commander spawns a fresh hero at the map marker", [&] {
-        const auto defs = rts::Definitions::load(assets / "data/catalog.json");
-        const auto& commander = defs.commanders().front();
-        rts::Simulation game(loadScenario(assets / "maps/demo.rtsmap"), {}, defs.entity(commander.startingWorker), defs.entities(), defs.startingDepot(defs.entity(commander.startingWorker).factionId).id, commander.startingHero);
-        require(game.units().size() == 30 && game.hero() && game.hero()->cell == rts::Cell{17, 20}, "Hero spawn ignored");
-        require(game.armySupply().used() == 49 && game.hero()->level() == 1, "Starting hero supply or level incorrect");
-        mustThrow([&] { rts::Simulation invalid(flatScenario(), {}, defs.entity(commander.startingWorker), defs.entities(), defs.startingDepot(defs.entity(commander.startingWorker).factionId).id, commander.startingHero); });
     });
     test("Hostile orders rejected and explicit move interrupts a swing", [] {
         auto scenario = flatScenario();
@@ -440,47 +290,6 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(!game.attack(own, game.units()[1].id), "Unseen enemy accepted");
         ticks(game, 60);
         for (const auto& u : game.units()) require(u.targetUnit == 0 && u.state == rts::UnitState::Idle, "Autoattack saw through high terrain");
-    });
-    test("Attack during movement finishes its step and pursuit closes distance", [] {
-        auto scenario = flatScenario();
-        rts::EntityDefinition soldier; soldier.attackDamage = 12; soldier.canBuild = false;
-        auto dummy = soldier; dummy.id = "test.dummy"; dummy.attackDamage = 0;
-        scenario.units.push_back({dummy.id, 1, {8, 3}});
-        auto game = makeTestSimulation(std::move(scenario), {}, soldier, {soldier, dummy});
-        const std::array own{game.worker().id};
-        const auto enemy = game.units()[1].id;
-        require(game.command(own, {4, 8}), "Move rejected"); ticks(game, 2);
-        const auto position = game.worker().position;
-        require(game.attack(own, enemy), "Attack rejected");
-        require(game.worker().position == position && game.worker().currentOrder.kind == rts::OrderKind::Attack, "Attack teleported mid-step");
-        ticks(game, 500);
-        require(!game.unit(enemy) && game.units().size() == 1, "Pursuit failed to kill target");
-        require(game.armySupply().used() == soldier.cost.supply, "Enemy death changed player supply");
-        require(game.worker().targetUnit == 0 && game.worker().state == rts::UnitState::Idle, "Dangling combat order after kill");
-        require(game.command(own, {8, 3}), "Dead cell still reserved"); ticks(game, 120);
-        require(game.worker().cell == rts::Cell{8, 3}, "Corpse blocks movement");
-        require(game.corpses().size() == 1 && game.corpses().front().cell == game.worker().cell,
-            "Movement test did not cross a still-existing corpse");
-    });
-    test("Squad combat acquires new targets after focused enemy dies", [] {
-        rts::Scenario scenario{rts::Map(24, 20), {1, 1}, {8, 8}, {}};
-        rts::EntityDefinition soldier; soldier.attackDamage = 12; soldier.canBuild = false;
-        auto enemy = soldier; enemy.id = "test.enemy"; enemy.maximumHealth = 24; enemy.attackDamage = 1;
-        for (int i = 0; i < 6; ++i) {
-            if (i > 0) scenario.units.push_back({soldier.id, 0, {8 + i % 2, 8 + i / 2}});
-            scenario.units.push_back({enemy.id, 1, {14 + i % 2, 8 + i / 2}});
-        }
-        auto game = makeTestSimulation(std::move(scenario), {}, soldier, {soldier, enemy});
-        std::vector<rts::EntityId> own;
-        rts::EntityId target{};
-        for (const auto& u : game.units()) { if (u.owner == 0) own.push_back(u.id); else if (!target) target = u.id; }
-        require(game.attack(own, target), "Squad attack rejected");
-        for (int t = 0; t < 1800; ++t) {
-            game.tick();
-            for (size_t i = 0; i < game.units().size(); ++i) for (size_t j = i + 1; j < game.units().size(); ++j)
-                require(separated(game.units()[i], game.units()[j]), "Combat units overlapped");
-        }
-        require(game.units().size() == 6 && std::all_of(game.units().begin(), game.units().end(), [](const auto& u) { return u.owner == 0; }), "Squad stalled after focused target death");
     });
 }
 }

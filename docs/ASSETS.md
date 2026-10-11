@@ -9,7 +9,7 @@
 
 | Вид ресурса | Источник определения |
 |---|---|
-| Юниты, здания, портреты | [Каталог сущностей](../assets/data/entities/humans.json), [DATA.md](DATA.md) |
+| Юниты, здания, портреты | [Каталог сущностей](../assets/data/entities/church.json), [DATA.md](DATA.md) |
 | Точка сбора | [Командиры](../assets/data/commanders.json) |
 | Земля, декор, игровые объекты, останки, ресурсы | [Каталог мира](../assets/world/catalog.json), [WORLD_EDITOR.md](WORLD_EDITOR.md) |
 | Интерфейс | Файлы в `assets/ui/`; определения и изображения хранятся вместе |

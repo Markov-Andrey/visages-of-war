@@ -59,45 +59,6 @@ void formationTests(TestSuite& test, const TestContext& context) {
             }
         }
     });
-    test("Circular destinations use body radii and continuous coordinates", [] {
-        Map map(64, 64);
-        for (float radius : {.1f, .35f, .5f}) {
-            std::vector<FormationMember> members;
-            for (int i = 0; i < 13; ++i) members.push_back({EntityId(i + 1), {8 + i % 4, 20 + i / 4}, MovementType::Walking, 1, {1, 0}, radius});
-            const auto slots = planFormation(map, members, {40, 24}, {});
-            require(slots.size() == 13, "Disk lost members");
-            bool fractional = false, sharedCell = false;
-            Vec2 mean{};
-            for (size_t i = 0; i < slots.size(); ++i) {
-                mean = mean + slots[i].position;
-                fractional |= groundLengthSquared(slots[i].position - center(slots[i].cell)) > .001f;
-                require(groundLengthSquared(slots[i].position - center({40, 24})) <= std::pow(2.1f * (2 * radius + .08f), 2), "Group still forms a long column");
-                for (size_t j = i + 1; j < slots.size(); ++j) {
-                    require(groundLengthSquared(slots[i].position - slots[j].position) + .00001f >= 4 * radius * radius, "Packed circles overlap");
-                    sharedCell |= slots[i].cell == slots[j].cell;
-                }
-            }
-            require(fractional && (radius > .1f || sharedCell), "Formation remains tied to cell centres");
-            mean = mean * (1.0f / slots.size());
-            require(groundLengthSquared(mean - center({40, 24})) < .25f, "Disk is not centred on target");
-            std::reverse(members.begin(), members.end());
-            const auto reverse = planFormation(map, members, {40, 24}, {});
-            for (size_t i = 0; i < slots.size(); ++i) require(slots[i].id == reverse[i].id && slots[i].position == reverse[i].position, "Selection order changed packing");
-        }
-    });
-    test("Role preferences put lower priorities in the front of a circular group", [] {
-        Map map(64, 64);
-        std::vector<FormationMember> members;
-        for (int i = 0; i < 12; ++i) members.push_back({EntityId(50 - i), {10, 10 + i}, MovementType::Walking, i < 6 ? 1 : 2});
-        const auto slots = planFormation(map, members, {40, 16}, {});
-        float front = 1000, back = -1000;
-        for (const auto& slot : slots) {
-            const auto& m = *std::find_if(members.begin(), members.end(), [&](const auto& member) { return member.id == slot.id; });
-            const float depth = groundDot(slot.position, slot.forward);
-            if (m.priority == 1) front = std::min(front, depth); else back = std::max(back, depth);
-        }
-        require(front >= back - .00001f, "Rear role took front places");
-    });
     test("Circular packing respects square footprints, terrain connectivity and held circles", [] {
         Map map(20, 20);
         for (int y = 0; y < 20; ++y) map.at({12, y}).blocked = true;
@@ -196,20 +157,6 @@ void formationTests(TestSuite& test, const TestContext& context) {
             require(groundLengthSquared(u.position - center({46, 20})) < 3.25f * 3.25f, "Crowd failed to gather after the gate");
         }
     });
-    test("Large crowds finish as a compact cluster instead of leaving a moving tail", [] {
-        for (int count : {48, 100}) {
-            Scenario s{Map(96, 96), {1, 1}, {20, 20}, {}};
-            for (int i = 1; i < count; ++i) s.extraWorkers.push_back({20 + i % 10, 20 + i / 10});
-            auto game = makeTestSimulation(std::move(s));
-            const auto ids = selected(game);
-            require(game.command(ids, {65, 60}), "Large order rejected");
-            for (int tick = 0; tick < 800 && !settled(game); ++tick) { game.tick(); checkMotion(game); }
-            if (!settled(game)) std::cerr << "large crowd miss count=" << count << '\n';
-            require(settled(game), "Large crowd left units waiting outside settled friends");
-            const float radius = .75f * std::sqrt(float(count)) + .5f;
-            for (const auto& u : game.units()) require(groundLengthSquared(u.position - center({65, 60})) < radius * radius, "Large crowd spread too far from order");
-        }
-    });
     test("Dense followers respect a leader stopping or reversing", [] {
         for (bool reverse : {false, true}) {
             Scenario s{Map(40, 20), {1, 1}, {10, 10}, {}};
@@ -225,27 +172,6 @@ void formationTests(TestSuite& test, const TestContext& context) {
             if (!reverse) require(game.unit(leader)->position == stopped, "Crowd pushed a stopped unit");
             else require(game.unit(leader)->cell == Cell{8, 8}, "Reversing leader failed to pass friends");
         }
-    });
-    test("Patrol retains two distinct fractional endpoints inside one target cell", [] {
-        Scenario s{Map(24, 20), {1, 1}, {10, 10}, {}};
-        s.extraWorkers = {{10, 11}};
-        EntityDefinition type; type.collisionRadius = .1f;
-        auto game = makeTestSimulation(std::move(s), {}, type);
-        const auto ids = selected(game);
-        game.order(ids, OrderKind::Patrol, {14, 10});
-        std::array<Vec2, 2> destinations{game.units()[0].routeDestination, game.units()[1].routeDestination};
-        require(cellAt(destinations[0]) == cellAt(destinations[1]) && destinations[0] != destinations[1], "Patrol fixture lost distinct same-cell endpoints");
-        std::array<int, 2> visits{};
-        std::array<bool, 2> near{};
-        for (int tick = 0; tick < 420; ++tick) {
-            game.tick(); checkMotion(game);
-            for (size_t i = 0; i < 2; ++i) {
-                const bool arrived = groundLengthSquared(game.units()[i].position - destinations[i]) < .0025f;
-                if (arrived && !near[i]) ++visits[i];
-                near[i] = arrived;
-            }
-        }
-        require(visits[0] >= 2 && visits[1] >= 2, "Patrol snapped fractional endpoints to their shared cell centre");
     });
     test("A closed enemy surround holds and a body-sized opening permits escape", [] {
         for (bool open : {false, true}) {

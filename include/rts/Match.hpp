@@ -36,7 +36,7 @@ inline constexpr std::array<TeamPalette, static_cast<size_t>(TeamColor::Count)> 
 }};
 struct PlayerSettings {
     PlayerId id = 0;
-    std::string commanderId = "human_commander";
+    std::string commanderId = "church_commander";
     TeamColor color = TeamColor::Blue;
 };
 inline unsigned teamRgb(TeamColor color) { return teamPalettes.at(static_cast<size_t>(color)).rgb; }
@@ -79,12 +79,11 @@ struct AbilityCooldown { int abilityId{}, remainingTicks{}; };
 struct ResourceCost { int crystals{}, supply{}; };
 // Cancellation returns half of the paid crystals, rounded down to whole crystals.
 inline constexpr int cancellationRefund(int paidCrystals) { return paidCrystals / 2; }
-enum class EntityVisual { Unit, Hall, Barracks, Tower };
 enum class ConstructionMode { Worker, Summoning };
 struct EntityDefinition {
-    std::string id = "human.worker";
-    std::string factionId = "humans";
-    std::string factionName = "Люди"; // Resolved from the faction catalog.
+    std::string id = "church.worker";
+    std::string factionId = "church";
+    std::string factionName = "Церковь Святого Пламени"; // Resolved from the faction catalog.
     std::string displayName = "Рабочий";
     std::string description;
     bool libraryVisible{};
@@ -112,9 +111,9 @@ struct EntityDefinition {
     BuildingSpriteDefinition buildingSprite;
     int level = 1;
     std::optional<HeroDefinition> hero;
-    bool canGather() const { return (gatherAbility && gatherAbility->harvest) || carryCapacity > 0; }
-    HarvestDefinition harvesting() const {
-        return gatherAbility && gatherAbility->harvest ? *gatherAbility->harvest : HarvestDefinition{};
+    bool canGather() const { return gatherAbility && gatherAbility->harvest; }
+    const HarvestDefinition& harvesting() const {
+        return gatherAbility.value().harvest.value();
     }
     bool isWorker() const { return canBuild || canGather(); }
     // Construction and mobility are independent capabilities, not exclusive kinds.
@@ -124,7 +123,6 @@ struct EntityDefinition {
     ConstructionMode constructionMode = ConstructionMode::Worker;
     bool acceptsCargo{};
     std::vector<std::string> trainableUnits;
-    EntityVisual visual = EntityVisual::Unit;
     std::vector<std::string> alternateForms;
 };
 }

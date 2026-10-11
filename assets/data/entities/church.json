@@ -2,9 +2,9 @@
   "version": 1,
   "entities": [
     {
-      "id": "human.worker",
+      "id": "church.worker",
       "canDecompose": true,
-      "factionId": "humans",
+      "factionId": "church",
       "name": "Послушница",
       "description": "Служительница Церкви Святого Пламени. Медленно добывает кристаллы, сразу отправляя их в запас игрока. Начинает призыв зданий, после чего они достраиваются самостоятельно.",
       "cost": {
@@ -44,7 +44,6 @@
       },
       "depot": false,
       "hero": null,
-      "visual": "unit",
       "alternateForms": [],
       "attack": {
         "range": 1.5,
@@ -160,9 +159,9 @@
       }
     },
     {
-      "id": "human.peacemaker",
+      "id": "church.peacemaker",
       "canDecompose": true,
-      "factionId": "humans",
+      "factionId": "church",
       "name": "Миротворец",
       "description": "Боец ближнего боя со щитом и булавой. Экспериментальная графика.",
       "cost": {
@@ -201,7 +200,6 @@
       },
       "depot": false,
       "hero": null,
-      "visual": "unit",
       "alternateForms": [],
       "attack": {
         "range": 1.5,
@@ -319,12 +317,12 @@
       "library": true
     },
     {
-      "id": "human.hero",
+      "id": "church.hero",
       "abilities": [
         1
       ],
       "canDecompose": false,
-      "factionId": "humans",
+      "factionId": "church",
       "name": "Рыцарь",
       "description": "Герой ближнего боя. Получает опыт за врагов, побеждённых его армией поблизости, и усиливается с каждым уровнем.",
       "cost": {
@@ -367,7 +365,6 @@
         "healthPerLevel": 60,
         "damagePerLevel": 4
       },
-      "visual": "unit",
       "alternateForms": [],
       "attack": {
         "range": 1.5,
@@ -484,9 +481,9 @@
       }
     },
     {
-      "id": "human.hall",
+      "id": "church.hall",
       "library": true,
-      "factionId": "humans",
+      "factionId": "church",
       "name": "Ратуша",
       "description": "Главное здание поселения. Принимает добытые кристаллы и обучает рабочих.",
       "cost": {
@@ -523,12 +520,11 @@
       "production": {
         "trainingTicks": 150,
         "trains": [
-          "human.worker"
+          "church.worker"
         ]
       },
       "depot": true,
       "hero": null,
-      "visual": "hall",
       "buildingSprite": {
         "scale": 0.24,
         "healthBarWidth": 134.4,
@@ -842,8 +838,8 @@
       "sprite": null
     },
     {
-      "id": "human.barracks",
-      "factionId": "humans",
+      "id": "church.barracks",
+      "factionId": "church",
       "name": "Миротворческий корпус",
       "description": "Обучает миротворцев, пращников и катапульты. Точка сбора определяет, куда отправятся новые бойцы.",
       "cost": {
@@ -880,14 +876,13 @@
       "production": {
         "trainingTicks": 150,
         "trains": [
-          "human.peacemaker",
-          "human.slinger",
-          "human.catapult"
+          "church.peacemaker",
+          "church.slinger",
+          "church.catapult"
         ]
       },
       "depot": false,
       "hero": null,
-      "visual": "barracks",
       "buildingSprite": {
         "scale": 0.2,
         "healthBarWidth": 134.4,
@@ -933,63 +928,9 @@
       "sprite": null
     },
     {
-      "id": "human.watchtower",
-      "factionId": "humans",
-      "name": "Смотровая башня",
-      "description": "Расширяет обзор поселения днём и ночью. Не имеет оружия.",
-      "cost": {
-        "crystals": 75,
-        "supply": 0
-      },
-      "stats": {
-        "health": 400,
-        "damage": 0,
-        "level": 1,
-        "dayVision": 14,
-        "nightVision": 10
-      },
-      "mobility": {
-        "enabled": false,
-        "type": "walking",
-        "speed": 0,
-        "formationPriority": 1,
-        "collisionRadius": 0.35
-      },
-      "worker": {
-        "builder": false,
-        "carryCapacity": 0
-      },
-      "construction": {
-        "enabled": true,
-        "mode": "summoning",
-        "ticks": 150,
-        "footprint": [
-          1,
-          1
-        ]
-      },
-      "production": {
-        "trainingTicks": 150,
-        "trains": []
-      },
-      "depot": false,
-      "hero": null,
-      "visual": "tower",
-      "alternateForms": [],
-      "attack": {
-        "range": 1.5,
-        "windupTicks": 6,
-        "recoveryTicks": 6,
-        "cooldownTicks": 18,
-        "targets": "same_layer",
-        "projectile": null
-      },
-      "sprite": null
-    },
-    {
-      "id": "human.flying_soldier",
+      "id": "church.flying_soldier",
       "canDecompose": true,
-      "factionId": "humans",
+      "factionId": "church",
       "name": "Летун",
       "description": "Летит над препятствиями и видит поверх леса и скал. Занимает место в воздушном строю.",
       "cost": {
@@ -1028,7 +969,6 @@
       },
       "depot": false,
       "hero": null,
-      "visual": "unit",
       "alternateForms": [],
       "attack": {
         "range": 1.5,
@@ -1041,9 +981,9 @@
       "sprite": null
     },
     {
-      "id": "human.slinger",
+      "id": "church.slinger",
       "canDecompose": true,
-      "factionId": "humans",
+      "factionId": "church",
       "name": "Пращник",
       "description": "Боец дальнего боя. Метает заряд из пращи по пологой дуге в наземные и воздушные цели.",
       "cost": {
@@ -1082,7 +1022,6 @@
       },
       "depot": false,
       "hero": null,
-      "visual": "unit",
       "alternateForms": [],
       "attack": {
         "range": 6,
@@ -1260,9 +1199,9 @@
       "library": true
     },
     {
-      "id": "human.catapult",
+      "id": "church.catapult",
       "canDecompose": true,
-      "factionId": "humans",
+      "factionId": "church",
       "name": "Катапульта",
       "description": "Бьёт навесом по точке, зафиксированной при выстреле. Поражает наземных врагов в области; движущаяся цель может уклониться.",
       "cost": {
@@ -1301,7 +1240,6 @@
       },
       "depot": false,
       "hero": null,
-      "visual": "unit",
       "alternateForms": [],
       "attack": {
         "range": 8,

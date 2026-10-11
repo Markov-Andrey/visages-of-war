@@ -69,55 +69,22 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
     const float z = view.zoom;
     const float h = float(game.map().at(b.origin).height);
     const auto p = view.project({b.origin.x + type.width * .5f, b.origin.y + type.height * .5f}, h);
-    const std::array<Vec2, 4> footprint{{view.project({float(b.origin.x), float(b.origin.y)}, h),
-        view.project({float(b.origin.x + type.width), float(b.origin.y)}, h),
-        view.project({float(b.origin.x + type.width), float(b.origin.y + type.height)}, h),
-        view.project({float(b.origin.x), float(b.origin.y + type.height)}, h)}};
-    if (stage) {
-        bool visible = false;
-        for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x)
-            visible |= game.fog().visible(b.origin + Cell{x, y});
-        const float progress = preview >= 0 ? preview : float(b.constructionProgress) / type.constructionTicks;
-        if (type.buildingSprite.construction && progress < 1)
-            constructionImage(game, b, view, bounds, color, visible, progress);
-        else buildingImage(*stage, bounds, color, game.clock().elapsedTicks(), b.training(), visible);
-    } else if (!b.complete()) {
-        const std::array<Vec2, 4> foundation{{p + Vec2{-50, -22} * z, p + Vec2{50, -22} * z, p + Vec2{65, 12} * z, p + Vec2{-65, 12} * z}};
-        polygon(foundation, 0x928169);
-        lightSurface(foundation);
-        for (const auto base : footprint) {
-            line(base, base + Vec2{0, -65} * z, 0xcbad7c, 4 * z);
-            line(base + Vec2{-12, -40} * z, base + Vec2{12, -40} * z, 0x887155, 3 * z);
-        }
-        text(wide(type.displayName), rect(p.x - 65 * z, p.y - 80 * z, 150, 25), 0xe6d6b0);
-    } else if (type.visual != EntityVisual::Tower) {
-        sprite(hall_.Get(), rect(96, 104, 312, 344), {bounds.x, bounds.y}, {bounds.width, bounds.height});
-        if (type.visual == EntityVisual::Barracks) {
-            line(p + Vec2{-25, -85} * z, p + Vec2{25, -35} * z, 0xe5d8b1, 5 * z);
-            line(p + Vec2{25, -85} * z, p + Vec2{-25, -35} * z, 0xe5d8b1, 5 * z);
-        }
-    } else {
-        const std::array<Vec2, 4> tower{{p + Vec2{-24, 18} * z, p + Vec2{-24, -83} * z, p + Vec2{24, -83} * z, p + Vec2{24, 18} * z}};
-        polygon(tower, 0x8a9185);
-        for (int i = 0; i < 5; ++i) line(p + Vec2{-23, -i * 18.0f} * z, p + Vec2{23, -i * 18.0f} * z, 0x555e59, 2 * z);
-        lightSurface(tower);
-        const std::array<Vec2, 3> roof{{p + Vec2{-45, -80} * z, p + Vec2{0, -125} * z, p + Vec2{45, -80} * z}};
-        polygon(roof, color);
-        lightSurface(roof);
-    }
-    if (b.complete() && !stage) {
-        line(p + Vec2{28, -105} * z, p + Vec2{28, -205} * z, 0xd9d0b2, 2);
-        const std::array<Vec2, 3> flag{{p + Vec2{28, -205} * z, p + Vec2{66, -193} * z, p + Vec2{28, -180} * z}};
-        polygon(flag, color);
-    } else if (stage && stage->teamMask.empty()) {
-        // Ownership marker until the artist supplies a cloth mask for this stage.
+    if (!stage) return;
+    bool visible = false;
+    for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x)
+        visible |= game.fog().visible(b.origin + Cell{x, y});
+    const float progress = preview >= 0 ? preview : float(b.constructionProgress) / type.constructionTicks;
+    if (type.buildingSprite.construction && progress < 1)
+        constructionImage(game, b, view, bounds, color, visible, progress);
+    else buildingImage(*stage, bounds, color, game.clock().elapsedTicks(), b.training(), visible);
+    if (stage->teamMask.empty()) {
         const Vec2 base{bounds.x + bounds.width - 12 * z, p.y + 12 * z};
         line(base, base + Vec2{0, -42} * z, 0xd9d0b2, 2 * z);
         const std::array<Vec2, 3> flag{{base + Vec2{0, -42} * z, base + Vec2{22, -35} * z, base + Vec2{0, -27} * z}};
         polygon(flag, color);
     }
     if (selected || !b.complete()) {
-        const float y = (stage || b.complete()) ? bounds.y - 12 : p.y - 100 * z;
+        const float y = bounds.y - 12;
         const float width = type.buildingSprite.healthBarWidth;
         drawHealthBar(b.health, type.maximumHealth, 0, {p.x - width * .5f, y, width, 6},
             selectionColor(b.owner, game.player().id), true);

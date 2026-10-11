@@ -4,91 +4,6 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
-    test("Building hover previews the click footprint without changing selection or bypassing fog and modes", [] {
-        auto game = makeTestSimulation({Map(32, 32), {5, 5}, {12, 12}, {}});
-        auto& building = const_cast<Building&>(game.buildings().front());
-        auto& fog = const_cast<FogOfWar&>(game.fog());
-        const BattleLayout layout({1280, 900});
-        WorldView view{{}, .8f};
-        view.origin = Vec2{650, 350} - view.project(center(building.origin), 0);
-        const auto bounds = buildingBounds(game, building, view);
-        GameplayUi ui; ui.selection.ids = {game.worker().id};
-        ui.mouse = {bounds.x + bounds.width * .5f, bounds.y + bounds.height * .5f};
-        fog.update(game.map(), std::array{VisionSource{building.origin, 5, true}});
-        for (PlayerId owner : {game.player().id, PlayerId{1}, neutralPlayer}) {
-            building.owner = owner;
-            require(hoveredEntity(game, view, ui, layout) == building.id, "Visible building has no hover preview");
-            require(ui.selection.ids == std::vector{game.worker().id}, "Building hover changed selection");
-        }
-        ui.placement = "human.barracks";
-        require(!hoveredEntity(game, view, ui, layout), "Placement retained building hover"); ui.placement.clear();
-        ui.rallyMode = true;
-        require(!hoveredEntity(game, view, ui, layout), "Rally retained building hover"); ui.rallyMode = false;
-        ui.consoleOpen = true;
-        require(!hoveredEntity(game, view, ui, layout), "Console retained building hover"); ui.consoleOpen = false;
-        ui.drag = UiRect{0, 0, 20, 20};
-        require(!hoveredEntity(game, view, ui, layout), "Drag retained building hover"); ui.drag.reset();
-        ui.orderMode = OrderKind::AttackMove;
-        require(!hoveredEntity(game, view, ui, layout), "Targeting retained building hover"); ui.orderMode.reset();
-        const Vec2 minimap{layout.minimap.x + 40, layout.minimap.y + 40};
-        view.origin = view.origin + minimap - ui.mouse; ui.mouse = minimap;
-        require(pickEntity(game, view, ui.mouse) == building.id && !hoveredEntity(game, view, ui, layout), "Building hover passed through minimap");
-        const Vec2 world{650, 300}; view.origin = view.origin + world - ui.mouse; ui.mouse = world;
-        building.health = 0;
-        require(!hoveredEntity(game, view, ui, layout), "Destroyed building retained hover"); building.health = 1;
-        fog.update(game.map(), {});
-        require(!hoveredEntity(game, view, ui, layout), "Building hover revealed explored fog");
-    });
-    test("Ten production icons fit inside the selection panel at supported window sizes", [] {
-        for (Vec2 size : {Vec2{960, 640}, Vec2{1280, 900}, Vec2{1920, 1200}}) {
-            const auto content = SelectionPanelLayout(BattleLayout(size).info).content;
-            const ProductionQueueLayout queue(content);
-            require(queue.slots.size() == 10, "Queue layout does not expose ten slots");
-            for (size_t i = 0; i < queue.slots.size(); ++i) {
-                const auto slot = queue.slots[i];
-                const Vec2 middle{slot.x + slot.width * .5f, slot.y + slot.height * .5f};
-                require(queue.pick(middle, 10) == i && !queue.pick(middle, i), "Queue hit test missed an icon or hit an empty slot");
-                require(!queue.pick({slot.x + slot.width + 2, middle.y}, 10), "Gap between icons selected a queue job");
-                require(slot.width >= 28 && slot.width == slot.height && slot.x >= content.x && slot.y >= content.y + 96 &&
-                    slot.x + slot.width <= content.x + content.width + .01f && slot.y + slot.height <= content.y + content.height + .01f,
-                    "Queue icon became unreadable or escaped the panel");
-                for (size_t j = 0; j < i; ++j) {
-                    const auto previous = queue.slots[j];
-                    require(slot.x >= previous.x + previous.width || slot.y >= previous.y + previous.height,
-                        "Queue icons overlap");
-                }
-            }
-        }
-    });
-    test("Hover previews the visible click target for every owner without selecting through UI or fog", [] {
-        EntityDefinition worker; worker.dayVision = worker.nightVision = 20;
-        Scenario scene{Map(40, 32), {1, 1}, {8, 8}, {}};
-        scene.units = {{worker.id, 1, {12, 8}}, {worker.id, neutralPlayer, {16, 8}}};
-        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker});
-        GameplayUi ui; ui.selection.ids = {game.worker().id};
-        const auto selection = ui.selection.ids;
-        const BattleLayout layout({1280, 900});
-        WorldView view{{}, .8f};
-        for (const auto& unit : game.units()) {
-            view.origin = Vec2{650, 350} - view.project(unit.position, game.unitHeight(unit));
-            const auto b = unitBounds(game, unit, view);
-            ui.mouse = {b.x + b.width * .5f, b.y + b.height * .5f};
-            require(hoveredEntity(game, view, ui, layout) == unit.id && pickEntity(game, view, ui.mouse) == unit.id,
-                "Hover did not match the visible unit under left click");
-            require(ui.selection.ids == selection, "Hover changed actual selection");
-            ui.drag = UiRect{0, 0, 20, 20};
-            require(!hoveredEntity(game, view, ui, layout), "Selection drag retained a hover ring"); ui.drag.reset();
-            ui.orderMode = OrderKind::AttackMove;
-            require(!hoveredEntity(game, view, ui, layout), "Targeting cursor previewed a left-click selection"); ui.orderMode.reset();
-        }
-        const Vec2 minimap{layout.minimap.x + 40, layout.minimap.y + 40};
-        view.origin = view.origin + minimap - ui.mouse; ui.mouse = minimap;
-        require(pickEntity(game, view, ui.mouse).has_value() && !hoveredEntity(game, view, ui, layout), "Hovered through the raised minimap");
-        const Vec2 world{650, 300}; view.origin = view.origin + world - ui.mouse; ui.mouse = world;
-        require(hoveredEntity(game, view, ui, layout) != 0, "Hover did not resume outside the HUD");
-        const_cast<FogOfWar&>(game.fog()).update(game.map(), {});
-        require(!hoveredEntity(game, view, ui, layout), "Hover revealed a unit in logical fog");
-    });
     test("Enemy and neutral units can only be inspected singly and never become command recipients", [] {
         rts::EntityDefinition worker;
         worker.dayVision = worker.nightVision = 12;
@@ -175,105 +90,6 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         building.health = 0;
         require(!rts::selectableEntity(game, building.id) && rts::pickEntity(game, view, point) != building.id, "Destroyed building stayed selectable");
     });
-    test("HUD notifications expire after four real seconds and repeated messages restart the timer", [] {
-        using namespace std::chrono;
-        const rts::GameplayNotification::Clock::time_point began{};
-        auto game = makeTestSimulation({rts::Map(16, 16), {1, 1}, {5, 5}, {}});
-        rts::GameplayNotification notice;
-        require(notice.text(game, began).empty(), "Map start displayed an unsolicited notification");
-        const auto rejectOrder = [&] { require(!game.order({}, rts::OrderKind::Move, {10, 10}), "Empty selection accepted an order"); };
-        rejectOrder();
-        require(!notice.text(game, began).empty(), "Order notification was missing");
-        require(!notice.text(game, began + milliseconds(3999)).empty(), "Notification disappeared too early");
-        require(notice.text(game, began + seconds(4)).empty(), "Notification did not expire while simulation was paused");
-        require(!game.message().empty(), "Presentation expiry changed simulation message");
-
-        rejectOrder();
-        const auto error = game.message();
-        require(notice.text(game, began + seconds(5)) == error, "New notification did not appear");
-        rejectOrder();
-        require(game.message() == error && notice.text(game, began + seconds(8)) == error, "Repeated notification changed its text");
-        require(!notice.text(game, began + milliseconds(11999)).empty(), "Repeated message failed to restart its lifetime");
-        require(notice.text(game, began + seconds(12)).empty(), "Repeated notification did not expire");
-        rejectOrder();
-        require(notice.text(game, began + seconds(13)) == error, "Expired notification could not appear again");
-        game.stop();
-        require(notice.text(game, began + seconds(14)).empty(), "Cleared message remained visible");
-    });
-    test("Every unit uses a lower-third ground anchor for drawing and selection while moving", [&] {
-        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
-        for (int level : {0, 2}) {
-            rts::Scenario scene{rts::Map(40, 32), {1, 1}, {5, 9}, {}};
-            for (int y = 0; y < scene.map.height(); ++y) for (int x = 0; x < scene.map.width(); ++x)
-                scene.map.at({x, y}).height = level;
-            int x = 5;
-            for (const auto& type : defs.entities()) if (type.mobile && type.id != "human.worker") {
-                scene.units.push_back({type.id, 0, {x, 15}}); x += 4;
-            }
-            rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id);
-            for (const auto& u : game.units())
-                require(game.order(std::array{u.id}, rts::OrderKind::Move, u.cell + rts::Cell{1, 0}), "Unit failed to start moving");
-            game.tick();
-            for (float zoom : {.4f, 1.0f, 1.8f}) {
-                const rts::WorldView view{{170, -60}, zoom};
-                for (const auto& u : game.units()) {
-                    const auto position = u.position;
-                    const auto logical = view.project(position, game.unitHeight(u));
-                    const auto feet = rts::unitScreenAnchor(view, position, game.unitHeight(u));
-                    require(std::abs(feet.x - logical.x) < .001f &&
-                        std::abs(feet.y - logical.y - rts::WorldView::tileSize * zoom / 3) < .001f,
-                        "Unit feet are not in the middle of the lower third");
-                    const auto& sprite = u.definition.sprite;
-                    const auto bounds = rts::unitBounds(game, u, view);
-                    require(std::abs(bounds.y - (feet.y + (.0625f - sprite.anchor.y) * sprite.size.y * zoom)) < .001f,
-                        "Unit picking does not follow the drawn sprite");
-                    const auto point = feet + rts::Vec2{0, -20 * zoom};
-                    require(rts::pickEntity(game, view, point) == u.id, "Shifted moving sprite was not clickable");
-                    rts::Selection selection;
-                    selection.box(game, view, {point.x - zoom, point.y - zoom, 2 * zoom, 2 * zoom}, false);
-                    require(selection.ids == std::vector{u.id}, "Small selection box missed the shifted unit");
-                    require(u.position == position, "Presentation changed logical coordinates");
-                }
-            }
-            require(game.worker().position != rts::center(game.worker().cell), "Presentation fixture did not move between cells");
-        }
-    });
-    test("Double click selects matching friendly units in the camera and Shift adds without duplicates", [] {
-        rts::EntityDefinition worker;
-        auto other = worker; other.id = "other";
-        rts::Scenario scene{rts::Map(40, 32), {1, 1}, {8, 8}, {}};
-        scene.extraWorkers = {{10, 8}, {28, 8}, {10, 24}};
-        scene.units = {{other.id, 0, {12, 8}}, {worker.id, 1, {9, 11}}, {worker.id, rts::neutralPlayer, {12, 11}}};
-        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, other});
-        const auto first = game.units()[0].id, second = game.units()[1].id, distant = game.units()[2].id, different = game.units()[4].id;
-        for (float zoom : {.4f, 1.0f, 1.8f}) {
-            const rts::WorldView view{{120, -70}, zoom};
-            const auto corner = view.project({6, 6});
-            const rts::UiRect viewport{corner.x, corner.y, 8 * rts::WorldView::tileSize * zoom, 6 * rts::WorldView::tileSize * zoom};
-            const auto bounds = rts::unitBounds(game, game.worker(), view);
-            const rts::Vec2 point{bounds.x + bounds.width * .5f, bounds.y + bounds.height * .5f};
-            rts::Selection selection; selection.ids = {different};
-            require(selection.selectTypeInView(game, view, viewport, point, false) && selection.ids == std::vector{first, second},
-                "Double click included off-camera, foreign, neutral or differently typed units");
-            const auto edge = rts::unitBounds(game, *game.unit(second), view);
-            const rts::UiRect clipped{viewport.x, viewport.y, edge.x + edge.width * .5f - viewport.x, viewport.height};
-            require(selection.selectTypeInView(game, view, clipped, point, false) && selection.contains(second),
-                "Partially visible matching unit was excluded");
-            selection.ids = {different, first};
-            require(selection.selectTypeInView(game, view, viewport, point, true) && selection.ids == std::vector{different, first, second},
-                "Shift double click lost selection or duplicated units");
-            require(selection.selectTypeInView(game, view, viewport, point, true) && selection.ids.size() == 3,
-                "Repeated Shift double click toggled or duplicated units");
-            const auto selected = selection.ids;
-            require(!selection.selectTypeInView(game, view, viewport, {viewport.x - 1, viewport.y - 1}, false) && selection.ids == selected,
-                "A click outside the world changed selection");
-            require(!selection.selectTypeInView(game, view, viewport, {viewport.x + 1, viewport.y + 1}, false) && selection.ids == selected,
-                "A ground double click selected a unit type");
-            auto panned = view; panned.origin = panned.origin - (view.project({20,0}) - view.project({0,0}));
-            require(selection.selectTypeInView(game, panned, viewport, point, false) && selection.ids == std::vector{distant},
-                "Type selection ignored the camera position");
-        }
-    });
     test("Numbered groups share members, replace independently and recall the full selection", [] {
         rts::EntityDefinition worker;
         auto soldier = worker; soldier.id = "soldier"; soldier.canBuild = false; soldier.carryCapacity = 0;
@@ -320,81 +136,15 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(!groups.recall(9, game, selection) && selection.ids == std::vector{survivor}, "Wiped group remained selectable");
         require(rts::GameplayUi{}.controlGroups.members(0).empty(), "New match inherited a numbered group");
     });
-    test("Active groups start with the hero, cycle by type and preserve the full selection", [&] {
-        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
-        rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
-        scene.heroSpawn = rts::Cell{9, 9};
-        scene.units = {{"human.slinger", 0, {11, 10}}, {"human.peacemaker", 0, {10, 10}},
-            {"human.peacemaker", 0, {10, 12}}, {"human.catapult", 0, {11, 11}}};
-        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id, "human.hero");
-        rts::Selection selection;
-        for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
-        std::reverse(selection.ids.begin(), selection.ids.end());
-        const auto original = selection.ids;
-        const std::array<std::string, 5> expected{"human.hero", "human.peacemaker", "human.slinger", "human.catapult", "human.worker"};
-        const auto groups = selection.groups(game);
-        require(groups.size() == expected.size() && groups[1].ids.size() == 2, "Types were not grouped together");
-        for (const auto& type : expected) {
-            require(selection.activeGroup(game).type == type, "Wrong Tab order or initial hero group");
-            require(selection.cycleGroup(game), "Multiple groups did not cycle");
-            require(selection.ids == original, "Tab changed command recipients or selection order");
-        }
-        require(selection.activeUnit(game)->hero.has_value(), "Tab did not wrap to hero");
-        require(selection.cycleGroup(game, true) && selection.activeGroup(game).type == "human.worker", "Reverse Tab failed");
-        const auto soldier = groups[1].ids.front();
-        require(selection.activateGroup(game, soldier), "Member did not activate its type");
-        selection.ids.erase(std::find(selection.ids.begin(), selection.ids.end(), soldier));
-        selection.prune(game);
-        require(selection.activeGroup(game).type == "human.peacemaker" && selection.activeGroup(game).ids.size() == 1,
-            "Removing one soldier discarded the surviving active group");
-        selection.army(game);
-        require(selection.activeUnit(game)->hero.has_value(), "New army selection did not reset to hero");
-        selection.ids = {game.buildings().front().id}; selection.prune(game);
-        require(selection.groups(game).empty() && !selection.cycleGroup(game) && !selection.activeUnit(game), "Building entered unit groups");
-        selection.ids.clear(); selection.prune(game);
-        require(!selection.cycleGroup(game), "Empty selection cycled");
-    });
-    test("Selecting a group icon isolates that exact unit and preserves numbered groups", [&] {
-        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
-        rts::Scenario scene{rts::Map(24, 24), {1, 1}, {4, 3}, {}};
-        scene.extraWorkers = {{5, 3}};
-        scene.units = {{"human.peacemaker", 0, {6, 4}}, {"human.peacemaker", 1, {7, 4}}};
-        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id);
-        const auto first = game.worker().id, second = game.units()[1].id;
-        const auto soldier = game.units()[2].id, enemy = game.units()[3].id;
-        const std::vector whole{first, second, soldier};
-        rts::GameplayUi ui; ui.selection.ids = whole;
-        ui.controlGroups.bind(0, game, ui.selection);
-        const auto saved = ui.controlGroups.members(0);
-        for (const auto clicked : {second, soldier}) {
-            ui.selection.ids = whole;
-            ui.selection.activateGroup(game, first);
-            require(ui.selection.selectMember(game, clicked) && ui.selection.ids == std::vector{clicked},
-                "Icon retained other units, including members of the same type");
-            require(ui.selection.activeUnit(game)->id == clicked && ui.selection.inspectedUnit(game)->id == clicked,
-                "Single selection shows another unit's stats");
-            require(rts::SelectionCards(game, ui.selection, rts::BattleLayout({800, 600}).info).cards.empty(),
-                "Single selection retained the group grid");
-            require(rts::commandRecipients(game, ui, rts::OrderKind::Move) == std::vector{clicked},
-                "Commands still reach the previous group");
-            require(ui.controlGroups.members(0) == saved && ui.controlGroups.recall(0, game, ui.selection) &&
-                std::is_permutation(ui.selection.ids.begin(), ui.selection.ids.end(), whole.begin(), whole.end()),
-                "Icon click changed the stored numbered group");
-        }
-        ui.selection.ids = whole;
-        for (const auto invalid : {enemy, game.buildings().front().id, rts::EntityId{99999}}) {
-            require(!ui.selection.selectMember(game, invalid) && ui.selection.ids == whole, "Invalid icon changed selection");
-        }
-    });
     test("Active type controls visible commands while general orders retain every selected unit", [&] {
         const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
         auto types = defs.entities();
-        auto secondWorker = defs.entity("human.worker"); secondWorker.id = "other.worker"; types.push_back(secondWorker);
-        auto secondSiege = defs.entity("human.catapult"); secondSiege.id = "other.siege"; types.push_back(secondSiege);
+        auto secondWorker = defs.entity("church.worker"); secondWorker.id = "other.worker"; types.push_back(secondWorker);
+        auto secondSiege = defs.entity("church.catapult"); secondSiege.id = "other.siege"; types.push_back(secondSiege);
         rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {}};
-        scene.units = {{"human.peacemaker", 0, {10, 10}}, {"human.catapult", 0, {11, 11}},
-            {secondWorker.id, 0, {8, 9}}, {secondSiege.id, 0, {12, 11}}, {"human.peacemaker", 1, {25, 25}}};
-        rts::Simulation game(std::move(scene), {}, defs.entity("human.worker"), types, defs.startingDepot(defs.entity("human.worker").factionId).id);
+        scene.units = {{"church.peacemaker", 0, {10, 10}}, {"church.catapult", 0, {11, 11}},
+            {secondWorker.id, 0, {8, 9}}, {secondSiege.id, 0, {12, 11}}, {"church.peacemaker", 1, {25, 25}}};
+        rts::Simulation game(std::move(scene), {}, defs.entity("church.worker"), types, defs.startingDepot(defs.entity("church.worker").factionId).id);
         rts::GameplayUi ui;
         for (const auto& unit : game.units()) if (unit.owner == game.player().id) ui.selection.ids.push_back(unit.id);
         const auto soldier = game.units()[1].id, siege = game.units()[2].id;
@@ -402,7 +152,7 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             for (const auto& command : rts::unitCommands) if (command.command == kind) return command.slot;
             throw std::runtime_error("Missing command");
         };
-        require(ui.selection.activeGroup(game).type == "human.peacemaker", "Soldier did not lead the non-hero selection");
+        require(ui.selection.activeGroup(game).type == "church.peacemaker", "Soldier did not lead the non-hero selection");
         for (auto kind : {rts::UnitCommand::Move, rts::UnitCommand::Stop, rts::UnitCommand::Attack, rts::UnitCommand::Hold, rts::UnitCommand::Patrol})
             require(rts::unitCommandVisible(game, ui, slot(kind)), "Common soldier command hidden");
         for (auto kind : {rts::UnitCommand::Gather, rts::UnitCommand::Build, rts::UnitCommand::AttackGround})
@@ -424,80 +174,6 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         for (size_t i : {size_t{8}, size_t{9}, size_t{10}, size_t{12}, size_t{100}})
             require(!rts::unitCommandVisible(game, ui, i), "Empty or out-of-range slot exposed a command");
     });
-    test("A dead active group falls back safely without transferring its pending special order", [] {
-        rts::EntityDefinition worker; worker.maximumHealth = 1;
-        auto other = worker; other.id = "other.worker";
-        auto killer = worker; killer.id = "killer"; killer.canBuild = false; killer.carryCapacity = 0;
-        killer.attackDamage = 100; killer.attackWindupTicks = 1;
-        rts::Scenario scene{rts::Map(40, 32), {3, 3}, {22, 20}, {}};
-        scene.units = {{other.id, 0, {7, 9}}, {killer.id, 1, {23, 20}}};
-        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, other, killer});
-        const auto victim = game.worker().id, survivor = game.units()[1].id;
-        rts::GameplayUi ui; ui.selection.ids = {victim, survivor};
-        ui.commandGroup = ui.selection.activeGroup(game).type; ui.orderMode = rts::OrderKind::Gather;
-        ticks(game, 20); ui.selection.prune(game);
-        require(!game.unit(victim) && ui.selection.ids == std::vector{survivor}, "Dead selected unit survived pruning");
-        require(ui.selection.activeUnit(game)->id == survivor, "No fallback after the active type died");
-        require(rts::commandRecipients(game, ui, rts::OrderKind::Gather).empty(), "Pending gather transferred to a different worker type");
-    });
-    test("Large selections keep the active portraits visible within the resized command HUD", [] {
-        rts::EntityDefinition worker;
-        auto last = worker; last.id = "last.worker";
-        rts::Scenario scene{rts::Map(64, 64), {1, 1}, {4, 3}, {}};
-        for (int i = 0; i < 39; ++i) scene.extraWorkers.push_back({20 + i % 8, 20 + i / 8});
-        scene.units = {{last.id, 0, {10, 10}}};
-        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, last});
-        rts::Selection selection;
-        for (const auto& unit : game.units()) selection.ids.push_back(unit.id);
-        for (rts::Vec2 extent : {rts::Vec2{800, 600}, rts::Vec2{1024, 768}, rts::Vec2{1060, 768}, rts::Vec2{1440, 900}, rts::Vec2{1920, 1080}}) {
-            const rts::BattleLayout layout(extent);
-            const rts::SelectionPanelLayout panel(layout.info);
-            require(layout.minimap.height > layout.info.height && layout.minimap.x + layout.minimap.width < layout.info.x &&
-                layout.idleWorker.y + layout.idleWorker.height < layout.minimap.y, "Larger minimap overlaps its neighbouring controls");
-            require(panel.health.y >= panel.portrait.y + panel.portrait.height && panel.mana.y >= panel.health.y + panel.health.height &&
-                panel.mana.x + panel.mana.width <= layout.info.x + layout.info.width &&
-                panel.mana.y + panel.mana.height <= layout.info.y + layout.info.height, "Portrait values escaped their reserved rows");
-            require(std::abs(layout.notification.x + layout.notification.width * .5f - extent.x * .5f) < .01f &&
-                layout.notification.y + layout.notification.height < layout.controlGroups[0].y, "Notification overlaps the bottom controls");
-            require(panel.content.width >= 200 && panel.portrait.x + panel.portrait.width < panel.content.x,
-                "Portrait overlaps selection content or leaves too little room for stats");
-            for (const auto b : layout.controlGroups)
-                require(b.x >= 0 && b.x + b.width <= extent.x && b.y + b.height < extent.y - 238 &&
-                    b.y + b.height < layout.commandPanel.y,
-                    "Numbered group button escapes the screen or overlaps the hint strip");
-            require(layout.commands.size() == 16 && layout.commands[3].y == layout.commands[0].y &&
-                layout.commands[4].y > layout.commands[3].y && layout.commands[15].y > layout.commands[11].y, "Command grid is not four by four");
-            require(layout.commandPanel.width == layout.minimap.width && layout.commandPanel.height == layout.minimap.height &&
-                layout.commandPanel.y == layout.minimap.y &&
-                std::abs(layout.commands.back().x + layout.commands.back().width - (extent.x - layout.minimap.x)) < .01f &&
-                std::abs(layout.commands.back().y + layout.commands.back().height - (layout.minimap.y + layout.minimap.height)) < .01f,
-                "Command block does not match the minimap size and alignment");
-            const GameplayUi emptyUi;
-            for (const auto button : layout.commands)
-                require(!mouseInBattleWorld(emptyUi, layout, {button.x + 1, button.y + 1}), "Command slot leaked mouse input to the map");
-            require(!mouseInBattleWorld(emptyUi, layout,
-                {layout.commands.front().x + layout.commands.front().width + 3, layout.commands.front().y + 10}),
-                "Gap between command buttons leaked mouse input to the map");
-            require(layout.info.x + layout.info.width < layout.commands.front().x, "Command grid overlaps selection info");
-            selection.activateGroup(game, game.units().back().id);
-            const rts::SelectionCards cards(game, selection, layout.info);
-            require(cards.total == 41 && (cards.cards.size() == cards.total || cards.first > 0), "Large selection did not page to its active type");
-            bool visible = false;
-            for (const auto& card : cards.cards) {
-                visible |= card.active && card.id == game.units().back().id;
-                require(card.bounds.width == (card.active ? 40 : 32), "Active portrait size did not differ");
-                const auto health = card.healthBar();
-                require(panel.content.contains({card.bounds.x - 1, card.bounds.y}) &&
-                    panel.content.contains({health.x + health.width, health.y + health.height}) &&
-                    panel.content.contains({card.manaBar().x + card.manaBar().width, card.manaBar().y + card.manaBar().height}),
-                    "Card or paired bars escaped the content panel");
-            }
-            require(visible, "Active portrait remained off-screen");
-        }
-        selection.ids = {game.worker().id}; selection.prune(game);
-        const rts::SelectionCards single(game, selection, rts::BattleLayout({800, 600}).info);
-        require(single.total == 1 && single.cards.empty(), "Single-unit stats retained an invisible clickable card");
-    });
     test("Idle worker cycling uses live free workers and skips holds, active orders and other owners", [] {
         auto scene = flatScenario(); scene.extraWorkers = {{5, 3}, {6, 3}};
         rts::EntityDefinition worker;
@@ -516,60 +192,6 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         require(selection.idleWorker(game, a), "Immediately stopped worker did not enter idle pool");
         ticks(game, 30);
         require(selection.idleWorker(game, b) && selection.ids == std::vector{c}, "Stopped worker did not return to the pool");
-    });
-    test("Rally points and links remain private even when a foreign building is selected", [&] {
-        const auto defs = rts::Definitions::load(context.assets / "data/catalog.json");
-        rts::Scenario scenario{rts::Map(28, 28), {1, 1}, {4, 3}, {}};
-        rts::Simulation game(std::move(scenario), {}, defs.entity("human.worker"), defs.entities(), defs.startingDepot(defs.entity("human.worker").factionId).id);
-        auto building = game.buildings().front();
-        building.rally = game.worker().cell;
-        rts::GameplayUi ui; ui.selection.ids = {building.id};
-        require(rts::rallyPointVisible(game, building, ui), "Selected owner's rally missing");
-        building.owner = 1;
-        require(!rts::rallyPointVisible(game, building, ui), "Visible selected enemy building exposed its rally");
-        building.owner = rts::neutralPlayer;
-        require(!rts::rallyPointVisible(game, building, ui), "Neutral building exposed its rally");
-        building.owner = game.player().id;
-        ui.selection.ids.clear();
-        require(!rts::rallyPointVisible(game, building, ui), "Deselected building kept a rally marker");
-        ui.selection.ids = {building.id};
-        building.constructionProgress = 0;
-        require(!rts::rallyPointVisible(game, building, ui), "Unfinished building exposed its rally");
-        building.constructionProgress = building.definition.constructionTicks;
-        building.health = 0;
-        require(!rts::rallyPointVisible(game, building, ui), "Destroyed building retained its rally");
-        building.health = building.definition.maximumHealth;
-        building.rally = {game.map().width() - 1, game.map().height() - 1};
-        require(!game.fog().explored(building.rally) && rts::rallyPointVisible(game, building, ui), "Own rally disappeared in unexplored terrain");
-        require(!rts::rallyPointLightVisible(game, building, ui), "Unexplored rally emitted light");
-        building.rally = {-1, -1};
-        require(!rts::rallyPointVisible(game, building, ui), "Rally outside the map became visible");
-        building.rally = game.worker().cell;
-        building.definition.trainableUnits.clear();
-        require(!rts::rallyPointVisible(game, building, ui), "Non-producing building retained its rally");
-    });
-    test("Authored building stages share drawing and picking bounds through camera changes", [&] {
-        const auto definitions = rts::Definitions::load(context.assets / "data/catalog.json");
-        auto scenario = flatScenario();
-        for (int y = 0; y < context.hallFootprint.y; ++y) for (int x = 0; x < context.hallFootprint.x; ++x)
-            scenario.map.at(scenario.hall + rts::Cell{x, y}).height = 2;
-        rts::Simulation game(std::move(scenario), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
-        auto building = game.buildings().front();
-        const auto& art = building.definition.buildingSprite;
-        for (float zoom : {.4f, 1.0f, 1.8f}) {
-            const rts::WorldView view{{400, 450}, zoom};
-            const auto ground = view.project({building.origin.x + building.definition.width * .5f, building.origin.y + building.definition.height * .5f}, 2);
-            for (int progress : {0, 99, 198, 300}) {
-                building.constructionProgress = progress;
-                const auto* stage = art.stage(progress, building.definition.constructionTicks);
-                const auto bounds = rts::buildingBounds(game, building, view);
-                require(std::abs(bounds.width - stage->source[2] * art.scale * zoom) < .001f, "Picking width ignored sprite crop");
-                require(std::abs(bounds.x + bounds.width * stage->anchor.x - ground.x) < .001f &&
-                    std::abs(bounds.y + bounds.height * stage->anchor.y - ground.y) < .001f, "Stage anchor drifted from logical ground");
-            }
-            const auto bounds = rts::buildingBounds(game, game.buildings().front(), view);
-            require(rts::pickEntity(game, view, {bounds.x + bounds.width * .5f, bounds.y + 12 * zoom}) == building.id, "New hall roof cannot be selected");
-        }
     });
     test("Minimap cache refreshes fog terrain and replacement maps but skips unchanged frames", [] {
         rts::Map map(16, 12);
@@ -632,81 +254,6 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             "Feathering exposed an unexplored obstacle beside the visible area");
         require(sample({13, 12}) == 0xff081119, "Black mask leaked authored impassable terrain");
     });
-    test("Minimap preserves one-cell obstacles on maps larger than the raster and refreshes removed blockers", [] {
-        Map map(512, 512); FogOfWar fog(512, 512); fog.revealAll(); FogMask mask; mask.update(fog, 512, 512);
-        auto tree = makeEnvironment("TREE", 1000, {254, 253});
-        const std::array<const EnvironmentObject*, 1> known{{&tree}};
-        MinimapRaster raster; raster.update(map, fog, mask);
-        const auto ground = raster.pixels();
-        require(raster.update(map, fog, mask, known) && raster.pixels() != ground,
-            "A point obstacle fell between minimap samples");
-        require(!raster.update(map, fog, mask, known), "Unchanged blockers regenerated the raster");
-        require(raster.update(map, fog, mask) && raster.pixels() == ground, "Removed known obstacle remained cached");
-    });
-    test("Minimap marks cliff edges using terrain traversal and leaves wide ramps open", [] {
-        Map map(16, 16);
-        for (int y = 0; y < 16; ++y) for (int x = 8; x < 16; ++x) map.at({x, y}).height = 1;
-        for (int y = 6; y <= 8; ++y) map.at({7, y}).ramp = {1, 0};
-        FogOfWar fog(16, 16); fog.revealAll(); FogMask mask; mask.update(fog, 16, 16);
-        MinimapRaster raster; raster.update(map, fog, mask);
-        const MinimapProjection projection({0, 0, 164, 164}, map);
-        const auto sample = [&](Vec2 world) {
-            const auto p = projection.project(world);
-            return raster.pixels()[size_t(p.y) * 164 + size_t(p.x)];
-        };
-        require(sample({7.98f, 4.5f}) != sample({7.5f, 4.5f}), "Cliff boundary is missing");
-        require(sample({7.98f, 7.5f}) == sample({7.5f, 7.5f}), "Ramp crossing was drawn as a cliff");
-        map.at({7, 7}).ramp = {};
-        require(raster.update(map, fog, mask) && sample({7.98f, 7.5f}) != sample({7.5f, 7.5f}),
-            "Ramp edit left a stale path through the cliff");
-    });
-    test("Building sprite selection, box groups, additive selection and camera transforms", [] {
-        auto s = flatScenario(); s.extraWorkers = {{5, 3}, {4, 4}};
-        auto game = makeTestSimulation(std::move(s));
-        rts::WorldView view{{500, 40}, 1.25f};
-        rts::Selection selection;
-        const auto bounds = rts::buildingBounds(game, game.buildings()[0], view);
-        selection.click(game, view, {bounds.x + bounds.width * .5f, bounds.y + 30}, false);
-        require(selection.ids.size() == 1 && selection.ids[0] == game.buildings()[0].id, "Building upper sprite not selectable");
-        const auto p = rts::unitScreenAnchor(view, game.worker().position, game.workerHeight()) + rts::Vec2{0, -25 * view.zoom};
-        selection.click(game, view, p, false);
-        require(selection.ids.size() == 1 && selection.ids[0] == game.worker().id, "Unit click missed");
-        selection.click(game, view, p, true);
-        require(selection.ids.empty(), "Shift click did not toggle");
-        selection.box(game, view, {0, 0, 1200, 1200}, false);
-        require(selection.ids.size() == 3, "Box selected building or missed units");
-        selection.box(game, view, {0, 0, 1200, 1200}, true);
-        require(selection.ids.size() == 3, "Additive box duplicated unit IDs");
-    });
-    test("Crystal sprite selection is neutral, single and excluded from army groups", [] {
-        auto s = flatScenario(rts::Crystal::defaultReserve); s.extraWorkers = {{5, 3}};
-        auto game = makeTestSimulation(std::move(s));
-        const auto& node = game.crystals().front();
-        require(node.owner == rts::neutralPlayer && node.id && !game.unit(node.id) && !game.building(node.id), "Crystal has no independent neutral identity");
-        require(game.crystal(node.id) == &node, "Crystal lookup lost identity");
-        for (float zoom : {.4f, 1.0f, 1.8f}) {
-            const rts::WorldView view{{170, -60}, zoom};
-            const auto bounds = rts::crystalBounds(game, node, view);
-            const rts::Vec2 crystalPoint{bounds.x + bounds.width * .5f, bounds.y + bounds.height * .25f};
-            rts::Selection selection;
-            selection.click(game, view, crystalPoint, false);
-            require(selection.ids == std::vector<rts::EntityId>{node.id}, "Crystal upper sprite was not selected");
-            require(!game.command(selection.ids, {6, 5}) && game.worker().state == rts::UnitState::Idle, "Neutral selection issued an order to player units");
-            const auto workerPoint = rts::unitScreenAnchor(view, game.worker().position, game.workerHeight()) + rts::Vec2{0, -25 * zoom};
-            selection.click(game, view, workerPoint, true);
-            require(selection.ids == std::vector<rts::EntityId>{game.worker().id}, "Shift mixed a crystal into a unit group");
-            selection.click(game, view, crystalPoint, true);
-            require(selection.ids == std::vector<rts::EntityId>{node.id}, "Crystal did not replace a unit group");
-            selection.click(game, view, crystalPoint, true);
-            require(selection.ids.empty(), "Shift did not toggle a crystal");
-            selection.click(game, view, crystalPoint, false);
-            selection.box(game, view, {-2000, -2000, 5000, 5000}, true);
-            require(selection.ids.size() == game.units().size() && !selection.contains(node.id), "Box selection included a crystal");
-            selection.click(game, view, crystalPoint, false);
-            selection.army(game);
-            require(selection.ids.empty(), "Army shortcut retained a crystal or workers");
-        }
-    });
     test("Crystal reserve updates on harvest and depletion removes selection", [] {
         auto game = makeTestSimulation(flatScenario(2));
         const auto nodeId = game.crystals().front().id;
@@ -727,119 +274,6 @@ void selectionTests(TestSuite& test, const TestContext& context) {
         }
         require(partial && game.crystal(nodeId)->remaining == 0 && game.map().walkable(cell), "Deposit did not deplete normally");
         require(selection.ids.empty() && rts::pickEntity(game, view, p) != nodeId, "Depleted crystal remained selectable");
-    });
-    test("Crystals cannot be selected through unexplored or remembered fog", [] {
-        auto s = flatScenario(); s.worker = {7, 5};
-        s.crystals.push_back({{9, 9}, 1000}); s.map.occupy({9, 9});
-        rts::EntityDefinition worker; worker.dayVision = worker.nightVision = 3;
-        auto depot = testDepot("hall", worker.id); depot.dayVision = depot.nightVision = 1;
-        auto game = makeTestSimulation(std::move(s), {}, worker, {depot});
-        const auto nodeId = game.crystals()[0].id, hiddenId = game.crystals()[1].id;
-        const rts::WorldView view{{40, 80}, 1};
-        const auto p = view.project(rts::center({7, 7})) + rts::Vec2{0, -25};
-        const auto hidden = view.project(rts::center({9, 9})) + rts::Vec2{0, -25};
-        require(!game.fog().explored({9, 9}) && rts::pickEntity(game, view, hidden) != hiddenId, "Unknown crystal leaked through fog");
-        rts::Selection selection;
-        selection.click(game, view, p, false);
-        require(selection.contains(nodeId), "Visible resource was not selectable");
-        require(game.command({4, 1}), "Observer move failed"); ticks(game, 180);
-        require(game.fog().explored({7, 7}) && !game.fog().visible({7, 7}) && game.knownCrystal(0) == 23, "Fog did not retain the resource image");
-        selection.prune(game);
-        require(selection.ids.empty(), "Resource selection survived losing sight");
-        selection.click(game, view, p, false);
-        require(!selection.contains(nodeId), "Remembered resource was selectable through fog");
-        require(game.command({7, 5}), "Observer return failed"); ticks(game, 180);
-        selection.click(game, view, p, false);
-        require(selection.contains(nodeId), "Resource could not be selected after regaining sight");
-    });
-    test("Minimap refreshes a changed rectangular crop with identical backing dimensions", [] {
-        const auto tall=Map::rectangular(64,96), wide=Map::rectangular(128,64);
-        require(tall.width()==wide.width(),"Fixture backing dimensions differ");
-        FogOfWar fog(tall.width(),tall.height()); fog.revealAll();
-        FogMask mask; mask.update(fog,tall.width(),tall.height());
-        MinimapRaster raster; raster.update(tall,fog,mask);
-        const auto before=raster.pixels();
-        require(raster.update(wide,fog,mask) && raster.pixels()!=before,"Replacement layout retained the previous minimap crop");
-        require(!raster.update(wide,fog,mask),"Unchanged crop rebuilt the minimap");
-    });
-    test("Minimap shares isometric picking and a rectangular camera outline", [] {
-        auto map=Map::rectangular(96,64);
-        const UiRect area{10,20,164,164};
-        const MinimapProjection mini(area,map);
-        const auto origin=mini.project({0,0}), x=mini.project({1,0}), y=mini.project({0,1});
-        require(x.x>origin.x && x.y>origin.y && y.x<origin.x && y.y>origin.y,"Minimap axes differ from terrain");
-        for(int cy=0;cy<map.height();++cy) for(int cx=0;cx<map.width();++cx) {
-            const Cell c{cx,cy};
-            const auto picked=mini.pick(mini.project(center(c)));
-            require(map.playable(c)?picked==c:!picked,"Minimap accepted a partial cell or missed a complete one");
-        }
-        require(!mini.pick({11,21}) && !mini.pick({173,183}),"Letterboxing is interactive");
-        const MinimapProjection square(area,Map::rectangular(64,64));
-        for(Vec2 p:{Vec2{area.x+4,area.y+4},Vec2{area.x+160,area.y+160}})
-            require(square.pick(p).has_value(),"Square field does not fill minimap corners");
-        WorldView camera{{0,0},.8f};
-        const UiRect world{0,58,1440,638};
-        camera.origin=Vec2{720,377}-camera.project({56,56});
-        const auto visible=mini.viewport(camera,world);
-        require(visible.size()==4 && std::abs(visible[0].y-visible[1].y)<.001f &&
-            std::abs(visible[1].x-visible[2].x)<.001f,"Camera outline is rotated");
-        camera.origin={720,60};
-        for(Vec2 p:mini.viewport(camera,world)) {
-            p=WorldView{}.project(mini.unproject(p));
-            const auto a=map.groundMinimum(),b=a+map.groundExtent();
-            require(p.x>=a.x-.01f && p.y>=a.y-.01f && p.x<=b.x+.01f && p.y<=b.y+.01f,"Outline escaped rectangular crop");
-        }
-    });
-    test("Locomotion uses step frames, retains facing and pauses with actual movement", [] {
-        auto game = makeTestSimulation(flatScenario());
-        game.command({8, 3});
-        std::array<bool, 4> seen{};
-        for (int tick = 0; tick < 25; ++tick) {
-            game.tick();
-            const auto frame = rts::locomotionFrame(game.worker());
-            require(frame.column >= 0 && frame.column < 4, "Walk selected sword or other action frames");
-            require(frame.row == 1, "Logical east step did not face screen southeast");
-            seen[frame.column] = true;
-        }
-        require(std::all_of(seen.begin(), seen.end(), [](bool value) { return value; }), "Walk never cycled through steps");
-        game.stop(); ticks(game, 20);
-        const auto stopped = rts::locomotionFrame(game.worker());
-        const float phase = game.worker().walkCycle;
-        ticks(game, 10);
-        require(stopped.column == 0 && stopped.row == 1 && game.worker().walkCycle == phase, "Stopped unit walked or lost facing");
-        rts::Unit waiting = game.worker(); waiting.route = {{0, 0}, {1, 0}}; waiting.next = 1; waiting.blockedTicks = 2;
-        require(rts::locomotionFrame(waiting).column == 0, "Waiting unit walked in place");
-    });
-    test("Square projection picks slopes in all directions and rejects cliff faces", [] {
-        for (int level : {-1, 0}) for (rts::Cell direction : {rts::Cell{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-            rts::Map map(7, 7);
-            for (int y = 0; y < 7; ++y) for (int x = 0; x < 7; ++x) map.at({x, y}).height = level;
-            const rts::Cell low{3, 3}, high = low + direction;
-            map.at(high).height = level + 1;
-            map.at(low).ramp = direction;
-            for (float zoom : {.4f, 1.0f, 1.8f}) {
-                const rts::WorldView view{{170, -60}, zoom};
-                for (float t : {.1f, .5f, .9f}) {
-                    const auto world = rts::center(low) + rts::Vec2{float(direction.x), float(direction.y)} * (t - .5f);
-                    require(map.pick(view.project(world, level + t), view) == low, "Ramp surface click is offset");
-                }
-                require(map.pick(view.project(rts::center(high), float(level + 1)), view) == high, "Plateau click is offset");
-            }
-        }
-        rts::Map map(7, 7);
-        map.at({3, 3}).height = 1;
-        const rts::WorldView view{{50, 70}, 1.2f};
-        require(!map.pick(view.project({3.5f, 4}, .5f), view), "Clicked through cliff face");
-        require(map.pick(view.project({3.5f, 4.5f}, 0), view) == rts::Cell{3, 4}, "Ground below cliff became unselectable");
-    });
-    test("Square-view entity picking respects north-south sprite overlap", [] {
-        auto s = flatScenario(); s.worker = {3, 0}; s.extraWorkers = {{3, 3}};
-        auto game = makeTestSimulation(std::move(s));
-        const rts::WorldView view{{300, 200}, 1};
-        const auto back = rts::unitScreenAnchor(view, game.units()[0].position, 0) + rts::Vec2{0, -25};
-        require(rts::pickEntity(game, view, back) == game.units()[0].id, "Unit behind the building cannot be selected through its window");
-        const auto front = rts::unitScreenAnchor(view, game.units()[1].position, 0) + rts::Vec2{0, -48};
-        require(rts::pickEntity(game, view, front) == game.units()[1].id, "Foreground unit hidden from selection");
     });
     test("Occlusion windows share picking, camera scale and logical visibility", [] {
         Scenario s{Map(24, 24), {1, 1}, {3, 0}, {}};

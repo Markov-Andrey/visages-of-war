@@ -5,10 +5,10 @@ namespace rts::game {
 void GameApplication::exerciseUnitCommands() {
     rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 9}, {{{12, 9}, 1000}}};
     scene.map.occupy({12, 9}); scene.extraWorkers = {{8, 9}};
-    scene.units = {{"human.peacemaker", 0, {10, 10}}, {"human.catapult", 0, {11, 11}}, {"human.peacemaker", 1, {14, 11}},
-        {"human.slinger", 0, {10, 12}}, {"human.peacemaker", 0, {9, 12}}};
+    scene.units = {{"church.peacemaker", 0, {10, 10}}, {"church.catapult", 0, {11, 11}}, {"church.peacemaker", 1, {14, 11}},
+        {"church.slinger", 0, {10, 12}}, {"church.peacemaker", 0, {9, 12}}};
     scene.heroSpawn = rts::Cell{9, 8};
-    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id, "human.hero");
+    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id, "church.hero");
     ui_ = {}; menu_.page = rts::MenuPage::Playing; resetCamera();
     const auto first = game_.units()[0].id, second = game_.units()[1].id;
     const auto soldier = game_.units()[2].id, siege = game_.units()[3].id, enemy = game_.units()[4].id;
@@ -67,7 +67,7 @@ void GameApplication::exerciseUnitCommands() {
     onMessage(WM_KEYDOWN, 'M', 0); onMessage(WM_RBUTTONDOWN, 0, at(view_.project(rts::center({17, 10}), 0)));
     if (ui_.orderMode || game_.unit(first)->gatherOriginCrystal != 0) throw std::runtime_error("Commands: right click did not cancel target mode");
     onMessage(WM_KEYDOWN, 'S', 0); onMessage(WM_KEYDOWN, 'B', 0); onMessage(WM_KEYDOWN, 'H', 0);
-    if (ui_.placement != "human.hall") throw std::runtime_error("Commands: build submenu failed");
+    if (ui_.placement != "church.hall") throw std::runtime_error("Commands: build submenu failed");
     onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
     if (!ui_.placement.empty() || menu_.page != rts::MenuPage::Playing) throw std::runtime_error("Commands: Esc left targeting incorrectly");
     ui_.selection.ids = {siege}; onMessage(WM_KEYDOWN, 'T', 0);
@@ -93,7 +93,7 @@ void GameApplication::exerciseUnitCommands() {
                 ", got " + group.type + "/" + std::to_string(group.ids.size()) +
                 "; selected=" + std::to_string(ui_.selection.ids.size()) + "/" + std::to_string(wholeSelection.size()));
     };
-    expectGroup("human.hero", 1);
+    expectGroup("church.hero", 1);
     const auto portraits = rts::SelectionCards(game_, ui_.selection, layout.info);
     if (portraits.cards.front().id != hero || !portraits.cards.front().active)
         throw std::runtime_error("Commands: hero was not first in the portrait strip");
@@ -111,7 +111,7 @@ void GameApplication::exerciseUnitCommands() {
         throw std::runtime_error("Abilities: cooldown button repeated the cast");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-ability-cooldown.png", nullptr, false, &ui_,
         rts::MenuPage::Main, 0, nullptr, nullptr, {800, 600});
-    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.peacemaker", 2);
+    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("church.peacemaker", 2);
     for (size_t slot = 5; slot < rts::commandSlots; ++slot) {
         mouse_ = {layout.commands[slot].x + 10, layout.commands[slot].y + 10};
         if (cursorKind() != rts::CursorKind::Default) throw std::runtime_error("Commands: hidden slot retained a hand cursor");
@@ -134,13 +134,13 @@ void GameApplication::exerciseUnitCommands() {
     onMessage(WM_KEYDOWN, 'S', 0); expectAll(rts::OrderKind::Stop);
     click({layout.commands[3].x + 10, layout.commands[3].y + 10}); expectAll(rts::OrderKind::Hold);
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"active-soldiers-preview.png", nullptr, false, &ui_);
-    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.slinger", 1);
-    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.catapult", 1);
+    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("church.slinger", 1);
+    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("church.catapult", 1);
     onMessage(WM_KEYDOWN, 'T', 0); click(mini.project(rts::center({19, 16})));
     for (const auto id : wholeSelection) if (rts::unitOrder(*game_.unit(id)) !=
         (id == siege ? rts::OrderKind::AttackGround : rts::OrderKind::Hold))
         throw std::runtime_error("Commands: ground fire changed another group's order");
-    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.worker", 2);
+    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("church.worker", 2);
     onMessage(WM_KEYDOWN, 'G', 0); click(mini.project(rts::center({12, 9})));
     if (game_.unit(first)->gatherOriginCrystal != 0 || game_.unit(second)->gatherOriginCrystal != 0 ||
         rts::unitOrder(*game_.unit(soldier)) != rts::OrderKind::Hold)
@@ -149,7 +149,7 @@ void GameApplication::exerciseUnitCommands() {
     click({layout.commands[rts::backCommandSlot].x + 10, layout.commands[rts::backCommandSlot].y + 10});
     if (ui_.buildMenu || !ui_.commandGroup.empty()) throw std::runtime_error("Commands: last-slot back button failed");
     onMessage(WM_KEYDOWN, 'B', 0); onMessage(WM_KEYDOWN, 'H', 0);
-    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("human.hero", 1);
+    onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("church.hero", 1);
     if (!ui_.placement.empty() || ui_.orderMode || ui_.buildMenu || !ui_.commandGroup.empty())
         throw std::runtime_error("Commands: Tab retained the previous group's targeted command");
     for (const auto selected : {soldier, otherSoldier}) {
@@ -166,7 +166,7 @@ void GameApplication::exerciseUnitCommands() {
     }
     ui_.selection.ids = wholeSelection;
     ui_.selection.activateGroup(game_, soldier);
-    expectGroup("human.peacemaker", 2);
+    expectGroup("church.peacemaker", 2);
     // SetKeyboardState only changes this UI thread's key state, without injecting system input.
     const auto numberKey = [&](unsigned key, bool control) {
         struct RestoreKeys {

@@ -29,7 +29,7 @@ void Renderer::verifyAssets() {
     const auto definitions = Definitions::load(paths_.asset(L"data/catalog.json"));
     validateCombatAssets(definitions);
     // Decode all files, including on --verify-assets, without creating a window.
-    std::vector<std::filesystem::path> images{L"sprites/hall.png",
+    std::vector<std::filesystem::path> images{
         L"ui/menu/background.png", L"ui/menu/valeri.png", L"ui/logo.png", L"ui/project-icon.png"};
     if (std::filesystem::exists(paths_.assetRoot() / buttonFrameAsset)) images.emplace_back(buttonFrameAsset);
     for (const auto& [id, path] : worldAssets_.resourceIcons()) images.push_back(path);
@@ -160,7 +160,6 @@ void Renderer::loadResources() {
     for (const auto& [id, definition] : loadCommandIcons(paths_)) commandIcons_[id].definition = definition;
     check(target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), brush_.GetAddressOf()));
     groundBrush_ = materialResource(worldAssets_.materials().front().id).brush;
-    loadBitmap(paths_.asset(L"sprites/hall.png"), hall_, 0, SpriteTeamMask::None, {}, true);
     loadBitmap(paths_.asset(L"ui/menu/background.png"), menuBackground_);
     loadBitmap(paths_.asset(L"ui/menu/valeri.png"), menuForeground_);
     loadBitmap(paths_.asset(L"ui/logo.png"), logo_);

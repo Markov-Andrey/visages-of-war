@@ -2,14 +2,14 @@
   "version": 1,
   "factions": [
     {
-      "id": "humans",
+      "id": "church",
       "name": "Церковь Святого Пламени",
-      "startingBuilding": "human.hall",
+      "startingBuilding": "church.hall",
       "description": "Раса Валери. Поселения Церкви Святого Пламени объединены вокруг священного огня."
     }
   ],
   "entityFiles": [
-    "entities/humans.json"
+    "entities/church.json"
   ],
   "commandersFile": "commanders.json",
   "rulesFile": "rules.json",

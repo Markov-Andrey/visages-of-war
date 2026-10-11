@@ -316,7 +316,7 @@
           "removed": "2026-10-09",
           "status": "Removed obsolete draft; replaced by the aligned Peacemaker sheet.",
           "imported": "2026-10-03",
-          "source": "Project owner Peacemaker death animation; original bytes preserved. Four shared frames, last frame is the persistent corpse; crops and ground pivots in data/entities/humans.json.",
+          "source": "Project owner Peacemaker death animation; original bytes preserved. Four shared frames, last frame is the persistent corpse; crops and ground pivots in data/entities/church.json.",
           "sha256": "22106E00329C5998C0F1778AA9B1555EF2C267357D98AAB0CECBC7069CBEFEF1"
         },
         {

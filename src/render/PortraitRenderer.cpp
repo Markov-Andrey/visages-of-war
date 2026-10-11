@@ -60,14 +60,6 @@ void Renderer::drawBuildingPortrait(const Simulation& game, const Building& buil
         uiImage(type.buildingSprite.portrait, type.buildingSprite.portraitMask, art, color, true);
     } else if (const auto* stage = type.buildingSprite.stage(type.constructionTicks, type.constructionTicks)) {
         buildingPortrait(*stage, art, color, game.clock().elapsedTicks(), building.training());
-    } else {
-        // Reuse the world renderer for prototype buildings without authored artwork.
-        auto preview = building; preview.constructionProgress = type.constructionTicks;
-        const auto original = buildingBounds(game, preview, WorldView{});
-        const float scale = std::min(art.width / original.width, art.height / original.height);
-        WorldView view{{art.x + art.width * .5f - (original.x + original.width * .5f) * scale,
-                        art.y + art.height * .5f - (original.y + original.height * .5f) * scale}, scale};
-        buildingSprite(game, preview, view, false);
     }
     target_->PopAxisAlignedClip();
     buttonFrame(p);

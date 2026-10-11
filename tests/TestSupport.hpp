@@ -48,7 +48,7 @@ inline rts::Scenario gatheringScenario(bool neighbors = true) {
     return s;
 }
 inline rts::EntityDefinition gatheringWorker() {
-    rts::EntityDefinition type; type.dayVision = 32; type.nightVision = 32;
+    auto type = fixtureWorker(); type.dayVision = 32; type.nightVision = 32;
     return type;
 }
 inline rts::Scenario shoreScenario() {
@@ -78,7 +78,7 @@ struct CatalogFixture {
         const auto read = [](const std::filesystem::path& path) { std::ifstream file(path); return Json::parse(file); };
         root = rts::Paths::executable().parent_path() / L"Каталог для проверки";
         catalog = read(assets / "data/catalog.json");
-        entities = read(assets / "data/entities/humans.json");
+        entities = read(assets / "data/entities/church.json");
         commanders = read(assets / "data/commanders.json");
         rules = read(assets / "data/rules.json");
         abilities = read(assets / "data/abilities.json");
@@ -86,7 +86,7 @@ struct CatalogFixture {
     rts::Definitions load() const {
         std::filesystem::create_directories(root / "entities");
         std::ofstream(root / "catalog.json") << catalog.dump(2);
-        std::ofstream(root / "entities/humans.json") << entities.dump(2);
+        std::ofstream(root / "entities/church.json") << entities.dump(2);
         std::ofstream(root / "commanders.json") << commanders.dump(2);
         std::ofstream(root / "rules.json") << rules.dump(2);
         std::ofstream(root / "abilities.json") << abilities.dump(2);
@@ -98,7 +98,8 @@ inline rts::EntityDefinition testDepot(const std::string& id, const std::string&
     depot.id = id; depot.displayName = id; depot.constructible = true; depot.mobile = false;
     depot.canBuild = false; depot.carryCapacity = 0; depot.width = 3; depot.height = 2;
     depot.cost = {100, 0}; depot.constructionTicks = ticks; depot.maximumHealth = 200;
-    depot.acceptsCargo = true; depot.trainableUnits = {produced}; depot.visual = rts::EntityVisual::Hall;
+    depot.acceptsCargo = true; depot.trainableUnits = {produced};
+    depot.buildingSprite = fixtureBuildingSprite();
     return depot;
 }
 

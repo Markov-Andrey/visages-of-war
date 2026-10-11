@@ -5,9 +5,9 @@ namespace rts::game {
 void GameApplication::exerciseInspection() {
     rts::Scenario scene{rts::Map(40, 32), {3, 3}, {7, 7}, {}};
     scene.extraWorkers = {{8, 7}};
-    scene.units = {{"human.hero", 1, {11, 8}}, {"human.worker", rts::neutralPlayer, {10, 11}}, {"human.peacemaker", 0, {7, 10}}};
+    scene.units = {{"church.hero", 1, {11, 8}}, {"church.worker", rts::neutralPlayer, {10, 11}}, {"church.peacemaker", 0, {7, 10}}};
     scene.crystals.push_back({{12, 11}, 1000}); scene.map.occupy({12, 11});
-    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
+    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
     ui_ = {}; menu_.page = rts::MenuPage::Playing; clearCommandMode();
     const rts::BattleLayout layout(renderer_.size());
     const auto at = [&](rts::Vec2 point) {
@@ -100,9 +100,9 @@ void GameApplication::exerciseInspection() {
 
     rts::Scenario production{rts::Map(32, 32), {5, 5}, {12, 12}, {}};
     production.startingCrystals = 10000;
-    game_ = rts::Simulation(std::move(production), menu_.player, definitions_.entity("human.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
+    game_ = rts::Simulation(std::move(production), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
     auto& depot = const_cast<rts::Building&>(game_.buildings().front());
-    depot.definition.trainableUnits = {"human.peacemaker", "human.slinger"};
+    depot.definition.trainableUnits = {"church.peacemaker", "church.slinger"};
     for (size_t i = 0; i < 10; ++i)
         if (!game_.train(depot.id, depot.definition.trainableUnits[i % 2]))
             throw std::runtime_error("Queue: could not fill ten mixed production slots");
@@ -151,7 +151,7 @@ void GameApplication::exerciseInspection() {
     if (depot.production.size() != 6 || game_.storedCrystals() != beforeEmpty + last.paidCrystals / 2)
         throw std::runtime_error("Queue: X did not cancel the last order with half refund");
 
-    const auto site = game_.construct(std::array{game_.worker().id}, "human.watchtower", {13, 12});
+    const auto site = game_.construct(std::array{game_.worker().id}, "church.barracks", {13, 12});
     if (!site) throw std::runtime_error("Cancellation: could not place construction fixture");
     const int beforeCancel = game_.storedCrystals();
     const int cost = game_.building(*site)->definition.cost.crystals;

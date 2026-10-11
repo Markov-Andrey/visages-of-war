@@ -4,10 +4,10 @@
 namespace rts::game {
 void GameApplication::exerciseRangedCombat() {
     rts::Scenario scene{rts::Map(32,32),{10,10},{12,14},{}};
-    scene.units = {{"human.slinger",0,{14,14}}, {"human.catapult",0,{14,16}}, {"human.peacemaker",1,{19,15}}};
+    scene.units = {{"church.slinger",0,{14,14}}, {"church.catapult",0,{14,16}}, {"church.peacemaker",1,{19,15}}};
     auto types = definitions_.entities();
-    for (auto& d : types) if (d.id == "human.peacemaker") { d.attackDamage = 0; d.maximumHealth = 10000; }
-    game_ = rts::Simulation(std::move(scene),menu_.player,definitions_.entity("human.worker"),std::move(types), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
+    for (auto& d : types) if (d.id == "church.peacemaker") { d.attackDamage = 0; d.maximumHealth = 10000; }
+    game_ = rts::Simulation(std::move(scene),menu_.player,definitions_.entity("church.worker"),std::move(types), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
     ui_ = {}; ui_.selection.army(game_);
     const auto enemy = game_.units().back().id;
     if (!game_.attack(ui_.selection.ids,enemy)) throw std::runtime_error("Ranged smoke: attack rejected");
@@ -27,18 +27,18 @@ void GameApplication::exerciseRangedCombat() {
     for (int t = 0; t <= impactTicks; ++t) game_.tick();
     if (game_.unit(enemy)->health >= 10000 - 45) throw std::runtime_error("Ranged smoke: no projectile damage");
     rts::Scenario training{rts::Map(32,32),{10,10},{12,14},{}};
-    training.units = {{"human.flying_soldier",0,{12,17}}};
+    training.units = {{"church.flying_soldier",0,{12,17}}};
     training.startingCrystals = 1000;
     types = definitions_.entities();
-    for (auto& d : types) if (d.id == "human.barracks") d.constructionTicks = 1;
-    game_ = rts::Simulation(std::move(training),menu_.player,definitions_.entity("human.worker"),std::move(types), definitions_.startingDepot(definitions_.entity("human.worker").factionId).id);
-    const auto site = game_.construct(std::array{game_.worker().id},"human.barracks",{14,14});
+    for (auto& d : types) if (d.id == "church.barracks") d.constructionTicks = 1;
+    game_ = rts::Simulation(std::move(training),menu_.player,definitions_.entity("church.worker"),std::move(types), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
+    const auto site = game_.construct(std::array{game_.worker().id},"church.barracks",{14,14});
     if (!site) throw std::runtime_error("Ranged smoke: barracks construction failed");
     for (int t = 0; t < 120; ++t) game_.tick();
     ui_ = {}; ui_.selection.ids = {*site};
     onMessage(WM_KEYDOWN,'E',0); onMessage(WM_KEYDOWN,'T',0);
     const auto& jobs = game_.building(*site)->production;
-    if (jobs.size() != 2 || jobs[0].definitionId != "human.slinger" || jobs[1].definitionId != "human.catapult")
+    if (jobs.size() != 2 || jobs[0].definitionId != "church.slinger" || jobs[1].definitionId != "church.catapult")
         throw std::runtime_error("Ranged smoke: recruitment keys ignored roster");
     renderer_.snapshot(game_,rts::Paths::executable().parent_path()/L"ranged-training-preview.png",nullptr,false,&ui_);
 }

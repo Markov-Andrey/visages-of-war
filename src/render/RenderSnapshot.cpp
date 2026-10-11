@@ -26,7 +26,7 @@ void Renderer::snapshot(const Simulation& game, const std::filesystem::path& out
         GameplayUi ui;
         ui.selection.ids = {game.buildings().front().id};
         if (!grid && game.hero()) ui.selection.hero(game);
-        if (grid) ui.placement = "human.barracks";
+        if (grid) ui.placement = "church.barracks";
         if (interfaceState) ui = *interfaceState;
         draw(game, view, grid ? std::optional<Cell>{game.worker().cell + Cell{3,1}} : std::nullopt, ui, grid, false);
     }

@@ -13431,7 +13431,7 @@
   ],
   "units": [
     {
-      "asset": "human.peacemaker",
+      "asset": "church.peacemaker",
       "owner": 0,
       "cell": [
         73,
@@ -13439,7 +13439,7 @@
       ]
     },
     {
-      "asset": "human.peacemaker",
+      "asset": "church.peacemaker",
       "owner": 0,
       "cell": [
         45,
@@ -13447,7 +13447,7 @@
       ]
     },
     {
-      "asset": "human.peacemaker",
+      "asset": "church.peacemaker",
       "owner": 0,
       "cell": [
         35,
@@ -13455,7 +13455,7 @@
       ]
     },
     {
-      "asset": "human.peacemaker",
+      "asset": "church.peacemaker",
       "owner": 0,
       "cell": [
         40,
@@ -13463,7 +13463,7 @@
       ]
     },
     {
-      "asset": "human.flying_soldier",
+      "asset": "church.flying_soldier",
       "owner": 0,
       "cell": [
         44,
@@ -13471,32 +13471,32 @@
       ]
     },
     {
-      "asset": "human.slinger",
+      "asset": "church.slinger",
       "owner": 0,
       "cell": [46, 72]
     },
     {
-      "asset": "human.slinger",
+      "asset": "church.slinger",
       "owner": 0,
       "cell": [47, 73]
     },
     {
-      "asset": "human.peacemaker",
+      "asset": "church.peacemaker",
       "owner": 1,
       "cell": [47, 63]
     },
     {
-      "asset": "human.peacemaker",
+      "asset": "church.peacemaker",
       "owner": 1,
       "cell": [48, 64]
     },
     {
-      "asset": "human.slinger",
+      "asset": "church.slinger",
       "owner": 1,
       "cell": [47, 61]
     },
     {
-      "asset": "human.slinger",
+      "asset": "church.slinger",
       "owner": 1,
       "cell": [48, 62]
     }

@@ -61,16 +61,21 @@
       "license": "CC0-1.0",
       "removed": "2026-10-11",
       "reason": "Replaced by project owner Novice artwork; no longer installed or restored."
-    }
-  ],
-  "files": [
+    },
     {
       "destination": "sprites/hall.png",
       "archive": "buildings.zip",
       "url": "https://opengameart.org/sites/default/files/building_pack_02_single.zip",
       "entry": "building_2/64x32_no_shadow/building2_64x32_no_shadow_00.png",
-      "sha256": "1E721DB4826928B9B61A23F1D6546CC37F19FC95AA42A6734837819471A0EC84"
-    },
+      "sha256": "1E721DB4826928B9B61A23F1D6546CC37F19FC95AA42A6734837819471A0EC84",
+      "source": "https://opengameart.org/content/isometric-medieval-buildings",
+      "author": "rubberduck; barrels by yd",
+      "license": "CC0-1.0",
+      "removed": "2026-10-11",
+      "reason": "Legacy building fallback removed; only catalog-authored building sprites are supported."
+    }
+  ],
+  "files": [
     {
       "destination": "sprites/catapult.png",
       "archive": "catapult.zip",

@@ -2,12 +2,12 @@
   "version": 1,
   "commanders": [
     {
-      "id": "human_commander",
+      "id": "church_commander",
       "name": "Валери",
       "description": "Валери — командир Церкви Святого Пламени.",
-      "factionId": "humans",
-      "startingWorker": "human.worker",
-      "startingHero": "human.hero",
+      "factionId": "church",
+      "startingWorker": "church.worker",
+      "startingHero": "church.hero",
       "rallySprite": {
         "image": "sprites/markers/valeri/rally-point.png",
         "teamMask": "sprites/markers/valeri/rally-point-team.png",

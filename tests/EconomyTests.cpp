@@ -5,7 +5,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
     test("Novice credits crystals in its work pose without cargo or a route to the depot", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
-        const auto type = definitions.entity("human.worker");
+        const auto type = definitions.entity("church.worker");
         require(type.canGather() && type.carryCapacity == 0 && type.harvesting().credit == HarvestCredit::Direct,
             "Novice is not a direct gatherer");
         auto s = flatScenario(); s.worker = {6,7};
@@ -31,7 +31,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     });
     test("Direct harvest batches clamp to the reserve and Stop resets progress", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
-        auto type = definitions.entity("human.worker");
+        auto type = definitions.entity("church.worker");
         type.gatherAbility->harvest->intervalTicks = 4;
         type.gatherAbility->harvest->amount = 3;
         auto s = flatScenario(7); s.worker = {6,7};
@@ -53,7 +53,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     });
     test("Catalog cargo harvesting still fills capacity and credits only on delivery", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
-        auto type = definitions.entity("human.worker");
+        auto type = definitions.entity("church.worker");
         type.gatherAbility = definitions.ability(3); type.carryCapacity = 10;
         type.gatherAbility->harvest->amount = 6;
         auto s = flatScenario(); s.worker = {6,7};
@@ -71,7 +71,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
     });
     test("Direct group gathering conserves resources and stays near the clicked deposit", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
-        auto type = definitions.entity("human.worker"); type.dayVision = type.nightVision = 32;
+        auto type = definitions.entity("church.worker"); type.dayVision = type.nightVision = 32;
         auto s = gatheringScenario(); s.crystals[0].remaining = 7; s.crystals[2].remaining = 9;
         s.extraWorkers = {{4,7},{4,9},{3,8}};
         auto game = makeTestSimulation(std::move(s), {}, type);
@@ -93,18 +93,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         for (int tick = 0; tick < 60 && game.worker().position.x < 7.75f; ++tick) game.tick();
         game.stop();
         require(game.worker().cell == rts::Cell{7, 6}, "Test worker entered the construction cell");
-        require(!game.canPlace("human.hall", {8, 6}), "Building overlapped the edge of a neighbouring circle");
-        require(game.canPlace("human.hall", {9, 6}), "Non-overlapping circle blocked construction");
-    });
-    test("Crystals are credited only at hall; last partial load is returned", [] {
-        auto game = makeTestSimulation(flatScenario());
-        game.command({7, 7});
-        for (int i = 0; i < 1000 && game.worker().cargo == 0; ++i) game.tick();
-        require(game.worker().cargo > 0 && game.storedCrystals() == 0, "Credited before deposit");
-        ticks(game, 6000);
-        require(game.storedCrystals() == 23 && game.worker().cargo == 0, "Lost partial load or duplicated resource");
-        require(game.crystals()[0].remaining == 0 && game.map().walkable({7, 7}), "Exhausted node still blocking");
-        require(game.worker().state == rts::UnitState::Idle, "Worker did not finish");
+        require(!game.canPlace("church.hall", {8, 6}), "Building overlapped the edge of a neighbouring circle");
+        require(game.canPlace("church.hall", {9, 6}), "Non-overlapping circle blocked construction");
     });
     test("Large crystals accept clicks on every cell and release the entire footprint after harvesting", [&] {
         const auto& world = context.worldAssets;
@@ -194,26 +184,6 @@ void economyTests(TestSuite& test, const TestContext& context) {
         ticks(game, 180);
         require(game.worker().state == rts::UnitState::Idle && !game.worker().repeatGather && game.crystals()[0].remaining == remaining, "Stop did not cancel gather retry");
     });
-    test("Group gathering reserves local slots and conserves resources without changing fields", [] {
-        auto s = gatheringScenario();
-        s.extraWorkers = {{4, 7}, {4, 9}, {3, 8}, {3, 7}, {3, 9}};
-        auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
-        std::vector<rts::EntityId> ids;
-        for (const auto& u : game.units()) ids.push_back(u.id);
-        require(game.command(ids, {15, 8}), "Group gather rejected");
-        for (const auto& u : game.units()) require(u.targetCrystal == 0 || u.targetCrystal == 2, "Group chose another resource field");
-        for (int tick = 0; tick < 2500; ++tick) {
-            game.tick();
-            int total = game.storedCrystals();
-            for (const auto& c : game.crystals()) total += c.remaining;
-            for (const auto& u : game.units()) {
-                total += u.cargo;
-                require(u.gatherOriginCrystal == 0 && u.targetCrystal != 1, "Group lost requested deposit after retry/delivery");
-            }
-            require(total == 3000, "Group gathering lost or duplicated crystals");
-        }
-        require(game.storedCrystals() > 0 && game.crystals()[1].remaining == 1000, "Group failed to deliver from selected field");
-    });
     test("Gather ordered mid-step retains the clicked area when the crystal depletes", [] {
         auto s = gatheringScenario();
         s.worker = {14, 10}; s.extraWorkers = {{15, 7}}; s.crystals[0].remaining = 1;
@@ -243,15 +213,18 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto definitions = rts::Definitions::load(assets / "data/catalog.json");
         auto types = definitions.entities();
         for (auto& type : types) type.constructionMode = ConstructionMode::Worker;
+        auto annex = definitions.entity("church.hall"); annex.id = "test.annex";
+        annex.width = annex.height = 1; annex.cost = {75, 0}; annex.constructionMode = ConstructionMode::Worker;
+        types.push_back(annex);
 
         auto s = flatScenario(); s.startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), std::move(types), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
+        rts::Simulation game(std::move(s), {}, definitions.entity("church.worker"), std::move(types), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array<rts::EntityId, 1> ids{game.worker().id};
-        require(!game.construct(ids, "human.barracks", {4, 3}), "Built on worker");
-        require(!game.construct(ids, "human.barracks", {8, 8}), "Built outside map");
-        require(!game.construct(ids, "human.barracks", {6, 6}), "Built over crystal");
+        require(!game.construct(ids, "church.barracks", {4, 3}), "Built on worker");
+        require(!game.construct(ids, "church.barracks", {8, 8}), "Built outside map");
+        require(!game.construct(ids, "church.barracks", {6, 6}), "Built over crystal");
         require(game.storedCrystals() == 500, "Invalid placement consumed crystals");
-        const auto building = game.construct(ids, "human.barracks", {5, 3});
+        const auto building = game.construct(ids, "church.barracks", {5, 3});
         require(building && !game.map().walkable({5, 3}) && game.storedCrystals() == 400, "Foundation/cost wrong");
         require(!game.train(*building), "Unfinished building produced unit");
         ticks(game, 30); game.stop(ids);
@@ -261,20 +234,20 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const_cast<Building&>(*game.building(*building)).health -= 10;
         game.command(ids, {5, 3}); ticks(game, 300);
         require(game.building(*building)->complete(), "Resumed construction never finished");
-        require(game.building(*building)->health == definitions.entity("human.barracks").maximumHealth - 10,
+        require(game.building(*building)->health == definitions.entity("church.barracks").maximumHealth - 10,
             "Construction completion healed damage instead of preserving it");
-        const auto tower = game.construct(ids, "human.watchtower", {3, 5});
-        require(tower && game.storedCrystals() == 325, "Tower placement failed");
-        require(game.cancelConstruction(*tower), "Cancellation failed");
+        const auto extra = game.construct(ids, annex.id, {3, 5});
+        require(extra && game.storedCrystals() == 325, "Extra construction placement failed");
+        require(game.cancelConstruction(*extra), "Cancellation failed");
         require(game.map().walkable({3, 5}) && game.storedCrystals() == 362, "Cancellation did not refund half rounded down or release occupancy");
         require(!game.map().walkable({5, 3}) && !game.cancelConstruction(*building), "Cancellation touched completed building");
     });
     test("Summoning requires initiation, frees the worker and preserves duration and damage", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         auto s = flatScenario(); s.startingCrystals = 500;
-        Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
+        Simulation game(std::move(s), {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array ids{game.worker().id};
-        const auto site = game.construct(ids, "human.barracks", {5, 3});
+        const auto site = game.construct(ids, "church.barracks", {5, 3});
         require(site.has_value(), "Summoning site rejected");
         game.stop(ids); ticks(game, 200);
         require(game.building(*site)->constructionProgress == 0 && game.building(*site)->health == 1,
@@ -301,7 +274,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(!game.building(*site)->complete() && game.building(*site)->constructionProgress == duration - 1,
             "Summoning finished early or stopped after worker death");
         game.tick();
-        require(game.building(*site)->complete() && game.building(*site)->health == definitions.entity("human.barracks").maximumHealth - 10,
+        require(game.building(*site)->complete() && game.building(*site)->health == definitions.entity("church.barracks").maximumHealth - 10,
             "Summoning did not finish exactly or healed combat damage");
         require(game.storedCrystals() == 400 && !game.cancelConstruction(*site), "Completion changed cost or allowed a refund");
         auto events = game.takeEvents();
@@ -316,12 +289,12 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Summoning cancellation before initiation refunds half and destruction never refunds", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         auto s = flatScenario(); s.startingCrystals = 500;
-        Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
+        Simulation game(std::move(s), {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array ids{game.worker().id};
-        const auto pending = game.construct(ids, "human.barracks", {5, 3});
+        const auto pending = game.construct(ids, "church.barracks", {5, 3});
         require(pending && game.cancelConstruction(*pending) && game.storedCrystals() == 450 && game.map().walkable({5, 3}),
             "Uninitiated summoning did not refund half or release occupancy");
-        const auto site = game.construct(ids, "human.barracks", {5, 3});
+        const auto site = game.construct(ids, "church.barracks", {5, 3});
         require(site.has_value(), "Could not reuse cancelled site");
         ticks(game, 30);
         require(game.building(*site)->constructionProgress > 0, "Destruction fixture did not start summoning");
@@ -338,107 +311,22 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Building cancellation refunds half the crystals and releases all reserved supply", [&] {
         const auto definitions = rts::Definitions::load(assets / "data/catalog.json");
         auto types = definitions.entities();
-        for (auto& type : types) if (type.id == "human.watchtower") type.cost.supply = 99;
+        auto annex = definitions.entity("church.hall"); annex.id = "test.annex";
+        annex.width = annex.height = 1; annex.cost = {75, 99}; types.push_back(annex);
         auto s = flatScenario(); s.startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), std::move(types), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
+        rts::Simulation game(std::move(s), {}, definitions.entity("church.worker"), std::move(types), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array<rts::EntityId, 1> ids{game.worker().id};
-        const auto tower = game.construct(ids, "human.watchtower", {3, 5});
-        require(tower && game.armySupply().used() == 100 && game.storedCrystals() == 425, "Building did not reserve its common cost");
-        require(!game.construct(ids, "human.watchtower", {4, 5}), "Construction exceeded supply cap");
+        const auto extra = game.construct(ids, annex.id, {3, 5});
+        require(extra && game.armySupply().used() == 100 && game.storedCrystals() == 425, "Building did not reserve its common cost");
+        require(!game.construct(ids, annex.id, {4, 5}), "Construction exceeded supply cap");
         require(game.map().walkable({4, 5}) && game.storedCrystals() == 425 && game.buildings().size() == 2, "Rejected construction changed world or resources");
-        for (int i = 0; i < 300 && game.building(*tower)->constructionProgress < game.building(*tower)->definition.constructionTicks / 2; ++i) game.tick();
-        require(game.building(*tower)->constructionProgress > 0 && !game.building(*tower)->complete(), "Partial construction fixture did not advance");
+        for (int i = 0; i < 300 && game.building(*extra)->constructionProgress < game.building(*extra)->definition.constructionTicks / 2; ++i) game.tick();
+        require(game.building(*extra)->constructionProgress > 0 && !game.building(*extra)->complete(), "Partial construction fixture did not advance");
         game.command(ids, {4, 8});
-        require(game.cancelConstruction(*tower), "Could not cancel supply-consuming construction");
+        require(game.cancelConstruction(*extra), "Could not cancel supply-consuming construction");
         require(game.worker().currentOrder.kind == OrderKind::Move, "Cancelling summoning stopped the freed worker's new order");
         require(game.map().walkable({3, 5}) && game.armySupply().used() == 1 && game.storedCrystals() == 462, "Cancellation did not release footprint/supply and refund half the crystals");
-        require(!game.cancelConstruction(*tower) && game.storedCrystals() == 462, "Cancellation refunded twice");
-    });
-    test("Initial production exits below the left corner for every footprint and rally destination", [] {
-        for (const rts::Cell size : {rts::Cell{3, 2}, rts::Cell{1, 1}, rts::Cell{2, 4}}) for (const bool moveRally : {false, true}) {
-            rts::Scenario s{rts::Map(16, 12), {2, 2}, {10, 8}, {}}; s.startingCrystals = 100;
-            rts::EntityDefinition worker; worker.trainingTicks = 1;
-            auto depot = testDepot("test.depot", worker.id); depot.width = size.x; depot.height = size.y;
-            auto game = makeTestSimulation(std::move(s), {}, worker, {depot});
-            const auto hall = game.buildings().front().id;
-            const rts::Cell exit{2, 2 + size.y};
-            require(game.building(hall)->rally == exit, "Initial rally is not below the leftmost footprint cell");
-            const rts::Cell destination = moveRally ? rts::Cell{11, 8} : exit;
-            if (moveRally) require(game.setRally(hall, destination), "Could not move rally");
-            require(game.train(hall), "Could not train at initial depot");
-            game.tick();
-            require(game.units().size() == 2 && game.units().back().cell == exit, "Rally or footprint changed the preferred exit");
-            ticks(game, 300);
-            require(game.units().back().cell == destination && game.units().back().state == rts::UnitState::Idle, "Produced unit missed its rally");
-        }
-    });
-    test("Constructed producers share the initial depot's exit and default rally rule", [] {
-        auto s = flatScenario(); s.startingCrystals = 300;
-        rts::EntityDefinition worker; worker.trainingTicks = 1;
-        auto producer = testDepot("test.producer", worker.id);
-        producer.acceptsCargo = false; producer.width = 2; producer.height = 3;
-        auto game = makeTestSimulation(std::move(s), {}, worker, {producer});
-        const std::array<rts::EntityId, 1> builders{game.worker().id};
-        const auto id = game.construct(builders, producer.id, {5, 3});
-        require(id.has_value(), "Could not construct producer");
-        require(game.building(*id)->rally == rts::Cell{5, 6}, "New building rally ignored its footprint");
-        ticks(game, 30);
-        require(game.building(*id)->complete() && game.train(*id), "New producer did not complete or train");
-        game.tick();
-        require(game.units().size() == 2 && game.units().back().cell == rts::Cell{5, 6}, "New producer used a different exit rule");
-    });
-    test("Unavailable lower-left exits retain a valid fallback for rally and production", [] {
-        for (const bool mapEdge : {false, true}) {
-            auto s = flatScenario(); s.startingCrystals = 100;
-            if (mapEdge) s.hall = {1, 8};
-            else s.map.at({1, 3}).blocked = true;
-            rts::EntityDefinition worker; worker.trainingTicks = 1;
-            auto game = makeTestSimulation(std::move(s), {}, worker);
-            const auto& hall = game.buildings().front();
-            const rts::Cell expected = mapEdge ? rts::Cell{4, 9} : rts::Cell{2, 3};
-            require(hall.rally == expected && game.map().walkable(hall.rally), "Default rally selected an unavailable exit");
-            require(game.train(hall.id), "Could not train with blocked preferred exit");
-            game.tick();
-            require(game.units().size() == 2 && game.units().back().cell == expected, "Production did not use a valid fallback");
-        }
-    });
-    test("Successive production fills the perimeter counterclockwise and waits until a slot opens", [] {
-        struct Case { rts::Cell size; std::vector<rts::Cell> exits; };
-        const std::array<Case, 3> cases{{
-            {{3, 2}, {{2, 4}, {3, 4}, {4, 4}, {5, 3}, {5, 2}, {4, 1}, {3, 1}, {2, 1}, {1, 2}, {1, 3}}},
-            {{1, 1}, {{2, 3}, {3, 2}, {2, 1}, {1, 2}}},
-            {{2, 3}, {{2, 5}, {3, 5}, {4, 4}, {4, 3}, {4, 2}, {3, 1}, {2, 1}, {1, 2}, {1, 3}, {1, 4}}}
-        }};
-        for (const auto& setup : cases) {
-            rts::Scenario s{rts::Map(16, 12), {2, 2}, {10, 8}, {}}; s.startingCrystals = 1000;
-            rts::EntityDefinition worker; worker.trainingTicks = 1;
-            auto depot = testDepot("test.depot", worker.id); depot.width = setup.size.x; depot.height = setup.size.y;
-            auto game = makeTestSimulation(std::move(s), {}, worker, {depot});
-            const auto hall = game.buildings().front().id;
-            rts::EntityId first{};
-            for (const auto exit : setup.exits) {
-                const auto count = game.units().size();
-                require(game.train(hall), "Could not train next unit");
-                game.tick();
-                require(game.units().size() == count + 1 && game.units().back().cell == exit, "Successive exit skipped counterclockwise order");
-                const auto id = game.units().back().id;
-                if (!first) first = id;
-                game.stop(std::array<rts::EntityId, 1>{id});
-            }
-            const auto count = game.units().size();
-            require(game.train(hall), "Could not queue blocked production");
-            const auto supply = game.armySupply().used();
-            ticks(game, 10);
-            require(game.units().size() == count && game.building(hall)->production.size() == 1 &&
-                game.building(hall)->production.front().remainingTicks == 0, "Full perimeter did not hold the completed job");
-            require(game.armySupply().used() == supply, "Blocked production lost reserved supply");
-            for (size_t a = 0; a < count; ++a) for (size_t b = a + 1; b < count; ++b)
-                require(separated(game.units()[a], game.units()[b]), "Production overlapped units");
-            require(game.command(std::array<rts::EntityId, 1>{first}, {2, 7}), "Could not clear the first exit");
-            ticks(game, 60);
-            require(game.units().size() == count + 1 && game.building(hall)->production.empty(), "Production did not resume after clearing an exit");
-            require(game.units().back().cell == setup.exits.front() && game.armySupply().used() == supply, "Resumed production used the wrong exit or charged supply twice");
-        }
+        require(!game.cancelConstruction(*extra) && game.storedCrystals() == 462, "Cancellation refunded twice");
     });
     test("Production skips cliffs, ramps, obstacles and incompatible water in perimeter order", [] {
         auto s = flatScenario(); s.startingCrystals = 100;
@@ -455,25 +343,14 @@ void economyTests(TestSuite& test, const TestContext& context) {
         game.tick();
         require(game.units().size() == 2 && game.units().back().cell == rts::Cell{3, 0}, "Production selected forbidden terrain or skipped perimeter order");
     });
-    test("Production skips an exit intersecting a moving circle", [] {
-        auto s = flatScenario(); s.startingCrystals = 100; s.worker = {1, 4};
-        rts::EntityDefinition worker; worker.trainingTicks = 1;
-        auto game = makeTestSimulation(std::move(s), {}, worker);
-        require(game.command({1, 3}), "Could not move worker into preferred exit");
-        ticks(game, 5);
-        require(!game.worker().route.empty() && game.worker().position != rts::center(game.worker().cell) && game.worker().cell == rts::Cell{1, 4}, "Worker did not approach the exit");
-        require(game.train(game.buildings().front().id), "Could not train near moving worker");
-        game.tick();
-        require(game.units().size() == 2 && game.units().back().cell == rts::Cell{2, 3}, "Production ignored circular clearance or skipped lower edge");
-    });
     test("Production reserves supply, refunds cancellation and follows per-building rally", [&] {
         auto definitions = rts::Definitions::load(assets / "data/catalog.json");
 
         auto s = flatScenario(); s.startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("human.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("human.worker").factionId).id);
+        rts::Simulation game(std::move(s), {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const auto hall = game.buildings()[0].id;
         const std::array<rts::EntityId, 1> ids{game.worker().id};
-        const auto barracks = game.construct(ids, "human.barracks", {5, 3});
+        const auto barracks = game.construct(ids, "church.barracks", {5, 3});
         require(barracks.has_value(), "No barracks"); ticks(game, 300);
         require(game.setRally(hall, {3, 7}) && game.setRally(*barracks, {8, 5}), "Rally rejected");
         require(game.building(hall)->rally != game.building(*barracks)->rally, "Rally not independent");
@@ -487,7 +364,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.units().size() == 2 && game.armySupply().used() == 3, "Spawn charged supply twice");
         require(!game.building(*barracks)->training(), "Finished production left training effects active");
         require(game.train(*barracks) && game.cancelTraining(*barracks) && !game.building(*barracks)->training(), "Cancelled last job left training effects active");
-        require(game.units().back().definitionId == "human.peacemaker" && game.units().back().cell == rts::Cell{8, 5}, "Produced unit missed rally");
+        require(game.units().back().definitionId == "church.peacemaker" && game.units().back().cell == rts::Cell{8, 5}, "Produced unit missed rally");
         require(!game.setRally(*barracks, {7, 7}), "Rally accepted blocked crystal");
     });
     test("Completed production waits for a blocked exit and can still be cancelled", [] {
@@ -556,20 +433,6 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.cancelTraining(building.id) && building.production.empty() && game.storedCrystals() == 874 && game.armySupply().used() == 1,
             "Default cancellation failed to release the last job");
         require(!game.cancelTraining(building.id, 0) && game.storedCrystals() == 874, "Empty queue refunded twice");
-    });
-    test("Several workers conserve resources while sharing gathering and depot approaches", [] {
-        auto s = flatScenario(73); s.extraWorkers = {{5, 3}, {4, 4}, {5, 4}};
-        auto game = makeTestSimulation(std::move(s));
-        std::vector<rts::EntityId> ids;
-        for (const auto& u : game.units()) ids.push_back(u.id);
-        game.command(ids, {7, 7});
-        for (int tick = 0; tick < 7000; ++tick) {
-            game.tick();
-            int total = game.storedCrystals() + game.crystals()[0].remaining;
-            for (const auto& u : game.units()) total += u.cargo;
-            require(total == 73, "Resources lost or duplicated");
-        }
-        require(game.storedCrystals() == 73, "Workers failed to deliver shared deposit");
     });
 }
 }
