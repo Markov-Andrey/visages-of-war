@@ -61,6 +61,21 @@ void GameApplication::exerciseInterface() {
         menuClick();
         if (menu_.page != rts::MenuPage::Playing || game_.player().color != rts::TeamColor::Black)
             throw std::runtime_error("Smoke: battle lost selected palette color");
+        if (game_.clock().elapsedTicks() != 0) throw std::runtime_error("Smoke: loading advanced simulation time");
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"loading-preview.png", &definitions_, false,
+            nullptr, rts::MenuPage::Loading);
+        rts::MenuState loadingPreview;
+        loadingPreview.page = rts::MenuPage::Loading;
+        loadingPreview.loadingProgress = 0;
+        loadingPreview.parallax.offset = {-1, -1};
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"loading-empty.png", &definitions_, false,
+            nullptr, rts::MenuPage::Loading, 0, &loadingPreview, nullptr, {800, 600});
+        loadingPreview.loadingProgress = 1;
+        loadingPreview.parallax.offset = {1, 1};
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"loading-complete.png", &definitions_, false,
+            nullptr, rts::MenuPage::Loading, 0, &loadingPreview, nullptr, {1920, 1080});
+        if (game_.clock().elapsedTicks() != 0 || game_.fog().explored({game_.map().width()-1, game_.map().height()-1}))
+            throw std::runtime_error("Smoke: loading preview changed match time or fog");
     }
     {
         const auto ticks = game_.clock().elapsedTicks();

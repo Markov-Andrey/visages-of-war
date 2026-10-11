@@ -1,6 +1,7 @@
 #include "RenderSupport.hpp"
 #include "rts/TeamColor.hpp"
 #include "rts/SpriteIsland.hpp"
+#include "rts/LoadingScreen.hpp"
 
 namespace { constexpr auto buttonFrameAsset = L"ui/button-frame.png"; }
 
@@ -31,6 +32,7 @@ void Renderer::verifyAssets() {
     // Decode all files, including on --verify-assets, without creating a window.
     std::vector<std::filesystem::path> images{
         L"ui/menu/background.png", L"ui/menu/valeri.png", L"ui/logo.png", L"ui/project-icon.png"};
+    for (const auto* image : loadingImagePaths) images.emplace_back(image);
     if (std::filesystem::exists(paths_.assetRoot() / buttonFrameAsset)) images.emplace_back(buttonFrameAsset);
     for (const auto& [id, path] : worldAssets_.resourceIcons()) images.push_back(path);
     for (const auto& crystal : worldAssets_.crystalSprites()) images.push_back(crystal.image);
@@ -159,7 +161,6 @@ void Renderer::loadResources() {
     commandIcons_.clear();
     for (const auto& [id, definition] : loadCommandIcons(paths_)) commandIcons_[id].definition = definition;
     check(target_->CreateSolidColorBrush(D2D1::ColorF(0xffffff), brush_.GetAddressOf()));
-    groundBrush_ = materialResource(worldAssets_.materials().front().id).brush;
     loadBitmap(paths_.asset(L"ui/menu/background.png"), menuBackground_);
     loadBitmap(paths_.asset(L"ui/menu/valeri.png"), menuForeground_);
     loadBitmap(paths_.asset(L"ui/logo.png"), logo_);

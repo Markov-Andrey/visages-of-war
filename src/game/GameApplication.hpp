@@ -11,7 +11,7 @@ public:
     explicit GameApplication(rts::Paths paths, std::filesystem::path mapFile = {}, bool forgeTest = false);
     int run(HINSTANCE instance, bool smoke, bool smokeMap = false);
     void verify();
-    void snapshot(const std::filesystem::path& output, bool menu, bool grid, bool title);
+    void snapshot(const std::filesystem::path& output, bool menu, bool grid, bool title, bool loading);
 private:
     rts::Simulation makeMatch() const;
     static RECT monitorBounds(HMONITOR monitor);
@@ -71,6 +71,7 @@ private:
     rts::GameplayUi ui_;
     rts::Vec2 dragStart_{}, panStart_{};
     bool dragging_{}, adding_{}, panning_{}, minimapDragging_{}, grid_{true}, paused_{};
+    bool resetFrameClock_{};
     std::exception_ptr callbackError_;
 };
 }

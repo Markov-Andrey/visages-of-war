@@ -13,6 +13,8 @@ std::wstring amount(float value) {
 }
 }
 void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions, Vec2 mouse) {
+    // Browsing can introduce graphics from races outside the current match.
+    residentMatchAssets_.reset();
     const LibraryLayout layout(size());
     mouse = layout.local(mouse);
     D2D1_MATRIX_3X2_F previous;
@@ -22,19 +24,30 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     worldOpacity_ = 1;
     // Keep only the current preview tint instead of retaining every full-size color variant.
     const auto color = teamRgb(menu.player.color);
-    std::erase_if(maskedImages_, [color](const auto& entry) {
-        return !std::get<1>(entry.first).empty() && std::get<2>(entry.first) != color;
-    });
-    std::erase_if(unitSheets_, [color](const auto& entry) {
-        return std::get<2>(entry.first) != SpriteTeamMask::None && std::get<1>(entry.first) != color;
+    std::erase_if(maskedImages_, [color, this](const auto& entry) {
+        const bool remove = !std::get<1>(entry.first).empty() && std::get<2>(entry.first) != color;
+        if (remove) spriteLights_.erase(entry.second.Get());
+        return remove;
     });
     const auto fill = [&](UiRect area, unsigned color, float opacity = 1) {
         brush_->SetColor(D2D1::ColorF(color, opacity));
         target_->FillRectangle(rect(area.x, area.y, area.width, area.height), brush_.Get());
     };
-    const auto choice = [&](UiRect area, const std::wstring& caption, bool selected) {
+    const auto choice = [&](UiRect area, const std::wstring& caption, bool selected, const EntityDefinition* entry = nullptr) {
         fill(area, selected ? 0x514432 : (area.contains(mouse) ? 0x343836 : 0x1c2729), .97f);
         if (selected) fill({area.x, area.y, 3, area.height}, 0xd6b476);
+        if (entry) {
+            const auto& icon = entry->constructible ? entry->buildingSprite.icon : entry->sprite.icon;
+            const auto& mask = entry->constructible ? entry->buildingSprite.iconMask : entry->sprite.iconMask;
+            const UiRect iconBounds{area.x + 8, area.y + 4, 32, 32};
+            if (!icon.empty()) uiImage(icon, mask, iconBounds, color);
+            else centeredText(L"?", iconBounds, 0xbac5bb);
+            const auto alignment = bodyFormat_->GetParagraphAlignment();
+            bodyFormat_->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+            text(caption, rect(area.x + 48, area.y + 2, area.width - 60, area.height - 4), selected ? 0xf2ddb5 : 0xbac5bb);
+            bodyFormat_->SetParagraphAlignment(alignment);
+            return;
+        }
         text(caption, rect(area.x + 14, area.y + 10, area.width - 28, area.height - 14), selected ? 0xf2ddb5 : 0xbac5bb);
     };
     text(L"ЛИБРАРИЙ", rect(34, 28, 550, 40), 0xf1ddb5, true);
@@ -82,8 +95,10 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     }
     const auto entryIndex = std::min(menu.libraryEntry, entries.size() - 1);
     const auto& entity = *entries[entryIndex];
-    for (size_t i = 0; i < LibraryLayout::entryRows && menu.libraryEntryScroll + i < entries.size(); ++i)
-        choice(layout.entryRow(i), wide(entries[menu.libraryEntryScroll + i]->displayName), entryIndex == menu.libraryEntryScroll + i);
+    for (size_t i = 0; i < LibraryLayout::entryRows && menu.libraryEntryScroll + i < entries.size(); ++i) {
+        const auto* entry = entries[menu.libraryEntryScroll + i];
+        choice(layout.entryRow(i), wide(entry->displayName), entryIndex == menu.libraryEntryScroll + i, entry);
+    }
     if (entries.size() > LibraryLayout::entryRows || factions.size() > LibraryLayout::factionRows)
         text(L"Колесо мыши — листать список", rect(42, 680, 224, 35), 0xb4b8aa);
     text(wide(entity.displayName), rect(782, 183, 432, 46), 0x3b3026, true);
@@ -91,20 +106,12 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
 
     const UiRect art{320, 180, 396, 446};
     target_->PushAxisAlignedClip(rect(art.x, art.y, art.width, art.height), D2D1_ANTIALIAS_MODE_ALIASED);
-    brush_->SetColor(D2D1::ColorF(0x796040, .13f));
-    target_->FillEllipse(D2D1::Ellipse(point({518, 585}), 147, 24), brush_.Get());
-    const auto* stage = entity.buildingSprite.stage(entity.constructionTicks, entity.constructionTicks);
-    if (!entity.buildingSprite.portrait.empty()) {
-        uiImage(entity.buildingSprite.portrait, entity.buildingSprite.portraitMask, art, teamRgb(menu.player.color));
-    } else if (stage) {
-        buildingPortrait(*stage, art, teamRgb(menu.player.color),
-            static_cast<std::uint64_t>(menu.librarySeconds * Simulation::ticksPerSecond));
-    } else if (entity.mobile && !entity.sprite.image.empty()) {
-        const float scale = std::min(art.width / entity.sprite.frameWidth, art.height / entity.sprite.frameHeight);
-        const Vec2 extent{entity.sprite.frameWidth * scale, entity.sprite.frameHeight * scale};
-        unitPortrait(entity.sprite, {art.x + (art.width - extent.x) * .5f, art.y + (art.height - extent.y) * .5f}, extent, teamRgb(menu.player.color));
+    const auto& portrait = entity.constructible ? entity.buildingSprite.portrait : entity.sprite.portrait;
+    const auto& portraitMask = entity.constructible ? entity.buildingSprite.portraitMask : entity.sprite.portraitMask;
+    if (!portrait.empty()) {
+        uiImage(portrait, portraitMask, art, color);
     } else {
-        text(L"Иллюстрация готовится", rect(398, 398, 260, 36), 0x6f583b);
+        centeredText(L"Портрет готовится", art, 0x6f583b);
     }
     target_->PopAxisAlignedClip();
 

@@ -7,13 +7,13 @@ namespace rts {
 using namespace render;
 
 void Renderer::reloadWorldAssets(const WorldAssets& assets) {
+    residentMatchAssets_.reset();
     constructionResources_.clear(); constructionPixels_.clear();
-    for (const auto& [id, bitmap] : worldIslands_) spriteLights_.erase(bitmap.Get());
+    // Lighting brushes own bitmap references too, including previews evicted
+    // from the library's image maps. Release the complete matching cache.
+    spriteLights_.clear();
     worldIslands_.clear(); worldSourcePixels_.clear();
     directionalSheets_.clear();
-    for (const auto& [path, bitmap] : worldSprites_) spriteLights_.erase(bitmap.Get());
-    for (const auto& [key, bitmap] : unitSheets_) spriteLights_.erase(bitmap.Get());
-    for (const auto& [key, bitmap] : maskedImages_) spriteLights_.erase(bitmap.Get());
     emissionMasks_.clear();
     worldAssets_=assets; materialResources_.clear(); worldSprites_.clear(); unitSheets_.clear(); unitUiImages_.clear(); maskedImages_.clear(); paintResources_.clear(); terrainPaint_.reset();
 }

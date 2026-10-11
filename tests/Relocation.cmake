@@ -2,11 +2,12 @@ if(NOT DEFINED APP OR NOT DEFINED FORGE OR NOT DEFINED WORK OR NOT DEFINED ASSET
     message(FATAL_ERROR "Expected APP, FORGE, WORK and ASSETS")
 endif()
 set(assetTimeout 20)
-set(editorTimeout 40)
+set(editorTimeout 90)
 if(CONFIG STREQUAL "Debug")
     # Unoptimized synthesis/lighting of the 512px directional atlases is CPU-heavy.
     set(assetTimeout 60)
-    set(editorTimeout 120)
+    # F9 also waits for the game's complete race preload before its screenshot/F10.
+    set(editorTimeout 240)
 endif()
 set(stage "${WORK}/RTS проверка пути с пробелами")
 file(MAKE_DIRECTORY "${stage}")

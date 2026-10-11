@@ -7,7 +7,7 @@
 #include <string_view>
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
-    bool verify = false, smoke = false, smokeMap = false, forgeTest = false, menuSnapshot = false, gridSnapshot = false, titleSnapshot = false;
+    bool verify = false, smoke = false, smokeMap = false, forgeTest = false, menuSnapshot = false, gridSnapshot = false, titleSnapshot = false, loadingSnapshot = false;
     std::filesystem::path snapshot, mapFile;
     int count{};
     auto* args = CommandLineToArgvW(GetCommandLineW(), &count);
@@ -23,6 +23,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         else if (arg == L"--snapshot-grid" && i + 1 < count) { snapshot = args[++i]; gridSnapshot = true; }
         else if (arg == L"--snapshot-menu" && i + 1 < count) { snapshot = args[++i]; menuSnapshot = true; }
         else if (arg == L"--snapshot-title" && i + 1 < count) { snapshot = args[++i]; titleSnapshot = true; }
+        else if (arg == L"--snapshot-loading" && i + 1 < count) { snapshot = args[++i]; loadingSnapshot = true; }
         else { LocalFree(args); return 2; }
     }
     LocalFree(args);
@@ -33,7 +34,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
         const auto paths = rts::Paths::discover();
         rts::game::GameApplication app(paths,mapFile,forgeTest);
         if (verify) { app.verify(); return 0; }
-        if (!snapshot.empty()) { app.snapshot(snapshot, menuSnapshot, gridSnapshot, titleSnapshot); return 0; }
+        if (!snapshot.empty()) { app.snapshot(snapshot, menuSnapshot, gridSnapshot, titleSnapshot, loadingSnapshot); return 0; }
         if (!smoke) {
             std::ofstream log(paths.writable(L"logs/RTS.log"), std::ios::app);
             log << "RTS started\n";

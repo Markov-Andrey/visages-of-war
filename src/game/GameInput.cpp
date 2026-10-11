@@ -8,6 +8,7 @@
 namespace rts::game {
 rts::CursorKind GameApplication::cursorKind() const {
     using rts::CursorKind;
+    if (menu_.page == rts::MenuPage::Loading) return CursorKind::Default;
     if (ui_.consoleOpen) return CursorKind::Default;
     if (menu_.page == rts::MenuPage::Library) return libraryLinkAt(mouse_) ? CursorKind::Hand : CursorKind::Default;
     if (menu_.page != rts::MenuPage::Playing) {
@@ -279,6 +280,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
     case WM_KEYDOWN:
         if (lParam & (1LL << 30)) return 0;
         if (wParam == VK_F10 && forgeTest_) { testExitRequested_=true; DestroyWindow(window_); return 0; }
+        if (menu_.page == rts::MenuPage::Loading) return 0;
         if (consoleKey(wParam)) return 0;
         if ((menu_.page == rts::MenuPage::Library || menu_.page == rts::MenuPage::BattleSetup) && colorSelectKey(wParam)) return 0;
         if (wParam == VK_ESCAPE) {

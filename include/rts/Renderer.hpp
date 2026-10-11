@@ -11,6 +11,7 @@
 #include "rts/TerrainPaint.hpp"
 #include "rts/DirectionalSprite.hpp"
 #include "rts/ConstructionVisual.hpp"
+#include "rts/MatchAssets.hpp"
 #include <windows.h>
 #include <d2d1.h>
 #include <dwrite.h>
@@ -19,6 +20,7 @@
 #include <array>
 #include <span>
 #include <tuple>
+#include <functional>
 
 namespace rts {
 class WorldEditor;
@@ -35,6 +37,11 @@ public:
         const GameplayUi* interfaceState = nullptr, MenuPage menuPage = MenuPage::BattleSetup, double previewSeconds = 0,
         const MenuState* menuState = nullptr, const WorldView* snapshotView = nullptr, Vec2 snapshotSize = {1440, 900});
     void drawMenu(const Simulation& game, const MenuState& menu, const Definitions& definitions, Vec2 mouse);
+    void beginLoadingPreview(const Simulation& game);
+    void drawLoading(const Simulation& game, const std::wstring& stage, size_t completed, size_t total, Vec2 parallax = {});
+    bool prepareMatchAssets(const Simulation& game, const Definitions& definitions,
+        const std::function<bool(const std::wstring&, size_t, size_t)>& progress,
+        std::span<const std::string> additionalEntities = {});
     void drawEditor(const WorldEditor& editor, const WorldView& view, Vec2 mouse, bool grid);
     void reloadWorldAssets(const WorldAssets& assets);
     void validateWorldAssets(const WorldAssets& assets);
@@ -149,6 +156,7 @@ private:
     std::map<std::pair<std::string, unsigned>, SpritePixels> directionalSheets_;
     std::map<std::tuple<std::filesystem::path,std::filesystem::path,unsigned>,ComPtr<ID2D1Bitmap>> maskedImages_;
     std::map<std::string,RallySpriteDefinition> rallySprites_;
+    std::optional<MatchAssets> residentMatchAssets_;
     struct CommandIconResource {
         IconAsset definition;
         ComPtr<ID2D1Bitmap> bitmap;
@@ -188,6 +196,9 @@ private:
     ComPtr<ID2D1BitmapBrush> fogBrush_;
     ComPtr<ID2D1Bitmap> minimap_;
     ComPtr<ID2D1Bitmap> menuBackground_, menuForeground_, logo_, buttonFrame_;
+    std::vector<uint32_t> loadingPreviewPixels_;
+    ComPtr<ID2D1Bitmap> loadingPreview_;
+    std::array<ComPtr<ID2D1Bitmap>, 7> loadingImages_;
     unsigned teamColor_ = teamRgb(TeamColor::Blue);
     unsigned enemyColor_ = teamRgb(TeamColor::Red);
     float worldOpacity_ = 1;

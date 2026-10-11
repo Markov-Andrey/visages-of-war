@@ -15,7 +15,8 @@ GameApplication::GameApplication(rts::Paths paths, std::filesystem::path mapFile
 }
 
 int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
-    verify();
+    // Full catalog verification belongs to diagnostics, not every normal launch.
+    if (smoke) verify();
     WNDCLASSEXW wc{sizeof(wc)};
     wc.style = CS_DBLCLKS;
     wc.hInstance = instance;
@@ -37,9 +38,9 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
         nullptr, nullptr, instance, this);
     if (!window_) throw std::runtime_error("Window creation failed");
     fitToMonitor(monitor);
-    if (customMap_ && (!smoke || smokeMap)) { menu_.page=rts::MenuPage::Playing; menu_.canResume=true; ui_.selection.army(game_); }
     resetCamera();
     ShowWindow(window_, smoke ? SW_HIDE : SW_SHOW);
+    if (customMap_ && (!smoke || smokeMap)) startBattle();
     if (smokeMap) {
         onMessage(WM_KEYDOWN,VK_F1,0);
         for(int i=0;i<10;++i) game_.tick();
@@ -61,7 +62,8 @@ int GameApplication::run(HINSTANCE instance, bool smoke, bool smokeMap) {
         }
         if (!running) break;
         const auto now = Clock::now();
-        const float elapsed = std::min(0.25f, std::chrono::duration<float>(now - previous).count());
+        const float elapsed = resetFrameClock_ ? 0.f : std::min(0.25f, std::chrono::duration<float>(now - previous).count());
+        if (resetFrameClock_) { accumulator = 0; frameMeter.reset(); resetFrameClock_ = false; }
         previous = now;
         if (!IsIconic(window_)) {
             if (menu_.page == rts::MenuPage::Playing) moveCamera(elapsed);
@@ -105,9 +107,10 @@ void GameApplication::verify() {
     if (!FindResourceW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(101), RT_GROUP_ICON)) throw std::runtime_error("Missing executable icon");
 }
 
-void GameApplication::snapshot(const std::filesystem::path& output, bool menu, bool grid, bool title) {
+void GameApplication::snapshot(const std::filesystem::path& output, bool menu, bool grid, bool title, bool loading) {
     renderer_.validateCombatAssets(definitions_);
-    renderer_.snapshot(game_, output, menu || title ? &definitions_ : nullptr, grid, nullptr, title ? rts::MenuPage::Main : rts::MenuPage::BattleSetup);
+    renderer_.snapshot(game_, output, menu || title || loading ? &definitions_ : nullptr, grid, nullptr,
+        loading ? rts::MenuPage::Loading : title ? rts::MenuPage::Main : rts::MenuPage::BattleSetup);
 }
 
 rts::Simulation GameApplication::makeMatch() const {

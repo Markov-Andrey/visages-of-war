@@ -4,6 +4,10 @@
 namespace rts {
 using namespace render;
 void Renderer::drawMenu(const Simulation& game, const MenuState& menu, const Definitions& definitions, Vec2 mouse) {
+    if (menu.page == MenuPage::Loading) {
+        drawLoading(game, L"Подготовка ресурсов", size_t(std::clamp(menu.loadingProgress, 0.f, 1.f) * 100), 100, menu.parallax.offset);
+        return;
+    }
     ensureTarget();
     target_->BeginDraw();
     target_->Clear(D2D1::ColorF(0x0b161c));

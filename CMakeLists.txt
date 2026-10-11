@@ -23,6 +23,7 @@ add_subdirectory(libs)
 add_library(rts_core
     src/core/Map.cpp
     src/core/Definitions.cpp
+    src/core/MatchAssets.cpp
     src/core/WeaponDefinitions.cpp
     src/core/Environment.cpp
     src/core/WorldAssets.cpp
@@ -97,6 +98,8 @@ add_library(rts_render
     src/render/PortraitRenderer.cpp
     src/render/MinimapRenderer.cpp
     src/render/MenuRenderer.cpp
+    src/render/LoadingRenderer.cpp
+    src/render/MatchAssetLoading.cpp
     src/render/ColorSelectRenderer.cpp
     src/render/LibraryRenderer.cpp
     src/platform/GameCursor.cpp
@@ -126,6 +129,7 @@ endfunction()
 add_visages_app(RTS "Visages of War" "Visages.Game"
     src/platform/Main.cpp
     src/game/GameApplication.cpp
+    src/game/GameLoading.cpp
     src/game/GameCamera.cpp
     src/game/CameraController.cpp
     src/game/GameCommands.cpp
@@ -192,8 +196,9 @@ if(BUILD_TESTING)
         "-DSYNC=${CMAKE_CURRENT_SOURCE_DIR}/scripts/sync-assets.cmake"
         "-DWORK=${CMAKE_BINARY_DIR}/asset-sync-test" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/AssetSync.cmake")
     add_test(NAME rts_native_gameplay_ui COMMAND RTS --smoke-test --map "${CMAKE_CURRENT_SOURCE_DIR}/assets/maps/demo.rtsmap")
-    # Includes software snapshots with cold sprite/lighting caches; this is not a performance gate.
-    set_tests_properties(rts_native_gameplay_ui PROPERTIES TIMEOUT "$<IF:$<CONFIG:Debug>,240,120>" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    # Includes full-race preloading, three match starts and software snapshots;
+    # unoptimized sprite synthesis is CPU-heavy. This is not a performance gate.
+    set_tests_properties(rts_native_gameplay_ui PROPERTIES TIMEOUT "$<IF:$<CONFIG:Debug>,480,180>" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
     # Relocation covers exe-local assets, Unicode paths and the full Forge F9/F10 UI scenario.
     add_test(NAME rts_relocated_unicode_paths COMMAND ${CMAKE_COMMAND}
         "-DFORGE=$<TARGET_FILE:VisagesForge>" "-DAPP=$<TARGET_FILE:RTS>" "-DWORK=${CMAKE_BINARY_DIR}/relocation-test"

@@ -6,20 +6,6 @@
 #include <stdexcept>
 
 namespace rts::game {
-void GameApplication::startBattle() {
-    const auto& commander = definitions_.commanders().at(menu_.commanderIndex);
-    menu_.player.commanderId = commander.id;
-    game_ = makeMatch();
-    menu_.page = rts::MenuPage::Playing;
-    menu_.canResume = true;
-    menu_.commanderDropdown = false;
-    menu_.colorDropdown = false;
-    paused_ = false;
-    ui_ = {};
-    ui_.selection.army(game_);
-    resetCamera();
-}
-
 void GameApplication::selectArmy() {
     ui_.selection.army(game_); clearCommandMode();
 }
@@ -31,6 +17,7 @@ void GameApplication::selectHero() {
 }
 
 void GameApplication::menuClick() {
+    if (menu_.page == rts::MenuPage::Loading) return;
     if (menu_.page == rts::MenuPage::Library) { libraryClick(); return; }
     const rts::MenuLayout layout(renderer_.size(), menu_.canResume);
     if (menu_.page == rts::MenuPage::Main) {

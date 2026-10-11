@@ -54,6 +54,8 @@ void Renderer::discardTarget() {
     groundBrush_.Reset();
     menuBackground_.Reset(); menuForeground_.Reset(); logo_.Reset(); buttonFrame_.Reset();
     minimap_.Reset(); brush_.Reset(); target_.Reset(); windowTarget_.Reset();
+    loadingPreview_.Reset();
+    for (auto& image : loadingImages_) image.Reset();
 }
 
 void Renderer::resize(unsigned width, unsigned height) {

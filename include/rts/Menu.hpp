@@ -6,7 +6,7 @@
 #include <algorithm>
 
 namespace rts {
-enum class MenuPage { Main, BattleSetup, Library, Playing };
+enum class MenuPage { Main, BattleSetup, Library, Loading, Playing };
 enum class LibraryTab { Units, Buildings, Heroes };
 struct MenuState {
     MenuPage page = MenuPage::Main;
@@ -21,6 +21,7 @@ struct MenuState {
     size_t libraryFaction{}, libraryEntry{}, libraryFactionScroll{}, libraryEntryScroll{};
     LibraryTab libraryTab = LibraryTab::Units;
     double librarySeconds{}; // Presentation clock; browsing never advances the match.
+    float loadingProgress = .5f; // Static snapshot fixture; live loading reports completed tasks.
     MenuParallax parallax;
 };
 struct UiRect {

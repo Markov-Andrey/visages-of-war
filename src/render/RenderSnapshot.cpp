@@ -13,6 +13,7 @@ void Renderer::snapshot(const Simulation& game, const std::filesystem::path& out
     check(factory_->CreateWicBitmapRenderTarget(bitmap.Get(), properties, target_.GetAddressOf()));
     loadResources();
     if (menuDefinitions) {
+        if (menuPage == MenuPage::Loading || (menuState && menuState->page == MenuPage::Loading)) beginLoadingPreview(game);
         MenuState menu = menuState ? *menuState : MenuState{};
         if (!menuState) {
             menu.page = menuPage;

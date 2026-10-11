@@ -1,8 +1,41 @@
 #include "TestSupport.hpp"
 #include "rts/Library.hpp"
+#include "rts/MatchAssets.hpp"
 
 namespace rts::tests {
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Match assets include used factions and future production but exclude unrelated catalog blocks", [&] {
+        CatalogFixture fixture(context.assets);
+        fixture.catalog["factions"].push_back({{"id","test"},{"name","Test"},{"description","Unused race"}});
+        auto unit = fixture.entities["entities"][0];
+        unit["id"] = "test.worker"; unit["factionId"] = "test";
+        fixture.entities["entities"].push_back(unit);
+        const auto definitions = fixture.load();
+        auto scenario = flatScenario();
+        scenario.landscape.paint.push_back({"road", {5,5}});
+        scenario.landscape.paint.push_back({"road", {6,5}});
+        scenario.landscape.decorations.push_back({100, "vineyard", {8,8}});
+        const auto& worker = definitions.entity("church.worker");
+        const auto make = [&](Scenario map) {
+            return Simulation(std::move(map), {}, worker, definitions.entities(), definitions.startingDepot(worker.factionId).id);
+        };
+        auto game = make(scenario);
+        const auto plan = collectMatchAssets(game, definitions);
+        require(plan.factions.size() == 1 && plan.factions.contains("church") &&
+            plan.factions.at("church").entities.contains("church.barracks") &&
+            plan.factions.at("church").entities.contains("church.slinger"), "Race preload omitted future production or loaded an unused race");
+        require(plan.materials == std::set<std::string>{"grass", "road"} && plan.objects == std::set<std::string>{"vineyard"} &&
+            plan.crystals == std::set<std::string>{"crystal.small"}, "Map asset selection is incomplete or duplicated");
+        scenario.units.push_back({"test.worker", 1, {8,4}});
+        auto enemyGame = make(scenario);
+        const auto enemies = collectMatchAssets(enemyGame, definitions);
+        require(enemies.factions.size() == 2 && enemies.factions.at("test").colors.contains(teamRgb(TeamColor::Red)),
+            "Enemy race/team color was not preloaded");
+        const std::array<std::string,1> reinforcements{"test.worker"};
+        require(collectMatchAssets(game, definitions, reinforcements).factions.contains("test"), "Declared mission reinforcements were omitted");
+        const std::array<std::string,1> invalid{"missing.worker"};
+        mustThrow([&] { collectMatchAssets(game, definitions, invalid); });
+    });
     test("Library builds factions and three exclusive categories from the entity catalog", [&] {
         CatalogFixture fixture(context.assets);
         auto definitions = fixture.load();
