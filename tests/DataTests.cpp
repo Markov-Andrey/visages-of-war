@@ -1,7 +1,35 @@
 #include "TestSupport.hpp"
+#include "rts/Library.hpp"
 
 namespace rts::tests {
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Library builds factions and three exclusive categories from the entity catalog", [&] {
+        CatalogFixture fixture(context.assets);
+        auto definitions = fixture.load();
+        require(libraryFactions(definitions).size() == 1 && libraryFactions(definitions).front()->id == "church",
+            "Library lost the catalog faction");
+        size_t total = 0;
+        for (const auto tab : libraryTabs) {
+            const auto entries = libraryEntries(definitions, "church", tab);
+            require(!entries.empty(), "Church category is unexpectedly empty");
+            total += entries.size();
+            for (const auto* entity : entries) {
+                if (tab == LibraryTab::Heroes) require(entity->hero.has_value(), "Nonhero entered heroes");
+                else if (tab == LibraryTab::Buildings) require(entity->constructible && !entity->hero, "Building classification failed");
+                else require(!entity->constructible && !entity->hero, "Building or hero duplicated under units");
+            }
+        }
+        const auto units = libraryEntries(definitions, "church", LibraryTab::Units);
+        require(total == definitions.entities().size() && std::any_of(units.begin(), units.end(),
+            [](const auto* entity) { return entity->id == "church.worker"; }), "Library hid catalog entities or the worker");
+        fixture.catalog["factions"].push_back({{"id","test"},{"name","Test"},{"description","Test race"}});
+        auto worker = fixture.entities["entities"][0]; worker["id"]="test.worker"; worker["factionId"]="test";
+        fixture.entities["entities"].push_back(worker);
+        definitions = fixture.load();
+        require(libraryFactions(definitions).size() == 2 && libraryEntries(definitions, "test", LibraryTab::Units).size() == 1 &&
+            libraryEntries(definitions, "test", LibraryTab::Buildings).empty() && libraryEntries(definitions, "test", LibraryTab::Heroes).empty(),
+            "New catalog race needs manual registration or empty categories contain foreign entries");
+    });
     test("Harvest abilities resolve from the catalog and validate mode timing and capacity", [&] {
         CatalogFixture fixture(context.assets);
         const auto definitions = fixture.load();
@@ -455,7 +483,6 @@ void dataTests(TestSuite& test, const TestContext& context) {
         };
         rejects([](Json& e) { e.erase("name"); });
         rejects([](Json& e) { e["description"] = ""; });
-        rejects([](Json& e) { e["library"] = "yes"; });
         rejects([](Json& e) { e["factionId"] = "missing"; });
         rejects([](Json& e) { e["cost"]["crystals"] = -1; });
         rejects([](Json& e) { e["cost"]["supply"] = 101; });

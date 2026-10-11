@@ -69,15 +69,23 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
         return;
     }
     const auto& faction = *factions.at(std::min(menu.libraryFaction, factions.size() - 1));
-    const auto entries = libraryEntries(definitions, faction.id);
+    for (size_t i = 0; i < libraryTabs.size(); ++i) {
+        const auto count = libraryEntries(definitions, faction.id, libraryTabs[i]).size();
+        choice(layout.tab(i), std::wstring(libraryTabNames[i]) + L" (" + std::to_wstring(count) + L")", menu.libraryTab == libraryTabs[i]);
+    }
+    const auto entries = libraryEntries(definitions, faction.id, menu.libraryTab);
+    if (entries.empty()) {
+        text(L"В этом разделе пока нет записей", rect(360, 260, 800, 44), 0x574732, true);
+        drawColorSelect(ColorSelectLayout(layout.color, 800), menu, mouse);
+        target_->SetTransform(previous);
+        return;
+    }
     const auto entryIndex = std::min(menu.libraryEntry, entries.size() - 1);
     const auto& entity = *entries[entryIndex];
     for (size_t i = 0; i < LibraryLayout::entryRows && menu.libraryEntryScroll + i < entries.size(); ++i)
         choice(layout.entryRow(i), wide(entries[menu.libraryEntryScroll + i]->displayName), entryIndex == menu.libraryEntryScroll + i);
     if (entries.size() > LibraryLayout::entryRows || factions.size() > LibraryLayout::factionRows)
         text(L"Колесо мыши — листать список", rect(42, 680, 224, 35), 0xb4b8aa);
-    text(wide(faction.displayName), rect(314, 133, 410, 24), 0x6f583b);
-    text(entity.constructible ? L"ЗДАНИЯ" : L"ВОЙСКА", rect(782, 133, 430, 24), 0x6f583b);
     text(wide(entity.displayName), rect(782, 183, 432, 46), 0x3b3026, true);
     text(wide(entity.description), rect(782, 240, 424, 81), 0x5c4d3b);
 
@@ -136,6 +144,7 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
         }
     }
     if (entity.canBuild) abilities += L" Возводит здания.";
+    if (entity.gatherAbility) abilities += L"\n" + wide(entity.gatherAbility->displayName) + L": " + wide(entity.gatherAbility->description);
     text(abilities, rect(782, 575, 428, 78), 0x635239);
     text(std::to_wstring(entryIndex + 1) + L" / " + std::to_wstring(entries.size()), rect(1150, 679, 80, 22), 0x8a7455);
     std::wstring commander;

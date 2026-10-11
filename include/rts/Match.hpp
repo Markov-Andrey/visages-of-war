@@ -115,7 +115,6 @@ struct EntityDefinition {
     std::string factionName = "Церковь Святого Пламени"; // Resolved from the faction catalog.
     std::string displayName = "Рабочий";
     std::string description;
-    bool libraryVisible{};
     ResourceCost cost{40, 1};
     bool mobile = true;
     bool canDecompose = true;

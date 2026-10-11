@@ -7,6 +7,7 @@
 
 namespace rts {
 enum class MenuPage { Main, BattleSetup, Library, Playing };
+enum class LibraryTab { Units, Buildings, Heroes };
 struct MenuState {
     MenuPage page = MenuPage::Main;
     PlayerSettings player{};
@@ -18,6 +19,7 @@ struct MenuState {
     bool mapSelected = true;
     bool canResume{};
     size_t libraryFaction{}, libraryEntry{}, libraryFactionScroll{}, libraryEntryScroll{};
+    LibraryTab libraryTab = LibraryTab::Units;
     double librarySeconds{}; // Presentation clock; browsing never advances the match.
     MenuParallax parallax;
 };

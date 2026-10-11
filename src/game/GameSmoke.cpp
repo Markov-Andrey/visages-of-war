@@ -78,6 +78,23 @@ void GameApplication::exerciseInterface() {
         if (menu_.librarySeconds < .39 || game_.clock().elapsedTicks() != ticks || game_.storedCrystals() != balance || ui_.selection.ids != selection)
             throw std::runtime_error("Smoke: library preview advanced match state");
         const rts::LibraryLayout book(renderer_.size());
+        for (size_t i = 0; i < rts::libraryTabs.size(); ++i) {
+            menu_.libraryEntry = menu_.libraryEntryScroll = 999;
+            const auto tab = book.tab(i);
+            mouse_ = book.origin + rts::Vec2{tab.x + 10, tab.y + 10} * book.scale;
+            if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Smoke: library tab cursor failed");
+            menuClick();
+            if (menu_.libraryTab != rts::libraryTabs[i] || menu_.libraryEntry || menu_.libraryEntryScroll || menu_.librarySeconds != 0)
+                throw std::runtime_error("Smoke: library tab retained stale selection");
+            const auto factions = rts::libraryFactions(definitions_);
+            const auto entries = rts::libraryEntries(definitions_, factions.at(menu_.libraryFaction)->id, menu_.libraryTab);
+            if (entries.empty()) throw std::runtime_error("Smoke: catalog category unexpectedly empty");
+            const auto file = L"library-tab-" + std::to_wstring(i) + L"-preview.png";
+            renderer_.snapshot(game_, rts::Paths::executable().parent_path() / file, &definitions_, false, nullptr,
+                rts::MenuPage::Library, 0, &menu_);
+        }
+        mouse_ = book.origin + rts::Vec2{book.tab(0).x + 10, book.tab(0).y + 10} * book.scale;
+        menuClick();
         const auto row = book.entryRow(0);
         mouse_ = book.origin + rts::Vec2{row.x + 10, row.y + 10} * book.scale;
         if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Smoke: library entry cursor failed");

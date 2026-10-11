@@ -3,16 +3,21 @@
 #include "rts/Menu.hpp"
 
 namespace rts {
-inline std::vector<const EntityDefinition*> libraryEntries(const Definitions& definitions, const std::string& faction) {
+inline constexpr std::array<LibraryTab, 3> libraryTabs{LibraryTab::Units, LibraryTab::Buildings, LibraryTab::Heroes};
+inline constexpr std::array<std::wstring_view, 3> libraryTabNames{L"Юниты", L"Здания", L"Герои"};
+inline LibraryTab libraryCategory(const EntityDefinition& entity) {
+    return entity.hero ? LibraryTab::Heroes : entity.constructible ? LibraryTab::Buildings : LibraryTab::Units;
+}
+inline std::vector<const EntityDefinition*> libraryEntries(const Definitions& definitions, const std::string& faction, LibraryTab tab) {
     std::vector<const EntityDefinition*> entries;
     for (const auto& entity : definitions.entities())
-        if (entity.libraryVisible && entity.factionId == faction) entries.push_back(&entity);
+        if (entity.factionId == faction && libraryCategory(entity) == tab) entries.push_back(&entity);
     return entries;
 }
 inline std::vector<const FactionDefinition*> libraryFactions(const Definitions& definitions) {
     std::vector<const FactionDefinition*> factions;
     for (const auto& faction : definitions.factions())
-        if (!libraryEntries(definitions, faction.id).empty()) factions.push_back(&faction);
+        factions.push_back(&faction);
     return factions;
 }
 // Book coordinates are shared by drawing and input, including small/high-DPI windows.
@@ -27,5 +32,6 @@ struct LibraryLayout {
     Vec2 local(Vec2 point) const { return (point - origin) * (1 / scale); }
     UiRect factionRow(size_t index) const { return {races.x, races.y + index * 72.0f, races.width, 66}; }
     UiRect entryRow(size_t index) const { return {entries.x, entries.y + index * 44.0f, entries.width, 40}; }
+    UiRect tab(size_t index) const { return {314 + index * 302.0f, 122, 290, 36}; }
 };
 }

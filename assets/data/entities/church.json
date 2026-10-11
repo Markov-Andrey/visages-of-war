@@ -313,8 +313,7 @@
         },
         "portraitMask": "sprites/units/peacemaker/peacemaker-portrait-mask.png",
         "iconMask": "sprites/units/peacemaker/peacemaker-icon-mask.png"
-      },
-      "library": true
+      }
     },
     {
       "id": "church.hero",
@@ -482,7 +481,6 @@
     },
     {
       "id": "church.hall",
-      "library": true,
       "factionId": "church",
       "name": "Ратуша",
       "description": "Главное здание поселения. Принимает добытые кристаллы и обучает рабочих.",
@@ -1195,8 +1193,7 @@
             0.273438
           ]
         ]
-      },
-      "library": true
+      }
     },
     {
       "id": "church.catapult",
