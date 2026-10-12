@@ -18,7 +18,7 @@ std::pair<float, float> roleBand(const Unit& u, std::span<const Unit> units) {
 }
 // A cell-based detour may not connect to an interior fractional slot after the
 // crowd settles. Find another continuous place in the same role's depth band.
-std::optional<Path> relaxedFormationPath(const Simulation& game, const Unit& u, std::span<const Circle> bodies) {
+std::optional<Path> relaxedFormationPath(const Simulation& game, Unit& u, std::span<const Circle> bodies, int& budget) {
     const auto [back, front] = roleBand(u, game.units());
     std::vector<Vec2> goals;
     const auto clear = [&](Vec2 from, Vec2 to) {
@@ -41,8 +41,13 @@ std::optional<Path> relaxedFormationPath(const Simulation& game, const Unit& u, 
     std::stable_sort(goals.begin(), goals.end(), [&](Vec2 a, Vec2 b) { return score(a) < score(b); });
     for (Vec2 p : goals) if (clear(u.position, p) && game.map().canTraverse(u.position, p, u.definition.collisionRadius, u.definition.movement))
         return Path{{u.cell, cellAt(p)}, 0, p};
-    for (size_t i = 0; i < goals.size(); ++i)
-        if (auto path = findUnitPathTo(game.map(), u.position, goals[i], bodies, u.definition.collisionRadius, u.definition.movement, 256)) return path;
+    // Rotate through candidates across retries; one request cannot consume an
+    // unbounded number of graph searches or permanently starve later goals.
+    for (size_t i = 0; i < std::min(size_t(2), goals.size()) && budget > 0; ++i) {
+        --budget;
+        const auto goal = goals[u.relaxedAttempt++ % goals.size()];
+        if (auto path = findUnitPathTo(game.map(), u.position, goal, bodies, u.definition.collisionRadius, u.definition.movement, 256)) return path;
+    }
     return {};
 }
 }
@@ -76,13 +81,89 @@ bool Simulation::unitPositionFree(Vec2 position, const EntityDefinition& type, E
 }
 bool Simulation::dynamicStep(const Unit& u, Vec2 to) const {
     if (!map().canTraverse(u.position, to, u.definition.collisionRadius, u.definition.movement)) return false;
-    for (const auto& other : units_) {
+    for (const auto index : movementCandidates(u.tickPosition, to, u.definition.collisionRadius)) {
+        const auto& other = units_[index];
         if (other.id == u.id || airborne(other.definition.movement) != airborne(u.definition.movement)) continue;
         // Relative sweep also protects interpolated movement when an earlier unit has moved this tick.
         if (sweptCircleIntersects(u.tickPosition - other.tickPosition, to - other.position,
             u.definition.collisionRadius, {{}, other.definition.collisionRadius})) return false;
     }
     return true;
+}
+std::vector<size_t> Simulation::movementCandidates(Vec2 from, Vec2 to, float radius) const {
+    if (movementIndexActive_) {
+        auto result = movementIndex_.query(from, to, radius);
+        movementStatistics_.candidates += result.size();
+        return result;
+    }
+    std::vector<size_t> result(units_.size());
+    for (size_t i = 0; i < result.size(); ++i) result[i] = i;
+    return result;
+}
+void Simulation::prepareMovement() {
+    movementStatistics_ = {};
+    movementIndex_.clear();
+    for (size_t i = 0; i < units_.size(); ++i) {
+        auto& u = units_[i];
+        movementIndex_.add(i, u.tickPosition, u.definition.collisionRadius, u.definition.movementPerSecond,
+            u.definition.movementPerSecond / ticksPerSecond);
+        if (u.next >= u.route.size()) { u.progressTicks = u.stagnantTicks = 0; continue; }
+        if (!u.progressTicks) u.progressPosition = u.position;
+        if (++u.progressTicks >= 30) {
+            const float speed = u.moveGroup ? std::min(u.groupSpeed, u.definition.movementPerSecond) : u.definition.movementPerSecond;
+            if (groundLength(u.position - u.progressPosition) < speed * .2f * u.progressTicks / ticksPerSecond)
+                u.stagnantTicks += u.progressTicks;
+            else { u.stagnantTicks = 0; u.blockedTicks = 0; }
+            u.progressTicks = 0;
+        }
+        u.blockedTicks = std::max(u.blockedTicks, u.stagnantTicks);
+        if (u.state != UnitState::ToAttack && !u.yieldingTo && u.blockedTicks >= 30 && !u.replanQueued && clock_.elapsedTicks() >= u.replanAfter) {
+            u.replanQueued = true; movementReplans_.push_back(u.id);
+        }
+    }
+    movementIndexActive_ = true;
+}
+void Simulation::replanMovement() {
+    int budget = movementSearchesPerTick;
+    while (!movementReplans_.empty() && budget >= 3) {
+        auto* u = mutableUnit(movementReplans_.front()); movementReplans_.pop_front();
+        if (!u || !u->replanQueued) continue;
+        u->replanQueued = false;
+        if (u->next >= u->route.size() || u->state == UnitState::ToAttack || u->blockedTicks < 30 || u->yieldingTo) continue;
+        u->replanAfter = clock_.elapsedTicks() + 30;
+        ++movementStatistics_.requests;
+        std::optional<Path> path;
+        const bool mixed = u->moveGroup && std::any_of(units_.begin(), units_.end(), [&](const Unit& other) {
+            return other.moveGroup == u->moveGroup && other.definition.formationPriority != u->definition.formationPriority;
+        });
+        if (mixed && groundLengthSquared(u->position - center(u->groupTarget)) < (u->groupRadius + 1) * (u->groupRadius + 1))
+            path = relaxedFormationPath(*this, *u, unitObstacles(*u), budget);
+        if (!path) {
+            --budget;
+            path = findUnitPathTo(map(), u->position, u->routeDestination, unitObstacles(*u, false, true),
+                u->definition.collisionRadius, u->definition.movement, 2048);
+        }
+        if (path) followPath(*u, std::move(*path), u->state);
+        else if (u->blockedTicks >= 90 && (u->state == UnitState::ToHall || u->state == UnitState::ToCrystal)) {
+            // Retry another slot on the same target within the shared budget.
+            // Exhaustion/fallback selection remains the gathering controller's job.
+            std::vector<Cell> goals;
+            if (u->state == UnitState::ToHall) {
+                if (const auto* depot = building(u->targetBuilding))
+                    goals = perimeter(map(), depot->origin, depot->definition.width, depot->definition.height, u->definition.movement);
+            } else if (u->targetCrystal >= 0) {
+                const auto& node = crystals()[u->targetCrystal];
+                goals = perimeter(map(), node.cell, node.width, node.height, u->definition.movement);
+            }
+            if (!goals.empty() && budget > 0) {
+                --budget;
+                if (auto retry = findUnitPath(map(), u->position, goals, unitObstacles(*u, true),
+                    u->definition.collisionRadius, u->definition.movement, 2048)) followPath(*u, std::move(*retry), u->state);
+            }
+        }
+    }
+    movementStatistics_.searches = movementSearchesPerTick - budget;
+    movementStatistics_.pending = movementReplans_.size();
 }
 void Simulation::followPath(Unit& u, Path path, UnitState state) {
     if (path.cells.empty()) { arrived(u); return; }
@@ -153,38 +234,22 @@ void Simulation::yieldFormation(Unit& u) {
 void Simulation::moveUnit(Unit& u) {
     const float speed = u.moveGroup ? std::min(u.definition.movementPerSecond, u.groupSpeed) : u.definition.movementPerSecond;
     const float travel = speed / ticksPerSecond;
-    if (groupArrived(u)) { arrived(u); return; }
+    if (!u.yieldingTo && groupArrived(u)) { arrived(u); return; }
     const bool mixedFormation = u.moveGroup && u.state == UnitState::Moving &&
         std::any_of(units_.begin(), units_.end(), [&](const Unit& other) {
             return other.moveGroup == u.moveGroup && other.definition.formationPriority != u.definition.formationPriority;
         });
-    // Replan only after sustained lack of progress. Friends still travelling with
-    // this group are not a new maze of walls on each frame.
-    if (u.state != UnitState::ToAttack && u.blockedTicks >= 30 && u.blockedTicks % 30 == 0) {
-        if (mixedFormation && groundLengthSquared(u.position - center(u.groupTarget)) < (u.groupRadius + 1) * (u.groupRadius + 1)) {
-            if (auto path = relaxedFormationPath(*this, u, unitObstacles(u))) {
-                followPath(u, std::move(*path), u.state);
-                if (u.next == u.route.size()) return;
-            }
-        }
-        const auto goal = u.routeDestination;
-        if (auto path = findUnitPathTo(map(), u.position, goal, unitObstacles(u, false, true),
-            u.definition.collisionRadius, u.definition.movement)) {
-            followPath(u, std::move(*path), u.state);
-            if (u.next == u.route.size()) return;
-        } else if (u.blockedTicks >= 90 && (u.state == UnitState::ToHall || u.state == UnitState::ToCrystal)) {
-            if (u.state == UnitState::ToHall) returnCargo(u); else seekCrystal(u);
-            return;
-        }
-    }
     // Any-angle steering uses terrain visibility; circular neighbours are handled
     // by the velocity solver, so a moving friend cannot disable path smoothing.
     const auto waypoint = [&](size_t i) { return i + 1 == u.route.size() ? u.routeDestination : center(u.route[i]); };
     const auto clearCombatShortcut = [&](Vec2 point) {
         if (u.state != UnitState::ToAttack && !mixedFormation) return true;
-        for (const auto& other : units_) if (other.id != u.id &&
+        for (const auto index : movementCandidates(u.position, point, u.definition.collisionRadius)) {
+            const auto& other = units_[index];
+            if (other.id != u.id &&
             airborne(other.definition.movement) == airborne(u.definition.movement) && other.next >= other.route.size() &&
             sweptCircleIntersects(u.position, point, u.definition.collisionRadius, {other.position, other.definition.collisionRadius})) return false;
+        }
         return true;
     };
     for (size_t candidate = std::min(u.route.size() - 1, u.next + 8); candidate > u.next; --candidate) {
@@ -192,22 +257,58 @@ void Simulation::moveUnit(Unit& u) {
             u.next = candidate; break;
         }
     }
-    const Vec2 target = waypoint(u.next), delta = target - u.position;
+    Vec2 target = waypoint(u.next);
+    bool temporaryTarget = false;
+    if (!map().canTraverse(u.position, target, u.definition.collisionRadius, u.definition.movement)) {
+        // Avoidance may move off a previously visible route. At a full-radius
+        // corridor entrance, even a tiny transverse error must be corrected
+        // before advancing: fixed-angle velocity samples cannot represent it.
+        for (Vec2 aligned : {Vec2{u.position.x, target.y}, Vec2{target.x, u.position.y}, center(u.cell)}) {
+            if (groundLengthSquared(aligned - u.position) < 1e-12f ||
+                !map().canTraverse(u.position, aligned, u.definition.collisionRadius, u.definition.movement) ||
+                !map().canTraverse(aligned, target, u.definition.collisionRadius, u.definition.movement)) continue;
+            target = aligned; temporaryTarget = true; break;
+        }
+    }
+    if (u.yieldingTo) {
+        const auto plane = groundToPlane(u.yieldForward);
+        const Vec2 side = planeToGround({-plane.y, plane.x});
+        const float lateral = groundDot(u.position - u.yieldOrigin, side);
+        const float clearance = std::max(3.0f, u.groupRadius + 1);
+        if (lateral >= clearance) return; // Park clear of the lane until the winner passes.
+        Vec2 escape = side;
+        // In a corridor, back out at walking speed before stepping off the lane.
+        if (!map().canTraverse(u.position, u.position + side * 1.5f, u.definition.collisionRadius, u.definition.movement)) {
+            escape = u.yieldForward;
+            float bestAlignment = -1;
+            for (Vec2 axis : {u.yieldForward, Vec2{1, 0}, Vec2{-1, 0}, Vec2{0, 1}, Vec2{0, -1}}) {
+                axis = axis * (1 / groundLength(axis));
+                const float alignment = groundDot(axis, u.yieldForward);
+                if (alignment <= std::max(.1f, bestAlignment) ||
+                    !map().canTraverse(u.position, u.position + axis * 1.5f, u.definition.collisionRadius, u.definition.movement)) continue;
+                escape = axis; bestAlignment = alignment;
+            }
+        }
+        target = u.position + escape * 2;
+    }
+    const Vec2 delta = target - u.position;
     const float distance = std::sqrt(groundLengthSquared(delta));
-    if (distance < .00001f) { ++u.next; if (u.next == u.route.size()) arrived(u); return; }
+    if (distance < .000001f) { if (!temporaryTarget && !u.yieldingTo) { ++u.next; if (u.next == u.route.size()) arrived(u); } return; }
     Vec2 preferred = delta * (std::min(speed, distance * ticksPerSecond) / distance);
-    // Filter once before testing velocities. Army supply caps crowds at 100;
+    // Filter once before testing velocities. Supply is per player, not per map;
     // only neighbours that can meet within the prediction horizon participate.
     constexpr float horizon = .7f;
     std::vector<const Unit*> neighbours;
-    for (const auto& other : units_) {
+    for (const auto index : movementCandidates(u.tickPosition, u.tickPosition,
+        (speed + movementIndex_.maximumSpeed()) * horizon + u.definition.collisionRadius + .5f)) {
+        const auto& other = units_[index];
         if (other.id == u.id || airborne(other.definition.movement) != airborne(u.definition.movement)) continue;
         const float range = (speed + other.definition.movementPerSecond) * horizon +
             u.definition.collisionRadius + other.definition.collisionRadius + .5f;
         if (groundLengthSquared(other.tickPosition - u.tickPosition) < range * range) neighbours.push_back(&other);
     }
     const auto dot = groundDot;
-    if (u.moveGroup && u.blockedTicks >= 15) {
+    if (!temporaryTarget && !u.yieldingTo && u.moveGroup && u.blockedTicks >= 15) {
         // In a choke, two safe velocities can both be zero. The trailing member
         // yields locally to the front one; a total order prevents reciprocal yields.
         const float progress = dot(u.tickPosition, u.formationForward);
@@ -219,6 +320,8 @@ void Simulation::moveUnit(Unit& u) {
             const float separation = std::sqrt(groundLengthSquared(away));
             const float clearance = u.definition.collisionRadius + other->definition.collisionRadius + .35f;
             if (separation >= clearance || separation < .00001f) continue;
+            if (!sweptCircleIntersects(u.tickPosition, u.tickPosition + delta * (clearance / distance),
+                u.definition.collisionRadius, {other->tickPosition, other->definition.collisionRadius})) continue;
             preferred = away * (speed * .5f / separation);
             break;
         }
@@ -283,7 +386,7 @@ void Simulation::moveUnit(Unit& u) {
     const float travelled = std::sqrt(groundLengthSquared(displacement));
     const bool tactical = mixedFormation || u.state == UnitState::ToAttack;
     if (travelled < travel * (tactical ? .25f : .1f) || dot(displacement, delta) <= travel * distance * (tactical ? .25f : 0.0f)) ++u.blockedTicks;
-    else u.blockedTicks = 0;
+    // Successful micro-steps do not erase a stagnant observation window.
     if (travelled < .00001f) return;
     // This final check protects the movement contract even if the scoring or
     // broad phase changes later. No depenetration, teleporting or ally pushing.
@@ -291,7 +394,7 @@ void Simulation::moveUnit(Unit& u) {
     if (!dynamicStep(u, next)) { ++u.blockedTicks; return; }
     u.position = next; u.cell = cellAt(next); u.velocity = velocity;
     u.walkCycle = std::fmod(u.walkCycle + travelled / u.definition.sprite.walkCycleDistance, 1.0f);
-    if (groundLengthSquared(next - target) < 1e-8f) {
+    if (!temporaryTarget && !u.yieldingTo && groundLengthSquared(next - target) < 1e-8f) {
         ++u.next;
         if (u.next == u.route.size()) arrived(u);
     }

@@ -6,7 +6,11 @@ void checkMotion(const Simulation& game) {
     for (size_t i = 0; i < game.units().size(); ++i) {
         const auto& a = game.units()[i];
         require(game.map().canTraverse(a.tickPosition, a.position, a.definition.collisionRadius, a.definition.movement), "Crowd crossed square terrain or a cliff");
-        require(groundLengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f, 2), "Crowd teleported");
+        // A 256-cell map needs a few coordinate ULPs of slack when subtracting
+        // two float positions; the speed bound itself is independent of size.
+        const float rounding = 4 * std::numeric_limits<float>::epsilon() *
+            std::max({1.0f, std::abs(a.position.x), std::abs(a.position.y)});
+        require(groundLengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f + rounding, 2), "Crowd teleported");
         for (size_t j = i + 1; j < game.units().size(); ++j) {
             const auto& b = game.units()[j];
             if (airborne(a.definition.movement) != airborne(b.definition.movement)) continue;
@@ -26,6 +30,170 @@ bool settled(const Simulation& game) {
 }
 void formationTests(TestSuite& test, const TestContext& context) {
     (void)context;
+    test("Blocked movement retries share a bounded fair queue and respect Stop and Hold", [] {
+        Scenario s{Map(32, 96), {1, 1}, {10, 6}, {}};
+        EntityDefinition worker; worker.attackDamage = 0;
+        auto blocker = worker; blocker.id = "blocker"; blocker.collisionRadius = .4f;
+        blocker.cost.supply = 0; // Stationary fixture bodies, independent of army supply.
+        for (int i = 0; i < 20; ++i) {
+            const Cell origin{10, 6 + i * 4};
+            if (i) s.extraWorkers.push_back(origin);
+            for (int y = -1; y <= 1; ++y) for (int x = -1; x <= 1; ++x)
+                if (x || y) s.units.push_back({blocker.id, 1, origin + Cell{x, y}});
+        }
+        auto game = makeTestSimulation(std::move(s), {}, worker, {worker, blocker});
+        const auto ids = selected(game);
+        for (auto id : ids) require(game.order(std::array{id}, OrderKind::Move, {20, game.unit(id)->cell.y}), "Trapped order rejected");
+        size_t peakQueue = 0; int requests = 0;
+        for (int tick = 0; tick < 150; ++tick) {
+            game.tick(); checkMotion(game);
+            const auto& stats = game.movementStatistics();
+            peakQueue = std::max(peakQueue, stats.pending); requests += stats.requests;
+            require(stats.searches <= Simulation::movementSearchesPerTick, "Movement exceeded shared search budget");
+        }
+        require(peakQueue > 0 && requests >= 20, "Scenario did not exercise deferred path requests");
+        for (auto id : ids) require(game.unit(id)->replanAfter > 100, "A late request starved behind earlier units");
+        game.order(std::span(ids).first(10), OrderKind::Stop);
+        game.order(std::span(ids).subspan(10), OrderKind::Hold);
+        std::vector<Vec2> positions;
+        for (auto id : ids) positions.push_back(game.unit(id)->position);
+        for (int tick = 0; tick < 60; ++tick) { game.tick(); checkMotion(game); }
+        for (size_t i = 0; i < ids.size(); ++i)
+            require(game.unit(ids[i])->position == positions[i] && !game.unit(ids[i])->yieldingTo, "Deferred movement displaced Stop/Hold");
+        require(game.movementStatistics().pending == 0, "Cancelled orders remained in the retry queue");
+    });
+    test("Ten independent armies cross and arrive in their own formations", [] {
+        Scenario s{Map(128, 192), {1, 1}, {10, 12}, {}};
+        EntityDefinition worker; worker.attackDamage = 0;
+        for (PlayerId owner = 0; owner < maximumPlayers; ++owner) {
+            s.slots[owner].state = owner ? PlayerSlotState::AI : PlayerSlotState::Player;
+            for (int i = owner ? 0 : 1; i < 12; ++i)
+                s.units.push_back({worker.id, owner, {10 + (owner % 2) * 56 + i % 4, 12 + (owner / 2) * 36 + i / 4}});
+        }
+        auto game = makeTestSimulation(std::move(s), {}, worker);
+        for (PlayerId owner = 0; owner < maximumPlayers; ++owner) {
+            std::vector<EntityId> ids;
+            for (const auto& u : game.units()) if (u.owner == owner) ids.push_back(u.id);
+            require(game.orderFor(owner, ids, OrderKind::Move, {28 + (owner % 2) * 56, 14 + (owner / 2) * 36}), "Army order rejected");
+        }
+        for (int tick = 0; tick < 700 && !settled(game); ++tick) { game.tick(); checkMotion(game); }
+        require(settled(game), "One of ten armies did not arrive");
+        for (const auto& u : game.units()) require(groundLength(u.position - center(u.groupTarget)) <= u.groupRadius + .71f, "Army failed to reform");
+    });
+    test("A thousand moving units preserve sweeps and the per-player supply limit", [] {
+        Scenario s{Map(256, 256), {1, 1}, {10, 20}, {}};
+        EntityDefinition worker; worker.attackDamage = 0;
+        for (PlayerId owner = 0; owner < maximumPlayers; ++owner) {
+            s.slots[owner].state = owner ? PlayerSlotState::AI : PlayerSlotState::Player;
+            for (int i = owner ? 0 : 1; i < 100; ++i)
+                s.units.push_back({worker.id, owner, {10 + (owner % 5) * 48 + (i % 10) * 2, 20 + (owner / 5) * 110 + (i / 10) * 2}});
+        }
+        auto game = makeTestSimulation(std::move(s), {}, worker);
+        require(game.units().size() == 1000, "Supply limit was applied to the entire map");
+        for (PlayerId owner = 0; owner < maximumPlayers; ++owner) {
+            std::vector<EntityId> ids;
+            for (const auto& u : game.units()) if (u.owner == owner) ids.push_back(u.id);
+            require(game.orderFor(owner, ids, OrderKind::Move, {33 + (owner % 5) * 48, 29 + (owner / 5) * 110}), "Large army order rejected");
+        }
+        for (int tick = 0; tick < 60; ++tick) {
+            game.tick(); checkMotion(game);
+            require(game.movementStatistics().searches <= Simulation::movementSearchesPerTick, "Large armies exceeded retry budget");
+        }
+        require(game.movementStatistics().candidates < game.units().size() * game.units().size(), "Local movement scanned all thousand units");
+    });
+    test("Opposing orders cross narrow passages and both finish reforming", [] {
+        for (int width : {1, 2, 3}) for (bool mixed : {false, true}) for (bool ramp : {false, true}) {
+            Scenario s{Map(48, 36), {1, 1}, {10, 17}, {}};
+            for (int x = mixed ? 17 : 21; x <= (mixed ? 30 : 26); ++x) for (int y = 0; y < 36; ++y)
+                if (y < 17 || y >= 17 + width) s.map.at({x, y}).blocked = true;
+            if (ramp) {
+                for (int x = 25; x < 48; ++x) for (int y = 0; y < 36; ++y) s.map.at({x, y}).height = 1;
+                for (int y = 17; y < 17 + width; ++y) s.map.at({24, y}).ramp = {1, 0};
+            }
+            EntityDefinition small; small.collisionRadius = mixed ? .4f : .35f; small.formationPriority = 1;
+            auto large = small; large.id = "large"; large.collisionRadius = mixed ? .5f : .35f; large.formationPriority = mixed ? 2 : 1;
+            for (int i = 1; i < 6; ++i) s.units.push_back({i % 2 ? large.id : small.id, 0, {10 + i % 3, 17 + i / 3}});
+            for (int i = 0; i < 6; ++i) s.units.push_back({i % 2 ? large.id : small.id, 0, {35 + i % 3, 17 + i / 3}});
+            auto game = makeTestSimulation(std::move(s), {}, small, {small, large});
+            const auto ids = selected(game);
+            require(game.order(std::span(ids).first(6), OrderKind::Move, {37, 18}), "First crossing order rejected");
+            require(game.order(std::span(ids).subspan(6), OrderKind::Move, {10, 18}), "Second crossing order rejected");
+            bool yielded = false;
+            for (int tick = 0; tick < 1800 && !settled(game); ++tick) {
+                game.tick(); checkMotion(game);
+                for (const auto& u : game.units()) yielded |= u.yieldingTo != 0;
+                require(game.movementStatistics().searches <= Simulation::movementSearchesPerTick, "Passage retries exceeded budget");
+            }
+            if (!settled(game)) for (const auto& u : game.units()) std::cerr << "passage=" << width << " mixed=" << mixed << " ramp=" << ramp << " group=" << u.moveGroup
+                << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks << " yield=" << u.yieldingTo
+                << " next=" << u.next << '/' << u.route.size() << " radius=" << u.definition.collisionRadius
+                << " waypoint=" << (u.next < u.route.size() ? u.route[u.next].x : -1) << ',' << (u.next < u.route.size() ? u.route[u.next].y : -1) << '\n';
+            require(settled(game), "Opposing groups did not arrive after passage");
+            if (mixed && width == 1) require(yielded, "Narrow passage did not exercise traffic arbitration");
+            for (size_t i = 0; i < ids.size(); ++i) {
+                const auto& u = *game.unit(ids[i]);
+                require(i < 6 ? u.position.x > 28 : u.position.x < 20, "Arrival accepted on wrong side");
+                require(groundLength(u.position - center(u.groupTarget)) < u.groupRadius + .71f, "Group did not reform");
+            }
+            for (const auto& a : game.units()) for (const auto& b : game.units())
+                if (a.moveGroup == b.moveGroup && a.definition.formationPriority < b.definition.formationPriority)
+                    require(groundDot(a.position - b.position, a.formationForward) >= -.05f, "Roles did not reform after passage");
+        }
+    });
+    test("Stop and Hold cancel an active retreat inside a contested corridor", [] {
+        Scenario s{Map(48, 36), {1, 1}, {20, 17}, {}};
+        for (int x = 17; x <= 30; ++x) for (int y = 0; y < 36; ++y) if (y != 17) s.map.at({x, y}).blocked = true;
+        s.extraWorkers = {{21, 17}, {22, 17}, {25, 17}, {26, 17}, {27, 17}};
+        EntityDefinition worker; worker.collisionRadius = .5f; worker.attackDamage = 0;
+        auto game = makeTestSimulation(std::move(s), {}, worker);
+        const auto ids = selected(game);
+        game.order(std::span(ids).first(3), OrderKind::Move, {38, 17});
+        game.order(std::span(ids).subspan(3), OrderKind::Move, {10, 17});
+        bool yielding = false;
+        for (int tick = 0; tick < 300 && !yielding; ++tick) {
+            game.tick(); checkMotion(game);
+            yielding = game.unit(ids[3])->yieldingTo != 0;
+        }
+        require(yielding, "Encounter inside corridor did not initiate retreat");
+        game.order(std::array{ids[3]}, OrderKind::Stop);
+        game.order(std::array{ids[4]}, OrderKind::Hold);
+        const auto stopped = game.unit(ids[3])->position, held = game.unit(ids[4])->position;
+        for (int tick = 0; tick < 150; ++tick) {
+            game.tick(); checkMotion(game);
+            require(game.unit(ids[3])->position == stopped && game.unit(ids[4])->position == held, "Traffic displaced a cancelled retreat");
+        }
+        require(!game.unit(ids[3])->yieldingTo && !game.unit(ids[4])->yieldingTo, "Cancelled retreat kept a reservation");
+    });
+    test("Contested corridors arbitrate both directions across different owners", [] {
+        for (bool transpose : {false, true}) for (bool rightFirst : {false, true}) {
+            const auto cell = [&](int x, int y) { return transpose ? Cell{y, x} : Cell{x, y}; };
+            Scenario s{Map(48, 48), {1, 1}, cell(20, 23), {}};
+            for (int x = 17; x <= 30; ++x) for (int y = 0; y < 48; ++y)
+                if (y != 23) s.map.at(cell(x, y)).blocked = true;
+            EntityDefinition worker; worker.collisionRadius = .5f; worker.attackDamage = 0;
+            for (int x : {21, 22}) s.units.push_back({worker.id, 0, cell(x, 23)});
+            for (int x : {25, 26, 27}) s.units.push_back({worker.id, 1, cell(x, 23)});
+            auto game = makeTestSimulation(std::move(s), {}, worker);
+            std::array<std::vector<EntityId>, 2> armies;
+            for (const auto& u : game.units()) armies[u.owner].push_back(u.id);
+            for (PlayerId owner : {PlayerId(rightFirst), PlayerId(!rightFirst)})
+                require(game.orderFor(owner, armies[owner], OrderKind::Move, cell(owner ? 10 : 38, 23)), "Corridor order rejected");
+            bool yielded = false;
+            for (int tick = 0; tick < 1800 && !settled(game); ++tick) {
+                game.tick(); checkMotion(game);
+                for (const auto& u : game.units()) if (u.yieldingTo) {
+                    yielded = true;
+                    require(u.owner != PlayerId(rightFirst), "Earlier order gave up right of way");
+                }
+            }
+            require(yielded, "Encounter did not exercise traffic arbitration");
+            require(settled(game), "A corridor direction did not finish retreating and arriving");
+            for (const auto& u : game.units()) {
+                const float position = transpose ? u.position.y : u.position.x;
+                require(u.owner ? position < 17 : position > 30, "Group stopped before crossing the corridor");
+            }
+        }
+    });
     test("Mixed roles actually finish in front-to-back bands after movement and reversal", [] {
         for (Cell direction : {Cell{1, 0}, {1, 1}, {-1, 0}, {1, -1}, {0, -1}}) {
             Scenario site{Map(64, 64), {1, 1}, {29, 29}, {}};

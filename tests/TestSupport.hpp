@@ -131,7 +131,9 @@ inline int oracleCost(const rts::Map& map, rts::Cell start, rts::Cell goal) {
 
 struct TestSuite {
     int passed{}, failures{};
+    std::string filter;
     void operator()(const char* name, const std::function<void()>& action) {
+        if (!filter.empty() && std::string_view(name).find(filter) == std::string_view::npos) return;
         try { action(); ++passed; std::cout << "PASS " << name << '\n'; }
         catch (const std::exception& error) { ++failures; std::cerr << "FAIL " << name << ": " << error.what() << '\n'; }
     }

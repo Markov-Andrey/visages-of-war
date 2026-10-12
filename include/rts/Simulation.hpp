@@ -5,6 +5,7 @@
 #include "rts/Projectile.hpp"
 #include "rts/HealthFeedback.hpp"
 #include "rts/UnitFacing.hpp"
+#include "rts/MovementIndex.hpp"
 #include <deque>
 #include <string>
 #include <variant>
@@ -45,6 +46,13 @@ struct Unit {
     size_t next{};
     Vec2 routeDestination;
     int harvestTicks{}, blockedTicks{};
+    Vec2 progressPosition;
+    int progressTicks{}, stagnantTicks{};
+    bool replanQueued{};
+    std::uint64_t replanAfter{};
+    size_t relaxedAttempt{};
+    uint64_t yieldingTo{};
+    Vec2 yieldOrigin, yieldForward;
     int targetCrystal = -1;
     int gatherOriginCrystal = -1; // The clicked deposit remains the anchor across retries and deliveries.
     EntityId targetBuilding{};
@@ -141,6 +149,9 @@ struct CrystalsHarvested {
 class Simulation {
 public:
     static constexpr int ticksPerSecond = simulationTicksPerSecond;
+    static constexpr int movementSearchesPerTick = 8;
+    struct MovementStatistics { int searches{}, requests{}; size_t pending{}, candidates{}; };
+    const MovementStatistics& movementStatistics() const { return movementStatistics_; }
     explicit Simulation(Scenario scenario, PlayerSettings player, EntityDefinition workerType,
         std::vector<EntityDefinition> entityTypes, std::string startingBuilding,
         std::string startingHero = {}, ProgressionRules progression = {}, ClockSettings clock = {});
@@ -240,6 +251,10 @@ private:
     void moveUnit(Unit& unit);
     bool groupArrived(const Unit& unit) const;
     void yieldFormation(Unit& unit);
+    void prepareMovement();
+    void replanMovement();
+    void arbitrateTraffic();
+    std::vector<size_t> movementCandidates(Vec2 from, Vec2 to, float radius) const;
     bool setRoute(Unit& unit, std::span<const Cell> goals, UnitState state, bool waitForTraffic = true);
     bool seekCrystal(Unit& unit);
     bool returnCargo(Unit& unit);
@@ -292,6 +307,10 @@ private:
     EntityId nextId_ = 10000;
     uint64_t nextMoveGroup_ = 1;
     int combatSearchBudget_ = 8;
+    MovementIndex movementIndex_;
+    bool movementIndexActive_{};
+    std::deque<EntityId> movementReplans_;
+    mutable MovementStatistics movementStatistics_;
     bool heroFallen_{};
     std::uint64_t messageRevision_{};
     std::wstring message_;

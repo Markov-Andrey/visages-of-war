@@ -15,6 +15,15 @@ void navigationTests(TestSuite& test, const TestContext& context) {
             require(map.canTraverse(previous,center(cell),.35f), "Retreat route crosses a wall");
             previous=center(cell);
         }
+        // Retrying from the cell centre shares the original search's allowance.
+        int anchorBudget = 1;
+        while (anchorBudget < 100 && !findUnitPathTo(map, center(cellAt(start)), {14.5f, 8.5f}, {},
+            .35f, MovementType::Walking, anchorBudget)) ++anchorBudget;
+        require(anchorBudget < 100, "Anchor route was not found within its budget");
+        require(!findUnitPathTo(map, start, {14.5f, 8.5f}, {}, .35f, MovementType::Walking, anchorBudget),
+            "Corner retry reset the expansion budget");
+        require(findUnitPathTo(map, start, {14.5f, 8.5f}, {}, .35f, MovementType::Walking, 2048).has_value(),
+            "Corner retry lost its remaining expansion budget");
     });
     test("A* endpoints, diagonal cost, unreachable and occupied targets", [] {
         rts::Map map(5, 5);

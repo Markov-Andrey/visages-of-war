@@ -130,7 +130,42 @@ void editorBenchmark() {
 }
 }
 
+namespace {
+void crowdScaleBenchmark() {
+    using Clock = std::chrono::steady_clock;
+    for (int count : {12, 100}) {
+        rts::Scenario s{rts::Map(256, 256), {1, 1}, {10, 20}, {}};
+        rts::EntityDefinition worker; worker.attackDamage = 0;
+        for (rts::PlayerId owner = 0; owner < rts::maximumPlayers; ++owner) {
+            s.slots[owner].state = owner ? rts::PlayerSlotState::AI : rts::PlayerSlotState::Player;
+            for (int i = owner ? 0 : 1; i < count; ++i)
+                s.units.push_back({worker.id, owner, {10 + (owner % 5) * 48 + (i % 10) * 2, 20 + (owner / 5) * 110 + (i / 10) * 2}});
+        }
+        auto game = rts::tests::makeTestSimulation(std::move(s), {}, worker);
+        const auto commands = Clock::now();
+        for (rts::PlayerId owner = 0; owner < rts::maximumPlayers; ++owner) {
+            std::vector<rts::EntityId> ids;
+            for (const auto& u : game.units()) if (u.owner == owner) ids.push_back(u.id);
+            game.orderFor(owner, ids, rts::OrderKind::Move, {33 + (owner % 5) * 48, 29 + (owner / 5) * 110});
+        }
+        const auto started = Clock::now();
+        size_t candidates = 0, pending = 0; int searches = 0;
+        for (int tick = 0; tick < 180; ++tick) {
+            game.tick();
+            const auto& stats = game.movementStatistics();
+            candidates += stats.candidates; pending = std::max(pending, stats.pending); searches = std::max(searches, stats.searches);
+        }
+        const auto finished = Clock::now();
+        const auto arrived = std::count_if(game.units().begin(), game.units().end(), [](const auto& u) { return u.state == rts::UnitState::Idle; });
+        std::cout << "10 armies x " << count << " / 256x256 / 180 ticks: commands="
+            << std::chrono::duration<double, std::milli>(started - commands).count() << " ms; simulation="
+            << std::chrono::duration<double, std::milli>(finished - started).count() << " ms; broad candidates=" << candidates
+            << "; peak searches=" << searches << "; peak queue=" << pending << "; arrived=" << arrived << '/' << game.units().size() << '\n';
+    }
+}
+}
 int main(int argc, char** argv) {
+    if (argc == 2 && std::string_view(argv[1]) == "--crowd-scale-only") { crowdScaleBenchmark(); return 0; }
     if (argc == 2 && std::string_view(argv[1]) == "--presentation-only") { presentationBenchmark(); return 0; }
     if (argc == 2 && std::string_view(argv[1]) == "--combat-only") { combatBenchmark(); return 0; }
     combatBenchmark();

@@ -8,7 +8,7 @@ struct Path { std::vector<Cell> cells; int cost{}; std::optional<Vec2> destinati
 std::optional<Path> findPath(const Map& map, Cell start, std::span<const Cell> goals, std::span<const Cell> occupied = {}, MovementType movement = MovementType::Walking);
 std::optional<Path> findPath(const Map& map, Cell start, Cell goal, MovementType movement = MovementType::Walking);
 std::optional<Path> findUnitPath(const Map& map, Vec2 start, std::span<const Cell> goals,
-    std::span<const Circle> obstacles, float radius, MovementType movement);
+    std::span<const Circle> obstacles, float radius, MovementType movement, int expansionLimit = 0);
 std::optional<Path> findUnitPathTo(const Map& map, Vec2 start, Vec2 goal,
     std::span<const Circle> obstacles, float radius, MovementType movement, int expansionLimit = 0);
 struct RouteField {

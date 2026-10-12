@@ -50,6 +50,7 @@ add_library(rts_core
     src/core/HeroProgression.cpp
     src/core/Projectiles.cpp
     src/core/UnitMovement.cpp
+    src/core/MovementTraffic.cpp
     src/core/UnitFacing.cpp
     src/core/UnitOrders.cpp
     src/core/TacticalOrders.cpp

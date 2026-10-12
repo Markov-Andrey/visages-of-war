@@ -22,6 +22,9 @@ void Simulation::issue(Unit& u, Order order) {
 }
 void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     u.currentOrder = order;
+    if (u.replanQueued) std::erase(movementReplans_, u.id);
+    u.progressPosition = u.position; u.progressTicks = u.stagnantTicks = 0;
+    u.replanQueued = false; u.replanAfter = 0; u.relaxedAttempt = 0; u.yieldingTo = 0;
     if (order.kind == OrderKind::Patrol) u.patrolOrigin = u.position;
     u.moveGroup = order.moveGroup;
     if (!u.moveGroup) u.groupRadius = 0;

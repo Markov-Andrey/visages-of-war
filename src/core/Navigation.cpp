@@ -129,7 +129,8 @@ std::optional<Path> searchPath(const Map& map, Cell start, std::span<const Cell>
     // Keep that anchor in the returned route; followPath walks to it normally.
     const auto anchor = center(start);
     if (radius > 0 && position != anchor && clear(position, anchor) && map.canTraverse(position, anchor, radius, movement))
-        return searchPath(map, start, goals, occupied, movement, anchor, radius, obstacles, destination, expansionLimit);
+        return searchPath(map, start, goals, occupied, movement, anchor, radius, obstacles, destination,
+            expansionLimit > 0 ? expansionLimit - expanded : 0);
     return std::nullopt;
 }
 }
@@ -137,9 +138,9 @@ std::optional<Path> findPath(const Map& map, Cell start, std::span<const Cell> g
     return searchPath(map, start, goals, occupied, movement, center(start), 0, {});
 }
 std::optional<Path> findUnitPath(const Map& map, Vec2 start, std::span<const Cell> goals,
-    std::span<const Circle> obstacles, float radius, MovementType movement) {
+    std::span<const Circle> obstacles, float radius, MovementType movement, int expansionLimit) {
     if (!std::isfinite(radius) || radius < .05f || radius > .5f || !map.canTraverse(start, start, radius, movement)) return std::nullopt;
-    return searchPath(map, cellAt(start), goals, {}, movement, start, radius, obstacles);
+    return searchPath(map, cellAt(start), goals, {}, movement, start, radius, obstacles, {}, expansionLimit);
 }
 std::optional<Path> findUnitPathTo(const Map& map, Vec2 start, Vec2 goal,
     std::span<const Circle> obstacles, float radius, MovementType movement, int expansionLimit) {

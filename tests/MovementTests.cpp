@@ -2,6 +2,28 @@
 
 namespace rts::tests {
 void movementTests(TestSuite& test, const TestContext& context) {
+    test("Movement broad phase contains every relative sweep after sequential updates", [] {
+        MovementIndex index;
+        std::mt19937 random(56122);
+        std::uniform_real_distribution<float> coordinate(-30, 30), offset(-.3f, .3f), radius(.05f, .5f);
+        struct Body { Vec2 before, after; float radius; };
+        std::vector<Body> bodies;
+        for (size_t i = 0; i < 1000; ++i) {
+            const Vec2 p{coordinate(random), coordinate(random)}, step{offset(random), offset(random)};
+            bodies.push_back({p, p + step, radius(random)});
+            index.add(i, p, bodies.back().radius, groundLength(step) * Simulation::ticksPerSecond, groundLength(step));
+        }
+        size_t candidates = 0;
+        for (const auto& a : bodies) {
+            const auto nearby = index.query(a.before, a.after, a.radius); candidates += nearby.size();
+            for (size_t j = 0; j < bodies.size(); ++j) {
+                const auto& b = bodies[j];
+                if (sweptCircleIntersects(a.before - b.before, a.after - b.after, a.radius, {{}, b.radius}))
+                    require(std::binary_search(nearby.begin(), nearby.end(), j), "Broad phase lost an interpolated collision");
+            }
+        }
+        require(candidates < bodies.size() * bodies.size() / 8, "Broad phase still scans the whole map");
+    });
     test("Equal visible distances take equal time in all eight directions", [] {
         // These integer grid displacements describe a circle on the flat screen:
         // radius 10, including 6:8 directions. Measure actual elapsed

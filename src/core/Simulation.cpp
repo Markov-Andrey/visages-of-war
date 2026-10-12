@@ -157,6 +157,9 @@ void Simulation::tick() {
         std::erase_if(u.abilityCooldowns, [](const auto& cooldown) { return cooldown.remainingTicks <= 0; });
         u.tickPosition = u.position; u.tickVelocity = u.velocity; u.velocity = {}; updateOrder.push_back(&u);
     }
+    prepareMovement();
+    arbitrateTraffic();
+    replanMovement();
     std::stable_sort(updateOrder.begin(), updateOrder.end(), [](const Unit* a, const Unit* b) {
         if (a->moveGroup != b->moveGroup) return a->moveGroup < b->moveGroup;
         if (!a->moveGroup) return a->id < b->id;
@@ -175,6 +178,7 @@ void Simulation::tick() {
             u->facing = u->motionFacing.update(u->facing, u->position - u->tickPosition, speed / ticksPerSecond);
         }
     }
+    movementIndexActive_ = false;
     // Cell/radius changes must affect targeting and presentation in this tick.
     // An unchanged observer set does not need another full fog raster update.
     updateVision(false);
