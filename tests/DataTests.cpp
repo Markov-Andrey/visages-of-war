@@ -3,7 +3,89 @@
 #include "rts/MatchAssets.hpp"
 
 namespace rts::tests {
+namespace {
+std::string libraryValue(const std::vector<LibraryDetail>& details, const std::string& label) {
+    for (const auto& row : details) if (row.kind == LibraryDetailKind::Stat && row.label == label) return row.value;
+    return {};
+}
+bool libraryText(const std::vector<LibraryDetail>& details, const std::string& text) {
+    return std::any_of(details.begin(), details.end(), [&](const auto& row) { return row.label == text || row.value == text; });
+}
+}
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Library details follow changed catalog values and hide inapplicable capabilities", [&] {
+        CatalogFixture fixture(context.assets);
+        for (auto& entity : fixture.entities["entities"]) {
+            if (entity["id"] == "church.slinger") {
+                entity["stats"]["health"] = 481;
+                entity["attack"]["range"] = 7.25;
+                entity["attack"]["windupTicks"] = 15;
+                entity["attack"]["recoveryTicks"] = 15;
+                entity["attack"]["cooldownTicks"] = 30;
+                entity["attack"]["targets"] = "air";
+                entity["mobility"]["type"] = "amphibious";
+                entity["mobility"]["speed"] = 2.75;
+                entity["production"]["trainingTicks"] = 225;
+            }
+            if (entity["id"] == "church.hero") {
+                entity["stats"]["mana"] = 321;
+                entity["hero"]["healthPerLevel"] = 73;
+                entity["hero"]["damagePerLevel"] = 9;
+            }
+        }
+        fixture.abilities["abilities"][0]["manaCost"] = 17;
+        fixture.abilities["abilities"][0]["cooldownTicks"] = 75;
+        const auto definitions = fixture.load();
+        const auto ranged = libraryDetails(definitions, definitions.entity("church.slinger"));
+        require(libraryValue(ranged, "Здоровье") == "481" && libraryValue(ranged, "Дальность атаки") == "7.25 клеток" &&
+            libraryValue(ranged, "Темп атаки") == "0.5 атак/с" && libraryValue(ranged, "Полный цикл атаки") == "2 с" &&
+            libraryValue(ranged, "Допустимые цели") == "Воздушные", "Library combat values diverged from definitions");
+        require(libraryValue(ranged, "Тип движения") == "Амфибия" && libraryValue(ranged, "Скорость") == "2.75 клеток/с" &&
+            libraryValue(ranged, "Время обучения") == "7.5 с", "Library movement/training values diverged from definitions");
+        require(libraryValue(ranged, "Мана").empty() && libraryValue(ranged, "Вместимость груза").empty() &&
+            libraryValue(ranged, "Размер").empty() && !libraryText(ranged, "Развитие героя"), "Fighter shows inapplicable fields");
+        const auto hero = libraryDetails(definitions, definitions.entity("church.hero"));
+        const auto& ability = definitions.ability(1);
+        require(libraryValue(hero, "Мана") == "321" && libraryValue(hero, "Здоровье за уровень") == "+73" &&
+            libraryValue(hero, "Урон за уровень") == "+9" && libraryValue(hero, "Расход маны") == "17" &&
+            libraryValue(hero, "Перезарядка") == "2.5 с" && libraryText(hero, ability.displayName) && libraryText(hero, ability.description),
+            "Hero growth or resolved ability missing from library");
+        require(libraryValue(hero, "Время обучения").empty(), "Untrainable starting hero shows a training time");
+        const auto building = libraryDetails(definitions, definitions.entity("church.barracks"));
+        require(libraryValue(building, "Размер") == "3 × 3 клетки" && libraryValue(building, "Время строительства") == "6 с" &&
+            libraryValue(building, definitions.entity("church.slinger").displayName).find("7.5 с") != std::string::npos,
+            "Production does not resolve the trainee's current definition");
+        require(libraryValue(building, "Тип движения").empty() && libraryValue(building, "Дальность атаки").empty() &&
+            libraryValue(building, "Мана").empty() && libraryValue(building, "Время обучения").empty(), "Building shows unit-only fields");
+    });
+    test("Library distinguishes direct credit from cargo and supports new entity identities", [&] {
+        CatalogFixture fixture(context.assets);
+        auto definitions = fixture.load();
+        auto worker = definitions.entity("church.worker");
+        worker.id = "new.worker";
+        worker.carryCapacity = 99; // Inapplicable even if nonzero for direct credit.
+        auto details = libraryDetails(definitions, worker);
+        require(libraryValue(details, "За цикл добычи") == "7" && libraryValue(details, "Интервал добычи") == "10 с" &&
+            libraryValue(details, "Зачисление") == "Сразу в запас игрока" && libraryValue(details, "Вместимость груза").empty() &&
+            libraryValue(details, "Дальность атаки").empty(), "Direct worker shows cargo or attack parameters");
+        worker.gatherAbility = definitions.ability(3);
+        details = libraryDetails(definitions, worker);
+        require(libraryValue(details, "За цикл добычи") == "1" && libraryValue(details, "Интервал добычи") == "0.333 с" &&
+            libraryValue(details, "Вместимость груза") == "99" && libraryValue(details, "Зачисление") == "После доставки на склад",
+            "Cargo harvesting parameters missing");
+        worker.gatherAbility.reset();
+        details = libraryDetails(definitions, worker);
+        require(libraryValue(details, "За цикл добычи").empty() && libraryValue(details, "Вместимость груза").empty(),
+            "Capacity alone exposes harvesting");
+        auto hybrid = definitions.entity("church.flying_soldier");
+        hybrid.constructible = true; // Independent capabilities must not hide each other.
+        details = libraryDetails(definitions, hybrid);
+        require(libraryValue(details, "Тип движения") == "Полёт" && libraryValue(details, "Допустимые цели") == "Воздушные" &&
+            !libraryValue(details, "Размер").empty(), "Hybrid entity lost a capability or same-layer targets were not resolved");
+        const auto artillery = libraryDetails(definitions, definitions.entity("church.catapult"));
+        require(libraryValue(artillery, "Радиус поражения") == "1.4 клеток" && libraryValue(artillery, "Допустимые цели") == "Наземные",
+            "Artillery parameters are missing");
+    });
     test("Match assets include used factions and future production but exclude unrelated catalog blocks", [&] {
         CatalogFixture fixture(context.assets);
         fixture.catalog["factions"].push_back({{"id","test"},{"name","Test"},{"description","Unused race"}});

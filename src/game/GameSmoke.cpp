@@ -95,11 +95,12 @@ void GameApplication::exerciseInterface() {
         const rts::LibraryLayout book(renderer_.size());
         for (size_t i = 0; i < rts::libraryTabs.size(); ++i) {
             menu_.libraryEntry = menu_.libraryEntryScroll = 999;
+            menu_.libraryDetailScroll = 999;
             const auto tab = book.tab(i);
             mouse_ = book.origin + rts::Vec2{tab.x + 10, tab.y + 10} * book.scale;
             if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Smoke: library tab cursor failed");
             menuClick();
-            if (menu_.libraryTab != rts::libraryTabs[i] || menu_.libraryEntry || menu_.libraryEntryScroll || menu_.librarySeconds != 0)
+            if (menu_.libraryTab != rts::libraryTabs[i] || menu_.libraryEntry || menu_.libraryEntryScroll || menu_.librarySeconds != 0 || menu_.libraryDetailScroll != 0)
                 throw std::runtime_error("Smoke: library tab retained stale selection");
             const auto factions = rts::libraryFactions(definitions_);
             const auto entries = rts::libraryEntries(definitions_, factions.at(menu_.libraryFaction)->id, menu_.libraryTab);
@@ -107,14 +108,36 @@ void GameApplication::exerciseInterface() {
             const auto file = L"library-tab-" + std::to_wstring(i) + L"-preview.png";
             renderer_.snapshot(game_, rts::Paths::executable().parent_path() / file, &definitions_, false, nullptr,
                 rts::MenuPage::Library, 0, &menu_);
+            const float height = renderer_.libraryDetailsHeight(definitions_, *entries.front());
+            auto longEntry = *entries.front();
+            for (int repeat = 0; repeat < 30; ++repeat) longEntry.description += entries.front()->description + " ";
+            if (renderer_.libraryDetailsHeight(definitions_, longEntry) <= height + book.details.height)
+                throw std::runtime_error("Smoke: long library descriptions were truncated during measurement");
+            mouse_ = book.origin + rts::Vec2{book.details.x + 10, book.details.y + 10} * book.scale;
+            for (int scroll = 0; scroll < 100; ++scroll) libraryScroll(1);
+            const float maximum = std::max(0.0f, height - book.details.height);
+            if (menu_.libraryDetailScroll != maximum || menu_.libraryEntryScroll != 0)
+                throw std::runtime_error("Smoke: library detail scroll cannot reach the last row or scrolls the entry list");
+            renderer_.snapshot(game_, rts::Paths::executable().parent_path() / (L"library-bottom-" + std::to_wstring(i) + L".png"),
+                &definitions_, false, nullptr, rts::MenuPage::Library, 0, &menu_, nullptr, {960, 600});
+            if (maximum > 0) {
+                mouse_ = book.origin + rts::Vec2{book.detailsUp.x + 10, book.detailsUp.y + 10} * book.scale;
+                if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Smoke: library scroll button is not interactive");
+                menuClick();
+                if (menu_.libraryDetailScroll >= maximum) throw std::runtime_error("Smoke: library scroll button did not scroll");
+            }
+            mouse_ = book.origin + rts::Vec2{book.details.x + 10, book.details.y + 10} * book.scale;
+            for (int scroll = 0; scroll < 100; ++scroll) libraryScroll(-1);
+            if (menu_.libraryDetailScroll != 0) throw std::runtime_error("Smoke: library cannot scroll back to title");
         }
         mouse_ = book.origin + rts::Vec2{book.tab(0).x + 10, book.tab(0).y + 10} * book.scale;
         menuClick();
         const auto row = book.entryRow(0);
         mouse_ = book.origin + rts::Vec2{row.x + 10, row.y + 10} * book.scale;
         if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Smoke: library entry cursor failed");
+        menu_.libraryDetailScroll = 200;
         menuClick();
-        if (menu_.librarySeconds != 0) throw std::runtime_error("Smoke: library entry did not select");
+        if (menu_.librarySeconds != 0 || menu_.libraryDetailScroll != 0) throw std::runtime_error("Smoke: library entry did not select");
         const auto matchColor = game_.player().color;
         const auto openColors = [&] {
             mouse_ = book.origin + rts::Vec2{book.color.x + 10, book.color.y + 10} * book.scale;

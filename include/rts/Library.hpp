@@ -3,6 +3,13 @@
 #include "rts/Menu.hpp"
 
 namespace rts {
+enum class LibraryDetailKind { Title, Heading, Paragraph, Stat };
+struct LibraryDetail {
+    LibraryDetailKind kind;
+    std::string label, value, icon;
+};
+// Presentation of resolved gameplay definitions; no per-entity stat inventories.
+std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const EntityDefinition& entity);
 inline constexpr std::array<LibraryTab, 3> libraryTabs{LibraryTab::Units, LibraryTab::Buildings, LibraryTab::Heroes};
 inline constexpr std::array<std::wstring_view, 3> libraryTabNames{L"Юниты", L"Здания", L"Герои"};
 inline LibraryTab libraryCategory(const EntityDefinition& entity) {
@@ -27,6 +34,9 @@ struct LibraryLayout {
     Vec2 origin;
     UiRect back{34, 736, 224, 42}, races{34, 170, 224, 144}, entries{34, 360, 224, 308};
     UiRect color{968, 42, 280, 42};
+    UiRect details{782, 180, 432, 474};
+    UiRect detailsUp{1080, 673, 40, 28}, detailsDown{1124, 673, 40, 28};
+    static constexpr float detailScrollStep = 72;
     explicit LibraryLayout(Vec2 size) : scale(std::max(.01f, std::min(size.x / 1280, size.y / 800))),
         origin{(size.x - 1280 * scale) * .5f, (size.y - 800 * scale) * .5f} {}
     Vec2 local(Vec2 point) const { return (point - origin) * (1 / scale); }

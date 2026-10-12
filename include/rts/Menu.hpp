@@ -21,6 +21,7 @@ struct MenuState {
     size_t libraryFaction{}, libraryEntry{}, libraryFactionScroll{}, libraryEntryScroll{};
     LibraryTab libraryTab = LibraryTab::Units;
     double librarySeconds{}; // Presentation clock; browsing never advances the match.
+    float libraryDetailScroll{};
     float loadingProgress = .5f; // Static snapshot fixture; live loading reports completed tasks.
     MenuParallax parallax;
 };

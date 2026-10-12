@@ -27,6 +27,11 @@ bool GameApplication::libraryLinkAt(Vec2 mouse) const {
     for (size_t i = 0; i < LibraryLayout::factionRows && menu_.libraryFactionScroll + i < factions.size(); ++i)
         if (layout.factionRow(i).contains(point)) return true;
     const auto entries = libraryEntries(definitions_, factions.at(menu_.libraryFaction)->id, menu_.libraryTab);
+    if (!entries.empty()) {
+        const float maximum = std::max(0.0f, renderer_.libraryDetailsHeight(definitions_, *entries.at(menu_.libraryEntry)) - layout.details.height);
+        if (layout.detailsUp.contains(point) && menu_.libraryDetailScroll > 0) return true;
+        if (layout.detailsDown.contains(point) && menu_.libraryDetailScroll < maximum) return true;
+    }
     for (size_t i = 0; i < LibraryLayout::entryRows && menu_.libraryEntryScroll + i < entries.size(); ++i)
         if (layout.entryRow(i).contains(point)) return true;
     return false;
@@ -42,6 +47,7 @@ void GameApplication::libraryClick() {
         menu_.libraryTab = libraryTabs[i];
         menu_.libraryEntry = menu_.libraryEntryScroll = 0;
         menu_.librarySeconds = 0;
+        menu_.libraryDetailScroll = 0;
         return;
     }
     for (size_t i = 0; i < LibraryLayout::factionRows && menu_.libraryFactionScroll + i < factions.size(); ++i)
@@ -49,13 +55,19 @@ void GameApplication::libraryClick() {
             menu_.libraryFaction = menu_.libraryFactionScroll + i;
             menu_.libraryEntry = menu_.libraryEntryScroll = 0;
             menu_.librarySeconds = 0;
+            menu_.libraryDetailScroll = 0;
             return;
         }
     const auto entries = libraryEntries(definitions_, factions.at(menu_.libraryFaction)->id, menu_.libraryTab);
+    if (layout.detailsUp.contains(point) || layout.detailsDown.contains(point)) {
+        libraryScroll(layout.detailsUp.contains(point) ? -1 : 1);
+        return;
+    }
     for (size_t i = 0; i < LibraryLayout::entryRows && menu_.libraryEntryScroll + i < entries.size(); ++i)
         if (layout.entryRow(i).contains(point)) {
             menu_.libraryEntry = menu_.libraryEntryScroll + i;
             menu_.librarySeconds = 0;
+            menu_.libraryDetailScroll = 0;
             return;
         }
 }
@@ -71,5 +83,11 @@ void GameApplication::libraryScroll(int direction) {
     if (layout.races.contains(point)) scroll(menu_.libraryFactionScroll, factions.size(), LibraryLayout::factionRows);
     if (layout.entries.contains(point))
         scroll(menu_.libraryEntryScroll, libraryEntries(definitions_, factions.at(menu_.libraryFaction)->id, menu_.libraryTab).size(), LibraryLayout::entryRows);
+    if (layout.details.contains(point) || layout.detailsUp.contains(point) || layout.detailsDown.contains(point)) {
+        const auto entries = libraryEntries(definitions_, factions.at(menu_.libraryFaction)->id, menu_.libraryTab);
+        if (entries.empty()) return;
+        const float maximum = std::max(0.0f, renderer_.libraryDetailsHeight(definitions_, *entries.at(menu_.libraryEntry)) - layout.details.height);
+        menu_.libraryDetailScroll = std::clamp(menu_.libraryDetailScroll + direction * LibraryLayout::detailScrollStep, 0.0f, maximum);
+    }
 }
 }

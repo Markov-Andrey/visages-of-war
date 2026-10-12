@@ -37,6 +37,7 @@ public:
         const GameplayUi* interfaceState = nullptr, MenuPage menuPage = MenuPage::BattleSetup, double previewSeconds = 0,
         const MenuState* menuState = nullptr, const WorldView* snapshotView = nullptr, Vec2 snapshotSize = {1440, 900});
     void drawMenu(const Simulation& game, const MenuState& menu, const Definitions& definitions, Vec2 mouse);
+    float libraryDetailsHeight(const Definitions& definitions, const EntityDefinition& entity) const;
     void beginLoadingPreview(const Simulation& game);
     void drawLoading(const Simulation& game, const std::wstring& stage, size_t completed, size_t total, Vec2 parallax = {});
     bool prepareMatchAssets(const Simulation& game, const Definitions& definitions,

@@ -1,16 +1,51 @@
 #include "RenderSupport.hpp"
 #include "rts/Library.hpp"
-#include <iomanip>
-#include <sstream>
 
 namespace rts {
 using namespace render;
 namespace {
-std::wstring amount(float value) {
-    std::wostringstream result;
-    result << std::fixed << std::setprecision(value == std::floor(value) ? 0 : 1) << value;
-    return result.str();
+struct DetailLine {
+    LibraryDetail detail;
+    Microsoft::WRL::ComPtr<IDWriteTextLayout> label, value;
+    float y{}, height{}, valueX{};
+};
+struct DetailPage { std::vector<DetailLine> lines; float height{}; };
+DetailPage detailPage(IDWriteFactory* factory, IDWriteTextFormat* body, IDWriteTextFormat* title,
+    const Definitions& definitions, const EntityDefinition& entity) {
+    DetailPage page;
+    const float width = LibraryLayout({1280, 800}).details.width - 12;
+    const auto measure = [&](const std::string& value, float extent, bool heading,
+        Microsoft::WRL::ComPtr<IDWriteTextLayout>& output) {
+        const auto text = wide(value);
+        check(factory->CreateTextLayout(text.c_str(), static_cast<UINT32>(text.size()), heading ? title : body,
+            extent, 1000000, output.GetAddressOf()));
+        check(output->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_LEADING));
+        check(output->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR));
+        check(output->SetWordWrapping(DWRITE_WORD_WRAPPING_WRAP));
+        DWRITE_TEXT_METRICS metrics{};
+        check(output->GetMetrics(&metrics));
+        return std::ceil(metrics.height);
+    };
+    for (auto detail : libraryDetails(definitions, entity)) {
+        DetailLine line;
+        line.detail = std::move(detail);
+        const bool stat = line.detail.kind == LibraryDetailKind::Stat;
+        if (line.detail.kind == LibraryDetailKind::Heading) page.height += 10;
+        line.y = page.height;
+        line.height = measure(line.detail.label, stat ? 186 : width, line.detail.kind == LibraryDetailKind::Title, line.label);
+        if (stat) {
+            line.valueX = 198 + (line.detail.icon.empty() ? 0.0f : 28.0f);
+            line.height = std::max(line.height, measure(line.detail.value, width - line.valueX, false, line.value));
+            if (!line.detail.icon.empty()) line.height = std::max(line.height, 24.0f);
+        }
+        page.height += line.height + 10;
+        page.lines.push_back(std::move(line));
+    }
+    return page;
 }
+}
+float Renderer::libraryDetailsHeight(const Definitions& definitions, const EntityDefinition& entity) const {
+    return detailPage(writeFactory_.Get(), bodyFormat_.Get(), titleFormat_.Get(), definitions, entity).height;
 }
 void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions, Vec2 mouse) {
     // Browsing can introduce graphics from races outside the current match.
@@ -101,8 +136,6 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     }
     if (entries.size() > LibraryLayout::entryRows || factions.size() > LibraryLayout::factionRows)
         text(L"Колесо мыши — листать список", rect(42, 680, 224, 35), 0xb4b8aa);
-    text(wide(entity.displayName), rect(782, 183, 432, 46), 0x3b3026, true);
-    text(wide(entity.description), rect(782, 240, 424, 81), 0x5c4d3b);
 
     const UiRect art{320, 180, 396, 446};
     target_->PushAxisAlignedClip(rect(art.x, art.y, art.width, art.height), D2D1_ANTIALIAS_MODE_ALIASED);
@@ -115,45 +148,38 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     }
     target_->PopAxisAlignedClip();
 
-    std::vector<std::pair<std::wstring, std::wstring>> stats{
-        {L"Здоровье", std::to_wstring(entity.maximumHealth)},
-        {L"Стоимость", std::to_wstring(entity.cost.crystals)},
-        {L"Лимит армии", std::to_wstring(entity.cost.supply)},
-        {L"Атака", entity.attackDamage > 0 ? std::to_wstring(entity.attackDamage) : L"Не атакует"},
-        {L"Обзор днём / ночью", std::to_wstring(entity.dayVision) + L" / " + std::to_wstring(entity.nightVision) + L" клеток"}
-    };
-    if (entity.constructible) {
-        stats.emplace_back(L"Площадь", std::to_wstring(entity.width) + L" × " + std::to_wstring(entity.height) + L" клетки");
-        stats.emplace_back(L"Строительство", amount(float(entity.constructionTicks) / Simulation::ticksPerSecond) + L" с");
-    } else {
-        stats.emplace_back(L"Обучение", amount(float(entity.trainingTicks) / Simulation::ticksPerSecond) + L" с");
-        stats.emplace_back(L"Скорость", amount(entity.movementPerSecond) + L" клеток/с");
-    }
-    float y = 338;
-    size_t statIndex = 0;
-    for (const auto& [label, value] : stats) {
-        text(label, rect(782, y, 208, 25), 0x76634a);
-        const char* resource = statIndex == 1 ? "crystal" : statIndex == 2 ? "supply" : nullptr;
-        if (resource) drawResourceIcon(resource, {992, y, 24, 24});
-        text(value, rect(resource ? 1022.0f : 992.0f, y, resource ? 192.0f : 222.0f, 25), 0x392f25);
-        line({782, y + 25}, {1214, y + 25}, 0xd6c7a6);
-        y += 31;
-        ++statIndex;
-    }
-    std::wstring abilities;
-    if (entity.acceptsCargo) abilities = L"Принимает кристаллы рабочих.\n";
-    if (!entity.trainableUnits.empty()) {
-        abilities += L"Обучает: ";
-        for (size_t i = 0; i < entity.trainableUnits.size(); ++i) {
-            if (i) abilities += L", ";
-            const auto& trainee = definitions.entity(entity.trainableUnits[i]);
-            abilities += wide(trainee.displayName) + L" (" + amount(float(trainee.trainingTicks) / Simulation::ticksPerSecond) + L" с)";
+    const auto page = detailPage(writeFactory_.Get(), bodyFormat_.Get(), titleFormat_.Get(), definitions, entity);
+    const auto area = layout.details;
+    const float maximum = std::max(0.0f, page.height - area.height);
+    const float offset = std::clamp(menu.libraryDetailScroll, 0.0f, maximum);
+    target_->PushAxisAlignedClip(rect(area.x, area.y, area.width, area.height), D2D1_ANTIALIAS_MODE_ALIASED);
+    for (const auto& row : page.lines) {
+        const float y = area.y + row.y - offset;
+        if (y + row.height < area.y || y >= area.y + area.height) continue;
+        const bool stat = row.detail.kind == LibraryDetailKind::Stat;
+        brush_->SetColor(D2D1::ColorF(stat ? 0x76634a : 0x3b3026));
+        target_->DrawTextLayout({area.x, y}, row.label.Get(), brush_.Get());
+        if (stat) {
+            if (!row.detail.icon.empty()) drawResourceIcon(row.detail.icon, {area.x + 198, y, 24, 24});
+            brush_->SetColor(D2D1::ColorF(0x392f25));
+            target_->DrawTextLayout({area.x + row.valueX, y}, row.value.Get(), brush_.Get());
+            line({area.x, y + row.height + 4}, {area.x + area.width - 12, y + row.height + 4}, 0xd6c7a6);
         }
     }
-    if (entity.canBuild) abilities += L" Возводит здания.";
-    if (entity.gatherAbility) abilities += L"\n" + wide(entity.gatherAbility->displayName) + L": " + wide(entity.gatherAbility->description);
-    text(abilities, rect(782, 575, 428, 78), 0x635239);
-    text(std::to_wstring(entryIndex + 1) + L" / " + std::to_wstring(entries.size()), rect(1150, 679, 80, 22), 0x8a7455);
+    target_->PopAxisAlignedClip();
+    if (maximum > 0) {
+        const float thumb = std::max(20.0f, area.height * area.height / page.height);
+        fill({area.x + area.width - 5, area.y, 4, area.height}, 0xd6c7a6);
+        fill({area.x + area.width - 5, area.y + (area.height - thumb) * offset / maximum, 4, thumb}, 0x8a7455);
+        text(L"Колесо — листать карточку", rect(782, 679, 285, 22), 0x8a7455);
+        const auto arrow = [&](UiRect bounds, const wchar_t* caption, bool enabled) {
+            fill(bounds, enabled && bounds.contains(mouse) ? 0xc4ad82 : 0xdfcdaa);
+            centeredText(caption, bounds, enabled ? 0x392f25 : 0xaa9674);
+        };
+        arrow(layout.detailsUp, L"↑", offset > 0);
+        arrow(layout.detailsDown, L"↓", offset < maximum);
+    }
+    text(std::to_wstring(entryIndex + 1) + L" / " + std::to_wstring(entries.size()), rect(1176, 679, 54, 22), 0x8a7455);
     std::wstring commander;
     for (const auto& c : definitions.commanders()) if (c.factionId == faction.id) {
         if (!commander.empty()) commander += L", ";
