@@ -24,6 +24,7 @@ void Simulation::harvest(Unit& u) {
     if (crystal.remaining == 0 || (!direct && u.cargo >= u.definition.carryCapacity)) {
         if (!direct && u.cargo > 0) returnCargo(u); else seekCrystal(u);
     }
+    if (u.state == UnitState::Harvesting) u.abilityAnimation.sustain(*u.definition.gatherAbility, u.definition);
 }
 bool Simulation::returnCargo(Unit& u) {
     std::optional<Path> best;

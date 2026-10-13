@@ -6,6 +6,7 @@
 #include "rts/HealthFeedback.hpp"
 #include "rts/UnitFacing.hpp"
 #include "rts/MovementIndex.hpp"
+#include "rts/AbilityAnimation.hpp"
 #include <deque>
 #include <string>
 #include <variant>
@@ -43,7 +44,7 @@ struct Unit {
     std::vector<AbilityCooldown> abilityCooldowns;
     std::vector<int> autocastAbilities;
     bool automaticAbility{}, abilityWorking{};
-    int activityTicks{};
+    AbilityAnimationPlayer abilityAnimation;
     std::int64_t repairProgress{};
     std::int64_t repairCredit{}; // Prepaid restoration cost, retained across casters and orders.
     HealthFeedback healthFeedback;
@@ -276,6 +277,8 @@ private:
     bool returnCargo(Unit& unit);
     void harvest(Unit& unit);
     bool startRepair(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic);
+    bool useAbility(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic = false);
+    void commitAbility(Unit& unit, const AbilityDefinition& ability);
     std::vector<Cell> repairPositions(const Unit& unit, EntityId target) const;
     bool repairReach(const Unit& unit, EntityId target, Vec2 position) const;
     void approachRepair(Unit& unit);

@@ -23,28 +23,17 @@ inline SpriteFrame locomotionFrame(const Unit& unit) {
 inline SpriteFrame unitFrame(const Unit& unit) {
     auto frame = locomotionFrame(unit);
     const auto& d = unit.definition;
-    const auto* ability = unit.state == UnitState::Harvesting && d.gatherAbility ? &*d.gatherAbility :
-        unit.state == UnitState::UsingAbility && unit.abilityWorking ? unit.ability(unit.currentOrder.abilityId) : nullptr;
-    const auto animation = ability ? ability->animation :
-        unit.state == UnitState::Building ? AbilityAnimation::Work : AbilityAnimation::Stand;
-    if (unit.next >= unit.route.size()) {
-        if (animation == AbilityAnimation::Work) frame.column = d.sprite.work >= 0 ? d.sprite.work : d.sprite.idle;
-        if (animation == AbilityAnimation::Attack) {
-            const int windupTicks = std::max(1, d.attackWindupTicks), recoveryTicks = std::max(1, d.attackRecoveryTicks);
-            const int tick = unit.activityTicks % (windupTicks + recoveryTicks);
-            const auto& frames = tick < windupTicks ? d.sprite.windup : d.sprite.recovery;
-            const int elapsed = tick < windupTicks ? tick : tick - windupTicks;
-            const int duration = tick < windupTicks ? windupTicks : recoveryTicks;
-            frame.column = frames.empty() ? d.sprite.idle : frames[static_cast<size_t>(elapsed) * frames.size() / duration];
-        }
-    }
+    if (unit.state == UnitState::Building && unit.next >= unit.route.size())
+        frame.column = abilityAnimationColumn(d, AbilityAnimation::Work, 0);
     const bool windup = unit.attackPhase == AttackPhase::Windup;
     if (windup || unit.attackPhase == AttackPhase::Recovery) {
         const auto& frames = windup ? d.sprite.windup : d.sprite.recovery;
         const int duration = windup ? d.attackWindupTicks : d.attackRecoveryTicks;
         const auto index = static_cast<size_t>(std::max(0, duration - unit.attackTicks)) * frames.size() / std::max(1, duration);
-        frame.column = frames[std::min(index, frames.size() - 1)];
+        frame.column = frames.empty() ? d.sprite.idle : frames[std::min(index, frames.size() - 1)];
     }
+    if (unit.health > 0) if (const auto* animation = unit.abilityAnimation.current())
+        frame.column = abilityAnimationColumn(d, animation->action, animation->elapsedTicks);
     return frame;
 }
 }

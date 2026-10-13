@@ -23,7 +23,7 @@ void Simulation::issue(Unit& u, Order order) {
 void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     u.currentOrder = order;
     u.automaticAbility = u.abilityWorking = false; u.repairProgress = 0;
-    u.activityTicks = 0;
+    u.abilityAnimation.clear();
     if (u.replanQueued) std::erase(movementReplans_, u.id);
     u.progressPosition = u.position; u.progressTicks = u.stagnantTicks = 0;
     u.replanQueued = false; u.replanAfter = 0; u.relaxedAttempt = 0; u.yieldingTo = 0;
@@ -79,6 +79,7 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
             if (u.definition.harvesting().credit == HarvestCredit::Cargo && u.cargo >= u.definition.carryCapacity)
                 returnCargo(u);
             else seekCrystal(u);
+            commitAbility(u, *u.definition.gatherAbility);
             return;
         }
     }
@@ -208,6 +209,7 @@ void Simulation::arrived(Unit& u) {
     case UnitState::ToAttack: u.state = UnitState::Attacking; break;
     case UnitState::ToCrystal: {
         u.state = UnitState::Harvesting; u.harvestTicks = 0;
+        if (u.definition.gatherAbility) u.abilityAnimation.sustain(*u.definition.gatherAbility, u.definition);
         if (u.targetCrystal >= 0) {
             const auto& node = crystals()[static_cast<size_t>(u.targetCrystal)];
             const Vec2 delta = Vec2{node.cell.x + node.width * .5f, node.cell.y + node.height * .5f} - u.position;
@@ -238,9 +240,6 @@ void Simulation::arrived(Unit& u) {
     }
 }
 void Simulation::tickUnit(Unit& u) {
-    if (u.state == UnitState::Harvesting || u.state == UnitState::Building || u.state == UnitState::UsingAbility)
-        u.activityTicks = (u.activityTicks + 1) % 1000000;
-    else u.activityTicks = 0;
     tickAutocast(u);
     if (u.currentOrder.kind == OrderKind::UseAbility) {
         const auto* ability = u.ability(u.currentOrder.abilityId);

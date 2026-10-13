@@ -161,7 +161,8 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                         throw std::runtime_error("Death frame outside image: " + e.id);
             }
             int column = std::max(s.idle, s.work);
-            for (const auto* frames : {&s.walk, &s.windup, &s.recovery}) column = std::max(column, *std::max_element(frames->begin(), frames->end()));
+            for (const auto* frames : {&s.walk, &s.windup, &s.recovery})
+                if (!frames->empty()) column = std::max(column, *std::max_element(frames->begin(), frames->end()));
             const int row = *std::max_element(s.rows.begin(), s.rows.end());
             if ((column + 1) * s.frameWidth > size.x || (row + 1) * s.frameHeight > size.y)
                 throw std::runtime_error("Animation frame outside sprite sheet: " + e.id);

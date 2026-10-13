@@ -142,7 +142,8 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
             const auto animation = string(j.at("animation"));
             if (animation == "work") ability.animation = AbilityAnimation::Work;
             else if (animation == "attack") ability.animation = AbilityAnimation::Attack;
-            else if (animation != "stand") throw std::runtime_error("Unknown ability animation");
+            else if (animation == "stand") ability.animation = AbilityAnimation::Stand;
+            else throw std::runtime_error("Unknown ability animation");
         }
         if (repairing) {
             const auto& r = j.at("repair"); fields(r, {"constructionTimePercent", "constructionCostPercent"});

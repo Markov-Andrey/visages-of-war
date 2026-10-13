@@ -52,7 +52,6 @@ void Simulation::approachRepair(Unit& u) {
     }
 }
 bool Simulation::startRepair(Unit& u, const AbilityDefinition& ability, EntityId target, bool automatic) {
-    if (!ability.repair || !canTargetAbility(u, ability, target) || u.abilityCooldown(ability.id) || u.mana < ability.manaCost) return false;
     const auto positions = repairPositions(u, target);
     if (positions.empty()) return false;
     auto path = repairReach(u, target, u.position) ? std::optional<Path>{Path{{u.cell}, 0, u.position}} :
@@ -65,8 +64,6 @@ bool Simulation::startRepair(Unit& u, const AbilityDefinition& ability, EntityId
     u.automaticAbility = automatic;
     u.chaseTicks = 15 + int(u.id % 7);
     if (repairReach(u, target, u.position)) { u.route.clear(); u.next = 0; u.state = UnitState::UsingAbility; }
-    u.mana -= ability.manaCost;
-    if (ability.cooldownTicks) u.abilityCooldowns.push_back({ability.id, ability.cooldownTicks});
     return true;
 }
 void Simulation::tickAutocast(Unit& u) {
@@ -93,7 +90,7 @@ void Simulation::tickAutocast(Unit& u) {
             for (const auto& recipient : units_) consider(recipient.id, recipient.definition, recipient.repairCredit);
         std::sort(candidates.begin(), candidates.end());
         for (const auto& [distance, target] : candidates)
-            if (startRepair(u, ability, target, true)) return;
+            if (useAbility(u, ability, target, true)) return;
     }
 }
 void Simulation::tickRepair(Unit& u) {
@@ -120,6 +117,7 @@ void Simulation::tickRepair(Unit& u) {
     auto& balance = mutableEconomy(u.owner).crystals;
     if (pricePerHealth > credit && balance == 0) return; // Wait without banking repair work or playing work animation.
     u.abilityWorking = true;
+    u.abilityAnimation.sustain(*ability, u.definition);
     const Vec2 delta = (b ? Vec2{b->origin.x + definition.width*.5f, b->origin.y + definition.height*.5f} : recipient->position) - u.position;
     const Cell facing{delta.x > .2f ? 1 : delta.x < -.2f ? -1 : 0, delta.y > .2f ? 1 : delta.y < -.2f ? -1 : 0};
     if (facing != Cell{}) u.facing = facing;

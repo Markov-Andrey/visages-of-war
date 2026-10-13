@@ -1,4 +1,5 @@
 #include "GameApplication.hpp"
+#include "rts/UnitAnimation.hpp"
 #include <stdexcept>
 
 namespace rts::game {
@@ -105,12 +106,27 @@ void GameApplication::exerciseUnitCommands() {
     if (ui_.orderMode || game_.unit(hero)->mana != manaBefore - ability->manaCost ||
         game_.unit(hero)->abilityCooldown(ability->id) != ability->cooldownTicks)
         throw std::runtime_error("Abilities: hotkey did not cast immediately");
+    if (ability->animation) {
+        const auto* animation = game_.unit(hero)->abilityAnimation.current();
+        if (!animation || animation->abilityId != ability->id || animation->elapsedTicks != 0)
+            throw std::runtime_error("Abilities: instant hotkey skipped shared animation playback");
+        if (*ability->animation == rts::AbilityAnimation::Attack && !game_.unit(hero)->definition.sprite.windup.empty() &&
+            !game_.unit(hero)->definition.sprite.recovery.empty() &&
+            rts::unitFrame(*game_.unit(hero)).column != game_.unit(hero)->definition.sprite.windup.front())
+            throw std::runtime_error("Abilities: instant attack animation is not visible");
+    }
     const auto abilityButton = layout.commands[rts::firstAbilitySlot];
     click({abilityButton.x + 10, abilityButton.y + 10});
     if (game_.unit(hero)->mana != manaBefore - ability->manaCost || ui_.orderMode)
         throw std::runtime_error("Abilities: cooldown button repeated the cast");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-ability-cooldown.png", nullptr, false, &ui_,
         rts::MenuPage::Main, 0, nullptr, nullptr, {800, 600});
+    const_cast<rts::Unit&>(*game_.unit(hero)).abilityCooldowns.clear();
+    click({abilityButton.x + 10, abilityButton.y + 10});
+    if (game_.unit(hero)->mana != manaBefore - 2 * ability->manaCost ||
+        (ability->animation && (!game_.unit(hero)->abilityAnimation.current() ||
+            game_.unit(hero)->abilityAnimation.current()->abilityId != ability->id)))
+        throw std::runtime_error("Abilities: button click skipped the shared cast or animation");
     onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("church.peacemaker", 2);
     for (size_t slot = 5; slot < rts::commandSlots; ++slot) {
         mouse_ = {layout.commands[slot].x + 10, layout.commands[slot].y + 10};

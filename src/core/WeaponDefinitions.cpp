@@ -198,7 +198,7 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
             throw std::runtime_error("Point projectiles require a splash radius; unit projectiles have single-target damage");
     }
     if (sprite.is_null()) { e.sprite.image.clear(); return; }
-    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "windup", "recovery", "teamMask"}, {"portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance", "healthBarOffset", "projectileOrigins", "work", "workOrigins"});
+    fields(sprite, {"image", "frameSize", "size", "anchor", "rows", "idle", "walk", "teamMask"}, {"windup", "recovery", "portrait", "icon", "portraitMask", "iconMask", "directionRecipe", "pixelArt", "death", "walkCycleDistance", "healthBarOffset", "projectileOrigins", "work", "workOrigins"});
     auto& s = e.sprite;
     s.image = imagePath(sprite.at("image"));
     if (sprite.contains("portrait") && !sprite.at("portrait").is_null()) s.portrait = imagePath(sprite.at("portrait"));
@@ -234,7 +234,9 @@ void parseWeapon(EntityDefinition& e, const Json& attack, const Json& sprite) {
         auto& sockets = s.workOrigins.emplace();
         for (size_t i = 0; i < 8; ++i) sockets[i] = pair(origins[i], 0, 1);
     }
-    s.walk = frames(sprite.at("walk")); s.windup = frames(sprite.at("windup")); s.recovery = frames(sprite.at("recovery"));
+    s.walk = frames(sprite.at("walk"));
+    s.windup = sprite.contains("windup") ? frames(sprite.at("windup")) : std::vector<int>{};
+    s.recovery = sprite.contains("recovery") ? frames(sprite.at("recovery")) : std::vector<int>{};
     if (sprite.contains("walkCycleDistance")) s.walkCycleDistance = real(sprite.at("walkCycleDistance"), .1f, 16);
     const auto mask = string(sprite.at("teamMask"));
     if (mask == "none") s.teamMask = SpriteTeamMask::None;

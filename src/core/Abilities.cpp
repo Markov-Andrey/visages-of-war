@@ -9,18 +9,25 @@ bool Simulation::activateAbilityFor(PlayerId actor, EntityId id, int abilityId, 
     if (!activePlayer(actor) || !unit || unit->health <= 0 || unit->owner != actor) return false;
     const auto* ability = unit->ability(abilityId);
     if (!ability) return false;
-    if (unit->abilityCooldown(abilityId) > 0) { setMessage(L"Способность ещё перезаряжается."); return false; }
-    if (unit->mana < ability->manaCost) { setMessage(L"Недостаточно маны."); return false; }
-    if (!canTargetAbility(*unit, *ability, target)) { setMessage(L"Способность нельзя применить к этой цели."); return false; }
-    if (ability->repair) {
-        if (!startRepair(*unit, *ability, target, false)) { setMessage(L"Нет доступного пути для ремонта."); return false; }
-        setMessage({}); return true;
+    return useAbility(*unit, *ability, target);
+}
+bool Simulation::useAbility(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic) {
+    if (unit.abilityCooldown(ability.id) > 0) { if (!automatic) setMessage(L"Способность ещё перезаряжается."); return false; }
+    if (unit.mana < ability.manaCost) { if (!automatic) setMessage(L"Недостаточно маны."); return false; }
+    if (!canTargetAbility(unit, ability, target)) { if (!automatic) setMessage(L"Способность нельзя применить к этой цели."); return false; }
+    if (ability.repair && !startRepair(unit, ability, target, automatic)) {
+        if (!automatic) setMessage(L"Нет доступного пути для ремонта.");
+        return false;
     }
-    unit->mana -= ability->manaCost;
-    unit->abilityCooldowns.push_back({abilityId, ability->cooldownTicks});
-    setMessage({});
-    // Untargeted placeholders preserve the current movement order.
+    // Every successful effect, including an untargeted placeholder, commits here.
+    commitAbility(unit, ability);
+    if (!automatic) setMessage({});
     return true;
+}
+void Simulation::commitAbility(Unit& unit, const AbilityDefinition& ability) {
+    unit.mana -= ability.manaCost;
+    if (ability.cooldownTicks) unit.abilityCooldowns.push_back({ability.id, ability.cooldownTicks});
+    unit.abilityAnimation.start(ability, unit.definition);
 }
 bool Simulation::setAutocast(EntityId id, int abilityId, bool enabled) {
     return setAutocastFor(player_.id, id, abilityId, enabled);

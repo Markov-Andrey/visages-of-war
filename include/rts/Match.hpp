@@ -124,6 +124,9 @@ inline std::string abilityAnimationName(AbilityAnimation animation) {
     }
     return {};
 }
+inline std::string abilityAnimationName(std::optional<AbilityAnimation> animation) {
+    return animation ? abilityAnimationName(*animation) : "Не задана";
+}
 struct AutocastDefinition {
     float radius = 8;
     int scanIntervalTicks = 15;
@@ -142,7 +145,7 @@ struct AbilityDefinition {
     std::optional<RepairDefinition> repair;
     std::optional<AutocastDefinition> autocast;
     bool rightClick{};
-    AbilityAnimation animation = AbilityAnimation::Stand;
+    std::optional<AbilityAnimation> animation;
 };
 struct AbilityCooldown { int abilityId{}, remainingTicks{}; };
 struct ResourceCost { int crystals{}, supply{}; };

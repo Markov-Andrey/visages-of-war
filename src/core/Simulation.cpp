@@ -155,6 +155,7 @@ void Simulation::tick() {
     // Advance the front of each moving group first, so IDs do not make a convoy wait backwards.
     std::vector<Unit*> updateOrder;
     for (auto& u : units_) {
+        u.abilityAnimation.beginTick();
         for (auto& cooldown : u.abilityCooldowns) --cooldown.remainingTicks;
         std::erase_if(u.abilityCooldowns, [](const auto& cooldown) { return cooldown.remainingTicks <= 0; });
         u.tickPosition = u.position; u.tickVelocity = u.velocity; u.velocity = {}; updateOrder.push_back(&u);
@@ -172,6 +173,7 @@ void Simulation::tick() {
     });
     for (auto* u : updateOrder) {
         tickUnit(*u);
+        u->abilityAnimation.endTick();
         if (u->next >= u->route.size() || u->state == UnitState::Attacking ||
             u->attackPhase == AttackPhase::Windup || u->attackPhase == AttackPhase::Recovery) {
             u->motionFacing.reset(); // Preserve explicit arrival and combat orientations.

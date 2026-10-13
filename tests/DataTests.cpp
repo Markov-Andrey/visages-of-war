@@ -13,6 +13,20 @@ bool libraryText(const std::vector<LibraryDetail>& details, const std::string& t
 }
 }
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Animation is optional for every ability and attack artwork may be absent", [&] {
+        CatalogFixture fixture(context.assets);
+        for (auto& ability : fixture.abilities["abilities"]) ability["animation"] = "stand";
+        auto definitions = fixture.load();
+        for (int id : {1, 2, 3, 4}) require(definitions.ability(id).animation == AbilityAnimation::Stand, "Stand was treated as missing");
+        for (auto& ability : fixture.abilities["abilities"]) ability.erase("animation");
+        for (auto& entity : fixture.entities["entities"]) if (entity["sprite"].is_object()) {
+            entity["sprite"].erase("windup"); entity["sprite"].erase("recovery");
+        }
+        definitions = fixture.load();
+        for (int id : {1, 2, 3, 4}) require(!definitions.ability(id).animation, "Missing animation became an implicit action");
+        require(definitions.entity("church.hero").sprite.windup.empty() && definitions.entity("church.hero").sprite.recovery.empty(),
+            "Missing attack art gained synthetic frames");
+    });
     test("Repair and autocast metadata resolve for any unit and drive library details", [&] {
         CatalogFixture fixture(context.assets);
         auto definitions = fixture.load();
