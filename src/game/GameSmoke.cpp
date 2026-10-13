@@ -67,11 +67,9 @@ void GameApplication::exerciseInterface() {
         rts::MenuState loadingPreview;
         loadingPreview.page = rts::MenuPage::Loading;
         loadingPreview.loadingProgress = 0;
-        loadingPreview.parallax.offset = {-1, -1};
         renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"loading-empty.png", &definitions_, false,
             nullptr, rts::MenuPage::Loading, 0, &loadingPreview, nullptr, {800, 600});
         loadingPreview.loadingProgress = 1;
-        loadingPreview.parallax.offset = {1, 1};
         renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"loading-complete.png", &definitions_, false,
             nullptr, rts::MenuPage::Loading, 0, &loadingPreview, nullptr, {1920, 1080});
         if (game_.clock().elapsedTicks() != 0 || game_.fog().explored({game_.map().width()-1, game_.map().height()-1}))

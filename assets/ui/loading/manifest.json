@@ -8,29 +8,8 @@
                   },
     "files":  [
                   {
-                      "original":  "background-4.png",
-                      "path":  "sky.png",
-                      "processing":  "Original PNG bytes preserved."
-                  },
-                  {
-                      "original":  "background-5.png",
-                      "path":  "celestials.png",
-                      "processing":  "Original PNG bytes preserved; sun and moon are separate render crops."
-                  },
-                  {
-                      "original":  "background-3.png",
-                      "path":  "mountains.png",
-                      "processing":  "Built-in imagegen edit: preserve composition, remove colored matte fringe, retain transparent sky and foreground."
-                  },
-                  {
-                      "original":  "background-2.png",
-                      "path":  "citadels.png",
-                      "processing":  "Built-in imagegen edit: preserve citadels and composition, clean cutout edges and transparency."
-                  },
-                  {
-                      "original":  "background-1.png",
-                      "path":  "foreground.png",
-                      "processing":  "Original PNG bytes preserved."
+                      "path":  "background.png",
+                      "processing":  "Static 1672x941 composite of the archived sky, celestial crops, mountains, citadels and foreground in their neutral loading-screen positions. Celestial opacity: sun 0.62, moon 0.64. Separate source layers are not shipped."
                   },
                   {
                       "original":  "minimap.png",
@@ -42,5 +21,37 @@
                       "path":  "progress-atlas.png",
                       "processing":  "Built-in imagegen edit: remove baked checkerboard, preserve all four atlas rows and original lettering."
                   }
-              ]
+              ],
+    "archived":  [
+                     {
+                         "original":  "background-4.png",
+                         "formerPath":  "sky.png",
+                         "processing":  "Original PNG bytes preserved.",
+                         "replacement":  "background.png"
+                     },
+                     {
+                         "original":  "background-5.png",
+                         "formerPath":  "celestials.png",
+                         "processing":  "Original PNG bytes preserved; sun and moon are separate render crops.",
+                         "replacement":  "background.png"
+                     },
+                     {
+                         "original":  "background-3.png",
+                         "formerPath":  "mountains.png",
+                         "processing":  "Built-in imagegen edit: preserve composition, remove colored matte fringe, retain transparent sky and foreground.",
+                         "replacement":  "background.png"
+                     },
+                     {
+                         "original":  "background-2.png",
+                         "formerPath":  "citadels.png",
+                         "processing":  "Built-in imagegen edit: preserve citadels and composition, clean cutout edges and transparency.",
+                         "replacement":  "background.png"
+                     },
+                     {
+                         "original":  "background-1.png",
+                         "formerPath":  "foreground.png",
+                         "processing":  "Original PNG bytes preserved.",
+                         "replacement":  "background.png"
+                     }
+                 ]
 }

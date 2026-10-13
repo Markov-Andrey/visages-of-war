@@ -2,25 +2,17 @@
 #include "rts/Menu.hpp"
 
 namespace rts {
-inline constexpr std::array<const wchar_t*, 7> loadingImagePaths{
-    L"ui/loading/sky.png", L"ui/loading/celestials.png", L"ui/loading/mountains.png",
-    L"ui/loading/citadels.png", L"ui/loading/foreground.png",
+inline constexpr std::array<const wchar_t*, 3> loadingImagePaths{
+    L"ui/loading/background.png",
     L"ui/loading/minimap-frame.png", L"ui/loading/progress-atlas.png"};
 
-// Shared authoring plane keeps the cutout layers registered on every aspect ratio.
+// Cover the viewport with the baked composition without stretching it.
 struct LoadingBackdropLayout {
-    Vec2 origin, size, offset;
-    float scale;
-    LoadingBackdropLayout(Vec2 extent, Vec2 pointer) {
-        offset = {std::clamp(pointer.x, -1.f, 1.f), std::clamp(pointer.y, -1.f, 1.f)};
-        scale = std::max(extent.x / (1672 - 40.f), extent.y / (941 - 30.f));
+    Vec2 origin, size;
+    explicit LoadingBackdropLayout(Vec2 extent) {
+        const float scale = std::max(extent.x / 1672, extent.y / 941);
         size = Vec2{1672, 941} * scale;
         origin = (extent - size) * .5f;
-    }
-    UiRect layer(UiRect authored, float depth) const {
-        return {origin.x + (authored.x - offset.x * 14 * depth) * scale,
-            origin.y + (authored.y - offset.y * 9 * depth) * scale,
-            authored.width * scale, authored.height * scale};
     }
 };
 

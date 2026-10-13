@@ -13,8 +13,6 @@ void GameApplication::startBattle() {
     if (GetCapture() == window_) ReleaseCapture();
     camera_.stop(view_);
     ui_ = {};
-    menu_.parallax = {};
-    auto previousFrame = std::chrono::steady_clock::now();
     renderer_.beginLoadingPreview(game_);
 
     const auto present = [&](const std::wstring& stage, size_t done, size_t total) {
@@ -26,10 +24,7 @@ void GameApplication::startBattle() {
         }
         if (!IsWindow(window_) || callbackError_) return false;
         refreshCursor();
-        const auto now = std::chrono::steady_clock::now();
-        menu_.parallax.advance(mouse_, renderer_.size(), std::min(.1f, std::chrono::duration<float>(now - previousFrame).count()));
-        previousFrame = now;
-        renderer_.drawLoading(game_, stage, done, total, menu_.parallax.offset);
+        renderer_.drawLoading(game_, stage, done, total);
         return true;
     };
     if (!present(L"Подготовка карты", 0, 0)) return;

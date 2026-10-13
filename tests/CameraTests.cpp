@@ -13,7 +13,7 @@ void advance(game::CameraController& camera, WorldView& view, int frames, float 
 }
 void cameraTests(TestSuite& test) {
     using game::CameraController;
-    test("Loading composition keeps UI inside the viewport and covers parallax corners", [] {
+    test("Loading composition keeps UI inside the viewport and its static background covers it", [] {
         for (Vec2 extent : {Vec2{800, 600}, Vec2{1440, 900}, Vec2{1920, 1080}, Vec2{3440, 1440}}) {
             const LoadingLayout ui(extent);
             require(ui.map.width == ui.map.height, "Loading minimap must stay square");
@@ -23,12 +23,10 @@ void cameraTests(TestSuite& test) {
             require(ui.fill.x > ui.bar.x && ui.fill.x + ui.fill.width < ui.bar.x + ui.bar.width &&
                 ui.fill.y > ui.bar.y && ui.fill.y + ui.fill.height < ui.bar.y + ui.bar.height,
                 "Progress fill covers its frame");
-            for (float x : {-1.f, 1.f}) for (float y : {-1.f, 1.f}) {
-                const LoadingBackdropLayout background(extent, {x, y});
-                const auto bounds = background.layer({0, 0, 1672, 941}, 1);
-                require(bounds.x <= 0 && bounds.y <= 0 && bounds.x + bounds.width >= extent.x &&
-                    bounds.y + bounds.height >= extent.y, "Parallax exposes an outer image edge");
-            }
+            const LoadingBackdropLayout background(extent);
+            require(background.origin.x <= .001f && background.origin.y <= .001f &&
+                background.origin.x + background.size.x >= extent.x - .001f &&
+                background.origin.y + background.size.y >= extent.y - .001f, "Background does not cover viewport");
         }
     });
     test("Terrain diagonal clipping preserves every on-screen cell across cameras and zooms", [] {

@@ -3,7 +3,7 @@
     "source":  "Artwork supplied by the project owner",
     "rights":  "Project artwork; not part of the third-party CC0 asset catalog",
     "collections": [
-        {"manifest": "ui/loading/manifest.json", "description": "Loading-screen parallax layers, square map frame and progress atlas; owner-supplied sources and imagegen alpha cleanup."},
+        {"manifest": "ui/loading/manifest.json", "description": "Baked loading-screen background, square map frame and progress atlas; owner-supplied sources and imagegen alpha cleanup."},
         {"manifest": "sprites/units/novice/manifest.json", "description": "Novice worker atlas, icon and portrait; owner-supplied sources and atlas layout."},
         {"manifest": "world/tilesets/sunny-hills/manifest.json", "description": "Sunny Hills terrain, trees, shrubs, rocks, ruins, coast and retained vineyard artwork; original PNG sources."}
     ],

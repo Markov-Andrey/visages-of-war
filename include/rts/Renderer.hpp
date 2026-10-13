@@ -39,7 +39,7 @@ public:
     void drawMenu(const Simulation& game, const MenuState& menu, const Definitions& definitions, Vec2 mouse);
     float libraryDetailsHeight(const Definitions& definitions, const EntityDefinition& entity) const;
     void beginLoadingPreview(const Simulation& game);
-    void drawLoading(const Simulation& game, const std::wstring& stage, size_t completed, size_t total, Vec2 parallax = {});
+    void drawLoading(const Simulation& game, const std::wstring& stage, size_t completed, size_t total);
     bool prepareMatchAssets(const Simulation& game, const Definitions& definitions,
         const std::function<bool(const std::wstring&, size_t, size_t)>& progress,
         std::span<const std::string> additionalEntities = {});
@@ -202,7 +202,7 @@ private:
     ComPtr<ID2D1Bitmap> menuBackground_, menuForeground_, logo_, buttonFrame_;
     std::vector<uint32_t> loadingPreviewPixels_;
     ComPtr<ID2D1Bitmap> loadingPreview_;
-    std::array<ComPtr<ID2D1Bitmap>, 7> loadingImages_;
+    std::array<ComPtr<ID2D1Bitmap>, 3> loadingImages_;
     unsigned teamColor_ = teamRgb(TeamColor::Blue);
     unsigned enemyColor_ = teamRgb(TeamColor::Red);
     float worldOpacity_ = 1;
