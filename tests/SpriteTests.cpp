@@ -24,6 +24,11 @@ void spriteTests(TestSuite& test, const TestContext& context) {
             const auto id = game.worker().id;
             require(effect == 2 ? game.command({2, 5}) : game.activateAbility(id, ability.id, effect == 1 ? building.id : 0),
                 "Ability activation rejected");
+            if (effect != 0) {
+                require(!game.worker().abilityAnimation.current(), "Order acceptance started playback");
+                for (int tick = 0; tick < 300 && !game.worker().abilityStarted; ++tick) game.tick();
+                require(game.worker().abilityStarted, "Ability never began execution");
+            }
             for (int tick = 0; tick < 8; ++tick) {
                 require(unitFrame(game.worker()).column == 4 + tick / 2, "Ability effect changed animation startup or timing");
                 require(game.worker().attackPhase == AttackPhase::Ready && game.projectiles().empty(), "Animation fired a weapon");

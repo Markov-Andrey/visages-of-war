@@ -48,7 +48,7 @@ struct Entity {
     int health{}, mana{}, cargo{};
     std::vector<AbilityCooldown> abilityCooldowns;
     std::vector<int> autocastAbilities;
-    bool automaticAbility{}, abilityWorking{};
+    bool automaticAbility{}, abilityWorking{}, abilityStarted{};
     AbilityAnimationPlayer abilityAnimation;
     std::vector<AbilityEffectState> abilityEffects;
     std::int64_t repairCredit{}; // Prepaid restoration cost, retained across casters and orders.

@@ -30,9 +30,8 @@ bool Simulation::useAbility(Unit& unit, const AbilityDefinition& ability, Entity
         if (!automatic) setMessage(L"Цель вне досягаемости способности.");
         return false;
     }
-    // Every successful effect, including an untargeted placeholder, commits here.
-    commitAbility(unit, ability);
     if (!channel && ability.targeting == AbilityTargeting::None) {
+        commitAbility(unit, ability);
         std::vector<AbilityEffectState> states(ability.effects.size());
         applyInstantEffects(unit, ability, target, states);
     } else unit.abilityEffects.assign(ability.effects.size(), {});
@@ -235,6 +234,17 @@ void Simulation::tickAbility(Entity& u) {
     const bool gathering = u.state == UnitState::Harvesting;
     const auto target = gathering && u.targetCrystal >= 0 ? crystals()[u.targetCrystal].id : u.currentOrder.target;
     if (gathering && !crystalVisibleTo(u.owner, *crystal(target))) { issue(u, {OrderKind::Stop}); return; }
+    if (!abilityReach(u, *ability, target, u.position)) return;
+    // Accepting an order is not casting: commit only when execution can begin.
+    if (!u.abilityStarted) {
+        if (u.mana < ability->manaCost || u.abilityCooldown(ability->id) > 0 || !canTargetAbility(u, *ability, target)) {
+            issue(u, {OrderKind::Stop}); return;
+        }
+        // A channel waiting for effect resources has not begun execution yet.
+        if (!abilityEffectEligible(u, *ability, target, true)) return;
+        commitAbility(u, *ability);
+        u.abilityStarted = true;
+    }
     u.abilityWorking = false;
     // Effects run in catalog order. Each owns its progress; costs and animation belong to the cast.
     for (size_t i = 0; i < ability->effects.size(); ++i) {
@@ -258,11 +268,17 @@ void Simulation::tickAbility(Entity& u) {
             if (u.cargo > 0) returnCargo(u); else seekCrystal(u);
         }
         if (u.state == UnitState::Harvesting) u.abilityAnimation.sustain(*ability, u.definition);
+        else if (const auto* animation = u.abilityAnimation.current(); animation && animation->abilityId == ability->id)
+            u.abilityAnimation.clear();
         return;
     }
     const bool pending = std::any_of(ability->effects.begin(), ability->effects.end(), [&](const auto& effect) {
         return std::holds_alternative<RepairDefinition>(effect.value) && effectEligible(u, effect, target, false);
     });
+    if (pending && !u.abilityWorking) {
+        if (const auto* animation = u.abilityAnimation.current(); animation && animation->abilityId == ability->id)
+            u.abilityAnimation.clear();
+    }
     if (!pending) {
         if (ability->repair()) issue(u, {OrderKind::Stop});
         else { u.state = UnitState::Idle; u.currentOrder = {OrderKind::Stop}; u.automaticAbility = false; }

@@ -23,7 +23,7 @@ void Simulation::issue(Unit& u, Order order) {
 }
 void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     u.currentOrder = order;
-    u.automaticAbility = u.abilityWorking = false; u.abilityEffects.clear();
+    u.automaticAbility = u.abilityWorking = u.abilityStarted = false; u.abilityEffects.clear();
     u.abilityAnimation.clear();
     if (u.replanQueued) std::erase(movementReplans_, u.id);
     u.progressPosition = u.position; u.progressTicks = u.stagnantTicks = 0;
@@ -229,7 +229,6 @@ void Simulation::arrived(Unit& u) {
     case UnitState::ToAttack: u.state = UnitState::Attacking; break;
     case UnitState::ToCrystal: {
         u.state = UnitState::Harvesting; u.harvestTicks = 0;
-        if (u.harvestAbility()) u.abilityAnimation.sustain(*u.harvestAbility(), u.definition);
         if (u.targetCrystal >= 0) {
             const auto& node = crystals()[static_cast<size_t>(u.targetCrystal)];
             const Vec2 delta = Vec2{node.cell.x + node.width * .5f, node.cell.y + node.height * .5f} - u.position;
@@ -271,7 +270,12 @@ void Simulation::tickUnit(Unit& u) {
         if (!ability || !canTargetAbility(u, *ability, u.currentOrder.target)) { issue(u, {OrderKind::Stop}); return; }
         if (abilityReach(u, *ability, u.currentOrder.target, u.position)) {
             u.route.clear(); u.next = 0; u.velocity = {}; u.state = UnitState::UsingAbility;
-        } else if (--u.chaseTicks <= 0) approachAbility(u);
+        } else {
+            u.state = UnitState::ToAbility; u.abilityWorking = false;
+            if (const auto* animation = u.abilityAnimation.current(); animation && animation->abilityId == ability->id)
+                u.abilityAnimation.clear();
+            if (--u.chaseTicks <= 0) approachAbility(u);
+        }
     }
     if (u.state == UnitState::ToBuild || u.state == UnitState::Building) {
         const auto* b = building(u.targetBuilding);

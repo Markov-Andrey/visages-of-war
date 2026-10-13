@@ -21,6 +21,67 @@ Scenario repairScene() {
 }
 void economyTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
+    test("Ability orders wait for range before animation effects mana and cooldown", [] {
+        for (int effect = 0; effect < 3; ++effect) {
+            auto worker = fixtureWorker(); worker.maximumMana = 50; worker.attackDamage = 0;
+            worker.sprite.work = 9;
+            AbilityDefinition ability{1401, "Delayed execution", "", 5, 10000};
+            ability.animation = AbilityAnimation::Work; ability.range = 2;
+            ability.targeting = effect == 0 ? AbilityTargeting::Crystal : AbilityTargeting::Entity;
+            if (effect == 0) {
+                ability.targets.relations = {TargetRelation::Neutral};
+                ability.effects = {HarvestDefinition{HarvestCredit::Direct, 1, 1}};
+            } else if (effect == 1) ability.effects = {RepairDefinition{75, 0}};
+            else ability.effects = {RestoreDefinition{RestoredStat::Health, 1}};
+            worker.abilities = {ability};
+            auto scene = repairScene(); scene.units = {{worker.id, 0, {16, 12}}};
+            scene.crystals = {{{16, 8}, 100}}; scene.map.occupy({16, 8});
+            auto game = makeTestSimulation(scene, {}, worker); game.revealMap();
+            const auto id = game.worker().id;
+            auto& recipient = const_cast<Entity&>(game.units()[1]); recipient.health -= 20;
+            const auto target = effect == 0 ? game.crystals()[0].id : recipient.id;
+            const auto health = recipient.health;
+            const auto balance = game.storedCrystals();
+            const auto assertPending = [&] {
+                require(!game.worker().abilityAnimation.current() && !game.worker().abilityStarted &&
+                    game.worker().mana == 50 && game.worker().abilityCooldown(ability.id) == 0 &&
+                    recipient.health == health && game.storedCrystals() == balance,
+                    "Approach started animation, effects or costs");
+            };
+            require(game.activateAbility(id, ability.id, target), "Distant order rejected");
+            assertPending(); ticks(game, 5); assertPending();
+            game.stop(); assertPending();
+            require(game.activateAbility(id, ability.id, target), "Repeat approach rejected");
+            for (int tick = 0; tick < 1000 && !game.worker().abilityStarted; ++tick) {
+                assertPending(); game.tick();
+            }
+            require(game.worker().abilityStarted && game.worker().abilityAnimation.current() &&
+                game.worker().mana == 45 && game.worker().abilityCooldown(ability.id) == 10000,
+                "Execution failed to start animation and charge once");
+            ticks(game, 10);
+            require(game.worker().mana == 45, "Execution charged twice");
+        }
+    });
+    test("Pending ability rechecks mana and target before execution", [] {
+        auto worker = fixtureWorker(); worker.maximumMana = 10; worker.attackDamage = 0;
+        AbilityDefinition ability{1402, "Pending restore", "", 5, 60};
+        ability.targeting = AbilityTargeting::Entity; ability.range = 1;
+        ability.animation = AbilityAnimation::Work;
+        ability.effects = {RestoreDefinition{RestoredStat::Health, 10}};
+        worker.abilities = {ability};
+        for (bool loseMana : {false, true}) {
+            auto scene = repairScene(); scene.units = {{worker.id, 0, {16, 12}}};
+            auto game = makeTestSimulation(scene, {}, worker); game.revealMap();
+            auto& target = const_cast<Entity&>(game.units()[1]); target.health -= 20;
+            require(game.activateAbility(game.worker().id, ability.id, target.id), "Pending cast rejected");
+            if (loseMana) const_cast<Entity&>(game.worker()).mana = 0;
+            else target.health = target.maximumHealth();
+            ticks(game, 1000);
+            require(game.worker().currentOrder.kind == OrderKind::Stop && !game.worker().abilityAnimation.current() &&
+                game.worker().abilityCooldown(ability.id) == 0 && game.worker().mana == (loseMana ? 0 : 10),
+                "Invalid pending cast executed or charged");
+        }
+    });
     test("Stage two builders use explicit independent catalog choices", [] {
         auto worker = fixtureWorker(); worker.buildableTypes = {"other.site"};
         auto other = worker; other.id = "other.builder"; other.buildableTypes = {"own.site"};
@@ -76,7 +137,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto& caster = const_cast<Entity&>(game.worker()); caster.health -= 5;
         require(game.activateAbility(caster.id, cast.id, target), "Combined cast rejected"); game.tick();
         require(recipient.health == recipient.maximumHealth() - 2 && caster.health == caster.maximumHealth() - 2 &&
-            caster.mana == 90 && caster.abilityCooldown(cast.id) == 29, "Partial effects or common cost failed");
+            caster.mana == 90 && caster.abilityCooldown(cast.id) == 30, "Partial effects or common cost failed");
         ticks(game, 30); recipient.health = recipient.maximumHealth(); caster.health = caster.maximumHealth();
         require(!game.activateAbility(caster.id, cast.id, target) && caster.mana == 90, "Wholly ineligible cast spent mana");
         // The first restoration fills the target; the second observes that updated state.
@@ -195,6 +256,9 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(flatScenario(11), {}, worker);
         const auto id = game.worker().id, node = game.crystals().front().id;
         require(game.activateAbility(id, cargo.id, node), "Cargo activation rejected");
+        int approachTicks = 0;
+        while (!game.worker().abilityStarted && approachTicks < 1000) { game.tick(); ++approachTicks; }
+        require(game.worker().abilityStarted && game.worker().abilityCooldown(cargo.id) == 10000, "Cooldown began before execution");
         ticks(game, 1000);
         require(game.storedCrystals() == 11 && game.worker().mana == 45 && game.worker().abilityCooldown(cargo.id) == 9000,
             "Delivery loop charged activation again or lost cargo");
@@ -226,14 +290,14 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(flatScenario(100), {}, worker);
         const auto id = game.worker().id;
         game.tick();
-        require(game.worker().automaticAbility && game.worker().currentOrder.abilityId == 967 && game.worker().mana == 36,
+        require(game.worker().automaticAbility && game.worker().currentOrder.abilityId == 967 && game.worker().mana == 40,
             "Harvest autocast did not use common activation");
         require(game.setAutocast(id, 967, false) && game.worker().currentOrder.kind == OrderKind::Stop && !game.worker().repeatGather,
             "Disabling harvest autocast did not cancel its approach");
         ticks(game, 5);
         require(game.activateAbility(id, 967, game.crystals().front().id), "Manual harvest after autocast rejected");
         require(game.setAutocast(id, 967, true) && game.setAutocast(id, 967, false) &&
-            game.worker().currentOrder.kind == OrderKind::Gather && game.worker().mana == 32,
+            game.worker().currentOrder.kind == OrderKind::Gather && game.worker().mana == 40,
             "Autocast toggle cancelled or charged a manual harvest");
     });
     test("Footprint contact abilities respect cliffs while authored ranged abilities use their range", [] {
