@@ -26,6 +26,7 @@ struct ProductionJob {
     std::string definitionId;
     int remainingTicks{}, totalTicks{}, paidCrystals{}, reservedSupply{};
 };
+struct AbilityEffectState { std::int64_t progress{}; int ticks{}; bool applied{}; };
 struct Entity {
     EntityId id{};
     PlayerId owner{};
@@ -49,7 +50,7 @@ struct Entity {
     std::vector<int> autocastAbilities;
     bool automaticAbility{}, abilityWorking{};
     AbilityAnimationPlayer abilityAnimation;
-    std::int64_t repairProgress{};
+    std::vector<AbilityEffectState> abilityEffects;
     std::int64_t repairCredit{}; // Prepaid restoration cost, retained across casters and orders.
     HealthFeedback healthFeedback;
     std::vector<Cell> route;
@@ -86,7 +87,7 @@ struct Entity {
     }
     const AbilityDefinition* harvestAbility() const {
         const auto* selected = ability(currentOrder.abilityId);
-        return selected && selected->harvest ? selected : nullptr;
+        return selected && selected->harvest() ? selected : nullptr;
     }
     int level() const { return hero ? hero->level : definition.level; }
     int maximumHealth() const { return definition.maximumHealth + (hero ? (level() - 1) * definition.hero->healthPerLevel : 0); }
@@ -196,7 +197,8 @@ public:
     const std::vector<Projectile>& projectiles() const { return projectiles_; }
     const std::vector<ProjectileImpact>& projectileImpacts() const { return projectileImpacts_; }
     const std::vector<Building>& buildings() const { return buildings_; }
-    const std::vector<const EntityDefinition*>& buildingTypes() const { return buildable_; }
+    std::vector<const EntityDefinition*> buildingTypes(const EntityDefinition& builder) const;
+    std::vector<const Entity*> entities() const;
     const Entity* entity(EntityId id) const;
     const Unit* unit(EntityId id) const;
     const Unit* hero() const;
@@ -253,6 +255,7 @@ public:
 private:
     void setMessage(std::wstring message) { message_ = std::move(message); ++messageRevision_; }
     Entity* mutableEntity(EntityId id);
+    std::vector<Entity*> mutableEntities();
     Entity makeEntity(const EntityDefinition& type, Cell cell, PlayerId owner);
     Unit* mutableUnit(EntityId id);
     Building* mutableBuilding(EntityId id);
@@ -277,7 +280,7 @@ private:
     bool setRoute(Unit& unit, std::span<const Cell> goals, UnitState state, bool waitForTraffic = true);
     bool seekCrystal(Unit& unit);
     bool returnCargo(Unit& unit);
-    void harvest(Unit& unit);
+    void harvest(Entity& unit, const HarvestDefinition& effect, AbilityEffectState& state);
     bool startTargetedAbility(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic);
     bool abilityEffectEligible(const Entity& caster, const AbilityDefinition& ability, EntityId target, bool automatic) const;
     bool useAbility(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic = false);
@@ -286,13 +289,16 @@ private:
     bool abilityReach(const Entity& unit, const AbilityDefinition& ability, EntityId target, Vec2 position) const;
     void approachAbility(Unit& unit);
     void tickAutocast(Unit& unit);
-    void tickRepair(Entity& unit);
+    void tickRepair(Entity& unit, const AbilityDefinition& ability, const RepairDefinition& repair, EntityId target, AbilityEffectState& state);
+    bool effectEligible(const Entity& caster, const AbilityEffect& effect, EntityId target, bool automatic) const;
+    void applyInstantEffects(Entity& caster, const AbilityDefinition& ability, EntityId target, std::vector<AbilityEffectState>& states);
     void tickAbility(Entity& unit);
     void prepareAbilityTick(Entity& unit);
     void arrived(Unit& unit);
     void issue(Unit& unit, Order order);
     void applyOrder(Unit& unit, Order order, std::optional<Path> path = {});
     void tickUnit(Unit& unit);
+    bool constructionReach(const Entity& builder, const EntityDefinition& type, Cell origin) const;
     void advanceConstruction(Building& building);
     void tickConstruction();
     void tickProduction();
@@ -333,7 +339,6 @@ private:
     PlayerSettings player_;
     EntityDefinition workerType_;
     std::vector<EntityDefinition> entityTypes_;
-    std::vector<const EntityDefinition*> buildable_;
     std::shared_ptr<const ProgressionRules> progression_;
     std::array<PlayerEconomy, maximumPlayers> economies_;
     WorldClock clock_;

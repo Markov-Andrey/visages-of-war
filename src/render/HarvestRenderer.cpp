@@ -8,10 +8,9 @@ using namespace render;
 void Renderer::drawHarvestEffects(const Simulation& game, const WorldView& view) {
     const float z = view.zoom;
     const float seconds = float(game.clock().elapsedTicks() % 36000) / Simulation::ticksPerSecond;
-    const auto draw = [&](const Entity& unit) {
+    const auto draw = [&](const Entity& unit, const HarvestEffectDefinition& effect) {
         const auto* crystal = harvestEffectTarget(game, unit);
         if (!crystal) return;
-        const auto& effect = *unit.harvestAbility()->harvest->effect;
         const auto& art = unit.definition.sprite;
         const auto socket = art.workOrigins ? (*art.workOrigins)[unitFrame(unit).row] : Vec2{.5f, .65f};
         const auto unitStart = unitScreenAnchor(view, unit.position, game.unitHeight(unit)) +
@@ -59,7 +58,8 @@ void Renderer::drawHarvestEffects(const Simulation& game, const WorldView& view)
             if (visibleAt(t)) spark(at(t), 1.3f, std::sin(t * std::numbers::pi_v<float>));
         }
     };
-    for (const auto& unit : game.units()) draw(unit);
-    for (const auto& building : game.buildings()) draw(building);
+    for (const auto* entity : game.entities()) if (const auto* ability = entity->harvestAbility())
+        for (const auto& entry : ability->effects)
+            if (const auto* h = std::get_if<HarvestDefinition>(&entry.value); h && h->effect) draw(*entity, *h->effect);
 }
 }

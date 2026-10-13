@@ -29,10 +29,19 @@ Cell Simulation::defaultRally(const EntityDefinition& building, Cell origin) con
     const auto exits = productionExits(building, origin, movement);
     return exits.empty() ? origin : exits.front();
 }
+bool Simulation::constructionReach(const Entity& builder, const EntityDefinition& type, Cell origin) const {
+    if (!airborne(builder.definition.movement) && map().at(builder.cell).height != map().at(origin).height) return false;
+    for (int y = -1; y <= type.height; ++y) for (int x = -1; x <= type.width; ++x) {
+        if ((x == -1 || x == type.width) == (y == -1 || y == type.height)) continue;
+        const auto c = origin + Cell{x, y};
+        if (builder.definition.collision == CollisionShape::Footprint ? builder.contains(c) : groundLengthSquared(builder.position - center(c)) <= .0225f) return true;
+    }
+    return false;
+}
 bool Simulation::canPlaceFor(PlayerId actor, const std::string& typeId, Cell origin) const {
     if (!activePlayer(actor)) return false;
     const auto& type = entityType(typeId);
-    if (!type.constructible || (actor == player_.id && type.factionId != workerType_.factionId)) return false;
+    if (!type.constructible) return false;
     if (!map().contains(origin)) return false;
     const int level = map().at(origin).height;
     for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x) {
@@ -53,20 +62,22 @@ std::optional<EntityId> Simulation::constructFor(PlayerId actor, std::span<const
     for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x) preview.occupy(origin + Cell{x, y});
     Unit* builder = nullptr;
     for (EntityId id : builders) {
-        auto* u = mutableUnit(id);
-        if (!u || u->owner != actor || !u->definition.canBuild || u->definition.factionId != type.factionId) continue;
+        auto* u = mutableEntity(id);
+        if (!u || u->owner != actor || u->health <= 0 || !u->complete() || !u->definition.canConstruct(typeId)) continue;
+        if (constructionReach(*u, type, origin)) { builder = u; break; }
         const Vec2 start = u->position;
-        if (findUnitPath(preview, start, perimeter(preview, origin, type.width, type.height, u->definition.movement), {}, u->definition.collisionRadius, u->definition.movement)) { builder = u; break; }
+        if (u->definition.mobile && findUnitPath(preview, start, perimeter(preview, origin, type.width, type.height, u->definition.movement), {}, u->definition.collisionRadius, u->definition.movement)) { builder = u; break; }
     }
     if (!builder) { setMessage(L"Выберите рабочего, который может подойти к площадке."); return std::nullopt; }
     if (!economy.supply.reserve(type.cost.supply)) { setMessage(L"Достигнут лимит армии: 100."); return std::nullopt; }
+    const auto builderId = builder->id;
     scenario_.map = std::move(preview);
     auto entity = makeEntity(type, origin, actor);
     const EntityId id = entity.id;
     entity.health = 1; entity.constructionProgress = 0;
     buildings_.push_back(std::move(entity));
     economy.crystals -= type.cost.crystals;
-    issue(*builder, {OrderKind::Build, {}, id});
+    issue(*mutableEntity(builderId), {OrderKind::Build, {}, id});
     setMessage(L"Стройплощадка размещена.");
     updateVision();
     return id;
@@ -79,7 +90,7 @@ bool Simulation::cancelConstructionFor(PlayerId actor, EntityId id) {
     for (int y = 0; y < it->definition.height; ++y) for (int x = 0; x < it->definition.width; ++x)
         scenario_.map.release(it->origin + Cell{x, y});
     economy.crystals += cancellationRefund(it->definition.cost.crystals); economy.supply.release(it->definition.cost.supply);
-    for (auto& u : units_) if (u.targetBuilding == id) issue(u, {OrderKind::Stop});
+    for (auto* u : mutableEntities()) if (u->targetBuilding == id) issue(*u, {OrderKind::Stop});
     buildings_.erase(it); updateVision();
     setMessage(L"Строительство отменено. Возвращено 50% стоимости.");
     return true;
@@ -87,14 +98,14 @@ bool Simulation::cancelConstructionFor(PlayerId actor, EntityId id) {
 bool Simulation::trainFor(PlayerId actor, EntityId id, const std::string& definitionId) {
     if (!activePlayer(actor)) return false;
     auto& economy = mutableEconomy(actor);
-    auto* b = mutableBuilding(id);
-    if (!b || b->owner != actor || !b->complete() || b->definition.trainableUnits.empty()) return false;
+    auto* b = mutableEntity(id);
+    if (!b || b->health <= 0 || b->owner != actor || !b->complete() || b->definition.trainableUnits.empty()) return false;
     if (b->production.size() >= Building::productionQueueLimit) { setMessage(L"Очередь производства заполнена."); return false; }
     const auto& choices = b->definition.trainableUnits;
     const auto& selected = definitionId.empty() ? choices.front() : definitionId;
     if (std::find(choices.begin(), choices.end(), selected) == choices.end()) return false;
     const auto& type = entityType(selected);
-    if (!type.mobile || type.width != 1 || type.height != 1) { setMessage(L"Этот тип пока нельзя выпустить как подвижную единицу."); return false; }
+    if (type.collision != CollisionShape::Circle || type.width != 1 || type.height != 1) { setMessage(L"Этот тип пока нельзя выпустить как подвижную единицу."); return false; }
     if (economy.crystals < type.cost.crystals) { setMessage(L"Недостаточно кристаллов."); return false; }
     if (!economy.supply.reserve(type.cost.supply)) { setMessage(L"Достигнут лимит армии: 100."); return false; }
     economy.crystals -= type.cost.crystals;
@@ -105,7 +116,7 @@ bool Simulation::trainFor(PlayerId actor, EntityId id, const std::string& defini
 bool Simulation::cancelTrainingFor(PlayerId actor, EntityId id, std::optional<size_t> queueIndex) {
     if (!activePlayer(actor)) return false;
     auto& economy = mutableEconomy(actor);
-    auto* b = mutableBuilding(id);
+    auto* b = mutableEntity(id);
     if (!b || b->owner != actor || b->production.empty()) return false;
     const size_t index = queueIndex.value_or(b->production.size() - 1);
     if (index >= b->production.size()) return false;
@@ -116,12 +127,12 @@ bool Simulation::cancelTrainingFor(PlayerId actor, EntityId id, std::optional<si
     return true;
 }
 bool Simulation::setRally(EntityId id, Cell c) {
-    auto* b = mutableBuilding(id);
+    auto* b = mutableEntity(id);
     if (!b || b->owner != player_.id || b->definition.trainableUnits.empty()) return false;
     for (const auto& produced : b->definition.trainableUnits) {
         const auto movement = entityType(produced).movement;
         if (!map().walkable(c, movement)) { setMessage(L"Точка сбора недоступна этому типу передвижения."); return false; }
-        const auto exits = perimeter(map(), b->origin, b->definition.width, b->definition.height, movement);
+        const auto exits = productionExits(b->definition, b->definition.collision == CollisionShape::Footprint ? b->origin : b->cell, movement);
         bool reachable = false;
         for (Cell exit : exits) if (findPath(map(), exit, c, movement)) { reachable = true; break; }
         if (!reachable) { setMessage(L"Точка сбора недоступна."); return false; }
@@ -147,27 +158,31 @@ void Simulation::tickConstruction() {
             advanceConstruction(b);
 }
 void Simulation::tickProduction() {
-    for (auto& b : buildings_) {
-        if (!b.complete() || b.production.empty()) continue;
+    // IDs survive vector reallocation when a mobile producer creates another entity.
+    std::vector<EntityId> producers;
+    for (const auto* e : entities()) if (e->health > 0 && e->complete() && !e->production.empty()) producers.push_back(e->id);
+    for (auto producerId : producers) {
+        auto& b = *mutableEntity(producerId);
         auto& job = b.production.front();
         if (job.remainingTicks > 0) --job.remainingTicks;
         if (job.remainingTicks != 0) continue;
         const auto& type = entityType(job.definitionId);
-        const auto exits = productionExits(b.definition, b.origin, type.movement);
+        const auto exits = productionExits(b.definition, b.definition.collision == CollisionShape::Footprint ? b.origin : b.cell, type.movement);
         std::optional<Cell> spawnCell;
         for (Cell c : exits) {
             if (unitPositionFree(center(c), type)) { spawnCell = c; break; }
         }
         if (!spawnCell) continue; // Completed job waits for an exit; supply stays reserved.
-        const EntityId id = spawn(type, *spawnCell, true, b.owner);
+        const auto owner = b.owner; const auto rally = b.rally;
         b.production.pop_front();
-        events_.emplace_back(UnitProduced{b.id, id});
+        const EntityId id = spawn(type, *spawnCell, true, owner);
+        events_.emplace_back(UnitProduced{producerId, id});
         const std::array<EntityId, 1> selected{id};
-        if (b.owner == player_.id) command(selected, b.rally);
+        if (owner == player_.id) command(selected, rally);
         else {
-            auto kind = buildingAt(b.rally) ? OrderKind::Interact : OrderKind::Move;
-            for (const auto& node : crystals()) if (node.contains(b.rally) && node.remaining > 0 && crystalVisibleTo(b.owner, node)) kind = OrderKind::Gather;
-            orderFor(b.owner, selected, kind, b.rally);
+            auto kind = buildingAt(rally) ? OrderKind::Interact : OrderKind::Move;
+            for (const auto& node : crystals()) if (node.contains(rally) && node.remaining > 0 && crystalVisibleTo(owner, node)) kind = OrderKind::Gather;
+            orderFor(owner, selected, kind, rally);
         }
     }
 }

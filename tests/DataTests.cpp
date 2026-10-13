@@ -13,6 +13,35 @@ bool libraryText(const std::vector<LibraryDetail>& details, const std::string& t
 }
 }
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Stage two catalogs accept unlimited choices and ordered effect recipients", [&] {
+        CatalogFixture fixture(context.assets);
+        auto& worker = fixture.entities["entities"][0];
+        worker["worker"]["builds"] = {"church.hall"};
+        auto& abilities = fixture.abilities["abilities"];
+        worker["abilities"] = Json::array();
+        auto prototype = abilities[0];
+        for (int id = 101; id <= 108; ++id) {
+            auto cast = prototype; cast["id"] = id;
+            cast["effects"] = Json::array({{{"type", "restoreHealth"}, {"recipient", "caster"}, {"amount", 3}},
+                {{"type", "restoreMana"}, {"recipient", "caster"}, {"amount", 4}}});
+            abilities.push_back(cast); worker["abilities"].push_back(id);
+        }
+        worker["production"]["trains"] = {"church.worker", "church.peacemaker", "church.slinger", "church.catapult"};
+        auto definitions = fixture.load(); const auto& type = definitions.entity("church.worker");
+        require(type.abilities.size() == 8 && type.trainableUnits.size() == 4 && type.canConstruct("church.hall") &&
+            !type.canConstruct("church.barracks") && type.abilities[0].effects.size() == 2, "Catalog still limits choices or infers build permission");
+        auto game = makeTestSimulation(flatScenario(0), {}, type, definitions.entities()); GameplayUi ui; ui.selection.ids = {game.worker().id};
+        ui.abilityPage = 2; require(abilityCommandAt(game, ui, firstAbilitySlot)->id == 107 &&
+            !abilityCommandAt(game, ui, firstAbilitySlot + 2), "Last ability page is wrong");
+        ui.productionMenu = true; ui.productionPage = 1;
+        require(commandPageCount(game, ui) == 2 && catalogCommandAt(game, ui, 0)->id == "church.catapult" &&
+            !catalogCommandAt(game, ui, 2), "Production page hides the fourth choice");
+        worker["worker"]["builds"] = {"missing"}; mustThrow([&] { fixture.load(); });
+        worker["worker"]["builds"] = {"church.worker"}; mustThrow([&] { fixture.load(); });
+        worker["worker"]["builds"] = {"church.hall", "church.hall"}; mustThrow([&] { fixture.load(); });
+        worker["worker"]["builds"] = Json::array();
+        abilities.back()["effects"][0]["recipient"] = "global"; mustThrow([&] { fixture.load(); });
+    });
     test("Catalog abilities and collision are independent of mobility construction and repair", [&] {
         CatalogFixture fixture(context.assets);
         auto& hall = fixture.entities["entities"][3];
@@ -51,13 +80,13 @@ void dataTests(TestSuite& test, const TestContext& context) {
         CatalogFixture fixture(context.assets);
         auto definitions = fixture.load();
         const auto& worker = definitions.entity("church.worker");
-        require(worker.abilities.size() == 2 && worker.abilities[0].repair && worker.abilities[0].autocast &&
-            worker.abilities[0].repair->constructionTimePercent == 75 && worker.abilities[0].repair->constructionCostPercent == 50 &&
+        require(worker.abilities.size() == 2 && worker.abilities[0].repair() && worker.abilities[0].autocast &&
+            worker.abilities[0].repair()->constructionTimePercent == 75 && worker.abilities[0].repair()->constructionCostPercent == 50 &&
             !worker.abilities[0].autocast->enabledByDefault && worker.abilities[0].rightClick &&
             worker.abilities[0].animation == AbilityAnimation::Work, "Worker repair contract missing");
         auto& ability = fixture.abilities["abilities"].back();
-        ability["id"] = 117; ability["repair"]["constructionTimePercent"] = 120;
-        ability["repair"]["constructionCostPercent"] = 35; ability["autocast"]["radius"] = 6.5;
+        ability["id"] = 117; ability["effects"][0]["constructionTimePercent"] = 120;
+        ability["effects"][0]["constructionCostPercent"] = 35; ability["autocast"]["radius"] = 6.5;
         ability["autocast"]["enabledByDefault"] = true;
         for (auto& entity : fixture.entities["entities"]) {
             if (entity["id"] == "church.worker") entity.erase("abilities");
@@ -65,7 +94,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         }
         definitions = fixture.load();
         const auto& soldier = definitions.entity("church.peacemaker");
-        require(soldier.abilities.front().id == 117 && soldier.abilities.front().repair->constructionTimePercent == 120 &&
+        require(soldier.abilities.front().id == 117 && soldier.abilities.front().repair()->constructionTimePercent == 120 &&
             soldier.abilities.front().autocast->enabledByDefault, "Repair is hardcoded to worker or ability ID");
         const auto details = libraryDetails(definitions, soldier);
         require(libraryValue(details, "Время полного ремонта") == "120% времени строительства" &&
@@ -88,10 +117,10 @@ void dataTests(TestSuite& test, const TestContext& context) {
             {"repair", "constructionTimePercent", 0}, {"repair", "constructionCostPercent", -1},
             {"repair", "workPose", "yes"}, {"autocast", "radius", 0}, {"autocast", "radius", 65},
             {"autocast", "scanIntervalTicks", 0}, {"autocast", "condition", "always"}, {"autocast", "enabledByDefault", 1}}) {
-            ability = original; ability[block][field] = value; mustThrow([&] { fixture.load(); });
+            ability = original; (block == "repair" ? ability["effects"][0] : ability[block])[field] = value; mustThrow([&] { fixture.load(); });
         }
         ability = original; ability["targeting"] = "none"; mustThrow([&] { fixture.load(); });
-        ability = original; ability.erase("repair");
+        ability = original; ability["effects"] = Json::array();
         require(fixture.load().ability(117).autocast.has_value(), "Autocast still requires repair");
     });
     test("Library details follow changed catalog values and hide inapplicable capabilities", [&] {
@@ -154,7 +183,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(libraryValue(details, "За цикл добычи") == "1" && libraryValue(details, "Интервал добычи") == "0.333 с" &&
             libraryValue(details, "Вместимость груза") == "99" && libraryValue(details, "Зачисление") == "После доставки на склад",
             "Cargo harvesting parameters missing");
-        std::erase_if(worker.abilities, [](const auto& a) { return a.harvest.has_value(); });
+        std::erase_if(worker.abilities, [](const auto& a) { return a.harvest() != nullptr; });
         details = libraryDetails(definitions, worker);
         require(libraryValue(details, "За цикл добычи").empty() && libraryValue(details, "Вместимость груза").empty(),
             "Capacity alone exposes harvesting");
@@ -253,10 +282,10 @@ void dataTests(TestSuite& test, const TestContext& context) {
         assigned = Json::array({2});
         const auto original = fixture.abilities;
         for (const auto* field : {"intervalTicks", "amount"}) for (const auto& value : {Json(0),Json(-1),Json(1000001),Json(1.5),Json("1"),Json(nullptr)}) {
-            fixture.abilities = original; fixture.abilities["abilities"][1]["harvest"][field] = value;
+            fixture.abilities = original; fixture.abilities["abilities"][1]["effects"][0][field] = value;
             mustThrow([&] { fixture.load(); });
         }
-        fixture.abilities = original; fixture.abilities["abilities"][1]["harvest"]["credit"] = "other";
+        fixture.abilities = original; fixture.abilities["abilities"][1]["effects"][0]["credit"] = "other";
         mustThrow([&] { fixture.load(); });
         fixture.abilities = original; fixture.abilities["abilities"][1]["targeting"] = "none";
         mustThrow([&] { fixture.load(); });
@@ -670,7 +699,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(type.constructible && type.mobile && type.movement == rts::MovementType::Flying && type.factionId == "forest", "Capabilities became exclusive kinds");
         require(type.alternateForms.front() == "forest.rooted", "Form reference lost");
         rts::Simulation game(flatScenario(), {}, defs.entity("church.worker"), defs.entities(), defs.startingDepot(defs.entity("church.worker").factionId).id);
-        require(game.buildingTypes().size() == 2 && !game.canPlace("forest.rooted", {5, 5}), "Another faction's building exposed");
+        require(game.buildingTypes(game.worker().definition).size() == 2 && !game.worker().definition.canConstruct("forest.rooted"), "Another faction's building exposed");
         fixture.entities["entities"].back()["alternateForms"] = {"missing"};
         mustThrow([&] { fixture.load(); });
     });

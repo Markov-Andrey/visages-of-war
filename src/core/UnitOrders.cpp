@@ -23,7 +23,7 @@ void Simulation::issue(Unit& u, Order order) {
 }
 void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     u.currentOrder = order;
-    u.automaticAbility = u.abilityWorking = false; u.repairProgress = 0;
+    u.automaticAbility = u.abilityWorking = false; u.abilityEffects.clear();
     u.abilityAnimation.clear();
     if (u.replanQueued) std::erase(movementReplans_, u.id);
     u.progressPosition = u.position; u.progressTicks = u.stagnantTicks = 0;
@@ -55,18 +55,19 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     if (order.kind == OrderKind::AttackGround) { chaseGround(u); return; }
     if (order.kind == OrderKind::Build) {
         const auto* b = building(order.target);
-        if (!b || b->owner != u.owner || b->complete() || !u.definition.canBuild) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
+        if (!b || b->owner != u.owner || b->complete() || !u.definition.canConstruct(b->definitionId)) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
         if (b->definition.constructionMode == ConstructionMode::Summoning && b->constructionProgress > 0) {
             applyOrder(u, {OrderKind::Stop}); return;
         }
         u.targetBuilding = b->id;
+        if (constructionReach(u, b->definition, b->origin)) { u.state = UnitState::Building; return; }
         if (!setRoute(u, perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement), UnitState::ToBuild))
             setMessage(L"Рабочий не может добраться до стройки.");
         return;
     }
     if (order.kind == OrderKind::Interact) {
         if (const auto* b = buildingAt(order.cell)) {
-            if (b->owner == u.owner && !b->complete() && u.definition.canBuild) { applyOrder(u, {OrderKind::Build, {}, b->id}); return; }
+            if (b->owner == u.owner && !b->complete() && u.definition.canConstruct(b->definitionId)) { applyOrder(u, {OrderKind::Build, {}, b->id}); return; }
             if (b->owner == u.owner && b->complete() && b->definition.acceptsCargo && u.cargo > 0) { returnCargo(u); return; }
             setRoute(u, perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement), UnitState::Moving);
             return;
@@ -77,7 +78,7 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
             // Keep the clicked deposit as the origin throughout this gathering order.
             if (!crystals()[i].contains(order.cell)) continue;
             u.targetCrystal = u.gatherOriginCrystal = static_cast<int>(i); u.repeatGather = true;
-            if (u.harvestAbility()->harvest->credit == HarvestCredit::Cargo && u.cargo >= u.definition.carryCapacity)
+            if (u.harvestAbility()->usesCargo() && u.cargo >= u.definition.carryCapacity)
                 returnCargo(u);
             else seekCrystal(u);
             return;
@@ -110,7 +111,12 @@ bool Simulation::command(std::span<const EntityId> ids, Cell c, EntityId target)
     }
     // Like gathering and attacking, a contextual cast only orders eligible members.
     if (matched) return accepted;
-    if (const auto* enemy = unit(target); enemy && enemy->owner != player_.id && fog_.visible(enemy->cell)) return attack(ids, target);
+    if (const auto* depot = entity(target); depot && depot->owner == player_.id && depot->complete() && depot->definition.acceptsCargo) {
+        bool delivered = false;
+        for (auto id : ids) if (auto* u = mutableEntity(id); u && u->owner == player_.id && u->cargo > 0) delivered = returnCargo(*u) || delivered;
+        if (delivered) return true;
+    }
+    if (const auto* enemy = entity(target); enemy && enemy->owner != player_.id && fog_.visible(enemy->cell)) return attack(ids, target);
     auto kind = buildingAt(c) ? OrderKind::Interact : OrderKind::Move;
     for (const auto& node : crystals()) if (node.contains(c) && node.remaining > 0 && crystalVisible(node)) kind = OrderKind::Gather;
     return order(ids, kind, c);
@@ -139,7 +145,7 @@ bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKi
     for (EntityId id : ids) {
         auto* u = mutableEntity(id);
         if (!u || u->owner != actor || std::any_of(members.begin(), members.end(), [&](const auto& m) { return m.id == id; })) continue;
-        if (!u->definition.mobile && kind != OrderKind::Stop && kind != OrderKind::Hold) continue;
+        if (!u->definition.mobile && kind != OrderKind::Stop && kind != OrderKind::Hold && kind != OrderKind::AttackGround) continue;
         if (kind == OrderKind::AttackGround && (u->attackDamage() <= 0 || !u->definition.projectile ||
             u->definition.projectile->targeting != ProjectileTargeting::Point || u->definition.projectile->splashRadius <= 0)) continue;
         members.push_back({id, u->cell,
@@ -234,13 +240,10 @@ void Simulation::arrived(Unit& u) {
     }
     case UnitState::ToBuild: u.state = UnitState::Building; break;
     case UnitState::ToAbility: u.state = UnitState::UsingAbility; break;
-    case UnitState::ToHall: {
-        const auto* depot = building(u.targetBuilding);
-        if (depot && depot->complete() && depot->definition.acceptsCargo && depot->owner == u.owner) { mutableEconomy(u.owner).crystals += u.cargo; u.cargo = 0; }
-        u.state = UnitState::Idle;
-        if (u.repeatGather) seekCrystal(u);
+    case UnitState::ToHall:
+        // A mobile depot may have left the route's original destination.
+        returnCargo(u);
         break;
-    }
     default:
         u.state = UnitState::Idle;
         if (u.currentOrder.kind == OrderKind::Patrol &&
@@ -256,6 +259,13 @@ void Simulation::arrived(Unit& u) {
 void Simulation::tickUnit(Unit& u) {
     if (u.health <= 0) { issue(u, {OrderKind::Stop}); return; }
     tickAutocast(u);
+    if (u.state == UnitState::ToHall && --u.chaseTicks <= 0) {
+        u.chaseTicks = 15;
+        const auto* depot = entity(u.targetBuilding);
+        AbilityDefinition delivery; delivery.targeting = AbilityTargeting::Entity;
+        if (!depot || depot->health <= 0 || !depot->complete() || !depot->definition.acceptsCargo || depot->owner != u.owner ||
+            !abilityReach(u, delivery, depot->id, u.routeDestination)) { returnCargo(u); return; }
+    }
     if (u.currentOrder.kind == OrderKind::UseAbility) {
         const auto* ability = u.ability(u.currentOrder.abilityId);
         if (!ability || !canTargetAbility(u, *ability, u.currentOrder.target)) { issue(u, {OrderKind::Stop}); return; }
@@ -290,8 +300,7 @@ void Simulation::tickUnit(Unit& u) {
     if (u.state == UnitState::Building) {
         auto* b = mutableBuilding(u.targetBuilding);
         if (!b || b->complete()) { u.state = UnitState::Idle; return; }
-        const auto positions = perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement);
-        if (std::find(positions.begin(), positions.end(), u.cell) == positions.end()) { u.state = UnitState::Idle; return; }
+        if (!constructionReach(u, b->definition, b->origin)) { u.state = UnitState::Idle; return; }
         advanceConstruction(*b);
         if (b->complete() || b->definition.constructionMode == ConstructionMode::Summoning)
             issue(u, {OrderKind::Stop});

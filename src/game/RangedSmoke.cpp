@@ -36,7 +36,7 @@ void GameApplication::exerciseRangedCombat() {
     if (!site) throw std::runtime_error("Ranged smoke: barracks construction failed");
     for (int t = 0; t < 120; ++t) game_.tick();
     ui_ = {}; ui_.selection.ids = {*site};
-    onMessage(WM_KEYDOWN,'E',0); onMessage(WM_KEYDOWN,'T',0);
+    onMessage(WM_KEYDOWN,'Y',0); onMessage(WM_KEYDOWN,'E',0); onMessage(WM_KEYDOWN,'T',0);
     const auto& jobs = game_.building(*site)->production;
     if (jobs.size() != 2 || jobs[0].definitionId != "church.slinger" || jobs[1].definitionId != "church.catapult")
         throw std::runtime_error("Ranged smoke: recruitment keys ignored roster");

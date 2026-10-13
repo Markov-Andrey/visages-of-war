@@ -63,8 +63,8 @@ EntityDefinition parseEntity(const Json& j) {
     else if (movement == "amphibious") e.movement = MovementType::Amphibious;
     else if (movement == "flying") e.movement = MovementType::Flying;
     else throw std::runtime_error("Unknown movement type: " + movement);
-    const auto& worker = j.at("worker"); fields(worker, {"builder", "carryCapacity"});
-    e.canBuild = worker.at("builder").get<bool>(); e.carryCapacity = number(worker.at("carryCapacity"), 0, 1000000);
+    const auto& worker = j.at("worker"); fields(worker, {"builds", "carryCapacity"});
+    e.buildableTypes = worker.at("builds").get<std::vector<std::string>>(); e.canBuild = !e.buildableTypes.empty(); e.carryCapacity = number(worker.at("carryCapacity"), 0, 1000000);
     const auto& construction = j.at("construction"); fields(construction, {"enabled", "ticks"}, {"mode"});
     e.constructible = construction.at("enabled").get<bool>(); e.constructionTicks = number(construction.at("ticks"), 1, 1000000);
     if (construction.contains("mode")) {
@@ -76,7 +76,7 @@ EntityDefinition parseEntity(const Json& j) {
     const auto& production = j.at("production"); fields(production, {"trainingTicks", "trains"});
     e.trainingTicks = number(production.at("trainingTicks"), 1, 1000000);
     const auto& trains = production.at("trains");
-    if (!trains.is_array() || trains.size() > 3) throw std::runtime_error("Production supports up to three unit types");
+    if (!trains.is_array()) throw std::runtime_error("Expected production array");
     std::set<std::string> choices;
     for (const auto& value : trains) {
         auto id = string(value);
@@ -126,10 +126,7 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     fields(abilities, {"version", "abilities"}); version(abilities);
     if (!abilities.at("abilities").is_array()) throw std::runtime_error("Expected ability array");
     for (const auto& j : abilities.at("abilities")) {
-        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks"}, {"harvest", "repair", "autocast", "rightClick", "animation", "targets", "range"});
-        const bool gathering = j.contains("harvest");
-        const bool repairing = j.contains("repair");
-        if (gathering && repairing) throw std::runtime_error("Ability must have a single effect");
+        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks", "effects"}, { "autocast", "rightClick", "animation", "targets", "range"});
         const auto targeting = string(j.at("targeting"));
         AbilityDefinition ability{number(j.at("id"), 1, 1000000), string(j.at("name")), string(j.at("description")),
             number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), 0, 1000000)};
@@ -139,10 +136,6 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         else if (targeting == "unit") ability.targeting = AbilityTargeting::Unit;
         else if (targeting == "entity") ability.targeting = AbilityTargeting::Entity;
         else throw std::runtime_error("Unknown ability targeting");
-        if (gathering && ability.targeting != AbilityTargeting::Crystal)
-            throw std::runtime_error("Harvest requires crystal targets");
-        if (repairing && (ability.targeting == AbilityTargeting::None || ability.targeting == AbilityTargeting::Crystal))
-            throw std::runtime_error("Repair requires entity targets");
         if (j.contains("targets")) {
             const auto& t = j.at("targets"); fields(t, {"relations", "damagedOnly", "completedOnly", "allowSelf"});
             if (!t.at("relations").is_array() || t.at("relations").empty()) throw std::runtime_error("Expected target relations");
@@ -169,19 +162,23 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
             else if (animation == "stand") ability.animation = AbilityAnimation::Stand;
             else throw std::runtime_error("Unknown ability animation");
         }
-        if (repairing) {
-            const auto& r = j.at("repair"); fields(r, {"constructionTimePercent", "constructionCostPercent"});
-            ability.repair = RepairDefinition{number(r.at("constructionTimePercent"), 1, 1000),
-                number(r.at("constructionCostPercent"), 0, 1000)};
-        }
         if (j.contains("autocast")) {
             const auto& a = j.at("autocast"); fields(a, {"radius", "scanIntervalTicks", "enabledByDefault", "condition"});
             if (string(a.at("condition")) != "stopped") throw std::runtime_error("Unknown autocast condition");
             ability.autocast = AutocastDefinition{real(a.at("radius"), .1f, 64), number(a.at("scanIntervalTicks"), 1, 3600),
                 a.at("enabledByDefault").get<bool>(), AutocastCondition::Stopped};
         }
-        if (gathering) {
-            const auto& h = j.at("harvest"); fields(h, {"credit", "intervalTicks", "amount"}, {"effect"});
+        if (!j.at("effects").is_array()) throw std::runtime_error("Expected effect array");
+        for (const auto& effect : j.at("effects")) {
+            const auto kind = string(effect.at("type"));
+            const auto to = string(effect.at("recipient"));
+            if (to != "target" && to != "caster") throw std::runtime_error("Unknown effect recipient");
+            const auto recipient = to == "caster" ? EffectRecipient::Caster : EffectRecipient::Target;
+            if (kind == "harvest") {
+                fields(effect, {"type", "recipient", "credit", "intervalTicks", "amount"}, {"effect"});
+                if (recipient != EffectRecipient::Target || ability.targeting != AbilityTargeting::Crystal)
+                    throw std::runtime_error("Harvest requires a crystal target");
+                const auto& h = effect;
             HarvestDefinition harvest;
             const auto credit = string(h.at("credit"));
             if (credit == "direct") harvest.credit = HarvestCredit::Direct;
@@ -190,14 +187,27 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
             harvest.amount = number(h.at("amount"), 1, 1000000);
             if (h.contains("effect")) {
                 const auto& visual = h.at("effect"); fields(visual, {"color", "width", "arcHeight"});
-                auto& effect = harvest.effect.emplace();
+                auto& visualEffect = harvest.effect.emplace();
                 const auto& rgb = visual.at("color");
                 if (!rgb.is_array() || rgb.size() != 3) throw std::runtime_error("Harvest color requires RGB components");
-                effect.color = (number(rgb[0], 0, 255) << 16) | (number(rgb[1], 0, 255) << 8) | number(rgb[2], 0, 255);
-                effect.width = real(visual.at("width"), .1f, 8);
-                effect.arcHeight = real(visual.at("arcHeight"), 0, 128);
+                visualEffect.color = (number(rgb[0], 0, 255) << 16) | (number(rgb[1], 0, 255) << 8) | number(rgb[2], 0, 255);
+                visualEffect.width = real(visual.at("width"), .1f, 8);
+                visualEffect.arcHeight = real(visual.at("arcHeight"), 0, 128);
             }
-            ability.harvest = harvest;
+                ability.effects.emplace_back(harvest, recipient);
+            } else if (kind == "repair" || kind == "restoreHealth" || kind == "restoreMana") {
+                if (recipient == EffectRecipient::Target && (ability.targeting == AbilityTargeting::None || ability.targeting == AbilityTargeting::Crystal))
+                    throw std::runtime_error("Entity effect requires an entity recipient");
+                if (kind == "repair") {
+                    fields(effect, {"type", "recipient", "constructionTimePercent", "constructionCostPercent"});
+                    ability.effects.emplace_back(RepairDefinition{number(effect.at("constructionTimePercent"), 1, 1000),
+                        number(effect.at("constructionCostPercent"), 0, 1000)}, recipient);
+                } else {
+                    fields(effect, {"type", "recipient", "amount"});
+                    ability.effects.emplace_back(RestoreDefinition{kind == "restoreHealth" ? RestoredStat::Health : RestoredStat::Mana,
+                        number(effect.at("amount"), 1, 1000000)}, recipient);
+                }
+            } else throw std::runtime_error("Unknown ability effect: " + kind);
         }
         for (const auto& previous : result.abilities_) if (previous.id == ability.id) throw std::runtime_error("Duplicate ability ID");
         result.abilities_.push_back(std::move(ability));
@@ -225,14 +235,13 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
                 auto entity = parseEntity(j);
                 if (j.contains("abilities")) {
                     const auto& ids = j.at("abilities");
-                    if (!ids.is_array() || ids.size() > 3)
-                        throw std::runtime_error("Entities support up to three active abilities");
+                    if (!ids.is_array()) throw std::runtime_error("Expected ability array");
                     std::set<int> unique;
                     for (const auto& value : ids) {
                         const int id = number(value, 1, 1000000);
                         if (!unique.insert(id).second) throw std::runtime_error("Duplicate entity ability");
                         const auto& ability = result.ability(id);
-                        if (ability.harvest && ability.harvest->credit == HarvestCredit::Cargo && entity.carryCapacity == 0)
+                        if (ability.usesCargo() && entity.carryCapacity == 0)
                             throw std::runtime_error("Cargo harvesting requires positive carryCapacity");
                         entity.abilities.push_back(ability);
                     }
@@ -248,6 +257,9 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     }
     if (result.entities_.empty()) throw std::runtime_error("No entities");
     for (const auto& e : result.entities_) {
+        std::set<std::string> builds;
+        for (const auto& id : e.buildableTypes)
+            if (!result.entity(id).constructible || !builds.insert(id).second) throw std::runtime_error("Invalid construction choice: " + id);
         for (const auto& id : e.trainableUnits) {
             const auto& unit = result.entity(id);
             if (unit.collision != CollisionShape::Circle || unit.width != 1 || unit.height != 1)

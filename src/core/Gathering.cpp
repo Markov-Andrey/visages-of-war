@@ -2,56 +2,46 @@
 #include <algorithm>
 
 namespace rts {
-void Simulation::harvest(Unit& u) {
-    if (!activePlayer(u.owner) || u.state != UnitState::Harvesting || u.targetCrystal < 0 || !u.harvestAbility()) return;
-    auto& crystal = scenario_.crystals[static_cast<size_t>(u.targetCrystal)];
-    if (!crystalVisibleTo(u.owner, crystal)) { issue(u, {OrderKind::Stop}); return; }
-    const auto ability = *u.harvestAbility()->harvest;
-    const bool direct = ability.credit == HarvestCredit::Direct;
-    if (crystal.remaining > 0 && ++u.harvestTicks >= ability.intervalTicks) {
-        u.harvestTicks = 0;
-        const int amount = std::min({ability.amount, crystal.remaining,
-            direct ? crystal.remaining : std::max(0, u.definition.carryCapacity - u.cargo)});
-        crystal.remaining -= amount;
-        if (direct) {
-            mutableEconomy(u.owner).crystals += amount;
-            if (amount > 0) events_.emplace_back(CrystalsHarvested{u.id, u.owner, u.position, unitHeight(u), amount, clock_.elapsedTicks()});
-        }
-        else u.cargo += amount;
-        if (crystal.remaining == 0)
-            for (int y = 0; y < crystal.height; ++y) for (int x = 0; x < crystal.width; ++x)
-                scenario_.map.release(crystal.cell + Cell{x, y});
-    }
-    if (crystal.remaining == 0 || (!direct && u.cargo >= u.definition.carryCapacity)) {
-        if (!direct && u.cargo > 0) returnCargo(u); else seekCrystal(u);
-    }
-    if (u.state == UnitState::Harvesting) u.abilityAnimation.sustain(*u.harvestAbility(), u.definition);
+void Simulation::harvest(Entity& u, const HarvestDefinition& effect, AbilityEffectState& state) {
+    auto& node = scenario_.crystals[static_cast<size_t>(u.targetCrystal)];
+    if (++state.ticks < effect.intervalTicks) return;
+    state.ticks = 0;
+    const bool direct = effect.credit == HarvestCredit::Direct;
+    const int amount = std::min({effect.amount, node.remaining,
+        direct ? node.remaining : std::max(0, u.definition.carryCapacity - u.cargo)});
+    node.remaining -= amount;
+    if (direct) {
+        mutableEconomy(u.owner).crystals += amount;
+        if (amount > 0) events_.emplace_back(CrystalsHarvested{u.id, u.owner, u.position, unitHeight(u), amount, clock_.elapsedTicks()});
+    } else u.cargo += amount;
+    if (node.remaining == 0)
+        for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
+            scenario_.map.release(node.cell + Cell{x, y});
 }
 bool Simulation::returnCargo(Unit& u) {
-    if (!u.definition.mobile) {
-        u.state = UnitState::Idle; u.route.clear(); u.next = 0;
-        for (const auto& b : buildings_) if (b.health > 0 && b.complete() && b.definition.acceptsCargo && b.owner == u.owner) {
-            AbilityDefinition delivery; delivery.targeting = AbilityTargeting::Entity;
-            if (abilityReach(u, delivery, b.id, u.position)) {
-                mutableEconomy(u.owner).crystals += u.cargo; u.cargo = 0;
-                if (u.repeatGather) seekCrystal(u);
-                return true;
-            }
-        }
-        return false;
-    }
+    AbilityDefinition delivery; delivery.targeting = AbilityTargeting::Entity;
     std::optional<Path> best;
     EntityId depot{};
-    for (const auto& b : buildings_) {
-        if (!b.complete() || !b.definition.acceptsCargo || b.owner != u.owner) continue;
-        auto path = findUnitPath(map(), u.position, perimeter(map(), b.origin, b.definition.width, b.definition.height, u.definition.movement), unitObstacles(u, true), u.definition.collisionRadius, u.definition.movement);
-        if (!path) path = findUnitPath(map(), u.position, perimeter(map(), b.origin, b.definition.width, b.definition.height, u.definition.movement), {}, u.definition.collisionRadius, u.definition.movement);
+    for (const auto* candidate : entities()) {
+        const auto& b = *candidate;
+        if (b.id == u.id || b.health <= 0 || !b.complete() || !b.definition.acceptsCargo || b.owner != u.owner) continue;
+        if (abilityReach(u, delivery, b.id, u.position)) {
+            mutableEconomy(u.owner).crystals += u.cargo; u.cargo = 0;
+            u.route.clear(); u.next = 0; u.state = UnitState::Idle; u.targetBuilding = 0;
+            if (u.repeatGather) seekCrystal(u);
+            return true;
+        }
+        if (!u.definition.mobile) continue;
+        const auto positions = abilityPositions(u, delivery, b.id);
+        auto path = findUnitPath(map(), u.position, positions, unitObstacles(u, true), u.definition.collisionRadius, u.definition.movement);
+        if (!path) path = findUnitPath(map(), u.position, positions, {}, u.definition.collisionRadius, u.definition.movement);
         if (path && (!best || path->cost < best->cost)) { best = std::move(path); depot = b.id; }
     }
-    if (!best) { u.state = UnitState::Idle; u.route.clear(); setMessage(L"Нет пути к ратуше. Груз сохранён."); return false; }
-    u.targetBuilding = depot;
-    const Cell goal = best->cells.back();
-    return setRoute(u, std::span<const Cell>(&goal, 1), UnitState::ToHall);
+    u.route.clear(); u.next = 0;
+    if (!best) { u.state = UnitState::Idle; setMessage(L"Нет пути к складу. Груз сохранён."); return false; }
+    u.targetBuilding = depot; u.chaseTicks = 15;
+    followPath(u, std::move(*best), UnitState::ToHall);
+    return true;
 }
 bool Simulation::seekCrystal(Unit& u) {
     u.route.clear(); u.next = 0; u.blockedTicks = 0;

@@ -115,7 +115,8 @@ struct GameplayUi {
     bool consoleOpen{};
     std::wstring consoleInput, consoleReply;
     bool rallyMode{};
-    bool buildMenu{};
+    bool buildMenu{}, productionMenu{};
+    size_t abilityPage{}, buildPage{}, productionPage{};
     std::optional<OrderKind> orderMode;
     int pendingAbility{};
     std::string commandGroup;
@@ -126,7 +127,8 @@ inline bool commandEnabled(const Simulation& game, const GameplayUi& ui, UnitCom
     const bool wholeSelection = std::any_of(unitCommands.begin(), unitCommands.end(), [&](const auto& entry) {
         return entry.command == command && entry.scope == CommandScope::Selection;
     });
-    const auto ids = wholeSelection ? ui.selection.ids : ui.selection.activeGroup(game).ids;
+    auto ids = wholeSelection ? ui.selection.ids : ui.selection.activeGroup(game).ids;
+    if (ids.empty() && ui.selection.ids.size() == 1) ids = ui.selection.ids;
     return std::any_of(ids.begin(), ids.end(), [&](EntityId id) {
         const auto* unit = game.entity(id);
         return unit && unit->owner == game.player().id && unit->health > 0 && commandCapable(*unit, command);
@@ -142,16 +144,16 @@ inline std::vector<EntityId> abilityRecipients(const Simulation& game, const Gam
     if (ids.empty()) if (const auto* e = activeAbilityEntity(game, ui)) ids.push_back(e->id);
     return ids;
 }
-inline wchar_t abilityKey(const Simulation& game, const GameplayUi& ui, size_t index) {
-    constexpr std::array buildingKeys{L'Z', L'C', L'V'};
-    const auto* e = activeAbilityEntity(game, ui);
-    return e && game.building(e->id) ? buildingKeys[index] : abilityKeys[index];
+inline wchar_t abilityKey(const Simulation&, const GameplayUi&, size_t index) {
+    return abilityKeys[index];
 }
-inline constexpr size_t buildingAbilityStopSlot = 6;
+inline constexpr size_t buildingAbilityStopSlot = 1;
+inline constexpr size_t abilityPageSlot = 11, productionMenuSlot = 12, previousPageSlot = 13, nextPageSlot = 14;
 inline const AbilityDefinition* abilityCommandAt(const Simulation& game, const GameplayUi& ui, size_t slot) {
-    if (ui.buildMenu || slot < firstAbilitySlot || slot >= firstAbilitySlot + abilityKeys.size()) return nullptr;
+    if (ui.buildMenu || ui.productionMenu || slot < firstAbilitySlot || slot >= firstAbilitySlot + abilityKeys.size()) return nullptr;
     const auto* unit = activeAbilityEntity(game, ui);
-    const auto index = slot - firstAbilitySlot;
+    const auto pages = unit ? (unit->definition.abilities.size() + abilityKeys.size() - 1) / abilityKeys.size() : 0;
+    const auto index = (pages ? ui.abilityPage % pages : 0) * abilityKeys.size() + slot - firstAbilitySlot;
     return unit && index < unit->definition.abilities.size() ? &unit->definition.abilities[index] : nullptr;
 }
 enum class AutocastState { Off, On, Mixed };
@@ -174,11 +176,41 @@ inline bool toggleAutocast(Simulation& game, const GameplayUi& ui, size_t slot) 
     for (auto id : abilityRecipients(game, ui)) changed = game.setAutocast(id, ability->id, enabled) || changed;
     return changed;
 }
+inline std::vector<const EntityDefinition*> buildChoices(const Simulation& game, const GameplayUi& ui) {
+    const auto* e = activeAbilityEntity(game, ui);
+    return e ? game.buildingTypes(e->definition) : std::vector<const EntityDefinition*>{};
+}
+inline size_t commandPageCount(const Simulation& game, const GameplayUi& ui) {
+    const auto* e = activeAbilityEntity(game, ui);
+    const auto count = ui.buildMenu ? buildChoices(game, ui).size() :
+        ui.productionMenu && e ? e->definition.trainableUnits.size() : 0;
+    return (count + 2) / 3;
+}
+inline const EntityDefinition* catalogCommandAt(const Simulation& game, const GameplayUi& ui, size_t slot) {
+    if (!ui.buildMenu && !ui.productionMenu) return nullptr;
+    const auto pages = commandPageCount(game, ui);
+    if (!pages || (ui.buildMenu ? slot >= 3 : slot > 4 || slot % 2)) return nullptr;
+    const auto page = (ui.buildMenu ? ui.buildPage : ui.productionPage) % pages;
+    const auto index = page * 3 + (ui.buildMenu ? slot : slot / 2);
+    if (ui.buildMenu) {
+        const auto choices = buildChoices(game, ui);
+        return index < choices.size() ? choices[index] : nullptr;
+    }
+    const auto* e = activeAbilityEntity(game, ui);
+    return e && index < e->definition.trainableUnits.size() ? &game.entityType(e->definition.trainableUnits[index]) : nullptr;
+}
 inline bool unitCommandVisible(const Simulation& game, const GameplayUi& ui, size_t slot) {
+    const auto* e = activeAbilityEntity(game, ui);
+    if (!e) return false;
+    if (slot == backCommandSlot) return ui.buildMenu || ui.productionMenu || ui.orderMode || ui.rallyMode || !ui.placement.empty();
+    if (ui.buildMenu || ui.productionMenu) {
+        if (slot == previousPageSlot || slot == nextPageSlot) return commandPageCount(game, ui) > 1;
+        if (ui.productionMenu && (slot == 1 || slot == 5)) return slot == 1 || !e->production.empty();
+        return catalogCommandAt(game, ui, slot) != nullptr;
+    }
+    if (slot == abilityPageSlot) return e->definition.abilities.size() > abilityKeys.size();
+    if (slot == productionMenuSlot) return !e->definition.trainableUnits.empty();
     if (abilityCommandAt(game, ui, slot)) return true;
-    if (!activeAbilityEntity(game, ui)) return false;
-    if (slot == backCommandSlot) return ui.buildMenu || ui.orderMode || !ui.placement.empty();
-    if (ui.buildMenu) return slot < 3 && slot < game.buildingTypes().size() && commandEnabled(game, ui, UnitCommand::Build);
     const auto* command = unitCommandAt(slot);
     return command && commandEnabled(game, ui, command->command);
 }
@@ -188,8 +220,8 @@ inline std::vector<EntityId> commandRecipients(const Simulation& game, const Gam
         return e && ui.commandGroup == e->definitionId ? abilityRecipients(game, ui) : std::vector<EntityId>{};
     }
     for (const auto& command : unitCommands) if (command.order == order && command.scope == CommandScope::ActiveGroup) {
-        const auto group = ui.selection.activeGroup(game);
-        return ui.commandGroup.empty() || ui.commandGroup == group.type ? group.ids : std::vector<EntityId>{};
+        const auto* e = activeAbilityEntity(game, ui);
+        return e && (ui.commandGroup.empty() || ui.commandGroup == e->definitionId) ? abilityRecipients(game, ui) : std::vector<EntityId>{};
     }
     return ui.selection.ids;
 }

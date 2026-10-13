@@ -231,7 +231,7 @@ void GameApplication::exerciseUnitCommands() {
     ui_ = {}; ui_.selection.ids = {first, second};
     game_.stop(ui_.selection.ids);
     const auto* repair = rts::abilityCommandAt(game_, ui_, rts::firstAbilitySlot);
-    if (!repair || !repair->repair || !repair->autocast) throw std::runtime_error("Repair: worker ability missing");
+    if (!repair || !repair->repair() || !repair->autocast) throw std::runtime_error("Repair: worker ability missing");
     const int repairId = repair->id;
     const rts::Vec2 buttonPoint{abilityButton.x + 28, abilityButton.y + 28};
     onMessage(WM_RBUTTONDOWN, 0, at(buttonPoint));
@@ -337,17 +337,41 @@ void GameApplication::exerciseUnitCommands() {
     casterBuilding.definition.abilities = {definitions_.ability(1), definitions_.ability(4)};
     casterBuilding.definition.maximumMana = casterBuilding.mana = 50;
     ui_.selection.ids = {casterBuilding.id}; clearCommandMode();
-    onMessage(WM_KEYDOWN, 'Z', 0);
+    onMessage(WM_KEYDOWN, 'Q', 0);
     if (casterBuilding.mana != 25 || casterBuilding.abilityCooldown(1) != 150)
         throw std::runtime_error("Building ability hotkey did not use shared mana and cooldown");
     const auto autocastButton = layout.commands[rts::firstAbilitySlot + 1];
     onMessage(WM_RBUTTONDOWN, 0, at({autocastButton.x + 10, autocastButton.y + 10}));
     if (!casterBuilding.autocastEnabled(4)) throw std::runtime_error("Building autocast button failed");
-    onMessage(WM_KEYDOWN, 'C', 0);
+    onMessage(WM_KEYDOWN, 'W', 0);
     if (ui_.orderMode != rts::OrderKind::UseAbility || ui_.pendingAbility != 4)
         throw std::runtime_error("Building targeted ability hotkey failed");
     onMessage(WM_KEYDOWN, 'S', 0);
     if (ui_.orderMode || casterBuilding.currentOrder.kind != rts::OrderKind::Stop)
         throw std::runtime_error("Building stop failed");
+    casterBuilding.definition.abilities.clear(); casterBuilding.mana = 50;
+    for (int i = 0; i < 8; ++i) {
+        auto pageAbility = definitions_.ability(1); pageAbility.id = 2000 + i; pageAbility.manaCost = 1;
+        casterBuilding.definition.abilities.push_back(pageAbility);
+    }
+    ui_.abilityPage = 0;
+    onMessage(WM_KEYDOWN, 'F', 0); onMessage(WM_KEYDOWN, 'F', 0); onMessage(WM_KEYDOWN, 'Q', 0);
+    if (casterBuilding.abilityCooldown(2006) != 150 || casterBuilding.mana != 49)
+        throw std::runtime_error("Ability page hotkeys cannot reach the seventh ability");
+    const auto pageButton = layout.commands[rts::abilityPageSlot];
+    click({pageButton.x + 10, pageButton.y + 10});
+    const auto pagedAbilityButton = layout.commands[rts::firstAbilitySlot];
+    click({pagedAbilityButton.x + 10, pagedAbilityButton.y + 10});
+    if (casterBuilding.abilityCooldown(2000) != 150 || casterBuilding.mana != 48)
+        throw std::runtime_error("Ability page mouse controls failed to wrap");
+    casterBuilding.definition.trainableUnits = {"church.worker", "church.peacemaker", "church.slinger", "church.catapult"};
+    ui_.productionPage = 0;
+    onMessage(WM_KEYDOWN, 'Y', 0); onMessage(WM_KEYDOWN, 'N', 0);
+    if (!rts::catalogCommandAt(game_, ui_, 0) || rts::catalogCommandAt(game_, ui_, 0)->id != "church.catapult")
+        throw std::runtime_error("Production keyboard page cannot reach the fourth type");
+    const auto previous = layout.commands[rts::previousPageSlot]; click({previous.x + 10, previous.y + 10});
+    if (rts::catalogCommandAt(game_, ui_, 0)->id != "church.worker") throw std::runtime_error("Production mouse page failed");
+    clearCommandMode();
+
 }
 }

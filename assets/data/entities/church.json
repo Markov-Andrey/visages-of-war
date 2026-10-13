@@ -26,7 +26,7 @@
         "formationPriority": 3
       },
       "worker": {
-        "builder": true,
+        "builds": ["church.hall", "church.barracks"],
         "carryCapacity": 0
       },
       "construction": {
@@ -195,7 +195,7 @@
         "formationPriority": 1
       },
       "worker": {
-        "builder": false,
+        "builds": [],
         "carryCapacity": 0
       },
       "construction": {
@@ -357,7 +357,7 @@
         "formationPriority": 1
       },
       "worker": {
-        "builder": false,
+        "builds": [],
         "carryCapacity": 0
       },
       "construction": {
@@ -519,7 +519,7 @@
         "formationPriority": 1
       },
       "worker": {
-        "builder": false,
+        "builds": [],
         "carryCapacity": 0
       },
       "construction": {
@@ -878,7 +878,7 @@
         "formationPriority": 1
       },
       "worker": {
-        "builder": false,
+        "builds": [],
         "carryCapacity": 0
       },
       "construction": {
@@ -972,7 +972,7 @@
         "formationPriority": 2
       },
       "worker": {
-        "builder": false,
+        "builds": [],
         "carryCapacity": 0
       },
       "construction": {
@@ -1028,7 +1028,7 @@
         "formationPriority": 2
       },
       "worker": {
-        "builder": false,
+        "builds": [],
         "carryCapacity": 0
       },
       "construction": {
@@ -1248,7 +1248,7 @@
         "formationPriority": 3
       },
       "worker": {
-        "builder": false,
+        "builds": [],
         "carryCapacity": 0
       },
       "construction": {

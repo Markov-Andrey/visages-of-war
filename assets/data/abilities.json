@@ -8,7 +8,8 @@
       "targeting": "none",
       "animation": "attack",
       "manaCost": 25,
-      "cooldownTicks": 150
+      "cooldownTicks": 150,
+      "effects": []
     },
     {
       "id": 2,
@@ -18,16 +19,6 @@
       "animation": "work",
       "manaCost": 0,
       "cooldownTicks": 0,
-      "harvest": {
-        "credit": "direct",
-        "intervalTicks": 300,
-        "amount": 7,
-        "effect": {
-          "color": [255, 196, 106],
-          "width": 1.2,
-          "arcHeight": 12
-        }
-      },
       "rightClick": true,
       "targets": {
         "relations": [
@@ -36,7 +27,25 @@
         "damagedOnly": false,
         "completedOnly": false,
         "allowSelf": false
-      }
+      },
+      "effects": [
+        {
+          "type": "harvest",
+          "recipient": "target",
+          "credit": "direct",
+          "intervalTicks": 300,
+          "amount": 7,
+          "effect": {
+            "color": [
+              255,
+              196,
+              106
+            ],
+            "width": 1.2,
+            "arcHeight": 12
+          }
+        }
+      ]
     },
     {
       "id": 3,
@@ -46,11 +55,6 @@
       "animation": "work",
       "manaCost": 0,
       "cooldownTicks": 0,
-      "harvest": {
-        "credit": "cargo",
-        "intervalTicks": 10,
-        "amount": 1
-      },
       "rightClick": true,
       "targets": {
         "relations": [
@@ -59,7 +63,16 @@
         "damagedOnly": false,
         "completedOnly": false,
         "allowSelf": false
-      }
+      },
+      "effects": [
+        {
+          "type": "harvest",
+          "recipient": "target",
+          "credit": "cargo",
+          "intervalTicks": 10,
+          "amount": 1
+        }
+      ]
     },
     {
       "id": 4,
@@ -70,16 +83,20 @@
       "animation": "work",
       "manaCost": 0,
       "cooldownTicks": 0,
-      "repair": {
-        "constructionTimePercent": 75,
-        "constructionCostPercent": 50
-      },
       "autocast": {
         "radius": 8,
         "scanIntervalTicks": 15,
         "enabledByDefault": false,
         "condition": "stopped"
-      }
+      },
+      "effects": [
+        {
+          "type": "repair",
+          "recipient": "target",
+          "constructionTimePercent": 75,
+          "constructionCostPercent": 50
+        }
+      ]
     }
   ]
 }

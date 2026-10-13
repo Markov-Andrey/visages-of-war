@@ -152,8 +152,8 @@ void Simulation::replanMovement() {
                 if (const auto* ability = u->ability(u->currentOrder.abilityId))
                     goals = abilityPositions(*u, *ability, u->currentOrder.target);
             } else if (u->state == UnitState::ToHall) {
-                if (const auto* depot = building(u->targetBuilding))
-                    goals = perimeter(map(), depot->origin, depot->definition.width, depot->definition.height, u->definition.movement);
+                AbilityDefinition delivery; delivery.targeting = AbilityTargeting::Entity;
+                goals = abilityPositions(*u, delivery, u->targetBuilding);
             } else if (u->targetCrystal >= 0) {
                 const auto& node = crystals()[u->targetCrystal];
                 goals = perimeter(map(), node.cell, node.width, node.height, u->definition.movement);

@@ -42,8 +42,8 @@ void Renderer::drawUnitStats(const Unit& unit, UiRect b) {
     if (unit.hero) {
         extra = L"Уровень " + std::to_wstring(unit.level()) + (unit.atMaxLevel() ? L"  ·  Максимум" :
             L"  ·  Опыт " + std::to_wstring(unit.experienceInLevel()) + L" / " + std::to_wstring(unit.experienceToLevel()));
-    } else if (selectedHarvest && selectedHarvest->harvest->credit == HarvestCredit::Direct) {
-        const auto harvest = *selectedHarvest->harvest;
+    } else if (selectedHarvest && selectedHarvest->harvest()->credit == HarvestCredit::Direct) {
+        const auto harvest = *selectedHarvest->harvest();
         extra = L"Добыча  " + amount(float(harvest.amount) * Simulation::ticksPerSecond / harvest.intervalTicks) + L" кр/с";
     } else if (d.carryCapacity > 0) {
         extra = L"Кристаллы  " + std::to_wstring(unit.cargo) + L" / " + std::to_wstring(d.carryCapacity);

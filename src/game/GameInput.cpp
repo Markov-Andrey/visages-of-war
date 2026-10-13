@@ -30,7 +30,7 @@ rts::CursorKind GameApplication::cursorKind() const {
     if (panning_) return CursorKind::Move;
     if (const auto edge = cameraEdgeDirection(); edge != rts::Vec2{}) return rts::scrollCursor(edge);
     const rts::BattleLayout layout(renderer_.size());
-    const auto* building = selectedBuilding();
+    const auto* building = selectedStructureOrProducer();
     for (size_t i = 0; i < rts::controlGroupCount; ++i)
         if (!ui_.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse_)) return CursorKind::Hand;
     const auto selected = [&](auto predicate) {
@@ -51,14 +51,7 @@ rts::CursorKind GameApplication::cursorKind() const {
             if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_) ||
                 (game_.unit(card.id)->maximumMana() > 0 && card.manaBar().contains(mouse_))) return CursorKind::Hand;
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) {
-            bool active = false;
-            if (rts::abilityCommandAt(game_, ui_, i)) active = true;
-            else if (building) active = (building->complete() && ((i == 1 && !building->definition.trainableUnits.empty()) ||
-                ((i == 0 || i == 2 || i == 4) && i / 2 < building->definition.trainableUnits.size()))) ||
-                (i == 5 && (!building->complete() || !building->production.empty())) ||
-                (i == rts::buildingAbilityStopSlot && !building->definition.abilities.empty()) ||
-                (i == rts::backCommandSlot && ui_.orderMode);
-            else active = rts::unitCommandVisible(game_, ui_, i);
+            const bool active = rts::unitCommandVisible(game_, ui_, i) || (building && !building->complete() && i == 5);
             return active ? CursorKind::Hand : CursorKind::Default;
         }
         return CursorKind::Default;
@@ -94,7 +87,7 @@ rts::CursorKind GameApplication::cursorKind() const {
         if (id && selected([&](const Entity& e) { return game_.contextualAbility(e, id) != nullptr; }))
             return game_.crystal(id) ? CursorKind::Gather : CursorKind::Target;
     }
-    if (building && (ui_.rallyMode || !building->definition.trainableUnits.empty())) {
+    if (building && (ui_.rallyMode || (!building->definition.mobile && !building->definition.trainableUnits.empty()))) {
         if (building->definition.trainableUnits.empty()) return CursorKind::Default;
         return target && std::all_of(building->definition.trainableUnits.begin(),building->definition.trainableUnits.end(),
             [&](const auto& id) { return game_.map().walkable(*target,game_.entityType(id).movement); }) ? CursorKind::Rally : CursorKind::Blocked;
@@ -113,7 +106,7 @@ rts::CursorKind GameApplication::cursorKind() const {
     }
     if (const auto id = rts::pickEntity(game_, view_, mouse_)) {
         const auto* site = game_.building(*id);
-        if (site && site->owner == game_.player().id && !site->complete() && selected([](const rts::Unit& u) { return u.definition.canBuild; })) return CursorKind::Build;
+        if (site && site->owner == game_.player().id && !site->complete() && selected([&](const rts::Unit& u) { return u.definition.canConstruct(site->definitionId); })) return CursorKind::Build;
         return CursorKind::Select;
     }
     if (selected([](const rts::Unit&) { return true; })) {
@@ -211,12 +204,12 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             const auto c = layout.minimapCell(mouse_, game_.map());
             if (!c) return 0;
             if (ui_.orderMode) executeTarget(*c);
-            else if (ui_.rallyMode && selectedBuilding()) { if (game_.setRally(selectedBuilding()->id, *c)) ui_.rallyMode = false; }
+            else if (ui_.rallyMode && selectedStructureOrProducer()) { if (game_.setRally(selectedStructureOrProducer()->id, *c)) ui_.rallyMode = false; }
             else { focus(rts::center(*c)); minimapDragging_ = true; SetCapture(window_); }
             return 0;
         }
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) { action(i); return 0; }
-        if (const auto* building = selectedBuilding()) {
+        if (const auto* building = selectedStructureOrProducer()) {
             const rts::ProductionQueueLayout queue(rts::SelectionPanelLayout(layout.info).content);
             if (const auto index = queue.pick(mouse_, building->production.size())) {
                 game_.cancelTraining(building->id, *index);
@@ -239,7 +232,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         if (ui_.rallyMode) {
-            if (const auto c = game_.map().pick(mouse_, view_)) if (const auto* b = selectedBuilding())
+            if (const auto c = game_.map().pick(mouse_, view_)) if (const auto* b = selectedStructureOrProducer())
                 if (game_.setRally(b->id, *c)) ui_.rallyMode = false;
             return 0;
         }
@@ -313,7 +306,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         if ((menu_.page == rts::MenuPage::Library || menu_.page == rts::MenuPage::BattleSetup) && colorSelectKey(wParam)) return 0;
         if (wParam == VK_ESCAPE) {
             if (menu_.page == rts::MenuPage::Playing) {
-                if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu) clearCommandMode();
+                if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu || ui_.productionMenu) clearCommandMode();
                 else menu_.page = rts::MenuPage::Main;
             }
             else if (menu_.commanderDropdown) menu_.commanderDropdown = false;
@@ -340,11 +333,6 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
             return 0;
         }
         if (unitHotkey(static_cast<unsigned>(wParam))) return 0;
-        if (wParam == 'Q' && selectedBuilding()) action(0);
-        if (wParam == 'R' && selectedBuilding()) action(1);
-        if (wParam == 'E' && selectedBuilding()) action(2);
-        if (wParam == 'T' && selectedBuilding()) action(4);
-        if (wParam == 'X' && selectedBuilding()) action(5);
         return 0;
     }
     return DefWindowProcW(window_, message, wParam, lParam);

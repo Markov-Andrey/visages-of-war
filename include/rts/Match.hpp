@@ -9,6 +9,7 @@
 #include <string_view>
 #include <optional>
 #include <vector>
+#include <variant>
 
 namespace rts {
 inline constexpr int simulationTicksPerSecond = 30;
@@ -141,18 +142,42 @@ struct AutocastDefinition {
 struct RepairDefinition {
     int constructionTimePercent = 75, constructionCostPercent = 50;
 };
+enum class EffectRecipient { Target, Caster };
+enum class RestoredStat { Health, Mana };
+struct RestoreDefinition { RestoredStat stat = RestoredStat::Health; int amount = 1; };
+struct AbilityEffect {
+    std::variant<HarvestDefinition, RepairDefinition, RestoreDefinition> value;
+    EffectRecipient recipient = EffectRecipient::Target;
+    AbilityEffect(HarvestDefinition effect, EffectRecipient to = EffectRecipient::Target) : value(effect), recipient(to) {}
+    AbilityEffect(RepairDefinition effect, EffectRecipient to = EffectRecipient::Target) : value(effect), recipient(to) {}
+    AbilityEffect(RestoreDefinition effect, EffectRecipient to = EffectRecipient::Target) : value(effect), recipient(to) {}
+};
 struct AbilityDefinition {
     int id{};
     std::string displayName, description;
     int manaCost{}, cooldownTicks{};
-    std::optional<HarvestDefinition> harvest;
+    std::vector<AbilityEffect> effects;
     AbilityTargeting targeting = AbilityTargeting::None;
-    std::optional<RepairDefinition> repair;
     std::optional<AutocastDefinition> autocast;
     bool rightClick{};
     std::optional<AbilityAnimation> animation;
     AbilityTargetFilter targets;
     float range{}; // Zero means physical contact; otherwise ground-plane distance from target bounds.
+    template<class T> const T* firstEffect() const {
+        for (const auto& effect : effects) if (const auto* value = std::get_if<T>(&effect.value)) return value;
+        return nullptr;
+    }
+    template<class T> T* firstEffect() {
+        for (auto& effect : effects) if (auto* value = std::get_if<T>(&effect.value)) return value;
+        return nullptr;
+    }
+    const HarvestDefinition* harvest() const { return firstEffect<HarvestDefinition>(); }
+    HarvestDefinition* harvest() { return firstEffect<HarvestDefinition>(); }
+    const RepairDefinition* repair() const { return firstEffect<RepairDefinition>(); }
+    bool usesCargo() const {
+        for (const auto& effect : effects) if (const auto* h = std::get_if<HarvestDefinition>(&effect.value); h && h->credit == HarvestCredit::Cargo) return true;
+        return false;
+    }
 };
 struct AbilityCooldown { int abilityId{}, remainingTicks{}; };
 struct ResourceCost { int crystals{}, supply{}; };
@@ -179,6 +204,10 @@ struct EntityDefinition {
     int maximumMana{};
     std::vector<AbilityDefinition> abilities; // Resolved from the separate ability catalog.
     bool canBuild = true;
+    std::vector<std::string> buildableTypes;
+    bool canConstruct(std::string_view type) const {
+        return canBuild && std::find(buildableTypes.begin(), buildableTypes.end(), type) != buildableTypes.end();
+    }
     MovementType movement = MovementType::Walking;
     int formationPriority = 1;
     int attackDamage = 0;
@@ -191,16 +220,16 @@ struct EntityDefinition {
     int level = 1;
     std::optional<HeroDefinition> hero;
     const AbilityDefinition* gatherAbility() const {
-        for (const auto& ability : abilities) if (ability.harvest) return &ability;
+        for (const auto& ability : abilities) if (ability.harvest()) return &ability;
         return nullptr;
     }
     AbilityDefinition* gatherAbility() {
-        for (auto& ability : abilities) if (ability.harvest) return &ability;
+        for (auto& ability : abilities) if (ability.harvest()) return &ability;
         return nullptr;
     }
     bool canGather() const { return gatherAbility() != nullptr; }
     const HarvestDefinition& harvesting() const {
-        return gatherAbility()->harvest.value();
+        return *gatherAbility()->harvest();
     }
     bool isWorker() const { return canBuild || canGather(); }
     // Construction and mobility are independent capabilities, not exclusive kinds.

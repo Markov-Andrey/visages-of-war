@@ -165,13 +165,14 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
             line(previous, next, 0xe5ce92, 1.5f); previous = next;
         }
     }
-    for (const auto& b : game.buildings()) if (rallyPointVisible(game, b, ui)) {
+    for (const auto* producer : game.entities()) if (rallyPointVisible(game, *producer, ui)) {
+        const auto& b = *producer;
         const auto p = view.project(center(b.rally), map.surfaceHeight(b.rally, center(b.rally)));
-        const auto start = view.project({b.origin.x + b.definition.width * .5f, b.origin.y + b.definition.height * .5f}, float(map.at(b.origin).height));
+        const auto start = view.project(b.position, game.unitHeight(b));
         for (int i = 0; i < 20; i += 2) line(start + (p - start) * (i / 20.0f), start + (p - start) * ((i + 1) / 20.0f), 0xb6d7ba, 1.5f);
     }
     // Rally markers are order indicators: terrain, entities and guide lines must not cover them.
-    for (const auto& b : game.buildings()) if (rallyPointVisible(game, b, ui)) drawRallyPoint(game, b, view);
+    for (const auto* b : game.entities()) if (rallyPointVisible(game, *b, ui)) drawRallyPoint(game, *b, view);
     nightActive_ = false;
     drawFloatingNotifications(game, view, ui.floatingNotifications);
     if (!ui.placement.empty() && hover) {

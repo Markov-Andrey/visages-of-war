@@ -51,7 +51,7 @@ void GameApplication::exerciseInspection() {
     focus(rts::center(building.origin), true);
     const auto bounds = rts::buildingBounds(game_, building, view_);
     click({bounds.x + bounds.width * .5f, bounds.y + bounds.height * .5f});
-    if (ui_.selection.ids != std::vector{building.id} || selectedBuilding()) throw std::runtime_error("Inspection: enemy building became controllable");
+    if (ui_.selection.ids != std::vector{building.id} || selectedStructureOrProducer()) throw std::runtime_error("Inspection: enemy building became controllable");
     const auto rally = building.rally;
     const auto balance = game_.storedCrystals();
     rejectControls();
@@ -147,10 +147,11 @@ void GameApplication::exerciseInspection() {
     if (depot.production.size() != 7 || game_.storedCrystals() != beforeEmpty)
         throw std::runtime_error("Queue: empty slot changed production");
     const auto last = depot.production.back();
-    onMessage(WM_KEYDOWN, 'X', 0);
+    onMessage(WM_KEYDOWN, 'Y', 0); onMessage(WM_KEYDOWN, 'D', 0);
     if (depot.production.size() != 6 || game_.storedCrystals() != beforeEmpty + last.paidCrystals / 2)
-        throw std::runtime_error("Queue: X did not cancel the last order with half refund");
+        throw std::runtime_error("Queue: production menu did not cancel the last order with half refund");
 
+    clearCommandMode();
     const auto site = game_.construct(std::array{game_.worker().id}, "church.barracks", {13, 12});
     if (!site) throw std::runtime_error("Cancellation: could not place construction fixture");
     const auto beforeCancel = game_.storedCrystals();

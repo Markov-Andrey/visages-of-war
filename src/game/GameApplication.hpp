@@ -28,7 +28,7 @@ private:
     void libraryScroll(int direction);
     bool libraryLinkAt(rts::Vec2 mouse) const;
     void advanceMenu(float elapsed);
-    const rts::Building* selectedBuilding() const;
+    const rts::Building* selectedStructureOrProducer() const;
     const rts::Crystal* selectedCrystal() const;
     void focus(rts::Vec2 world, bool immediate = false);
     void action(size_t index);

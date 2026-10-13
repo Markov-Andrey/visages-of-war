@@ -13,10 +13,10 @@ void spriteTests(TestSuite& test, const TestContext& context) {
             type.sprite.idle = 2; type.sprite.windup = {4, 5}; type.sprite.recovery = {6, 7};
             type.attackWindupTicks = type.attackRecoveryTicks = 4;
             AbilityDefinition ability{71 + effect, "Action", "", 5, 20}; ability.animation = AbilityAnimation::Attack;
-            if (effect == 1) { ability.targeting = AbilityTargeting::Building; ability.repair = RepairDefinition{75, 0}; }
+            if (effect == 1) { ability.targeting = AbilityTargeting::Building; ability.effects.emplace_back(RepairDefinition{75, 0}); }
             if (effect == 2) {
                 ability.targeting = AbilityTargeting::Crystal; ability.manaCost = ability.cooldownTicks = 0;
-                ability.harvest = HarvestDefinition{HarvestCredit::Direct, 1000, 1}; type.abilities = {ability}; type.abilities.front().targeting = AbilityTargeting::Crystal; type.abilities.front().targets.relations = {TargetRelation::Neutral};
+                ability.effects.emplace_back(HarvestDefinition{HarvestCredit::Direct, 1000, 1}); type.abilities = {ability}; type.abilities.front().targeting = AbilityTargeting::Crystal; type.abilities.front().targets.relations = {TargetRelation::Neutral};
             } else type.abilities = {ability};
             Scenario scene{Map(24, 24), {3, 3}, {3, 5}, {{{2, 5}, 1000}}}; scene.map.occupy({2, 5});
             auto game = makeTestSimulation(std::move(scene), {}, type);

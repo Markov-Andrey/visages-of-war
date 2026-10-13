@@ -4,18 +4,12 @@
 #include <limits>
 
 namespace rts {
-void Simulation::tickRepair(Unit& u) {
-    u.abilityWorking = false;
-    const auto* ability = u.ability(u.currentOrder.abilityId);
-    if (!ability || !ability->repair || !canTargetAbility(u, *ability, u.currentOrder.target)) {
-        issue(u, {OrderKind::Stop}); return;
-    }
-    auto* recipient = mutableEntity(u.currentOrder.target);
-    if (!recipient || !abilityReach(u, *ability, u.currentOrder.target, u.position)) return;
+void Simulation::tickRepair(Entity& u, const AbilityDefinition& ability, const RepairDefinition& repair, EntityId target, AbilityEffectState& state) {
+    auto* recipient = mutableEntity(target);
+    if (!recipient || recipient->health >= recipient->maximumHealth() || !abilityReach(u, ability, target, u.position)) return;
     const auto& definition = recipient->definition;
     auto& health = recipient->health;
     auto& credit = recipient->repairCredit;
-    const auto& repair = *ability->repair;
     const int productionTicks = definition.constructible ? definition.constructionTicks : definition.trainingTicks;
     const std::int64_t duration = std::max<std::int64_t>(1, (std::int64_t(productionTicks) * repair.constructionTimePercent + 99) / 100);
     const std::int64_t maximum = recipient->maximumHealth();
@@ -24,13 +18,13 @@ void Simulation::tickRepair(Unit& u) {
     auto& balance = mutableEconomy(u.owner).crystals;
     if (pricePerHealth > credit && balance == 0) return; // Wait without banking repair work or playing work animation.
     u.abilityWorking = true;
-    u.abilityAnimation.sustain(*ability, u.definition);
+    u.abilityAnimation.sustain(ability, u.definition);
     const Vec2 delta = recipient->position - u.position;
     const Cell facing{delta.x > .2f ? 1 : delta.x < -.2f ? -1 : 0, delta.y > .2f ? 1 : delta.y < -.2f ? -1 : 0};
     if (facing != Cell{}) u.facing = facing;
-    u.repairProgress += maximum;
-    std::int64_t restored = std::min(u.repairProgress / duration, maximum - health);
-    u.repairProgress %= duration;
+    state.progress += maximum;
+    std::int64_t restored = std::min(state.progress / duration, maximum - health);
+    state.progress %= duration;
     if (restored <= 0) return;
     const auto chargeFor = [&](std::int64_t health) {
         return (std::max<std::int64_t>(0, health * pricePerHealth - credit) + denominator - 1) / denominator;
@@ -45,6 +39,5 @@ void Simulation::tickRepair(Unit& u) {
     balance -= charge;
     credit += charge * denominator - restored * pricePerHealth;
     health += static_cast<int>(restored);
-    if (health == maximum) issue(u, {OrderKind::Stop});
 }
 }

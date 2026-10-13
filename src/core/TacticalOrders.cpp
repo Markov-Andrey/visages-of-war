@@ -15,7 +15,8 @@ void Simulation::resumeOrder(Unit& u) {
     }
 }
 bool Simulation::groundAttackReach(const Unit& u, Cell target, std::optional<Cell> from) const {
-    const Vec2 delta = center(target) - (from ? center(*from) : u.position);
+    const Vec2 start = from ? center(*from) : u.definition.collision == CollisionShape::Footprint ? attackAim(combatTarget(u.id), center(target)) : u.position;
+    const Vec2 delta = center(target) - start;
     return groundLengthSquared(delta) <= u.definition.attackRange * u.definition.attackRange;
 }
 void Simulation::chaseGround(Unit& u) {

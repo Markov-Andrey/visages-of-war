@@ -25,7 +25,7 @@ MatchAssets collectMatchAssets(const Simulation& game, const Definitions& defini
             const auto found = result.factions.find(type.factionId);
             if (found == result.factions.end()) continue;
             found->second.entities.insert(type.id);
-            for (const auto& ids : {type.trainableUnits, type.alternateForms}) for (const auto& id : ids) {
+            for (const auto& ids : {type.buildableTypes, type.trainableUnits, type.alternateForms}) for (const auto& id : ids) {
                 auto& destination = result.factions[definitions.entity(id).factionId];
                 for (unsigned color : found->second.colors) changed |= destination.colors.insert(color).second;
             }

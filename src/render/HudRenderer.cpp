@@ -7,7 +7,8 @@ namespace rts {
 using namespace render;
 void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, const WorldView& view, bool grid) {
     const auto extent = size();
-    const Building* building = ui.selection.ids.size() == 1 ? game.building(ui.selection.ids.front()) : nullptr;
+    const Building* building = ui.selection.ids.size() == 1 ? game.entity(ui.selection.ids.front()) : nullptr;
+    if (building && building->definition.collision == CollisionShape::Circle && building->definition.trainableUnits.empty()) building = nullptr;
     if (building && !selectableEntity(game, building->id)) building = nullptr;
     const BattleLayout layout(extent);
     const auto panel = [&](UiRect area, unsigned color) {
@@ -117,28 +118,20 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     } else if (building) {
         const auto& b = *building;
         const SelectionPanelLayout portrait(info);
-        drawBuildingPortrait(game, b, portrait);
+        if (b.definition.collision == CollisionShape::Footprint) drawBuildingPortrait(game, b, portrait);
+        else {
+            drawPortraitBackdrop(portrait.portrait, b.owner == game.player().id ? teamColor_ : enemyColor_);
+            unitHudPortrait(b.definition.sprite, portrait.portrait, b.owner == game.player().id ? teamColor_ : enemyColor_);
+            portraitVitals(portrait, b.health, b.maximumHealth(), 0x9dd7b0, b.mana, b.maximumMana());
+        }
         const auto content = portrait.content;
         text(wide(b.definition.displayName), rect(content.x, content.y, content.width, 34), 0xe0eade, content.width >= 300);
-        text(wide(b.definition.factionName) + L"  ·  Здание", rect(content.x, content.y + 39, content.width, 25), 0x9dc1b6);
+        text(wide(b.definition.factionName) + (b.definition.collision == CollisionShape::Footprint ? L"  ·  Здание" : L"  ·  Производитель"), rect(content.x, content.y + 39, content.width, 25), 0x9dc1b6);
         if (!b.complete()) {
             text(L"Строительство  " + std::to_wstring(b.constructionProgress * 100 / b.definition.constructionTicks) + L"%", rect(content.x, content.y + 70, content.width, 28), 0xe4c388);
             labels[5] = L"Отменить строительство"; details[5] = L"Вернуть 50% стоимости в кристаллах и освободить лимит армии.";
             icons[5] = "cancel"; buttonKeys[5] = L'X';
         } else if (!b.definition.trainableUnits.empty()) {
-            constexpr std::array keys{L'Q', L'E', L'T'};
-            for (size_t choice = 0; choice < b.definition.trainableUnits.size(); ++choice) {
-                const auto slot = choice * 2;
-                const auto& type = game.entityType(b.definition.trainableUnits[choice]);
-                commandTypes[slot] = &type;
-                labels[slot] = wide(type.displayName); buttonKeys[slot] = keys[choice];
-            }
-            labels[1] = L"Точка сбора"; details[1] = L"Выбрать точку сбора. Её также можно задать ПКМ по карте.";
-            icons[1] = "rally"; buttonKeys[1] = L'R'; active[1] = ui.rallyMode;
-            if (!b.production.empty()) {
-                labels[5] = L"Отменить обучение"; details[5] = L"Отменить последний заказ. Вернуть 50% кристаллов и освободить лимит армии.";
-                icons[5] = "cancel"; buttonKeys[5] = L'X';
-            }
             const bool blocked = !b.production.empty() && b.production.front().remainingTicks == 0;
             text(blocked ? L"Освободите выход из здания" : L"Очередь  " + std::to_wstring(b.production.size()) +
                 L" / " + std::to_wstring(Building::productionQueueLimit),
@@ -169,7 +162,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                     } else tooltip = &type;
                 }
             }
-        } else text(L"Расширяет обзор днём и ночью", rect(content.x, content.y + 76, content.width, 30), 0x9eb6b7);
+        } else drawUnitStats(b, content);
     } else if (unit) {
         const SelectionCards portraits(game, ui.selection, info);
         const auto group = ui.selection.activeGroup(game);
@@ -179,38 +172,6 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             const auto* member = game.unit(card.id);
             if (card.bounds.contains(ui.mouse) || card.healthBar().contains(ui.mouse) ||
                 (member->maximumMana() > 0 && card.manaBar().contains(ui.mouse))) tooltip = &member->definition;
-        }
-        const bool builder = commandEnabled(game, ui, UnitCommand::Build);
-        if (builder && ui.buildMenu) {
-            const size_t count = std::min(size_t{3}, game.buildingTypes().size());
-            constexpr std::array keys{L'H', L'B', L'O'};
-            for (size_t i = 0; i < count; ++i) {
-                const auto& type = *game.buildingTypes()[i];
-                commandTypes[i] = &type;
-                labels[i] = wide(type.displayName); buttonKeys[i] = keys[i];
-            }
-        }
-        const auto current = unitOrder(*unit);
-        const bool sameOrder = std::all_of(group.ids.begin(), group.ids.end(), [&](EntityId id) {
-            const auto* member = game.unit(id); return member && unitOrder(*member) == current;
-        });
-        if (ui.buildMenu) {
-            labels[backCommandSlot] = L"Назад"; details[backCommandSlot] = L"Вернуться к приказам юнита.";
-            icons[backCommandSlot] = "cancel"; buttonKeys[backCommandSlot] = L'X';
-        } else for (const auto& command : unitCommands) {
-            const size_t i = command.slot;
-            if (!unitCommandVisible(game, ui, i)) continue;
-            labels[i] = command.label; details[i] = command.description; buttonKeys[i] = command.key; icons[i] = command.icon;
-            if (command.command == UnitCommand::Gather && unit->definition.gatherAbility()) {
-                labels[i] = wide(unit->definition.gatherAbility()->displayName);
-                details[i] = wide(unit->definition.gatherAbility()->description);
-            }
-            if (command.command != UnitCommand::Back) details[i] += command.scope == CommandScope::ActiveGroup ?
-                L"\nДля активной группы." : L"\nДля всего выделения.";
-            enabled[i] = true;
-            const auto shown = ui.orderMode.value_or(current);
-            active[i] = command.command != UnitCommand::Back && (ui.orderMode || sameOrder) &&
-                (shown == command.order || (shown == OrderKind::Attack && command.command == UnitCommand::Attack));
         }
     } else {
         text(L"Нет выделения", rect(info.x, info.y, info.width, 34), 0xe0eade, true);
@@ -223,12 +184,52 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         enabled.fill(false); active.fill(false); buttonKeys.fill(0);
     }
     const auto* caster = activeAbilityEntity(game, ui);
-    if (caster && building && !caster->definition.abilities.empty()) {
-        labels[buildingAbilityStopSlot] = L"Остановить"; details[buildingAbilityStopSlot] = L"Прервать текущее применение способности.";
-        icons[buildingAbilityStopSlot] = "stop"; buttonKeys[buildingAbilityStopSlot] = L'S';
-        if (ui.orderMode) {
-            labels[backCommandSlot] = L"Назад"; details[backCommandSlot] = L"Отменить выбор цели.";
-            icons[backCommandSlot] = "cancel"; buttonKeys[backCommandSlot] = L'X';
+    if (caster) {
+        // One action layout for every entity; menus only change the catalog choices.
+        if (ui.buildMenu || ui.productionMenu) {
+            labels.fill({}); details.fill({}); icons.fill(nullptr); commandTypes.fill(nullptr);
+            constexpr std::array buildKeys{L'H', L'B', L'O'};
+            constexpr std::array trainKeys{L'Q', L'E', L'T'};
+            for (size_t i = 0; i < 3; ++i) {
+                const auto slot = ui.buildMenu ? i : i * 2;
+                if (const auto* type = catalogCommandAt(game, ui, slot)) {
+                    commandTypes[slot] = type; labels[slot] = wide(type->displayName);
+                    buttonKeys[slot] = ui.buildMenu ? buildKeys[i] : trainKeys[i]; enabled[slot] = true;
+                }
+            }
+            if (ui.productionMenu) {
+                labels[1] = L"Точка сбора"; icons[1] = "rally"; buttonKeys[1] = L'R'; enabled[1] = true;
+                if (!caster->production.empty()) { labels[5] = L"Отменить заказ"; icons[5] = "cancel"; buttonKeys[5] = L'D'; enabled[5] = true; }
+            }
+            const auto pages = commandPageCount(game, ui);
+            if (pages > 1) {
+                const auto page = (ui.buildMenu ? ui.buildPage : ui.productionPage) % pages;
+                labels[previousPageSlot] = L"Предыдущая"; buttonKeys[previousPageSlot] = L'J'; enabled[previousPageSlot] = true;
+                labels[nextPageSlot] = L"Следующая"; buttonKeys[nextPageSlot] = L'N'; enabled[nextPageSlot] = true;
+                details[previousPageSlot] = details[nextPageSlot] = L"Страница " + std::to_wstring(page + 1) + L" / " + std::to_wstring(pages);
+            }
+        } else {
+            for (const auto& command : unitCommands) if (unitCommandVisible(game, ui, command.slot)) {
+                const auto i = command.slot;
+                labels[i] = command.label; details[i] = command.description; buttonKeys[i] = command.key; icons[i] = command.icon;
+                enabled[i] = true; active[i] = command.command != UnitCommand::Back && ui.orderMode.value_or(unitOrder(*caster)) == command.order;
+                if (command.command == UnitCommand::Gather && caster->definition.gatherAbility()) {
+                    labels[i] = wide(caster->definition.gatherAbility()->displayName);
+                    details[i] = wide(caster->definition.gatherAbility()->description);
+                }
+            }
+            if (unitCommandVisible(game, ui, productionMenuSlot)) {
+                labels[productionMenuSlot] = L"Производство"; buttonKeys[productionMenuSlot] = L'Y'; enabled[productionMenuSlot] = true;
+                details[productionMenuSlot] = L"Открыть список производства и точку сбора.";
+            }
+            if (unitCommandVisible(game, ui, abilityPageSlot)) {
+                const auto pages = (caster->definition.abilities.size() + abilityKeys.size() - 1) / abilityKeys.size();
+                labels[abilityPageSlot] = L"Способности"; buttonKeys[abilityPageSlot] = L'F'; enabled[abilityPageSlot] = true;
+                details[abilityPageSlot] = L"Следующая страница: " + std::to_wstring(ui.abilityPage % pages + 1) + L" / " + std::to_wstring(pages);
+            }
+        }
+        if (unitCommandVisible(game, ui, backCommandSlot)) {
+            labels[backCommandSlot] = L"Назад"; icons[backCommandSlot] = "cancel"; buttonKeys[backCommandSlot] = L'X'; enabled[backCommandSlot] = true;
         }
     }
     if (caster) for (size_t i = firstAbilitySlot; i < firstAbilitySlot + abilityKeys.size(); ++i) {
@@ -244,9 +245,15 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         details[i] += L"\nЦели: " + wide(abilityTargetDescription(ability->targeting)) + L".";
         if (ability->targeting != AbilityTargeting::None) details[i] += L"\n" + wide(abilityTargetDetails(*ability)) + L".";
         if (ability->rightClick) details[i] += L"\nПКМ по подходящей цели — применить.";
-        if (ability->repair) details[i] += L"\nПолный ремонт: " + std::to_wstring(ability->repair->constructionTimePercent) +
-            (ability->targeting == AbilityTargeting::Building ? L"% времени строительства, " : L"% времени строительства / обучения цели, ") +
-            std::to_wstring(ability->repair->constructionCostPercent) + L"% цены цели.";
+        for (const auto& effect : ability->effects) {
+            details[i] += effect.recipient == EffectRecipient::Caster ? L"\nНа себя: " : L"\nНа цель: ";
+            if (const auto* repair = std::get_if<RepairDefinition>(&effect.value))
+                details[i] += L"ремонт, " + std::to_wstring(repair->constructionTimePercent) + L"% времени, " + std::to_wstring(repair->constructionCostPercent) + L"% цены.";
+            else if (const auto* harvest = std::get_if<HarvestDefinition>(&effect.value))
+                details[i] += L"добыча " + std::to_wstring(harvest->amount) + (harvest->credit == HarvestCredit::Direct ? L" крист., напрямую." : L" крист., в груз.");
+            else if (const auto* restore = std::get_if<RestoreDefinition>(&effect.value))
+                details[i] += L"+" + std::to_wstring(restore->amount) + (restore->stat == RestoredStat::Health ? L" здоровья." : L" маны.");
+        }
         if (ability->autocast) {
             const auto state = autocastState(game, ui, ability->id);
             std::wostringstream radius; radius << ability->autocast->radius;
@@ -287,6 +294,13 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                     buildingImage(*stage, {b.x + (b.width - width) * .5f, b.y + (b.height - height) * .5f, width, height}, teamColor_);
                 } else icon("build", {b.x, b.y}, b.width);
                 target_->PopAxisAlignedClip();
+            } else {
+                std::wstring caption = i == previousPageSlot ? L"‹" : i == nextPageSlot ? L"›" : L"Выпуск";
+                if (i == abilityPageSlot && caster) {
+                    const auto pages = (caster->definition.abilities.size() + abilityKeys.size() - 1) / abilityKeys.size();
+                    caption = std::to_wstring(ui.abilityPage % pages + 1) + L"/" + std::to_wstring(pages);
+                }
+                centeredText(caption, {b.x + 3, b.y + 18, b.width - 6, b.height - 21}, 0xb3d4cf);
             }
             worldOpacity_ = 1;
         }

@@ -17,6 +17,21 @@ void checkCombatMotion(const Simulation& game) {
 }
 }
 void combatTests(TestSuite& test, const TestContext& context) {
+    test("Stage two footprint towers acquire targets and obey forced attack and stop", [] {
+        auto worker = fixtureWorker(); worker.maximumHealth = 1000;
+        auto tower = fixtureDepot(worker); tower.attackDamage = 10; tower.attackRange = 6;
+        tower.attackWindupTicks = 0; tower.attackRecoveryTicks = 0; tower.attackCooldownTicks = 5;
+        ProjectileDefinition shot; shot.speed = 20; tower.projectile = shot;
+        auto scene = flatScenario(0); scene.slots[0].startingCrystals = 1000; scene.units = {{worker.id, 1, {6, 5}}};
+        auto game = makeTestSimulation(scene, {}, worker, {tower}); game.revealMap();
+        const auto towerId = game.buildings()[0].id, enemy = game.units()[1].id, own = game.worker().id;
+        const auto position = game.entity(towerId)->position;
+        ticks(game, 60);
+        require(game.entity(enemy)->health < worker.maximumHealth && game.entity(towerId)->position == position, "Tower did not fire or moved");
+        require(game.attack(std::array{towerId, own}, own, true), "Tower forced attack rejected");
+        ticks(game, 60); require(game.entity(own)->health < worker.maximumHealth, "Tower forced attack did not execute");
+        game.stop(std::array{towerId}); require(game.entity(towerId)->currentOrder.kind == OrderKind::Stop, "Tower stop failed");
+    });
     test("Forced friendly attacks filter the whole selection by weapon capabilities and reject self", [] {
         EntityDefinition fighter; fighter.id = "fighter"; fighter.attackDamage = 10; fighter.maximumHealth = 1000;
         fighter.attackWindupTicks = 0; fighter.attackRecoveryTicks = 0; fighter.attackCooldownTicks = 30;

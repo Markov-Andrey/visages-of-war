@@ -91,9 +91,9 @@ bool GameApplication::colorSelectKey(WPARAM key) {
     return true;
 }
 
-const rts::Building* GameApplication::selectedBuilding() const {
-    const auto* building = ui_.selection.ids.size() == 1 ? game_.building(ui_.selection.ids.front()) : nullptr;
-    return building && building->owner == game_.player().id && rts::selectableEntity(game_, building->id) ? building : nullptr;
+const rts::Building* GameApplication::selectedStructureOrProducer() const {
+    const auto* building = ui_.selection.ids.size() == 1 ? game_.entity(ui_.selection.ids.front()) : nullptr;
+    return building && (building->definition.collision == CollisionShape::Footprint || !building->definition.trainableUnits.empty()) && building->owner == game_.player().id && rts::selectableEntity(game_, building->id) ? building : nullptr;
 }
 
 const rts::Crystal* GameApplication::selectedCrystal() const {
@@ -102,28 +102,15 @@ const rts::Crystal* GameApplication::selectedCrystal() const {
 
 void GameApplication::action(size_t index) {
     if (selectedCrystal()) return;
-    if (rts::abilityCommandAt(game_, ui_, index) || index == rts::backCommandSlot) { unitAction(index); return; }
-    if (const auto* b = selectedBuilding()) {
-        const auto id = b->id;
-        if (index == rts::buildingAbilityStopSlot && !b->definition.abilities.empty()) {
-            game_.stop(std::array{id}); clearCommandMode(); return;
-        }
-        if (index == 0 || index == 2 || index == 4) {
-            const auto choice = index / 2;
-            if (choice < b->definition.trainableUnits.size()) game_.train(id, b->definition.trainableUnits[choice]);
-        }
-        if (index == 1 && !b->definition.trainableUnits.empty()) { ui_.rallyMode = true; ui_.placement.clear(); }
-        if (index == 5) { if (!b->complete()) game_.cancelConstruction(id); else game_.cancelTraining(id); }
-        ui_.selection.prune(game_);
-        return;
-    }
+    if (const auto* e = ui_.selection.ids.size() == 1 ? game_.entity(ui_.selection.ids.front()) : nullptr;
+        e && !e->complete() && index == 5) { game_.cancelConstruction(e->id); ui_.selection.prune(game_); clearCommandMode(); return; }
     unitAction(index);
 }
 
 void GameApplication::rightClick(std::optional<rts::Cell> target, rts::EntityId entity) {
-    if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu) { clearCommandMode(); return; }
+    if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu || ui_.productionMenu) { clearCommandMode(); return; }
     if (!target || selectedCrystal()) return;
-    if (const auto* b = selectedBuilding()) {
+    if (const auto* b = selectedStructureOrProducer()) {
         if (game_.command(ui_.selection.ids, *target, entity)) {
             if (entity) ui_.commandFeedback.confirm(entity);
         } else game_.setRally(b->id, *target);

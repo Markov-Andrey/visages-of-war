@@ -99,7 +99,7 @@ void projectileTests(TestSuite& test, const TestContext&) {
     test("Destroyed construction releases its supply and stops the builder without refunding", [] {
         auto gun = weapon(ProjectileTargeting::Point); gun.attackDamage = 2000;
         gun.projectile->friendlyFire = true; gun.projectile->splashRadius = .2f;
-        auto builder = dummy(); builder.canBuild = true;
+        auto builder = dummy(); builder.canBuild = true; builder.buildableTypes = {"test.structure"};
         EntityDefinition structure; structure.id = "test.structure"; structure.collision = CollisionShape::Footprint; structure.mobile = false; structure.constructible = true; structure.cost = {75, 3}; structure.constructionTicks = 200;
         auto scene = range(); scene.slots[0].startingCrystals = 1000; scene.units = {{builder.id, 0, {6, 6}}};
         auto game = makeTestSimulation(std::move(scene), {}, gun, {gun, builder, structure});
@@ -152,7 +152,7 @@ void projectileTests(TestSuite& test, const TestContext&) {
     });
     test("Homing shots follow moving targets; siege fixes its point at release and hits current occupants", [] {
         for (const auto mode : {ProjectileTargeting::Unit,ProjectileTargeting::Point}) {
-            auto gun = weapon(mode); auto s = range(); s.worker = {10,6};
+            auto gun = weapon(mode); auto s = range(); s.worker = {10,6}; s.hall = {20,17};
             auto air = dummy(); air.id = "air"; air.movement = MovementType::Flying;
             s.units = {{gun.id,1,{4,6}}, {"dummy",0,{10,5}}, {"dummy",1,{11,6}}, {air.id,0,{10,6}}};
             auto game = makeTestSimulation(std::move(s),{},dummy(),{gun,dummy(),air});

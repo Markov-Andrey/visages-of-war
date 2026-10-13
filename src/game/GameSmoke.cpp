@@ -286,14 +286,16 @@ void GameApplication::exerciseInterface() {
     if (!grid_) throw std::runtime_error("Smoke: K did not show grid");
     auto bounds = rts::buildingBounds(game_, game_.buildings().front(), view_);
     click({bounds.x + bounds.width * .5f, bounds.y + bounds.height * .45f});
-    if (!selectedBuilding()) throw std::runtime_error("Smoke: building selection failed");
+    if (!selectedStructureOrProducer()) throw std::runtime_error("Smoke: building selection failed");
     const rts::Cell rally{15, 22};
     focus(rts::center(rally), true);
     onMessage(WM_RBUTTONDOWN, 0, at(view_.project(rts::center(rally), 0)));
     if (game_.buildings().front().rally != rally) throw std::runtime_error("Smoke: rally command failed");
     resetCamera();
     const rts::BattleLayout layout(renderer_.size());
+    onMessage(WM_KEYDOWN, 'Y', 0);
     click({layout.commands[0].x + 20, layout.commands[0].y + 20});
+    clearCommandMode();
     if (game_.buildings().front().production.size() != 1) throw std::runtime_error("Smoke: production button failed");
     rts::Vec2 a{10000, 10000}, b{-10000, -10000};
     for (const auto& u : game_.units()) if (u.owner == game_.player().id && u.definition.canBuild) {
@@ -319,9 +321,9 @@ void GameApplication::exerciseInterface() {
     }
     if (!barracksPoint) throw std::runtime_error("Smoke: no exposed barracks area for selection");
     click(*barracksPoint);
-    if (!selectedBuilding() || selectedBuilding()->definition.id != "church.barracks")
+    if (!selectedStructureOrProducer() || selectedStructureOrProducer()->definition.id != "church.barracks")
         throw std::runtime_error("Smoke: barracks selection failed");
-    onMessage(WM_KEYDOWN, 'Q', 0);
+    onMessage(WM_KEYDOWN, 'Y', 0); onMessage(WM_KEYDOWN, 'Q', 0); clearCommandMode();
     const rts::Cell armyRally{21, 26};
     focus(rts::center(armyRally), true);
     onMessage(WM_RBUTTONDOWN, 0, at(view_.project(rts::center(armyRally), 0)));
@@ -336,7 +338,7 @@ void GameApplication::exerciseInterface() {
     // At this resolution a logical tile is about one pixel tall; compare with
     // the same pixel-centred picking used by the actual input handler.
     const auto picked = layout.minimapCell(mouse_, game_.map());
-    if (!picked || !selectedBuilding() || selectedBuilding()->rally != *picked)
+    if (!picked || !selectedStructureOrProducer() || selectedStructureOrProducer()->rally != *picked)
         throw std::runtime_error("Smoke: minimap rally projection failed");
     const auto beforeMinimap = view_.origin;
     click(mini.project(rts::center({14, 15})));

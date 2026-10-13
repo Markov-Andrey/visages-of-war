@@ -7,7 +7,7 @@ namespace rts::tests {
 inline EntityDefinition fixtureWorker() {
     EntityDefinition worker;
     worker.abilities = {AbilityDefinition{3, "Test cargo harvesting", "Deliver crystals to a depot", 0, 0,
-        HarvestDefinition{HarvestCredit::Cargo, 10, 1}}};
+        {HarvestDefinition{HarvestCredit::Cargo, 10, 1}}}};
     worker.gatherAbility()->targeting = AbilityTargeting::Crystal;
     worker.gatherAbility()->targets.relations = {TargetRelation::Neutral};
     worker.gatherAbility()->rightClick = true;
@@ -41,6 +41,10 @@ inline Simulation makeTestSimulation(Scenario scenario, PlayerSettings player = 
     });
     const auto startingBuilding = depot == types.end() ? fixtureDepot(worker).id : depot->id;
     if (depot == types.end()) types.push_back(fixtureDepot(worker));
+    // Test fixtures explicitly author the available construction choices.
+    if (worker.canBuild && worker.buildableTypes.empty())
+        for (const auto& type : types) if (type.constructible && type.factionId == worker.factionId) worker.buildableTypes.push_back(type.id);
+    for (auto& type : types) if (type.id == worker.id) type = worker;
     return Simulation(std::move(scenario), std::move(player), std::move(worker), std::move(types),
         startingBuilding, std::move(hero), std::move(progression), clock);
 }

@@ -15,7 +15,10 @@ void Simulation::tickCombat() {
     tickRemains();
     std::vector<Hit> hits;
     tickProjectiles(hits); // Newly released shots start flying on the following tick.
-    for (auto& u : units_) {
+    const auto combatants = mutableEntities();
+    for (auto* combatant : combatants) {
+        auto& u = *combatant;
+        if (u.health <= 0 || !u.complete()) continue;
         if (u.chaseTicks > 0) --u.chaseTicks;
         if (u.targetRetryTicks > 0) --u.targetRetryTicks;
         if (u.attackPhase == AttackPhase::Recovery || u.attackPhase == AttackPhase::Cooldown) {
@@ -40,10 +43,12 @@ void Simulation::tickCombat() {
             const Unit* best = nullptr;
             float bestScore = std::numeric_limits<float>::max();
             const int vision = clock_.phase() == DayPhase::Day ? u.definition.dayVision : u.definition.nightVision;
-            for (const auto& candidate : units_) {
-                if (!canAttack(u, candidate) || (candidate.id == u.unreachableTarget && u.targetRetryTicks > 0)) continue;
-                const bool inReach = attackReach(u, CombatTarget{&candidate});
-                if ((onlyInReach || u.currentOrder.kind == OrderKind::Hold) && !inReach) continue;
+            for (const auto* entry : combatants) {
+                const auto& candidate = *entry;
+                const auto candidateTarget = candidate.definition.collision == CollisionShape::Footprint ? CombatTarget{nullptr, &candidate} : CombatTarget{&candidate};
+                if (!canAttack(u, candidateTarget, false) || (candidate.id == u.unreachableTarget && u.targetRetryTicks > 0)) continue;
+                const bool inReach = attackReach(u, candidateTarget);
+                if ((onlyInReach || !u.definition.mobile || u.currentOrder.kind == OrderKind::Hold) && !inReach) continue;
                 float score = groundLengthSquared(candidate.position - u.position);
                 if (inReach) score -= 10000;
                 else {
@@ -61,7 +66,7 @@ void Simulation::tickCombat() {
         };
         if (!u.attackTarget && !ground && scanning) {
             const auto* best = acquire(false);
-            if (best) { u.attackTarget = best->id; chase(u, CombatTarget{best}); }
+            if (best) { u.attackTarget = best->id; chase(u, combatTarget(best->id)); }
         } else if (automatic && u.attackTarget && u.attackPhase != AttackPhase::Windup && u.attackPhase != AttackPhase::Recovery &&
             (clock_.elapsedTicks() + u.id) % 6 == 0) {
             const auto current = combatTarget(u.attackTarget);
@@ -69,7 +74,7 @@ void Simulation::tickCombat() {
                 const auto* best = acquire(u.blockedTicks < 18);
                 if (best && best->id != u.attackTarget) {
                     u.attackTarget = best->id; u.route.clear(); u.next = 0; u.blockedTicks = 0;
-                    chase(u, CombatTarget{best});
+                    chase(u, combatTarget(best->id));
                 }
             }
         }

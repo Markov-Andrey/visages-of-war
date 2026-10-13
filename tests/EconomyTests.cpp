@@ -8,7 +8,7 @@ EntityDefinition repairWorker() {
     ability.targeting = AbilityTargeting::Building;
     ability.rightClick = true;
     ability.animation = AbilityAnimation::Work;
-    ability.repair = RepairDefinition{};
+    ability.effects.emplace_back(RepairDefinition{});
     ability.autocast = AutocastDefinition{8, 1, false};
     worker.abilities.insert(worker.abilities.begin(), ability);
     return worker;
@@ -21,6 +21,93 @@ Scenario repairScene() {
 }
 void economyTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
+    test("Stage two builders use explicit independent catalog choices", [] {
+        auto worker = fixtureWorker(); worker.buildableTypes = {"other.site"};
+        auto other = worker; other.id = "other.builder"; other.buildableTypes = {"own.site"};
+        auto first = fixtureDepot(worker); first.id = "own.site"; first.acceptsCargo = false;
+        auto second = first; second.id = "other.site"; second.factionId = "another.faction";
+        auto scene = repairScene(); scene.units = {{other.id, 0, {9, 8}}};
+        auto game = makeTestSimulation(scene, {}, worker, {other, first, second}); game.revealMap();
+        const auto id = game.worker().id, otherId = game.units()[1].id;
+        require(game.buildingTypes(game.worker().definition).front()->id == second.id, "Builder menu inferred from faction");
+        const auto balance = game.storedCrystals();
+        require(!game.construct(std::array{id}, first.id, {11, 10}) && game.storedCrystals() == balance, "Unauthorized construction charged resources");
+        require(game.construct(std::array{id}, second.id, {11, 10}).has_value(), "Explicit cross-faction construction rejected");
+        require(!game.construct(std::array{otherId}, second.id, {16, 10}), "Builder inherited another builder's choices");
+        require(game.construct(std::array{otherId}, first.id, {16, 10}).has_value(), "Second builder's own choice rejected");
+    });
+    test("Stage two mobile producers train while moving and cancel reserved supply", [] {
+        auto worker = fixtureWorker(); worker.id = "mobile.factory"; worker.trainableUnits = {"product"};
+        auto product = worker; product.id = "product"; product.trainingTicks = 2; product.cost = {10, 1}; product.trainableUnits.clear();
+        auto game = makeTestSimulation(repairScene(), {}, worker, {product}); game.revealMap();
+        const auto id = game.worker().id; const auto initial = game.units().size();
+        require(game.train(id, product.id), "Mobile production rejected");
+        require(game.order(std::array{id}, OrderKind::Move, {12, 9}), "Mobile producer cannot move");
+        ticks(game, 5);
+        require(game.units().size() == initial + 1 && game.entity(id)->production.empty(), "Mobile production did not complete");
+        require(game.train(id, product.id), "Second job rejected");
+        const auto supply = game.armySupply().used();
+        require(game.cancelTraining(id) && game.armySupply().used() == supply - 1, "Cancellation leaked reserved supply");
+        require(game.setRally(id, {12, 12}), "Mobile producer rally rejected");
+    });
+    test("Stage two mobile depot must be reached before cargo is credited", [] {
+        auto worker = fixtureWorker(); worker.carryCapacity = 10;
+        auto depot = worker; depot.id = "mobile.depot"; depot.acceptsCargo = true; depot.abilities.clear();
+        auto hall = fixtureDepot(worker);
+        auto scene = repairScene(); scene.units = {{depot.id, 0, {10, 8}}};
+        auto game = makeTestSimulation(scene, {}, worker, {depot, hall}); game.revealMap();
+        const_cast<Entity&>(game.buildings()[0]).definition.acceptsCargo = false;
+        auto& carrier = const_cast<Entity&>(game.worker()); carrier.cargo = 7;
+        const auto id = carrier.id, depotId = game.units()[1].id; const auto balance = game.storedCrystals();
+        require(game.command(std::array{id}, game.entity(depotId)->cell, depotId), "Mobile depot not found");
+        require(game.order(std::array{depotId}, OrderKind::Move, {20, 17}), "Depot move rejected");
+        ticks(game, 5); require(game.storedCrystals() == balance && game.entity(id)->cargo == 7, "Cargo credited remotely");
+        ticks(game, 900);
+        require(game.entity(id)->cargo == 0 && game.storedCrystals() == balance + 7, "Carrier failed to follow mobile depot or lost cargo");
+    });
+    test("Stage two ordered effects share one cost and skip ineligible effects", [] {
+        auto worker = fixtureWorker(); worker.maximumMana = 100;
+        AbilityDefinition cast{1201, "Combined restoration", "", 10, 30}; cast.targeting = AbilityTargeting::Entity; cast.range = 8;
+        cast.effects = {RestoreDefinition{RestoredStat::Health, 7}, RestoreDefinition{RestoredStat::Mana, 11},
+            AbilityEffect{RestoreDefinition{RestoredStat::Health, 3}, EffectRecipient::Caster}};
+        worker.abilities = {cast};
+        auto game = makeTestSimulation(repairScene(), {}, worker); const auto target = game.buildings()[0].id;
+        auto& recipient = const_cast<Entity&>(*game.entity(target)); recipient.health -= 9;
+        auto& caster = const_cast<Entity&>(game.worker()); caster.health -= 5;
+        require(game.activateAbility(caster.id, cast.id, target), "Combined cast rejected"); game.tick();
+        require(recipient.health == recipient.maximumHealth() - 2 && caster.health == caster.maximumHealth() - 2 &&
+            caster.mana == 90 && caster.abilityCooldown(cast.id) == 29, "Partial effects or common cost failed");
+        ticks(game, 30); recipient.health = recipient.maximumHealth(); caster.health = caster.maximumHealth();
+        require(!game.activateAbility(caster.id, cast.id, target) && caster.mana == 90, "Wholly ineligible cast spent mana");
+        // The first restoration fills the target; the second observes that updated state.
+        recipient.health -= 1; require(game.activateAbility(caster.id, cast.id, target), "Repeat cast rejected"); game.tick();
+        require(recipient.health == recipient.maximumHealth(), "Effects exceeded maximum health");
+    });
+    test("Stage two multiple harvest effects conserve reserves and charge once", [] {
+        auto worker = fixtureWorker(); worker.maximumMana = 30; worker.carryCapacity = 3;
+        auto& ability = worker.abilities.front(); ability.manaCost = 4; ability.cooldownTicks = 10000;
+        ability.effects = {HarvestDefinition{HarvestCredit::Direct, 1, 2}, HarvestDefinition{HarvestCredit::Cargo, 1, 3},
+            AbilityEffect{RestoreDefinition{RestoredStat::Health, 5}, EffectRecipient::Caster}};
+        auto game = makeTestSimulation(flatScenario(17), {}, worker);
+        const_cast<Entity&>(game.worker()).health -= 10;
+        require(game.activateAbility(game.worker().id, ability.id, game.crystals()[0].id), "Multiple harvest effects rejected");
+        ticks(game, 1500);
+        require(game.storedCrystals() == 17 && game.worker().cargo == 0 && game.crystals()[0].remaining == 0 &&
+            game.worker().mana == 26 && game.worker().health == game.worker().maximumHealth() - 5,
+            "Effects repeated activation, lost reserves or ignored selected effect");
+    });
+    test("Stage two repair effects keep independent progress and support caster recipients", [] {
+        auto worker = fixtureWorker(); worker.maximumMana = 50;
+        AbilityDefinition ability{1301, "Double repair", "", 5, 100}; ability.targeting = AbilityTargeting::Entity; ability.range = 8;
+        ability.effects = {RepairDefinition{75, 0}, AbilityEffect{RepairDefinition{75, 0}, EffectRecipient::Caster}};
+        worker.abilities = {ability};
+        auto game = makeTestSimulation(repairScene(), {}, worker);
+        auto& caster = const_cast<Entity&>(game.worker()); caster.health -= 20;
+        auto& target = const_cast<Entity&>(game.buildings()[0]); target.health -= 20;
+        require(game.activateAbility(caster.id, ability.id, target.id), "Multiple repair effects rejected"); ticks(game, 100);
+        require(caster.health == caster.maximumHealth() && target.health == target.maximumHealth() && caster.mana == 45,
+            "Repair channels did not finish independently");
+    });
     test("Entity abilities share mana cooldown autocast and UI on buildings and units", [] {
         auto worker = fixtureWorker(); worker.maximumMana = 60;
         AbilityDefinition ability{921, "Common cast", "", 7, 5};
@@ -80,7 +167,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto worker = fixtureWorker(); worker.maximumHealth = 100;
         auto repair = repairWorker().abilities.front(); repair.targeting = AbilityTargeting::Entity;
         repair.range = 5; repair.manaCost = 3; repair.cooldownTicks = 10;
-        auto harvest = *worker.gatherAbility(); harvest.id = 947; harvest.harvest = HarvestDefinition{HarvestCredit::Direct, 1, 2};
+        auto harvest = *worker.gatherAbility(); harvest.id = 947; *harvest.harvest() = HarvestDefinition{HarvestCredit::Direct, 1, 2};
         harvest.range = 5; harvest.manaCost = 4; harvest.cooldownTicks = 10;
         auto depot = fixtureDepot(worker); depot.abilities = {repair, harvest}; depot.maximumMana = 40;
         auto scene = repairScene(); scene.crystals = {{{7, 4}, 7}}; scene.map.occupy({7, 4});
@@ -102,8 +189,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Several harvest abilities keep independent costs and the selected effect through deliveries", [] {
         auto worker = gatheringWorker(); worker.maximumMana = 50; worker.carryCapacity = 3;
         auto cargo = *worker.gatherAbility(); cargo.manaCost = 5; cargo.cooldownTicks = 10000;
-        cargo.harvest->intervalTicks = 1; cargo.harvest->amount = 3;
-        auto direct = cargo; direct.id = 958; direct.manaCost = 7; direct.harvest->credit = HarvestCredit::Direct;
+        cargo.harvest()->intervalTicks = 1; cargo.harvest()->amount = 3;
+        auto direct = cargo; direct.id = 958; direct.manaCost = 7; direct.harvest()->credit = HarvestCredit::Direct;
         worker.abilities = {cargo, direct};
         auto game = makeTestSimulation(flatScenario(11), {}, worker);
         const auto id = game.worker().id, node = game.crystals().front().id;
@@ -162,7 +249,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.activateAbility(id, repair.id, game.worker().id), "Explicit ranged ability inherited contact terrain restrictions");
     });
     test("Contextual repair follows abilities and readiness across a mixed selection", [] {
-        auto type = repairWorker(); type.id = "test.restorer"; type.canBuild = false; std::erase_if(type.abilities, [](const auto& a) { return a.harvest.has_value(); });
+        auto type = repairWorker(); type.id = "test.restorer"; type.canBuild = false; std::erase_if(type.abilities, [](const auto& a) { return a.harvest() != nullptr; });
         type.abilities[0].id = 317;
         auto scene = repairScene(); scene.extraWorkers = {{4, 5}, {6, 5}};
         auto game = makeTestSimulation(std::move(scene), {}, type);
@@ -357,7 +444,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             Scenario scene{Map(32, 24), {1, 1}, {5, 5}, {{{8, 5}, 7}, {{23, 15}, 11}}};
             for (const auto& node : scene.crystals) scene.map.occupy(node.cell);
             scene.slots[0].startingCrystals = 200; scene.slots[1].startingCrystals = 400;
-            auto worker = gatheringWorker(); worker.gatherAbility()->harvest = {credit, 1, 3};
+            auto worker = gatheringWorker(); *worker.gatherAbility()->harvest() = {credit, 1, 3};
             worker.trainingTicks = 3;
             scene.units = {{worker.id, 1, {20, 15}}};
             auto depot = fixtureDepot(worker); depot.constructionTicks = 1;
@@ -450,8 +537,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Direct harvest batches clamp to the reserve and Stop resets progress", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         auto type = definitions.entity("church.worker");
-        type.gatherAbility()->harvest->intervalTicks = 4;
-        type.gatherAbility()->harvest->amount = 3;
+        type.gatherAbility()->harvest()->intervalTicks = 4;
+        type.gatherAbility()->harvest()->amount = 3;
         auto s = flatScenario(7); s.worker = {6,7};
         auto game = makeTestSimulation(std::move(s), {}, type);
         const auto start = [&] {
@@ -473,7 +560,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         auto type = definitions.entity("church.worker");
         *type.gatherAbility() = definitions.ability(3); type.carryCapacity = 10;
-        type.gatherAbility()->harvest->amount = 6;
+        type.gatherAbility()->harvest()->amount = 6;
         auto s = flatScenario(); s.worker = {6,7};
         auto game = makeTestSimulation(std::move(s), {}, type);
         game.command({7,7});
@@ -636,7 +723,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         types.push_back(annex);
 
         auto s = flatScenario(); s.slots[0].startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("church.worker"), std::move(types), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
+        auto builder = definitions.entity("church.worker"); builder.buildableTypes.push_back(annex.id);
+        rts::Simulation game(std::move(s), {}, builder, std::move(types), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array<rts::EntityId, 1> ids{game.worker().id};
         require(!game.construct(ids, "church.barracks", {4, 3}), "Built on worker");
         require(!game.construct(ids, "church.barracks", {8, 8}), "Built outside map");
@@ -732,7 +820,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto annex = definitions.entity("church.hall"); annex.id = "test.annex";
         annex.width = annex.height = 1; annex.cost = {75, 99}; types.push_back(annex);
         auto s = flatScenario(); s.slots[0].startingCrystals = 500;
-        rts::Simulation game(std::move(s), {}, definitions.entity("church.worker"), std::move(types), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
+        auto builder = definitions.entity("church.worker"); builder.buildableTypes.push_back(annex.id);
+        rts::Simulation game(std::move(s), {}, builder, std::move(types), definitions.startingDepot(definitions.entity("church.worker").factionId).id);
         const std::array<rts::EntityId, 1> ids{game.worker().id};
         const auto extra = game.construct(ids, annex.id, {3, 5});
         require(extra && game.armySupply().used() == 100 && game.storedCrystals() == 425, "Building did not reserve its common cost");

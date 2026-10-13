@@ -42,8 +42,8 @@ std::string abilityTargetDetails(const AbilityDefinition& ability) {
         text += relation == TargetRelation::Own ? "Свои" : relation == TargetRelation::Enemy ? "Вражеские" : "Нейтральные";
     }
     if (ability.targeting != AbilityTargeting::Crystal) {
-        if (ability.targets.damagedOnly || ability.repair) text += "; повреждённые";
-        if (ability.targets.completedOnly || ability.repair) text += "; достроенные";
+        if (ability.targets.damagedOnly) text += "; повреждённые";
+        if (ability.targets.completedOnly) text += "; достроенные";
         if (!ability.targets.allowSelf) text += "; кроме себя";
     }
     return text;
@@ -95,7 +95,7 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
     }
     if (entity.canBuild) {
         heading("Рабочий");
-        paragraph("Возводит здания.");
+        for (const auto& id : entity.buildableTypes) paragraph(definitions.entity(id).displayName);
     }
     if (entity.acceptsCargo) paragraph("Принимает кристаллы, доставленные рабочими.");
     // Training is applicable only when a catalog producer actually offers this entity.
@@ -129,19 +129,23 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
             if (ability.targeting != AbilityTargeting::None) stat("Условия выбора цели", abilityTargetDetails(ability));
             stat("Анимация способности", abilityAnimationName(ability.animation));
             if (ability.rightClick) stat("Применение по ПКМ", "По подходящей цели");
-            if (ability.harvest) {
-                const auto& harvest = *ability.harvest;
-                stat("Анимация добычи", abilityAnimationName(ability.animation));
-                stat("За цикл добычи", std::to_string(harvest.amount), "crystal");
-                stat("Интервал добычи", seconds(harvest.intervalTicks));
-                stat("Зачисление", harvest.credit == HarvestCredit::Direct ? "Сразу в запас игрока" : "После доставки на склад");
-                if (harvest.credit == HarvestCredit::Cargo) stat("Вместимость груза", std::to_string(entity.carryCapacity), "crystal");
-            }
             stat("Дальность применения", ability.range > 0 ? amount(ability.range) : "Контакт");
-            if (ability.repair) {
-                const bool buildingsOnly = ability.targeting == AbilityTargeting::Building;
-                stat("Время полного ремонта", std::to_string(ability.repair->constructionTimePercent) + (buildingsOnly ? "% времени строительства" : "% времени строительства / обучения цели"));
-                stat("Цена полного ремонта", std::to_string(ability.repair->constructionCostPercent) + (buildingsOnly ? "% цены здания" : "% цены цели"));
+            for (size_t i = 0; i < ability.effects.size(); ++i) {
+                const auto& effect = ability.effects[i];
+                stat("Эффект " + std::to_string(i + 1), effect.recipient == EffectRecipient::Caster ? "На себя" : "На выбранную цель");
+                if (const auto* h = std::get_if<HarvestDefinition>(&effect.value)) {
+                    stat("Анимация добычи", abilityAnimationName(ability.animation));
+                    stat("За цикл добычи", std::to_string(h->amount), "crystal");
+                    stat("Интервал добычи", seconds(h->intervalTicks));
+                    stat("Зачисление", h->credit == HarvestCredit::Direct ? "Сразу в запас игрока" : "После доставки на склад");
+                    if (h->credit == HarvestCredit::Cargo) stat("Вместимость груза", std::to_string(entity.carryCapacity), "crystal");
+                } else if (const auto* repair = std::get_if<RepairDefinition>(&effect.value)) {
+                    const bool buildingsOnly = effect.recipient == EffectRecipient::Target && ability.targeting == AbilityTargeting::Building;
+                    stat("Время полного ремонта", std::to_string(repair->constructionTimePercent) + (buildingsOnly ? "% времени строительства" : "% времени строительства / обучения цели"));
+                    stat("Цена полного ремонта", std::to_string(repair->constructionCostPercent) + (buildingsOnly ? "% цены здания" : "% цены цели"));
+                } else if (const auto* restore = std::get_if<RestoreDefinition>(&effect.value)) {
+                    stat(restore->stat == RestoredStat::Health ? "Восстановление здоровья" : "Восстановление маны", std::to_string(restore->amount));
+                }
             }
             if (ability.autocast) {
                 stat("Радиус автокаста", amount(ability.autocast->radius));

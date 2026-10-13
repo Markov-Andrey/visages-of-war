@@ -17,13 +17,13 @@ bool Simulation::targetVisible(const Unit& observer, CombatTarget target) const 
     return false;
 }
 bool Simulation::canAttack(const Unit& attacker, const Unit& target) const {
-    return canAttack(attacker, CombatTarget{&target}, false);
+    return canAttack(attacker, target.definition.collision == CollisionShape::Footprint ? CombatTarget{nullptr, &target} : CombatTarget{&target}, false);
 }
 bool Simulation::canAttack(const Unit& attacker, EntityId target, bool forced) const {
     return canAttack(attacker, combatTarget(target), forced);
 }
 bool Simulation::canAttack(const Unit& attacker, CombatTarget target, bool forced) const {
-    return target && attacker.health > 0 && attacker.id != target.id() && attacker.attackDamage() > 0 && target.health() > 0 &&
+    return target && attacker.complete() && attacker.health > 0 && attacker.id != target.id() && attacker.attackDamage() > 0 && target.health() > 0 &&
         (forced || combat::hostile(attacker.owner, target.owner())) &&
         combat::accepts(attacker.definition.attackTargets, airborne(attacker.definition.movement), target.air());
 }
@@ -43,7 +43,14 @@ Vec2 Simulation::attackAim(CombatTarget target, Vec2 from) const {
 }
 bool Simulation::attackReach(const Unit& attacker, CombatTarget target, std::optional<Vec2> origin) const {
     if (!canAttack(attacker, target, true)) return false;
-    const Vec2 start = origin.value_or(attacker.position), aim = attackAim(target, start);
+    Vec2 start = origin.value_or(attacker.position);
+    Vec2 aim = attackAim(target, start);
+    if (attacker.definition.collision == CollisionShape::Footprint) {
+        start = attackAim(combatTarget(attacker.id), aim);
+        const auto outward = aim - start; const auto distance = groundLength(outward);
+        if (distance > .005f) start = start + outward * (.005f / distance);
+        aim = attackAim(target, start);
+    }
     const Vec2 delta = aim - start;
     if (groundLengthSquared(delta) > attacker.definition.attackRange * attacker.definition.attackRange) return false;
     if (attacker.definition.projectile) return true;
@@ -73,7 +80,7 @@ bool Simulation::attack(std::span<const EntityId> ids, EntityId targetId, bool f
     if (!target) return false;
     bool any = false;
     for (EntityId id : ids) {
-        auto* u = mutableUnit(id);
+        auto* u = mutableEntity(id);
         if (!u || u->owner != player_.id || !canAttack(*u, target, forced) || !targetVisible(*u, target)) continue;
         Order order{OrderKind::Attack, {}, targetId}; order.forceAttack = forced;
         issue(*u, order); any = true;

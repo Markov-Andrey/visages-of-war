@@ -20,13 +20,12 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
             !map().contains(node.cell) || !map().contains(node.cell + Cell{node.width - 1, node.height - 1}))
             throw std::invalid_argument("Invalid crystal reserve or footprint");
     if (std::none_of(entityTypes_.begin(), entityTypes_.end(), [&](const auto& type) { return type.id == workerType_.id; })) entityTypes_.push_back(workerType_);
-    for (const auto& type : entityTypes_) if (type.constructible && type.factionId == workerType_.factionId) buildable_.push_back(&type);
-    const auto initial = std::find_if(buildable_.begin(), buildable_.end(), [&](const auto* type) { return type->id == startingBuilding; });
-    if (initial == buildable_.end() || (*initial)->mobile || !(*initial)->acceptsCargo)
+    const auto* initial = &entityType(startingBuilding);
+    if (!initial->constructible || initial->mobile || !initial->acceptsCargo || initial->factionId != workerType_.factionId)
         throw std::invalid_argument("Invalid starting building for faction " + workerType_.factionId + ": " + startingBuilding);
-    reserveScenarioHall(scenario_, {(*initial)->width, (*initial)->height});
-    if (!mutableEconomy(player_.id).supply.reserve((*initial)->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
-    buildings_.push_back(makeEntity(**initial, hall(), player_.id));
+    reserveScenarioHall(scenario_, {initial->width, initial->height});
+    if (!mutableEconomy(player_.id).supply.reserve(initial->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
+    buildings_.push_back(makeEntity(*initial, hall(), player_.id));
     spawn(workerType_, scenario_.worker, false, player_.id);
     for (Cell cell : scenario_.extraWorkers) spawn(workerType_, cell, false, player_.id);
     for (const auto& initialUnit : scenario_.units) spawn(entityType(initialUnit.definitionId), initialUnit.cell, false, initialUnit.owner);
@@ -37,6 +36,23 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
     for (auto& node : scenario_.crystals) node.id = nextId_++;
     scenario_.map.rebuildVisionBlockers(environment());
     updateVision();
+}
+std::vector<const Entity*> Simulation::entities() const {
+    std::vector<const Entity*> result; result.reserve(units_.size() + buildings_.size());
+    for (const auto& e : units_) result.push_back(&e);
+    for (const auto& e : buildings_) result.push_back(&e);
+    return result;
+}
+std::vector<Entity*> Simulation::mutableEntities() {
+    std::vector<Entity*> result; result.reserve(units_.size() + buildings_.size());
+    for (auto& e : units_) result.push_back(&e);
+    for (auto& e : buildings_) result.push_back(&e);
+    return result;
+}
+std::vector<const EntityDefinition*> Simulation::buildingTypes(const EntityDefinition& builder) const {
+    std::vector<const EntityDefinition*> result;
+    if (builder.canBuild) for (const auto& id : builder.buildableTypes) result.push_back(&entityType(id));
+    return result;
 }
 bool Simulation::visibleTo(PlayerId id, Cell cell) const {
     if (!activePlayer(id)) return false;
