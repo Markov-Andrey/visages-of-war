@@ -1,3 +1,4 @@
+#include "rts/Library.hpp"
 #include "RenderSupport.hpp"
 #include <iomanip>
 #include <sstream>
@@ -200,9 +201,9 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             const size_t i = command.slot;
             if (!unitCommandVisible(game, ui, i)) continue;
             labels[i] = command.label; details[i] = command.description; buttonKeys[i] = command.key; icons[i] = command.icon;
-            if (command.command == UnitCommand::Gather && unit->definition.gatherAbility) {
-                labels[i] = wide(unit->definition.gatherAbility->displayName);
-                details[i] = wide(unit->definition.gatherAbility->description);
+            if (command.command == UnitCommand::Gather && unit->definition.gatherAbility()) {
+                labels[i] = wide(unit->definition.gatherAbility()->displayName);
+                details[i] = wide(unit->definition.gatherAbility()->description);
             }
             if (command.command != UnitCommand::Back) details[i] += command.scope == CommandScope::ActiveGroup ?
                 L"\nДля активной группы." : L"\nДля всего выделения.";
@@ -221,20 +222,30 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         labels.fill({}); details.fill({}); icons.fill(nullptr); commandTypes.fill(nullptr);
         enabled.fill(false); active.fill(false); buttonKeys.fill(0);
     }
-    if (unit) for (size_t i = firstAbilitySlot; i < firstAbilitySlot + abilityKeys.size(); ++i) {
+    const auto* caster = activeAbilityEntity(game, ui);
+    if (caster && building && !caster->definition.abilities.empty()) {
+        labels[buildingAbilityStopSlot] = L"Остановить"; details[buildingAbilityStopSlot] = L"Прервать текущее применение способности.";
+        icons[buildingAbilityStopSlot] = "stop"; buttonKeys[buildingAbilityStopSlot] = L'S';
+        if (ui.orderMode) {
+            labels[backCommandSlot] = L"Назад"; details[backCommandSlot] = L"Отменить выбор цели.";
+            icons[backCommandSlot] = "cancel"; buttonKeys[backCommandSlot] = L'X';
+        }
+    }
+    if (caster) for (size_t i = firstAbilitySlot; i < firstAbilitySlot + abilityKeys.size(); ++i) {
         const auto* ability = abilityCommandAt(game, ui, i);
         if (!ability) continue;
         abilities[i] = ability;
         labels[i] = wide(ability->displayName);
         details[i] = wide(ability->description) + L"\nМана: " + std::to_wstring(ability->manaCost) +
             L"  ·  Перезарядка: " + std::to_wstring(ability->cooldownTicks / Simulation::ticksPerSecond) + L" с";
-        buttonKeys[i] = abilityKeys[i - firstAbilitySlot];
-        enabled[i] = unit->abilityCooldown(ability->id) == 0 && unit->mana >= ability->manaCost;
+        buttonKeys[i] = abilityKey(game, ui, i - firstAbilitySlot);
+        enabled[i] = caster->abilityCooldown(ability->id) == 0 && caster->mana >= ability->manaCost;
         active[i] = ui.orderMode == OrderKind::UseAbility && ui.pendingAbility == ability->id;
         details[i] += L"\nЦели: " + wide(abilityTargetDescription(ability->targeting)) + L".";
+        if (ability->targeting != AbilityTargeting::None) details[i] += L"\n" + wide(abilityTargetDetails(*ability)) + L".";
         if (ability->rightClick) details[i] += L"\nПКМ по подходящей цели — применить.";
         if (ability->repair) details[i] += L"\nПолный ремонт: " + std::to_wstring(ability->repair->constructionTimePercent) +
-            (ability->targeting == AbilityTargeting::FriendlyBuilding ? L"% времени строительства, " : L"% времени строительства / обучения цели, ") +
+            (ability->targeting == AbilityTargeting::Building ? L"% времени строительства, " : L"% времени строительства / обучения цели, ") +
             std::to_wstring(ability->repair->constructionCostPercent) + L"% цены цели.";
         if (ability->autocast) {
             const auto state = autocastState(game, ui, ability->id);
@@ -248,7 +259,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     panel(commandPanel, 0x101c25);
     for (size_t i = 0; i < layout.commandCount; ++i) {
         const auto b = layout.commands[i];
-        if (building || ui.buildMenu) enabled[i] = !labels[i].empty();
+        if ((building || ui.buildMenu) && !abilities[i]) enabled[i] = !labels[i].empty();
         if (b.contains(ui.mouse) && !labels[i].empty()) {
             if (commandTypes[i]) { tooltip = commandTypes[i]; tooltipKey = buttonKeys[i]; }
             else {
@@ -266,7 +277,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 icon(icons[i], {b.x, b.y}, b.width);
             } else if (const auto* type = commandTypes[i]) {
                 target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
-                if (type->mobile && !type->sprite.image.empty()) {
+                if (type->collision == CollisionShape::Circle && !type->sprite.image.empty()) {
                     unitIcon(type->sprite, b, teamColor_);
                 } else if (!type->buildingSprite.icon.empty()) {
                     uiImage(type->buildingSprite.icon, type->buildingSprite.iconMask, b, teamColor_);
@@ -280,7 +291,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             worldOpacity_ = 1;
         }
         if (const auto* ability = abilities[i]) {
-            const int cooldown = unit->abilityCooldown(ability->id);
+            const int cooldown = caster->abilityCooldown(ability->id);
             if (cooldown > 0) {
                 brush_->SetColor(D2D1::ColorF(0x07101e, .8f));
                 target_->FillRectangle(rect(b.x, b.y, b.width, b.height * cooldown / ability->cooldownTicks), brush_.Get());
@@ -288,7 +299,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                     {b.x + 22, b.y + 3, b.width - 22, b.height - 22}, 0xe2eaff, b.height >= 48);
             }
             if (ability->manaCost > 0) centeredText(std::to_wstring(ability->manaCost), {b.x, b.y + b.height - 19, b.width, 19},
-                unit->mana >= ability->manaCost ? 0x8bbaff : 0xed8b80);
+                caster->mana >= ability->manaCost ? 0x8bbaff : 0xed8b80);
         }
         buttonFrame(b);
         if (active[i] && enabled[i]) {

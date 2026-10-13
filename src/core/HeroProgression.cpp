@@ -4,7 +4,7 @@
 namespace rts {
 using combat::hostile;
 bool Simulation::grantExperience(EntityId id, int amount) {
-    auto* u = mutableUnit(id);
+    auto* u = mutableEntity(id);
     if (!u || !u->hero || u->health <= 0 || amount <= 0 || u->atMaxLevel()) return false;
     const auto& thresholds = progression_->thresholds;
     const int oldMaximum = u->maximumHealth();
@@ -20,11 +20,14 @@ bool Simulation::grantExperience(EntityId id, int amount) {
 void Simulation::rewardKill(const Unit& victim, PlayerId killer) {
     if (!hostile(killer, victim.owner)) return;
     std::vector<EntityId> recipients;
-    for (const auto& u : units_) if (u.hero && u.health > 0 && u.owner == killer && !u.atMaxLevel()) {
+    const auto consider = [&](const Entity& u) {
+        if (!u.hero || u.health <= 0 || u.owner != killer || u.atMaxLevel()) return;
         const auto delta = u.position - victim.position;
         const int radius = progression_->experienceRadius;
         if (groundLengthSquared(delta) <= radius * radius) recipients.push_back(u.id);
-    }
+    };
+    for (const auto& u : units_) consider(u);
+    for (const auto& b : buildings_) consider(b);
     if (recipients.empty()) return;
     std::sort(recipients.begin(), recipients.end());
     const int bounty = progression_->experiencePerVictimLevel * victim.level();

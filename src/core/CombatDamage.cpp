@@ -28,6 +28,7 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
     std::erase_if(units_, [](const Unit& u) { return u.health == 0; });
     bool buildingsDestroyed = false;
     for (const auto& b : buildings_) if (b.health == 0) {
+        if (b.hero && b.owner == player_.id) heroFallen_ = true;
         // Combat destruction never refunds crystals, including unfinished jobs.
         if (activePlayer(b.owner)) {
             auto& supply = mutableEconomy(b.owner).supply;

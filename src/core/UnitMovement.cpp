@@ -149,7 +149,8 @@ void Simulation::replanMovement() {
             // Exhaustion/fallback selection remains the gathering controller's job.
             std::vector<Cell> goals;
             if (u->state == UnitState::ToAbility) {
-                goals = repairPositions(*u, u->currentOrder.target);
+                if (const auto* ability = u->ability(u->currentOrder.abilityId))
+                    goals = abilityPositions(*u, *ability, u->currentOrder.target);
             } else if (u->state == UnitState::ToHall) {
                 if (const auto* depot = building(u->targetBuilding))
                     goals = perimeter(map(), depot->origin, depot->definition.width, depot->definition.height, u->definition.movement);

@@ -5,6 +5,7 @@
 
 namespace rts {
 bool Simulation::setRoute(Unit& u, std::span<const Cell> goals, UnitState state, bool waitForTraffic) {
+    if (!u.definition.mobile) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return false; }
     const bool precise = goals.size() == 1 && u.currentOrder.position && goals.front() == u.currentOrder.cell && state == UnitState::Moving;
     const auto search = [&](std::span<const Circle> obstacles) {
         return precise ? findUnitPathTo(map(), u.position, *u.currentOrder.position, obstacles, u.definition.collisionRadius, u.definition.movement) :
@@ -71,15 +72,14 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
             return;
         }
     }
-    if (order.kind == OrderKind::Gather && u.definition.canGather()) {
+    if (order.kind == OrderKind::Gather && u.harvestAbility()) {
         for (size_t i = 0; i < crystals().size(); ++i) {
             // Keep the clicked deposit as the origin throughout this gathering order.
             if (!crystals()[i].contains(order.cell)) continue;
             u.targetCrystal = u.gatherOriginCrystal = static_cast<int>(i); u.repeatGather = true;
-            if (u.definition.harvesting().credit == HarvestCredit::Cargo && u.cargo >= u.definition.carryCapacity)
+            if (u.harvestAbility()->harvest->credit == HarvestCredit::Cargo && u.cargo >= u.definition.carryCapacity)
                 returnCargo(u);
             else seekCrystal(u);
-            commitAbility(u, *u.definition.gatherAbility);
             return;
         }
     }
@@ -95,11 +95,12 @@ bool Simulation::command(std::span<const EntityId> ids, Cell c, EntityId target)
             if (candidate.owner != player_.id) break;
         }
         if (!target) if (const auto* b = buildingAt(c)) target = b->id;
+        if (!target) for (const auto& node : crystals()) if (node.contains(c)) { target = node.id; break; }
     }
     bool matched = false, accepted = false;
     std::vector<EntityId> visited;
     for (auto id : ids) {
-        auto* u = mutableUnit(id);
+        auto* u = mutableEntity(id);
         if (!u || u->owner != player_.id || std::find(visited.begin(), visited.end(), id) != visited.end()) continue;
         visited.push_back(id);
         if (const auto* ability = contextualAbility(*u, target)) {
@@ -121,11 +122,24 @@ bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKi
     if (kind == OrderKind::Attack || kind == OrderKind::Build || kind == OrderKind::UseAbility) return false;
     if (kind == OrderKind::Gather && std::none_of(crystals().begin(), crystals().end(),
         [&](const Crystal& crystal) { return crystal.contains(c) && crystal.remaining > 0 && crystalVisibleTo(actor, crystal); })) return false;
+    if (kind == OrderKind::Gather) {
+        const auto node = std::find_if(crystals().begin(), crystals().end(), [&](const Crystal& value) { return value.contains(c); });
+        bool accepted = false;
+        std::vector<EntityId> visited;
+        for (auto id : ids) {
+            if (std::find(visited.begin(), visited.end(), id) != visited.end()) continue;
+            visited.push_back(id);
+            auto* e = mutableEntity(id);
+            if (!e || !e->definition.gatherAbility()) continue;
+            accepted = activateAbilityFor(actor, id, e->definition.gatherAbility()->id, node->id) || accepted;
+        }
+        return accepted;
+    }
     std::vector<FormationMember> members;
     for (EntityId id : ids) {
-        auto* u = mutableUnit(id);
+        auto* u = mutableEntity(id);
         if (!u || u->owner != actor || std::any_of(members.begin(), members.end(), [&](const auto& m) { return m.id == id; })) continue;
-        if (kind == OrderKind::Gather && !u->definition.canGather()) continue;
+        if (!u->definition.mobile && kind != OrderKind::Stop && kind != OrderKind::Hold) continue;
         if (kind == OrderKind::AttackGround && (u->attackDamage() <= 0 || !u->definition.projectile ||
             u->definition.projectile->targeting != ProjectileTargeting::Point || u->definition.projectile->splashRadius <= 0)) continue;
         members.push_back({id, u->cell,
@@ -136,7 +150,7 @@ bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKi
     if (kind == OrderKind::Patrol && members.size() == 1 && members.front().start == c) return false;
     bool any = false;
     if (kind != OrderKind::Move && kind != OrderKind::AttackMove && kind != OrderKind::Patrol) {
-        for (const auto& member : members) { issue(*mutableUnit(member.id), {kind, c}); any = true; }
+        for (const auto& member : members) { issue(*mutableEntity(member.id), {kind, c}); any = true; }
     } else {
         std::vector<FormationObstacle> held;
         for (const auto& u : units_) if (std::none_of(members.begin(), members.end(), [&](const auto& m) { return m.id == u.id; })) {
@@ -195,7 +209,7 @@ bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKi
 }
 void Simulation::stop() { if (units_.empty()) return; const EntityId id = worker().id; stop(std::span<const EntityId>(&id, 1)); }
 void Simulation::stop(std::span<const EntityId> ids) {
-    for (EntityId id : ids) if (auto* u = mutableUnit(id); u && u->owner == player_.id) issue(*u, {OrderKind::Stop});
+    for (EntityId id : ids) if (auto* u = mutableEntity(id); u && u->owner == player_.id) issue(*u, {OrderKind::Stop});
     setMessage({});
 }
 void Simulation::arrived(Unit& u) {
@@ -209,7 +223,7 @@ void Simulation::arrived(Unit& u) {
     case UnitState::ToAttack: u.state = UnitState::Attacking; break;
     case UnitState::ToCrystal: {
         u.state = UnitState::Harvesting; u.harvestTicks = 0;
-        if (u.definition.gatherAbility) u.abilityAnimation.sustain(*u.definition.gatherAbility, u.definition);
+        if (u.harvestAbility()) u.abilityAnimation.sustain(*u.harvestAbility(), u.definition);
         if (u.targetCrystal >= 0) {
             const auto& node = crystals()[static_cast<size_t>(u.targetCrystal)];
             const Vec2 delta = Vec2{node.cell.x + node.width * .5f, node.cell.y + node.height * .5f} - u.position;
@@ -240,15 +254,14 @@ void Simulation::arrived(Unit& u) {
     }
 }
 void Simulation::tickUnit(Unit& u) {
+    if (u.health <= 0) { issue(u, {OrderKind::Stop}); return; }
     tickAutocast(u);
     if (u.currentOrder.kind == OrderKind::UseAbility) {
         const auto* ability = u.ability(u.currentOrder.abilityId);
         if (!ability || !canTargetAbility(u, *ability, u.currentOrder.target)) { issue(u, {OrderKind::Stop}); return; }
-        if (unit(u.currentOrder.target)) {
-            if (repairReach(u, u.currentOrder.target, u.position)) {
-                u.route.clear(); u.next = 0; u.velocity = {}; u.state = UnitState::UsingAbility;
-            } else if (--u.chaseTicks <= 0) approachRepair(u);
-        }
+        if (abilityReach(u, *ability, u.currentOrder.target, u.position)) {
+            u.route.clear(); u.next = 0; u.velocity = {}; u.state = UnitState::UsingAbility;
+        } else if (--u.chaseTicks <= 0) approachAbility(u);
     }
     if (u.state == UnitState::ToBuild || u.state == UnitState::Building) {
         const auto* b = building(u.targetBuilding);
@@ -273,7 +286,7 @@ void Simulation::tickUnit(Unit& u) {
         moveUnit(u);
         return;
     }
-    if (u.state == UnitState::UsingAbility) { tickRepair(u); return; }
+    if (u.state == UnitState::UsingAbility) { tickAbility(u); return; }
     if (u.state == UnitState::Building) {
         auto* b = mutableBuilding(u.targetBuilding);
         if (!b || b->complete()) { u.state = UnitState::Idle; return; }
@@ -284,6 +297,6 @@ void Simulation::tickUnit(Unit& u) {
             issue(u, {OrderKind::Stop});
         return;
     }
-    harvest(u);
+    tickAbility(u);
 }
 }

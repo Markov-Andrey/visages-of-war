@@ -34,6 +34,20 @@ std::string targetNames(const EntityDefinition& entity) {
     return {};
 }
 }
+std::string abilityTargetDetails(const AbilityDefinition& ability) {
+    if (ability.targeting == AbilityTargeting::None) return "Без цели";
+    std::string text;
+    for (auto relation : ability.targets.relations) {
+        if (!text.empty()) text += ", ";
+        text += relation == TargetRelation::Own ? "Свои" : relation == TargetRelation::Enemy ? "Вражеские" : "Нейтральные";
+    }
+    if (ability.targeting != AbilityTargeting::Crystal) {
+        if (ability.targets.damagedOnly || ability.repair) text += "; повреждённые";
+        if (ability.targets.completedOnly || ability.repair) text += "; достроенные";
+        if (!ability.targets.allowSelf) text += "; кроме себя";
+    }
+    return text;
+}
 std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const EntityDefinition& entity) {
     std::vector<LibraryDetail> result;
     const auto heading = [&](std::string text) { result.push_back({LibraryDetailKind::Heading, std::move(text), {}, {}}); };
@@ -83,17 +97,6 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
         heading("Рабочий");
         paragraph("Возводит здания.");
     }
-    if (entity.canGather()) {
-        const auto& ability = *entity.gatherAbility;
-        const auto& harvest = entity.harvesting();
-        heading(ability.displayName);
-        paragraph(ability.description);
-        stat("Анимация добычи", abilityAnimationName(ability.animation));
-        stat("За цикл добычи", std::to_string(harvest.amount), "crystal");
-        stat("Интервал добычи", seconds(harvest.intervalTicks));
-        stat("Зачисление", harvest.credit == HarvestCredit::Direct ? "Сразу в запас игрока" : "После доставки на склад");
-        if (harvest.credit == HarvestCredit::Cargo) stat("Вместимость груза", std::to_string(entity.carryCapacity), "crystal");
-    }
     if (entity.acceptsCargo) paragraph("Принимает кристаллы, доставленные рабочими.");
     // Training is applicable only when a catalog producer actually offers this entity.
     const bool trainable = std::any_of(definitions.entities().begin(), definitions.entities().end(), [&](const auto& producer) {
@@ -123,10 +126,20 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
             stat("Расход маны", std::to_string(ability.manaCost));
             stat("Перезарядка", seconds(ability.cooldownTicks));
             stat("Цели", abilityTargetDescription(ability.targeting));
+            if (ability.targeting != AbilityTargeting::None) stat("Условия выбора цели", abilityTargetDetails(ability));
             stat("Анимация способности", abilityAnimationName(ability.animation));
             if (ability.rightClick) stat("Применение по ПКМ", "По подходящей цели");
+            if (ability.harvest) {
+                const auto& harvest = *ability.harvest;
+                stat("Анимация добычи", abilityAnimationName(ability.animation));
+                stat("За цикл добычи", std::to_string(harvest.amount), "crystal");
+                stat("Интервал добычи", seconds(harvest.intervalTicks));
+                stat("Зачисление", harvest.credit == HarvestCredit::Direct ? "Сразу в запас игрока" : "После доставки на склад");
+                if (harvest.credit == HarvestCredit::Cargo) stat("Вместимость груза", std::to_string(entity.carryCapacity), "crystal");
+            }
+            stat("Дальность применения", ability.range > 0 ? amount(ability.range) : "Контакт");
             if (ability.repair) {
-                const bool buildingsOnly = ability.targeting == AbilityTargeting::FriendlyBuilding;
+                const bool buildingsOnly = ability.targeting == AbilityTargeting::Building;
                 stat("Время полного ремонта", std::to_string(ability.repair->constructionTimePercent) + (buildingsOnly ? "% времени строительства" : "% времени строительства / обучения цели"));
                 stat("Цена полного ремонта", std::to_string(ability.repair->constructionCostPercent) + (buildingsOnly ? "% цены здания" : "% цены цели"));
             }

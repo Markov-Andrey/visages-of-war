@@ -17,12 +17,12 @@ void GameApplication::selectIdleWorker() {
 void GameApplication::unitAction(size_t index) {
     if (!rts::unitCommandVisible(game_, ui_, index)) return;
     if (const auto* ability = rts::abilityCommandAt(game_, ui_, index)) {
-        const auto* unit = ui_.selection.activeUnit(game_);
+        const auto* unit = rts::activeAbilityEntity(game_, ui_);
         clearCommandMode();
         if (ability->targeting == AbilityTargeting::None) game_.activateAbility(unit->id, ability->id);
         else {
             ui_.orderMode = OrderKind::UseAbility; ui_.pendingAbility = ability->id;
-            ui_.commandGroup = ui_.selection.activeGroup(game_).type;
+            ui_.commandGroup = unit->definitionId;
         }
         return;
     }
@@ -45,7 +45,7 @@ void GameApplication::unitAction(size_t index) {
     else ui_.orderMode = command.order;
 }
 bool GameApplication::unitHotkey(unsigned key) {
-    if (selectedBuilding() || selectedCrystal()) return false;
+    if (selectedCrystal()) return false;
     if (ui_.buildMenu) {
         constexpr std::array keys{L'H', L'B', L'O'};
         for (size_t i = 0; i < keys.size(); ++i) if (key == keys[i]) { unitAction(i); return true; }
@@ -53,9 +53,14 @@ bool GameApplication::unitHotkey(unsigned key) {
         return false;
     }
     for (size_t i = 0; i < rts::abilityKeys.size(); ++i)
-        if (key == rts::abilityKeys[i] && rts::abilityCommandAt(game_, ui_, rts::firstAbilitySlot + i)) {
+        if (key == rts::abilityKey(game_, ui_, i) && rts::abilityCommandAt(game_, ui_, rts::firstAbilitySlot + i)) {
             unitAction(rts::firstAbilitySlot + i); return true;
         }
+    if (const auto* b = selectedBuilding()) {
+        if (key == 'S' && !b->definition.abilities.empty()) { action(rts::buildingAbilityStopSlot); return true; }
+        if (key == 'X' && ui_.orderMode) { clearCommandMode(); return true; }
+        return false;
+    }
     for (const auto& command : rts::unitCommands) if (key == command.key) {
         unitAction(command.slot); return true;
     }
@@ -71,7 +76,8 @@ bool GameApplication::executeTarget(rts::Cell target) {
         if (accepted) { ui_.commandFeedback.confirm(entity); clearCommandMode(); }
         return accepted;
     }
-    const auto entity = *ui_.orderMode == rts::OrderKind::AttackMove ? pickCommandEntity(target) : 0;
+    const auto picked = *ui_.orderMode == rts::OrderKind::AttackMove ? pickCommandEntity(target) : 0;
+    const auto entity = game_.entity(picked) ? picked : 0;
     if (entity) {
         accepted = game_.attack(recipients, entity, true);
         if (accepted) ui_.commandFeedback.confirm(entity);

@@ -8,20 +8,22 @@ using namespace render;
 void Renderer::drawHarvestEffects(const Simulation& game, const WorldView& view) {
     const float z = view.zoom;
     const float seconds = float(game.clock().elapsedTicks() % 36000) / Simulation::ticksPerSecond;
-    for (const auto& unit : game.units()) {
+    const auto draw = [&](const Entity& unit) {
         const auto* crystal = harvestEffectTarget(game, unit);
-        if (!crystal) continue;
-        const auto& effect = *unit.definition.harvesting().effect;
+        if (!crystal) return;
+        const auto& effect = *unit.harvestAbility()->harvest->effect;
         const auto& art = unit.definition.sprite;
         const auto socket = art.workOrigins ? (*art.workOrigins)[unitFrame(unit).row] : Vec2{.5f, .65f};
-        const auto start = unitScreenAnchor(view, unit.position, game.unitHeight(unit)) +
+        const auto unitStart = unitScreenAnchor(view, unit.position, game.unitHeight(unit)) +
             Vec2{(socket.x - art.anchor.x) * art.size.x, (socket.y - art.anchor.y) * art.size.y} * z;
+        const auto start = unit.definition.collision == CollisionShape::Footprint ?
+            view.project(unit.position, game.unitHeight(unit)) : unitStart;
         const auto finish = view.project(crystal->center(), float(game.map().at(crystal->cell).height)) +
             Vec2{0, -22.f - 10 * (std::max(crystal->width, crystal->height) - 1)} * z;
         const float margin = (effect.arcHeight + 12) * z;
         const auto screen = size();
         if (std::max(start.x, finish.x) < -margin || std::min(start.x, finish.x) > screen.x + margin ||
-            std::max(start.y, finish.y) < -margin || std::min(start.y, finish.y) > screen.y + margin) continue;
+            std::max(start.y, finish.y) < -margin || std::min(start.y, finish.y) > screen.y + margin) return;
         const float phase = seconds * 4 + float(unit.id % 17);
         const float pulse = .78f + .22f * std::sin(phase);
         const auto at = [&](float t) {
@@ -56,6 +58,8 @@ void Renderer::drawHarvestEffects(const Simulation& game, const WorldView& view)
             const float t = 1.f - std::fmod(seconds * .65f + float(unit.id % 11) * .071f + i * .5f, 1.f);
             if (visibleAt(t)) spark(at(t), 1.3f, std::sin(t * std::numbers::pi_v<float>));
         }
-    }
+    };
+    for (const auto& unit : game.units()) draw(unit);
+    for (const auto& building : game.buildings()) draw(building);
 }
 }

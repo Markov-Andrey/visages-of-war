@@ -35,7 +35,7 @@ rts::CursorKind GameApplication::cursorKind() const {
         if (!ui_.controlGroups.members(i).empty() && layout.controlGroups[i].contains(mouse_)) return CursorKind::Hand;
     const auto selected = [&](auto predicate) {
         return std::any_of(ui_.selection.ids.begin(), ui_.selection.ids.end(), [&](rts::EntityId id) {
-            const auto* u = game_.unit(id);
+            const auto* u = game_.entity(id);
             return u && u->owner == game_.player().id && predicate(*u);
         });
     };
@@ -52,16 +52,19 @@ rts::CursorKind GameApplication::cursorKind() const {
                 (game_.unit(card.id)->maximumMana() > 0 && card.manaBar().contains(mouse_))) return CursorKind::Hand;
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) {
             bool active = false;
-            if (building) active = (building->complete() && ((i == 1 && !building->definition.trainableUnits.empty()) ||
+            if (rts::abilityCommandAt(game_, ui_, i)) active = true;
+            else if (building) active = (building->complete() && ((i == 1 && !building->definition.trainableUnits.empty()) ||
                 ((i == 0 || i == 2 || i == 4) && i / 2 < building->definition.trainableUnits.size()))) ||
-                (i == 5 && (!building->complete() || !building->production.empty()));
+                (i == 5 && (!building->complete() || !building->production.empty())) ||
+                (i == rts::buildingAbilityStopSlot && !building->definition.abilities.empty()) ||
+                (i == rts::backCommandSlot && ui_.orderMode);
             else active = rts::unitCommandVisible(game_, ui_, i);
             return active ? CursorKind::Hand : CursorKind::Default;
         }
         return CursorKind::Default;
     }
     const auto target = minimap ? layout.minimapCell(mouse_, game_.map()) :
-        (!ui_.placement.empty() || ui_.rallyMode || building ? game_.map().pick(mouse_, view_) : pickCommandTarget());
+        (!ui_.placement.empty() || ui_.rallyMode ? game_.map().pick(mouse_, view_) : pickCommandTarget());
     if (!ui_.placement.empty() && !minimap) {
         const auto& type = game_.entityType(ui_.placement);
         return target && game_.canPlace(type.id, *target) && game_.storedCrystals() >= type.cost.crystals && game_.armySupply().canReserve(type.cost.supply) ? CursorKind::Build : CursorKind::Blocked;
@@ -71,13 +74,13 @@ rts::CursorKind GameApplication::cursorKind() const {
         switch (*ui_.orderMode) {
         case rts::OrderKind::UseAbility: {
             const auto abilityTarget = pickCommandEntity(*target);
-            const auto* unit = ui_.selection.activeUnit(game_);
+            const auto* unit = rts::activeAbilityEntity(game_, ui_);
             const auto* ability = unit ? unit->ability(ui_.pendingAbility) : nullptr;
             return abilityTarget && ability && game_.canTargetAbility(*unit, *ability, abilityTarget) ? CursorKind::Target : CursorKind::Blocked;
         }
         case rts::OrderKind::AttackMove: {
             const auto entity = pickCommandEntity(*target);
-            return !entity || selected([&](const rts::Unit& u) { return game_.canAttack(u, entity, true); }) ? CursorKind::Target : CursorKind::Blocked;
+            return !game_.entity(entity) || selected([&](const rts::Unit& u) { return game_.canAttack(u, entity, true); }) ? CursorKind::Target : CursorKind::Blocked;
         }
         case rts::OrderKind::AttackGround: return CursorKind::Target;
         case rts::OrderKind::Gather:
@@ -85,6 +88,11 @@ rts::CursorKind GameApplication::cursorKind() const {
                 [&](const auto& crystal) { return crystal.contains(*target) && crystal.remaining > 0 && game_.crystalVisible(crystal); }) ? CursorKind::Gather : CursorKind::Blocked;
         default: return CursorKind::Move;
         }
+    }
+    if (!ui_.rallyMode && target) {
+        const auto id = pickCommandEntity(*target);
+        if (id && selected([&](const Entity& e) { return game_.contextualAbility(e, id) != nullptr; }))
+            return game_.crystal(id) ? CursorKind::Gather : CursorKind::Target;
     }
     if (building && (ui_.rallyMode || !building->definition.trainableUnits.empty())) {
         if (building->definition.trainableUnits.empty()) return CursorKind::Default;
@@ -94,7 +102,8 @@ rts::CursorKind GameApplication::cursorKind() const {
     if (minimap) return CursorKind::Hand;
     if (!target) return CursorKind::Default;
     const auto entity = pickCommandEntity(*target);
-    if (entity && selected([&](const rts::Unit& u) { return game_.contextualAbility(u, entity) != nullptr; })) return CursorKind::Target;
+    if (entity && selected([&](const rts::Unit& u) { return game_.contextualAbility(u, entity) != nullptr; }))
+        return game_.crystal(entity) ? CursorKind::Gather : CursorKind::Target;
     for (const auto& enemy : game_.units()) if (enemy.owner != game_.player().id && enemy.cell == *target && game_.fog().visible(enemy.cell)) {
         if (!selected([](const rts::Unit&) { return true; })) return CursorKind::Select;
         return selected([&](const rts::Unit& u) { return game_.canAttack(u, enemy); }) ? CursorKind::Attack : CursorKind::Blocked;
@@ -263,7 +272,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         }
         if (layout.minimap.contains(mouse_)) rightClick(layout.minimapCell(mouse_, game_.map()));
         else if (mouseInWorld()) {
-            const auto target = selectedBuilding() ? game_.map().pick(mouse_, view_) : pickCommandTarget();
+            const auto target = pickCommandTarget();
             rightClick(target, target ? pickCommandEntity(*target) : 0);
         }
         return 0;

@@ -78,7 +78,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
     });
     test("Editor reserves catalog depot dimensions across moves undo reload and serialization", [&] {
         CatalogFixture fixture(assets);
-        fixture.entities["entities"][3]["construction"]["footprint"] = {4, 3};
+        fixture.entities["entities"][3]["collision"]["footprint"] = {4, 3};
         const auto definitions = fixture.load();
         rts::WorldEditor editor({rts::Map(20, 20), {1, 1}, {7, 6}, {}}, worldAssets, definitions);
         require(editor.scenario().map.occupancy({4, 3}) == 1 && editor.scenario().map.walkable({5, 3}), "Editor ignored custom footprint");
@@ -95,7 +95,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
         require(loaded.hallFootprint == rts::Cell{4, 3} && loaded.map.occupancy({13, 12}) == 1, "Map reload lost catalog footprint");
         std::ifstream input(file); const auto document = Json::parse(input);
         require(document.at("start").size() == 3 && !document.contains("hallFootprint"), "Derived depot dimensions leaked into the authored map");
-        fixture.entities["entities"][3]["construction"]["footprint"] = {3, 2};
+        fixture.entities["entities"][3]["collision"]["footprint"] = {3, 2};
         const auto smaller = fixture.load(); editor.reloadDefinitions(worldAssets, smaller);
         require(editor.scenario().map.walkable({13, 12}) && editor.scenario().map.occupancy({12, 11}) == 1, "Catalog reload retained larger collision");
         editor.validateForPlay();

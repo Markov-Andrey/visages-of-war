@@ -61,8 +61,10 @@ std::optional<EntityId> Simulation::constructFor(PlayerId actor, std::span<const
     if (!builder) { setMessage(L"Выберите рабочего, который может подойти к площадке."); return std::nullopt; }
     if (!economy.supply.reserve(type.cost.supply)) { setMessage(L"Достигнут лимит армии: 100."); return std::nullopt; }
     scenario_.map = std::move(preview);
-    const EntityId id = nextId_++;
-    buildings_.push_back({id, actor, type, origin, 1, 0, defaultRally(type, origin), {}});
+    auto entity = makeEntity(type, origin, actor);
+    const EntityId id = entity.id;
+    entity.health = 1; entity.constructionProgress = 0;
+    buildings_.push_back(std::move(entity));
     economy.crystals -= type.cost.crystals;
     issue(*builder, {OrderKind::Build, {}, id});
     setMessage(L"Стройплощадка размещена.");

@@ -1,4 +1,4 @@
-﻿#include "CombatRules.hpp"
+#include "CombatRules.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>

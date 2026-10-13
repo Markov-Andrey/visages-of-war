@@ -103,17 +103,22 @@ struct HarvestDefinition {
     int amount = 1;
     std::optional<HarvestEffectDefinition> effect;
 };
-enum class AbilityTargeting { None, Crystal, FriendlyBuilding, FriendlyUnit, FriendlyEntity };
+enum class AbilityTargeting { None, Crystal, Building, Unit, Entity };
 inline std::string abilityTargetDescription(AbilityTargeting targeting) {
     switch (targeting) {
     case AbilityTargeting::None: return "Без цели";
     case AbilityTargeting::Crystal: return "Кристаллы";
-    case AbilityTargeting::FriendlyBuilding: return "Свои здания";
-    case AbilityTargeting::FriendlyUnit: return "Свои юниты и герои";
-    case AbilityTargeting::FriendlyEntity: return "Свои здания, юниты и герои";
+    case AbilityTargeting::Building: return "Здания";
+    case AbilityTargeting::Unit: return "Юниты и герои";
+    case AbilityTargeting::Entity: return "Здания, юниты и герои";
     }
     return {};
 }
+enum class TargetRelation { Own, Enemy, Neutral };
+struct AbilityTargetFilter {
+    std::vector<TargetRelation> relations{TargetRelation::Own};
+    bool damagedOnly{}, completedOnly = true, allowSelf = true;
+};
 enum class AutocastCondition { Stopped };
 enum class AbilityAnimation { Stand, Work, Attack };
 inline std::string abilityAnimationName(AbilityAnimation animation) {
@@ -146,11 +151,14 @@ struct AbilityDefinition {
     std::optional<AutocastDefinition> autocast;
     bool rightClick{};
     std::optional<AbilityAnimation> animation;
+    AbilityTargetFilter targets;
+    float range{}; // Zero means physical contact; otherwise ground-plane distance from target bounds.
 };
 struct AbilityCooldown { int abilityId{}, remainingTicks{}; };
 struct ResourceCost { int crystals{}, supply{}; };
 // Cancellation returns half of the paid crystals, rounded down to whole crystals.
 inline constexpr int cancellationRefund(int paidCrystals) { return paidCrystals / 2; }
+enum class CollisionShape { Circle, Footprint };
 enum class ConstructionMode { Worker, Summoning };
 struct EntityDefinition {
     std::string id = "church.worker";
@@ -159,12 +167,12 @@ struct EntityDefinition {
     std::string displayName = "Рабочий";
     std::string description;
     ResourceCost cost{40, 1};
+    CollisionShape collision = CollisionShape::Circle;
     bool mobile = true;
     bool canDecompose = true;
     float movementPerSecond = 2.8f;
     float collisionRadius = .35f; // Logical map units, independent of sprite size.
     int carryCapacity = 10;
-    std::optional<AbilityDefinition> gatherAbility; // Uses the Gather command slot, not Q/W/E.
     int trainingTicks = 90;
     int dayVision = 8, nightVision = 6;
     int maximumHealth = 60;
@@ -182,9 +190,17 @@ struct EntityDefinition {
     BuildingSpriteDefinition buildingSprite;
     int level = 1;
     std::optional<HeroDefinition> hero;
-    bool canGather() const { return gatherAbility && gatherAbility->harvest; }
+    const AbilityDefinition* gatherAbility() const {
+        for (const auto& ability : abilities) if (ability.harvest) return &ability;
+        return nullptr;
+    }
+    AbilityDefinition* gatherAbility() {
+        for (auto& ability : abilities) if (ability.harvest) return &ability;
+        return nullptr;
+    }
+    bool canGather() const { return gatherAbility() != nullptr; }
     const HarvestDefinition& harvesting() const {
-        return gatherAbility.value().harvest.value();
+        return gatherAbility()->harvest.value();
     }
     bool isWorker() const { return canBuild || canGather(); }
     // Construction and mobility are independent capabilities, not exclusive kinds.

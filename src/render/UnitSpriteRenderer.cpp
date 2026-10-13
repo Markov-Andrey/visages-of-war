@@ -131,7 +131,7 @@ void Renderer::validateCombatAssets(const Definitions& definitions) {
                     throw std::runtime_error("Building layer emission mask dimensions must match image: " + e.id);
             }
         }
-        if (e.mobile && !e.sprite.image.empty()) {
+        if (!e.sprite.image.empty()) {
             const auto& s = e.sprite; auto size = dimensions(s.image);
             if (!s.directionRecipe.empty()) {
                 const auto recipe = directionalRecipe(paths_, s);

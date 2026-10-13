@@ -3,7 +3,7 @@
   "entities": [
     {
       "id": "church.worker",
-      "abilities": [4],
+      "abilities": [4, 2],
       "canDecompose": true,
       "factionId": "church",
       "name": "Послушница",
@@ -23,21 +23,15 @@
         "enabled": true,
         "type": "walking",
         "speed": 2.8,
-        "formationPriority": 3,
-        "collisionRadius": 0.35
+        "formationPriority": 3
       },
       "worker": {
         "builder": true,
-        "carryCapacity": 0,
-        "gatherAbility": 2
+        "carryCapacity": 0
       },
       "construction": {
         "enabled": false,
-        "ticks": 180,
-        "footprint": [
-          1,
-          1
-        ]
+        "ticks": 180
       },
       "production": {
         "trainingTicks": 90,
@@ -167,6 +161,14 @@
         },
         "iconMask": "sprites/units/novice/novice-icon-mask.png",
         "portraitMask": "sprites/units/novice/novice-portrait-mask.png"
+      },
+      "collision": {
+        "shape": "circle",
+        "radius": 0.35,
+        "footprint": [
+          1,
+          1
+        ]
       }
     },
     {
@@ -190,8 +192,7 @@
         "enabled": true,
         "type": "walking",
         "speed": 3.2,
-        "formationPriority": 1,
-        "collisionRadius": 0.4
+        "formationPriority": 1
       },
       "worker": {
         "builder": false,
@@ -199,11 +200,7 @@
       },
       "construction": {
         "enabled": false,
-        "ticks": 180,
-        "footprint": [
-          1,
-          1
-        ]
+        "ticks": 180
       },
       "production": {
         "trainingTicks": 150,
@@ -324,13 +321,19 @@
         },
         "portraitMask": "sprites/units/peacemaker/peacemaker-portrait-mask.png",
         "iconMask": "sprites/units/peacemaker/peacemaker-icon-mask.png"
+      },
+      "collision": {
+        "shape": "circle",
+        "radius": 0.4,
+        "footprint": [
+          1,
+          1
+        ]
       }
     },
     {
       "id": "church.hero",
-      "abilities": [
-        1
-      ],
+      "abilities": [1],
       "canDecompose": false,
       "factionId": "church",
       "name": "Рыцарь",
@@ -351,8 +354,7 @@
         "enabled": true,
         "type": "walking",
         "speed": 3.2,
-        "formationPriority": 1,
-        "collisionRadius": 0.45
+        "formationPriority": 1
       },
       "worker": {
         "builder": false,
@@ -360,11 +362,7 @@
       },
       "construction": {
         "enabled": false,
-        "ticks": 180,
-        "footprint": [
-          1,
-          1
-        ]
+        "ticks": 180
       },
       "production": {
         "trainingTicks": 150,
@@ -488,6 +486,14 @@
         },
         "portraitMask": "sprites/units/peacemaker/peacemaker-portrait-mask.png",
         "iconMask": "sprites/units/peacemaker/peacemaker-icon-mask.png"
+      },
+      "collision": {
+        "shape": "circle",
+        "radius": 0.45,
+        "footprint": [
+          1,
+          1
+        ]
       }
     },
     {
@@ -510,8 +516,7 @@
         "enabled": false,
         "type": "walking",
         "speed": 0,
-        "formationPriority": 1,
-        "collisionRadius": 0.35
+        "formationPriority": 1
       },
       "worker": {
         "builder": false,
@@ -520,11 +525,7 @@
       "construction": {
         "enabled": true,
         "mode": "summoning",
-        "ticks": 300,
-        "footprint": [
-          3,
-          2
-        ]
+        "ticks": 300
       },
       "production": {
         "trainingTicks": 150,
@@ -844,7 +845,15 @@
         "targets": "same_layer",
         "projectile": null
       },
-      "sprite": null
+      "sprite": null,
+      "collision": {
+        "shape": "footprint",
+        "radius": 0.35,
+        "footprint": [
+          3,
+          2
+        ]
+      }
     },
     {
       "id": "church.barracks",
@@ -866,8 +875,7 @@
         "enabled": false,
         "type": "walking",
         "speed": 0,
-        "formationPriority": 1,
-        "collisionRadius": 0.35
+        "formationPriority": 1
       },
       "worker": {
         "builder": false,
@@ -876,11 +884,7 @@
       "construction": {
         "enabled": true,
         "mode": "summoning",
-        "ticks": 180,
-        "footprint": [
-          3,
-          3
-        ]
+        "ticks": 180
       },
       "production": {
         "trainingTicks": 150,
@@ -934,7 +938,15 @@
         "targets": "same_layer",
         "projectile": null
       },
-      "sprite": null
+      "sprite": null,
+      "collision": {
+        "shape": "footprint",
+        "radius": 0.35,
+        "footprint": [
+          3,
+          3
+        ]
+      }
     },
     {
       "id": "church.flying_soldier",
@@ -957,8 +969,7 @@
         "enabled": true,
         "type": "flying",
         "speed": 3.2,
-        "formationPriority": 2,
-        "collisionRadius": 0.35
+        "formationPriority": 2
       },
       "worker": {
         "builder": false,
@@ -966,11 +977,7 @@
       },
       "construction": {
         "enabled": false,
-        "ticks": 180,
-        "footprint": [
-          1,
-          1
-        ]
+        "ticks": 180
       },
       "production": {
         "trainingTicks": 150,
@@ -987,7 +994,15 @@
         "targets": "same_layer",
         "projectile": null
       },
-      "sprite": null
+      "sprite": null,
+      "collision": {
+        "shape": "circle",
+        "radius": 0.35,
+        "footprint": [
+          1,
+          1
+        ]
+      }
     },
     {
       "id": "church.slinger",
@@ -1010,8 +1025,7 @@
         "enabled": true,
         "type": "walking",
         "speed": 3.1,
-        "formationPriority": 2,
-        "collisionRadius": 0.35
+        "formationPriority": 2
       },
       "worker": {
         "builder": false,
@@ -1019,11 +1033,7 @@
       },
       "construction": {
         "enabled": false,
-        "ticks": 180,
-        "footprint": [
-          1,
-          1
-        ]
+        "ticks": 180
       },
       "production": {
         "trainingTicks": 180,
@@ -1204,6 +1214,14 @@
             0.273438
           ]
         ]
+      },
+      "collision": {
+        "shape": "circle",
+        "radius": 0.35,
+        "footprint": [
+          1,
+          1
+        ]
       }
     },
     {
@@ -1227,8 +1245,7 @@
         "enabled": true,
         "type": "walking",
         "speed": 2.0,
-        "formationPriority": 3,
-        "collisionRadius": 0.5
+        "formationPriority": 3
       },
       "worker": {
         "builder": false,
@@ -1236,11 +1253,7 @@
       },
       "construction": {
         "enabled": false,
-        "ticks": 180,
-        "footprint": [
-          1,
-          1
-        ]
+        "ticks": 180
       },
       "production": {
         "trainingTicks": 300,
@@ -1318,6 +1331,14 @@
           11
         ],
         "teamMask": "none"
+      },
+      "collision": {
+        "shape": "circle",
+        "radius": 0.5,
+        "footprint": [
+          1,
+          1
+        ]
       }
     }
   ]

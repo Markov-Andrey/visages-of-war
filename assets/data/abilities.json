@@ -27,6 +27,15 @@
           "width": 1.2,
           "arcHeight": 12
         }
+      },
+      "rightClick": true,
+      "targets": {
+        "relations": [
+          "neutral"
+        ],
+        "damagedOnly": false,
+        "completedOnly": false,
+        "allowSelf": false
       }
     },
     {
@@ -41,13 +50,22 @@
         "credit": "cargo",
         "intervalTicks": 10,
         "amount": 1
+      },
+      "rightClick": true,
+      "targets": {
+        "relations": [
+          "neutral"
+        ],
+        "damagedOnly": false,
+        "completedOnly": false,
+        "allowSelf": false
       }
     },
     {
       "id": 4,
       "name": "Восстановление",
       "description": "Восстанавливает повреждённое готовое здание своего игрока. Кристаллы расходуются по мере ремонта. ПКМ по цели — восстановить; ПКМ по кнопке способности — переключить автокаст.",
-      "targeting": "friendly_building",
+      "targeting": "building",
       "rightClick": true,
       "animation": "work",
       "manaCost": 0,

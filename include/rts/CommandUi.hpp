@@ -60,6 +60,7 @@ inline const wchar_t* orderName(OrderKind kind) {
 }
 inline bool commandCapable(const Unit& unit, UnitCommand command) {
     switch (command) {
+    case UnitCommand::Move: case UnitCommand::Patrol: return unit.definition.mobile;
     case UnitCommand::Attack: return unit.attackDamage() > 0;
     case UnitCommand::AttackGround: return unit.attackDamage() > 0 && unit.definition.projectile &&
         unit.definition.projectile->targeting == ProjectileTargeting::Point && unit.definition.projectile->splashRadius > 0;

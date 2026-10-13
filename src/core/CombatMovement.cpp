@@ -5,6 +5,7 @@
 
 namespace rts {
 void Simulation::approachCombat(Unit& u, Vec2 aim, const CombatTarget* target) {
+    if (!u.definition.mobile) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
     // Reconsider at staggered intervals, but retain a useful route and its progress.
     u.chaseTicks = 12 + int(u.id % 7);
     const float radius = u.definition.collisionRadius, range = u.definition.attackRange;

@@ -102,8 +102,12 @@ const rts::Crystal* GameApplication::selectedCrystal() const {
 
 void GameApplication::action(size_t index) {
     if (selectedCrystal()) return;
+    if (rts::abilityCommandAt(game_, ui_, index) || index == rts::backCommandSlot) { unitAction(index); return; }
     if (const auto* b = selectedBuilding()) {
         const auto id = b->id;
+        if (index == rts::buildingAbilityStopSlot && !b->definition.abilities.empty()) {
+            game_.stop(std::array{id}); clearCommandMode(); return;
+        }
         if (index == 0 || index == 2 || index == 4) {
             const auto choice = index / 2;
             if (choice < b->definition.trainableUnits.size()) game_.train(id, b->definition.trainableUnits[choice]);
@@ -119,7 +123,11 @@ void GameApplication::action(size_t index) {
 void GameApplication::rightClick(std::optional<rts::Cell> target, rts::EntityId entity) {
     if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu) { clearCommandMode(); return; }
     if (!target || selectedCrystal()) return;
-    if (const auto* b = selectedBuilding()) game_.setRally(b->id, *target);
+    if (const auto* b = selectedBuilding()) {
+        if (game_.command(ui_.selection.ids, *target, entity)) {
+            if (entity) ui_.commandFeedback.confirm(entity);
+        } else game_.setRally(b->id, *target);
+    }
     else if (ui_.selection.activeUnit(game_) && game_.command(ui_.selection.ids, *target, entity)) {
         for (auto id : ui_.selection.ids) if (const auto* u = game_.unit(id))
             if (u->currentOrder.kind == OrderKind::UseAbility) {
@@ -171,11 +179,13 @@ std::optional<rts::Cell> GameApplication::pickCommandTarget() const {
 rts::EntityId GameApplication::pickCommandEntity(rts::Cell cell) const {
     if (mouseInWorld()) {
         const auto id = rts::pickEntity(game_, view_, mouse_);
-        return id && (game_.unit(*id) || game_.building(*id)) ? *id : 0;
+        if (id && (game_.entity(*id) || game_.crystal(*id))) return *id;
     }
     for (const auto& unit : game_.units())
         if (unit.cell == cell && unit.health > 0 && game_.fog().visible(unit.cell)) return unit.id;
     const auto* building = game_.buildingAt(cell);
-    return building && rts::buildingVisible(game_, *building) ? building->id : 0;
+    if (building && rts::buildingVisible(game_, *building)) return building->id;
+    for (const auto& node : game_.crystals()) if (node.contains(cell) && game_.crystalVisible(node)) return node.id;
+    return 0;
 }
 }

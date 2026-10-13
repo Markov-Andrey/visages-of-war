@@ -97,7 +97,7 @@ struct CatalogFixture {
 };
 inline rts::EntityDefinition testDepot(const std::string& id, const std::string& produced, int ticks = 1) {
     rts::EntityDefinition depot;
-    depot.id = id; depot.displayName = id; depot.constructible = true; depot.mobile = false;
+    depot.id = id; depot.displayName = id; depot.constructible = true; depot.mobile = false; depot.collision = CollisionShape::Footprint;
     depot.canBuild = false; depot.carryCapacity = 0; depot.width = 3; depot.height = 2;
     depot.cost = {100, 0}; depot.constructionTicks = ticks; depot.maximumHealth = 200;
     depot.acceptsCargo = true; depot.trainableUnits = {produced};

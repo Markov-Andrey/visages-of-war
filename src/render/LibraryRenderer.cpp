@@ -72,8 +72,9 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
         fill(area, selected ? 0x514432 : (area.contains(mouse) ? 0x343836 : 0x1c2729), .97f);
         if (selected) fill({area.x, area.y, 3, area.height}, 0xd6b476);
         if (entry) {
-            const auto& icon = entry->constructible ? entry->buildingSprite.icon : entry->sprite.icon;
-            const auto& mask = entry->constructible ? entry->buildingSprite.iconMask : entry->sprite.iconMask;
+            const bool footprint = entry->collision == CollisionShape::Footprint;
+            const auto& icon = footprint ? entry->buildingSprite.icon : entry->sprite.icon;
+            const auto& mask = footprint ? entry->buildingSprite.iconMask : entry->sprite.iconMask;
             const UiRect iconBounds{area.x + 8, area.y + 4, 32, 32};
             if (!icon.empty()) uiImage(icon, mask, iconBounds, color);
             else centeredText(L"?", iconBounds, 0xbac5bb);
@@ -139,8 +140,9 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
 
     const UiRect art{320, 180, 396, 446};
     target_->PushAxisAlignedClip(rect(art.x, art.y, art.width, art.height), D2D1_ANTIALIAS_MODE_ALIASED);
-    const auto& portrait = entity.constructible ? entity.buildingSprite.portrait : entity.sprite.portrait;
-    const auto& portraitMask = entity.constructible ? entity.buildingSprite.portraitMask : entity.sprite.portraitMask;
+    const bool footprint = entity.collision == CollisionShape::Footprint;
+    const auto& portrait = footprint ? entity.buildingSprite.portrait : entity.sprite.portrait;
+    const auto& portraitMask = footprint ? entity.buildingSprite.portraitMask : entity.sprite.portraitMask;
     if (!portrait.empty()) {
         uiImage(portrait, portraitMask, art, color);
     } else {

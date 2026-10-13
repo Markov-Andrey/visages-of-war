@@ -42,7 +42,7 @@ void Renderer::verifyAssets() {
         if (!icon.mask.empty()) images.push_back(std::filesystem::relative(icon.mask, paths_.assetRoot()));
     }
     for (const auto& e : definitions.entities()) {
-        if (e.mobile && !e.sprite.image.empty()) {
+        if (!e.sprite.image.empty()) {
             images.push_back(imagePath(e.sprite.image));
             if (!e.sprite.portrait.empty()) images.push_back(imagePath(e.sprite.portrait));
             if (!e.sprite.icon.empty()) images.push_back(imagePath(e.sprite.icon));

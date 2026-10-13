@@ -26,7 +26,7 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
         throw std::invalid_argument("Invalid starting building for faction " + workerType_.factionId + ": " + startingBuilding);
     reserveScenarioHall(scenario_, {(*initial)->width, (*initial)->height});
     if (!mutableEconomy(player_.id).supply.reserve((*initial)->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
-    buildings_.push_back({nextId_++, player_.id, **initial, hall(), (*initial)->maximumHealth, (*initial)->constructionTicks, defaultRally(**initial, hall()), {}});
+    buildings_.push_back(makeEntity(**initial, hall(), player_.id));
     spawn(workerType_, scenario_.worker, false, player_.id);
     for (Cell cell : scenario_.extraWorkers) spawn(workerType_, cell, false, player_.id);
     for (const auto& initialUnit : scenario_.units) spawn(entityType(initialUnit.definitionId), initialUnit.cell, false, initialUnit.owner);
@@ -51,9 +51,26 @@ bool Simulation::visibleTo(PlayerId id, Cell cell) const {
     }
     return false;
 }
+const Entity* Simulation::entity(EntityId id) const { if (const auto* u = unit(id)) return u; return building(id); }
+Entity* Simulation::mutableEntity(EntityId id) { if (auto* u = mutableUnit(id)) return u; return mutableBuilding(id); }
+Entity Simulation::makeEntity(const EntityDefinition& type, Cell cell, PlayerId owner) {
+    Entity e;
+    e.id = nextId_++; e.owner = owner; e.definitionId = type.id; e.definition = type;
+    e.cell = e.origin = cell;
+    e.position = e.tickPosition = type.collision == CollisionShape::Footprint ?
+        Vec2{cell.x + type.width * .5f, cell.y + type.height * .5f} : center(cell);
+    e.health = type.maximumHealth; e.mana = type.maximumMana;
+    e.constructionProgress = type.constructionTicks;
+    e.rally = defaultRally(type, cell);
+    if (type.hero) e.hero = HeroProgression{1, 0, progression_};
+    for (const auto& ability : type.abilities)
+        if (ability.autocast && ability.autocast->enabledByDefault) e.autocastAbilities.push_back(ability.id);
+    return e;
+}
 const Unit* Simulation::unit(EntityId id) const { for (const auto& u : units_) if (u.id == id) return &u; return nullptr; }
 const Unit* Simulation::hero() const {
     for (const auto& u : units_) if (u.owner == player_.id && u.hero && u.health > 0) return &u;
+    for (const auto& b : buildings_) if (b.owner == player_.id && b.hero && b.health > 0) return &b;
     return nullptr;
 }
 const Building* Simulation::building(EntityId id) const { for (const auto& b : buildings_) if (b.id == id) return &b; return nullptr; }
@@ -74,18 +91,13 @@ const EntityDefinition& Simulation::entityType(const std::string& id) const {
     throw std::out_of_range("Unknown entity definition: " + id);
 }
 EntityId Simulation::spawn(const EntityDefinition& type, Cell cell, bool reserved, PlayerId owner) {
-    if (!type.mobile || type.width != 1 || type.height != 1) throw std::invalid_argument("Mobile runtime currently requires a one-cell footprint");
+    if (type.collision != CollisionShape::Circle || type.width != 1 || type.height != 1) throw std::invalid_argument("Mobile runtime currently requires a one-cell footprint");
     if (!std::isfinite(type.collisionRadius) || type.collisionRadius < .05f || type.collisionRadius > .5f)
         throw std::invalid_argument("Collision radius must be in [0.05, 0.5] map units");
     if (!unitPositionFree(center(cell), type)) throw std::invalid_argument("Unit spawn is occupied");
     if (owner != neutralPlayer && !activePlayer(owner)) throw std::invalid_argument("Unit owner requires an active player slot");
     if (activePlayer(owner) && !reserved && !mutableEconomy(owner).supply.reserve(type.cost.supply)) throw std::invalid_argument("Initial army exceeds supply cap");
-    Unit u;
-    u.id = nextId_++; u.owner = owner; u.definitionId = type.id; u.definition = type;
-    u.cell = cell; u.position = u.tickPosition = center(cell); u.health = type.maximumHealth; u.mana = type.maximumMana;
-    if (type.hero) u.hero = HeroProgression{1, 0, progression_};
-    for (const auto& ability : type.abilities)
-        if (ability.autocast && ability.autocast->enabledByDefault) u.autocastAbilities.push_back(ability.id);
+    auto u = makeEntity(type, cell, owner);
     units_.push_back(std::move(u));
     return units_.back().id;
 }
@@ -155,9 +167,7 @@ void Simulation::tick() {
     // Advance the front of each moving group first, so IDs do not make a convoy wait backwards.
     std::vector<Unit*> updateOrder;
     for (auto& u : units_) {
-        u.abilityAnimation.beginTick();
-        for (auto& cooldown : u.abilityCooldowns) --cooldown.remainingTicks;
-        std::erase_if(u.abilityCooldowns, [](const auto& cooldown) { return cooldown.remainingTicks <= 0; });
+        prepareAbilityTick(u);
         u.tickPosition = u.position; u.tickVelocity = u.velocity; u.velocity = {}; updateOrder.push_back(&u);
     }
     prepareMovement();
@@ -181,6 +191,11 @@ void Simulation::tick() {
             const float speed = u->moveGroup ? std::min(u->definition.movementPerSecond, u->groupSpeed) : u->definition.movementPerSecond;
             u->facing = u->motionFacing.update(u->facing, u->position - u->tickPosition, speed / ticksPerSecond);
         }
+    }
+    for (auto& b : buildings_) {
+        prepareAbilityTick(b);
+        if (b.health > 0 && b.complete()) tickUnit(b);
+        b.abilityAnimation.endTick();
     }
     movementIndexActive_ = false;
     // Cell/radius changes must affect targeting and presentation in this tick.

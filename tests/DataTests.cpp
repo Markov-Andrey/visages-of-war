@@ -13,6 +13,26 @@ bool libraryText(const std::vector<LibraryDetail>& details, const std::string& t
 }
 }
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Catalog abilities and collision are independent of mobility construction and repair", [&] {
+        CatalogFixture fixture(context.assets);
+        auto& hall = fixture.entities["entities"][3];
+        hall["abilities"] = Json::array({1,2,4}); hall["stats"]["mana"] = 80;
+        auto& cast = fixture.abilities["abilities"][0];
+        cast["targeting"] = "entity"; cast["range"] = 6.5; cast["rightClick"] = true;
+        cast["targets"] = {{"relations", {"own", "enemy", "neutral"}}, {"damagedOnly", false}, {"completedOnly", false}, {"allowSelf", false}};
+        cast["autocast"] = {{"radius", 8}, {"scanIntervalTicks", 1}, {"enabledByDefault", true}, {"condition", "stopped"}};
+        fixture.entities["entities"][1]["mobility"]["enabled"] = false;
+        const auto definitions = fixture.load();
+        const auto& building = definitions.entity("church.hall");
+        require(building.abilities.size() == 3 && building.maximumMana == 80 && !building.mobile &&
+            building.collision == CollisionShape::Footprint && building.abilities[0].targets.relations.size() == 3 &&
+            !building.abilities[0].targets.allowSelf && building.abilities[0].range == 6.5f,
+            "Building ability or general target filter was rejected");
+        require(definitions.entity("church.peacemaker").collision == CollisionShape::Circle &&
+            !definitions.entity("church.peacemaker").mobile, "Stationary unit changed collision shape");
+        cast["targets"]["relations"] = {"friendly"}; mustThrow([&] { fixture.load(); });
+        cast["targets"]["relations"] = {"own"}; cast["range"] = -1; mustThrow([&] { fixture.load(); });
+    });
     test("Animation is optional for every ability and attack artwork may be absent", [&] {
         CatalogFixture fixture(context.assets);
         for (auto& ability : fixture.abilities["abilities"]) ability["animation"] = "stand";
@@ -31,7 +51,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         CatalogFixture fixture(context.assets);
         auto definitions = fixture.load();
         const auto& worker = definitions.entity("church.worker");
-        require(worker.abilities.size() == 1 && worker.abilities[0].repair && worker.abilities[0].autocast &&
+        require(worker.abilities.size() == 2 && worker.abilities[0].repair && worker.abilities[0].autocast &&
             worker.abilities[0].repair->constructionTimePercent == 75 && worker.abilities[0].repair->constructionCostPercent == 50 &&
             !worker.abilities[0].autocast->enabledByDefault && worker.abilities[0].rightClick &&
             worker.abilities[0].animation == AbilityAnimation::Work, "Worker repair contract missing");
@@ -53,7 +73,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
             "Library repair values do not follow catalog");
         const auto original = ability;
         for (const auto& [name, targeting] : std::array{
-            std::pair{"friendly_unit", AbilityTargeting::FriendlyUnit}, std::pair{"friendly_entity", AbilityTargeting::FriendlyEntity}}) {
+            std::pair{"unit", AbilityTargeting::Unit}, std::pair{"entity", AbilityTargeting::Entity}}) {
             ability["targeting"] = name;
             const auto changed = fixture.load();
             require(changed.ability(117).targeting == targeting &&
@@ -71,7 +91,8 @@ void dataTests(TestSuite& test, const TestContext& context) {
             ability = original; ability[block][field] = value; mustThrow([&] { fixture.load(); });
         }
         ability = original; ability["targeting"] = "none"; mustThrow([&] { fixture.load(); });
-        ability = original; ability.erase("repair"); mustThrow([&] { fixture.load(); });
+        ability = original; ability.erase("repair");
+        require(fixture.load().ability(117).autocast.has_value(), "Autocast still requires repair");
     });
     test("Library details follow changed catalog values and hide inapplicable capabilities", [&] {
         CatalogFixture fixture(context.assets);
@@ -128,12 +149,12 @@ void dataTests(TestSuite& test, const TestContext& context) {
         require(libraryValue(details, "За цикл добычи") == "7" && libraryValue(details, "Интервал добычи") == "10 с" &&
             libraryValue(details, "Зачисление") == "Сразу в запас игрока" && libraryValue(details, "Вместимость груза").empty() &&
             libraryValue(details, "Дальность атаки").empty(), "Direct worker shows cargo or attack parameters");
-        worker.gatherAbility = definitions.ability(3);
+        *worker.gatherAbility() = definitions.ability(3);
         details = libraryDetails(definitions, worker);
         require(libraryValue(details, "За цикл добычи") == "1" && libraryValue(details, "Интервал добычи") == "0.333 с" &&
             libraryValue(details, "Вместимость груза") == "99" && libraryValue(details, "Зачисление") == "После доставки на склад",
             "Cargo harvesting parameters missing");
-        worker.gatherAbility.reset();
+        std::erase_if(worker.abilities, [](const auto& a) { return a.harvest.has_value(); });
         details = libraryDetails(definitions, worker);
         require(libraryValue(details, "За цикл добычи").empty() && libraryValue(details, "Вместимость груза").empty(),
             "Capacity alone exposes harvesting");
@@ -209,18 +230,19 @@ void dataTests(TestSuite& test, const TestContext& context) {
         CatalogFixture fixture(context.assets);
         const auto definitions = fixture.load();
         const auto& novice = definitions.entity("church.worker");
-        require(novice.gatherAbility && novice.gatherAbility->id == 2 && novice.canGather() &&
+        require(novice.gatherAbility() && novice.gatherAbility()->id == 2 && novice.canGather() &&
             novice.harvesting().credit == HarvestCredit::Direct && novice.harvesting().intervalTicks == 300 &&
             novice.harvesting().amount == 7 && novice.harvesting().effect && novice.sprite.workOrigins &&
             novice.carryCapacity == 0, "Direct harvest ability missing");
         auto& worker = fixture.entities["entities"][0]["worker"];
-        worker["gatherAbility"] = 3; mustThrow([&] { fixture.load(); });
+        auto& assigned = fixture.entities["entities"][0]["abilities"];
+        assigned = Json::array({3}); mustThrow([&] { fixture.load(); });
         worker["carryCapacity"] = 10;
         require(fixture.load().entity("church.worker").harvesting().credit == HarvestCredit::Cargo, "Cargo ability unavailable");
-        for (const auto& id : {Json(1),Json(999),Json(0),Json(2.5),Json(nullptr)}) {
-            worker["gatherAbility"] = id; mustThrow([&] { fixture.load(); });
+        for (const auto& id : {Json(999),Json(0),Json(2.5),Json(nullptr)}) {
+            assigned = Json::array({id}); mustThrow([&] { fixture.load(); });
         }
-        worker.erase("gatherAbility");
+        assigned = Json::array();
         const auto withoutAbility = fixture.load().entity("church.worker");
         require(withoutAbility.carryCapacity == 10 && !withoutAbility.canGather(), "Cargo capacity granted an implicit ability");
         Simulation game(flatScenario(), {}, withoutAbility, definitions.entities(), definitions.startingDepot(withoutAbility.factionId).id);
@@ -228,7 +250,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
             !game.order(std::array{game.worker().id}, OrderKind::Gather, {7,7}), "Unit without harvest ability could gather");
         ticks(game, 120);
         require(game.storedCrystals() == 0 && game.crystals().front().remaining == 23, "Missing ability still credited crystals");
-        worker["gatherAbility"] = 2;
+        assigned = Json::array({2});
         const auto original = fixture.abilities;
         for (const auto* field : {"intervalTicks", "amount"}) for (const auto& value : {Json(0),Json(-1),Json(1000001),Json(1.5),Json("1"),Json(nullptr)}) {
             fixture.abilities = original; fixture.abilities["abilities"][1]["harvest"][field] = value;
@@ -239,9 +261,9 @@ void dataTests(TestSuite& test, const TestContext& context) {
         fixture.abilities = original; fixture.abilities["abilities"][1]["targeting"] = "none";
         mustThrow([&] { fixture.load(); });
         fixture.abilities = original; fixture.abilities["abilities"][1]["manaCost"] = 1;
-        mustThrow([&] { fixture.load(); });
-        fixture.abilities = original; fixture.entities["entities"][0]["abilities"] = Json::array({2});
-        mustThrow([&] { fixture.load(); });
+        require(fixture.load().ability(2).manaCost == 1, "Harvest mana was rejected");
+        fixture.abilities = original; fixture.entities["entities"][0]["abilities"] = Json::array({2,3});
+        require(fixture.load().entity("church.worker").abilities.size() == 2, "Multiple harvest abilities were rejected");
     });
     test("Construction mode is catalog data with worker-driven default and strict validation", [&] {
         CatalogFixture fixture(context.assets);
@@ -286,17 +308,17 @@ void dataTests(TestSuite& test, const TestContext& context) {
         fixture.abilities = original; fixture.abilities["abilities"][0]["targeting"] = "point";
         mustThrow([&] { fixture.load(); });
         fixture.abilities = original; fixture.abilities["abilities"][0]["cooldownTicks"] = 0;
-        mustThrow([&] { fixture.load(); });
+        require(fixture.load().ability(1).cooldownTicks == 0, "Zero cooldown was rejected");
     });
     test("Unit collision radius is catalog data with strict physical bounds", [&] {
         CatalogFixture fixture(context.assets);
-        auto& motion = fixture.entities["entities"][0]["mobility"];
-        motion["collisionRadius"] = .2f;
+        auto& motion = fixture.entities["entities"][0]["collision"];
+        motion["radius"] = .2f;
         require(std::abs(fixture.load().entity("church.worker").collisionRadius - .2f) < .00001f, "Radius not loaded");
         for (const auto& invalid : {Json(0), Json(-.1), Json(.501), Json("0.35"), Json(true), Json(nullptr)}) {
-            motion["collisionRadius"] = invalid; mustThrow([&] { fixture.load(); });
+            motion["radius"] = invalid; mustThrow([&] { fixture.load(); });
         }
-        motion.erase("collisionRadius"); mustThrow([&] { fixture.load(); });
+        motion.erase("radius"); mustThrow([&] { fixture.load(); });
     });
     const auto& assets=context.assets;
     test("Icon folders require icon.png and reject invalid masks, paths and catalog entries", [&] {
@@ -530,7 +552,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         for (auto& entity : fixture.entities["entities"]) if (entity["id"] == "church.barracks") {
             entity["depot"] = true;
             entity["stats"]["health"] = 1234;
-            entity["construction"]["footprint"] = {2, 2};
+            entity["collision"]["footprint"] = {2, 2};
         }
         const auto definitions = fixture.load();
         const auto& worker = definitions.entity("church.worker");
@@ -590,7 +612,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         auto s = flatScenario(); s.worker = {6, 4};
         rts::rebuildScenario(s, {3, 2});
         for (const auto footprint : {rts::Cell{3, 2}, {4, 3}, {2, 1}}) {
-            fixture.entities["entities"][3]["construction"]["footprint"] = {footprint.x, footprint.y};
+            fixture.entities["entities"][3]["collision"]["footprint"] = {footprint.x, footprint.y};
             const auto definitions = fixture.load();
             const auto& depot = definitions.startingDepot("church");
             require(depot.width == footprint.x && depot.height == footprint.y, "Depot lost catalog dimensions");
@@ -610,7 +632,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
             require(std::abs(bounds.x + bounds.width * stage->anchor.x - ground.x) < .001f &&
                 std::abs(bounds.y + bounds.height * stage->anchor.y - ground.y) < .001f, "Sprite is not anchored to the footprint center");
         }
-        fixture.entities["entities"][3]["construction"]["footprint"] = {4, 3};
+        fixture.entities["entities"][3]["collision"]["footprint"] = {4, 3};
         const auto definitions = fixture.load();
         s.map.occupy({4, 3});
         mustThrow([&] { rts::Simulation game(s, {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id); });

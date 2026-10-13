@@ -9,11 +9,12 @@ struct LibraryDetail {
     std::string label, value, icon;
 };
 // Presentation of resolved gameplay definitions; no per-entity stat inventories.
+std::string abilityTargetDetails(const AbilityDefinition& ability);
 std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const EntityDefinition& entity);
 inline constexpr std::array<LibraryTab, 3> libraryTabs{LibraryTab::Units, LibraryTab::Buildings, LibraryTab::Heroes};
 inline constexpr std::array<std::wstring_view, 3> libraryTabNames{L"Юниты", L"Здания", L"Герои"};
 inline LibraryTab libraryCategory(const EntityDefinition& entity) {
-    return entity.hero ? LibraryTab::Heroes : entity.constructible ? LibraryTab::Buildings : LibraryTab::Units;
+    return entity.hero ? LibraryTab::Heroes : entity.collision == CollisionShape::Footprint ? LibraryTab::Buildings : LibraryTab::Units;
 }
 inline std::vector<const EntityDefinition*> libraryEntries(const Definitions& definitions, const std::string& faction, LibraryTab tab) {
     std::vector<const EntityDefinition*> entries;

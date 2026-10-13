@@ -13,10 +13,10 @@ void spriteTests(TestSuite& test, const TestContext& context) {
             type.sprite.idle = 2; type.sprite.windup = {4, 5}; type.sprite.recovery = {6, 7};
             type.attackWindupTicks = type.attackRecoveryTicks = 4;
             AbilityDefinition ability{71 + effect, "Action", "", 5, 20}; ability.animation = AbilityAnimation::Attack;
-            if (effect == 1) { ability.targeting = AbilityTargeting::FriendlyBuilding; ability.repair = RepairDefinition{75, 0}; }
+            if (effect == 1) { ability.targeting = AbilityTargeting::Building; ability.repair = RepairDefinition{75, 0}; }
             if (effect == 2) {
                 ability.targeting = AbilityTargeting::Crystal; ability.manaCost = ability.cooldownTicks = 0;
-                ability.harvest = HarvestDefinition{HarvestCredit::Direct, 1000, 1}; type.gatherAbility = ability;
+                ability.harvest = HarvestDefinition{HarvestCredit::Direct, 1000, 1}; type.abilities = {ability}; type.abilities.front().targeting = AbilityTargeting::Crystal; type.abilities.front().targets.relations = {TargetRelation::Neutral};
             } else type.abilities = {ability};
             Scenario scene{Map(24, 24), {3, 3}, {3, 5}, {{{2, 5}, 1000}}}; scene.map.occupy({2, 5});
             auto game = makeTestSimulation(std::move(scene), {}, type);
@@ -36,7 +36,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
             if (effect == 2) {
                 auto& caster = const_cast<Unit&>(game.worker());
                 AbilityDefinition instant{190, "Instant over channel", "", 1, 60}; instant.animation = AbilityAnimation::Work;
-                caster.definition.sprite.work = 9; caster.definition.abilities = {instant};
+                caster.definition.sprite.work = 9; caster.definition.abilities.push_back(instant);
                 require(game.activateAbility(id, instant.id), "Instant cast during gathering rejected");
                 ticks(game, 5);
                 require(unitFrame(game.worker()).column == 9 && game.worker().currentOrder.kind == OrderKind::Gather,
@@ -122,7 +122,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         Unit unit; unit.definition = type; unit.health = type.maximumHealth; unit.facing = {1,0};
         for (const auto state : {UnitState::Harvesting, UnitState::Building}) {
             unit.abilityAnimation.clear();
-            if (state == UnitState::Harvesting) unit.abilityAnimation.sustain(*type.gatherAbility, type);
+            if (state == UnitState::Harvesting) unit.abilityAnimation.sustain(*type.gatherAbility(), type);
             unit.state = state; require(unitFrame(unit).column == 5 && unitFrame(unit).row == 1, "Work pose not selected");
         }
         unit.abilityAnimation.clear();
@@ -132,7 +132,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         unit.state = UnitState::Moving; unit.route = {{1,0}}; unit.position = {.1f,0}; unit.walkCycle = .5f;
         require(unitFrame(unit).column == 3, "Novice lost its four-frame walk");
         unit.definition.sprite.work = -1; unit.route.clear(); unit.state = UnitState::Harvesting;
-        unit.abilityAnimation.sustain(*type.gatherAbility, type);
+        unit.abilityAnimation.sustain(*type.gatherAbility(), type);
         require(unitFrame(unit).column == 0, "Existing units lost their idle fallback while working");
         Renderer renderer(context.worldPaths);
         renderer.snapshotUnitDirections(sprite, Paths::executable().parent_path() / "novice-directions.png");

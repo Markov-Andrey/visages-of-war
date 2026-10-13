@@ -63,7 +63,7 @@ void Renderer::drawBuildingPortrait(const Simulation& game, const Building& buil
     }
     target_->PopAxisAlignedClip();
     buttonFrame(p);
-    portraitVitals(layout, building.health, type.maximumHealth, 0x9dd7b0);
+    portraitVitals(layout, building.health, building.maximumHealth(), 0x9dd7b0, building.mana, building.maximumMana());
 }
 
 void Renderer::drawCrystalPortrait(const Crystal& crystal, const SelectionPanelLayout& layout) {

@@ -5,12 +5,12 @@ namespace {
 EntityDefinition repairWorker() {
     auto worker = fixtureWorker(); worker.attackDamage = 0; worker.sprite.work = 9;
     AbilityDefinition ability{17, "Repair", "", 0, 0};
-    ability.targeting = AbilityTargeting::FriendlyBuilding;
+    ability.targeting = AbilityTargeting::Building;
     ability.rightClick = true;
     ability.animation = AbilityAnimation::Work;
     ability.repair = RepairDefinition{};
     ability.autocast = AutocastDefinition{8, 1, false};
-    worker.abilities = {ability};
+    worker.abilities.insert(worker.abilities.begin(), ability);
     return worker;
 }
 Scenario repairScene() {
@@ -21,8 +21,148 @@ Scenario repairScene() {
 }
 void economyTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
+    test("Entity abilities share mana cooldown autocast and UI on buildings and units", [] {
+        auto worker = fixtureWorker(); worker.maximumMana = 60;
+        AbilityDefinition ability{921, "Common cast", "", 7, 5};
+        ability.animation = AbilityAnimation::Attack;
+        ability.autocast = AutocastDefinition{8, 1, false};
+        worker.abilities = {ability};
+        auto depot = fixtureDepot(worker); depot.maximumMana = 60; depot.abilities = {ability};
+        depot.hero = HeroDefinition{};
+        auto game = makeTestSimulation(repairScene(), {}, worker, {worker, depot});
+        const auto buildingId = game.buildings().front().id, unitId = game.worker().id;
+        for (auto id : {buildingId, unitId}) {
+            require(game.entity(id)->mana == 60 && game.activateAbility(id, ability.id), "Common cast rejected");
+            require(game.entity(id)->mana == 53 && game.entity(id)->abilityCooldown(ability.id) == 5 &&
+                game.entity(id)->abilityAnimation.current(), "Common activation state missing");
+            require(!game.activateAbility(id, ability.id), "Cooldown bypassed");
+            require(!game.activateAbilityFor(1, id, ability.id), "Foreign owner cast accepted");
+            require(game.setAutocast(id, ability.id, true), "Non-repair autocast rejected");
+        }
+        ticks(game, 5);
+        require(game.entity(buildingId)->mana == 46 && game.entity(unitId)->mana == 46, "Building and unit clocks diverged");
+        GameplayUi ui; ui.selection.ids = {buildingId};
+        require(abilityCommandAt(game, ui, firstAbilitySlot) && unitCommandVisible(game, ui, firstAbilitySlot) &&
+            autocastState(game, ui, ability.id) == AutocastState::On, "Building ability UI unavailable");
+        require(toggleAutocast(game, ui, firstAbilitySlot) && !game.entity(buildingId)->autocastEnabled(ability.id), "Building toggle failed");
+        ui.commandGroup = depot.id;
+        require(commandRecipients(game, ui, OrderKind::UseAbility) == std::vector<EntityId>{buildingId}, "Building target command lost its recipient");
+        require(game.grantExperience(buildingId, 100) && game.entity(buildingId)->level() == 2 &&
+            game.entity(buildingId)->maximumHealth() == depot.maximumHealth + 40, "Progression is still locked to circle entities");
+    });
+    test("Entity target filters allow healthy allies enemies and self independently of effects", [] {
+        auto worker = fixtureWorker(); worker.maximumMana = 50;
+        AbilityDefinition ability{932, "Targeted animation", "", 3, 10};
+        ability.targeting = AbilityTargeting::Entity; ability.range = 12; ability.rightClick = true;
+        ability.animation = AbilityAnimation::Work;
+        worker.abilities = {ability};
+        auto scene = repairScene(); scene.units = {{worker.id, 1, {8, 5}}, {worker.id, neutralPlayer, {7, 7}}};
+        auto game = makeTestSimulation(scene, {}, worker);
+        const auto own = game.worker().id, enemy = game.units()[1].id, neutral = game.units()[2].id;
+        require(game.canTargetAbility(game.worker(), ability, own) && game.canTargetAbility(game.worker(), ability, game.buildings()[0].id),
+            "Healthy allied targets still require repair");
+        require(!game.canTargetAbility(game.worker(), ability, enemy), "Own filter accepted enemy");
+        ability.targets.relations = {TargetRelation::Enemy, TargetRelation::Neutral};
+        require(game.canTargetAbility(game.worker(), ability, enemy) && game.canTargetAbility(game.worker(), ability, neutral) &&
+            !game.canTargetAbility(game.worker(), ability, own), "Relation filter ignored");
+        ability.targets.relations = {TargetRelation::Own}; ability.targets.allowSelf = false;
+        require(!game.canTargetAbility(game.worker(), ability, own), "Self filter ignored");
+        ability.targets.allowSelf = true; ability.targets.damagedOnly = true;
+        require(!game.canTargetAbility(game.worker(), ability, own), "State filter ignored");
+        const_cast<Entity&>(game.worker()).health--;
+        require(game.canTargetAbility(game.worker(), ability, own), "Damaged target rejected");
+        require(game.command(std::array{own}, game.worker().cell, own), "Generic right click requires repair");
+        game.tick();
+        require(game.worker().mana == 47 && game.worker().currentOrder.kind == OrderKind::Stop &&
+            game.worker().abilityAnimation.current(), "Instant targeted lifecycle failed");
+    });
+    test("Buildings cast repair and harvest using the same lifecycle without moving", [] {
+        auto worker = fixtureWorker(); worker.maximumHealth = 100;
+        auto repair = repairWorker().abilities.front(); repair.targeting = AbilityTargeting::Entity;
+        repair.range = 5; repair.manaCost = 3; repair.cooldownTicks = 10;
+        auto harvest = *worker.gatherAbility(); harvest.id = 947; harvest.harvest = HarvestDefinition{HarvestCredit::Direct, 1, 2};
+        harvest.range = 5; harvest.manaCost = 4; harvest.cooldownTicks = 10;
+        auto depot = fixtureDepot(worker); depot.abilities = {repair, harvest}; depot.maximumMana = 40;
+        auto scene = repairScene(); scene.crystals = {{{7, 4}, 7}}; scene.map.occupy({7, 4});
+        auto game = makeTestSimulation(scene, {}, worker, {worker, depot});
+        const auto id = game.buildings().front().id;
+        const Vec2 original = game.entity(id)->position;
+        const_cast<Entity&>(game.worker()).health = 70;
+        require(game.activateAbility(id, repair.id, game.worker().id), "Building cannot restore unit");
+        ticks(game, 5);
+        require(game.worker().health > 70 && game.entity(id)->mana == 37, "Building repair did not execute");
+        game.stop(std::array{id});
+        require(game.entity(id)->currentOrder.kind == OrderKind::Stop, "Building cast cannot be cancelled");
+        const auto balance = game.storedCrystals();
+        require(game.activateAbility(id, harvest.id, game.crystals().front().id), "Building harvest rejected");
+        ticks(game, 5);
+        require(game.storedCrystals() == balance + 7 && game.crystals().front().remaining == 0 &&
+            game.entity(id)->mana == 33 && game.entity(id)->position == original, "Building harvest lost resources or moved");
+    });
+    test("Several harvest abilities keep independent costs and the selected effect through deliveries", [] {
+        auto worker = gatheringWorker(); worker.maximumMana = 50; worker.carryCapacity = 3;
+        auto cargo = *worker.gatherAbility(); cargo.manaCost = 5; cargo.cooldownTicks = 10000;
+        cargo.harvest->intervalTicks = 1; cargo.harvest->amount = 3;
+        auto direct = cargo; direct.id = 958; direct.manaCost = 7; direct.harvest->credit = HarvestCredit::Direct;
+        worker.abilities = {cargo, direct};
+        auto game = makeTestSimulation(flatScenario(11), {}, worker);
+        const auto id = game.worker().id, node = game.crystals().front().id;
+        require(game.activateAbility(id, cargo.id, node), "Cargo activation rejected");
+        ticks(game, 1000);
+        require(game.storedCrystals() == 11 && game.worker().mana == 45 && game.worker().abilityCooldown(cargo.id) == 9000,
+            "Delivery loop charged activation again or lost cargo");
+        auto other = makeTestSimulation(flatScenario(11), {}, worker);
+        require(other.activateAbility(other.worker().id, direct.id, other.crystals().front().id), "Second harvest activation rejected");
+        ticks(other, 300);
+        require(other.storedCrystals() == 11 && other.worker().cargo == 0 && other.worker().mana == 43 &&
+            other.worker().abilityCooldown(cargo.id) == 0, "Selected harvest effect or cooldown leaked across abilities");
+    });
+    test("Stationary circle entities retain unit targeting and reject out of range casts without charges", [] {
+        auto worker = fixtureWorker(); worker.mobile = false; worker.maximumMana = 20;
+        auto repair = repairWorker().abilities.front(); repair.range = 1; repair.manaCost = 5;
+        worker.abilities = {repair};
+        auto scene = repairScene(); scene.worker = {20, 18};
+        auto game = makeTestSimulation(scene, {}, worker);
+        const auto id = game.worker().id, b = game.buildings().front().id;
+        const_cast<Building&>(game.buildings().front()).health--;
+        game.revealMap();
+        require(!game.activateAbility(id, repair.id, b) && game.worker().mana == 20 && game.worker().route.empty(),
+            "Stationary caster moved or charged an unreachable cast");
+        AbilityDefinition target; target.targeting = AbilityTargeting::Unit;
+        require(game.canTargetAbility(game.worker(), target, id), "Mobility changed collision category");
+        require(!game.order(std::array{id}, OrderKind::Move, {19,18}), "Stationary entity accepted movement");
+    });
+    test("Harvest autocast shares activation costs and distinguishes automatic cancellation from manual orders", [] {
+        auto worker = gatheringWorker(); worker.maximumMana = 40;
+        auto& ability = *worker.gatherAbility(); ability.id = 967; ability.manaCost = 4; ability.cooldownTicks = 5;
+        ability.autocast = AutocastDefinition{12, 1, true};
+        auto game = makeTestSimulation(flatScenario(100), {}, worker);
+        const auto id = game.worker().id;
+        game.tick();
+        require(game.worker().automaticAbility && game.worker().currentOrder.abilityId == 967 && game.worker().mana == 36,
+            "Harvest autocast did not use common activation");
+        require(game.setAutocast(id, 967, false) && game.worker().currentOrder.kind == OrderKind::Stop && !game.worker().repeatGather,
+            "Disabling harvest autocast did not cancel its approach");
+        ticks(game, 5);
+        require(game.activateAbility(id, 967, game.crystals().front().id), "Manual harvest after autocast rejected");
+        require(game.setAutocast(id, 967, true) && game.setAutocast(id, 967, false) &&
+            game.worker().currentOrder.kind == OrderKind::Gather && game.worker().mana == 32,
+            "Autocast toggle cancelled or charged a manual harvest");
+    });
+    test("Footprint contact abilities respect cliffs while authored ranged abilities use their range", [] {
+        auto worker = fixtureWorker();
+        auto repair = repairWorker().abilities.front(); repair.targeting = AbilityTargeting::Entity;
+        auto depot = fixtureDepot(worker); depot.abilities = {repair};
+        auto scene = repairScene(); scene.map.at(scene.worker).height = -1;
+        auto game = makeTestSimulation(scene, {}, worker, {worker, depot}); game.revealMap();
+        const_cast<Entity&>(game.worker()).health--;
+        const auto id = game.buildings().front().id;
+        require(!game.activateAbility(id, repair.id, game.worker().id), "Contact effect crossed a shore cliff");
+        const_cast<Entity&>(*game.entity(id)).definition.abilities.front().range = 2;
+        require(game.activateAbility(id, repair.id, game.worker().id), "Explicit ranged ability inherited contact terrain restrictions");
+    });
     test("Contextual repair follows abilities and readiness across a mixed selection", [] {
-        auto type = repairWorker(); type.id = "test.restorer"; type.canBuild = false; type.gatherAbility.reset();
+        auto type = repairWorker(); type.id = "test.restorer"; type.canBuild = false; std::erase_if(type.abilities, [](const auto& a) { return a.harvest.has_value(); });
         type.abilities[0].id = 317;
         auto scene = repairScene(); scene.extraWorkers = {{4, 5}, {6, 5}};
         auto game = makeTestSimulation(std::move(scene), {}, type);
@@ -46,14 +186,14 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(!game.contextualAbility(caster, target.id), "Full target accepts contextual restoration");
     });
     test("Unit restoration follows target filters, production cost and moving targets", [] {
-        auto type = repairWorker(); type.abilities[0].targeting = AbilityTargeting::FriendlyUnit;
+        auto type = repairWorker(); type.abilities[0].targeting = AbilityTargeting::Unit;
         type.maximumHealth = 100; type.trainingTicks = 200; type.cost = {120, 0};
         auto scene = repairScene(); scene.extraWorkers = {{9, 8}};
         auto game = makeTestSimulation(std::move(scene), {}, type);
         const auto caster = game.worker().id, recipient = game.units()[1].id;
         auto& target = const_cast<Unit&>(*game.unit(recipient)); target.health = 50;
         require(!game.canTargetAbility(game.worker(), type.abilities[0], game.buildings().front().id), "Unit filter accepts buildings");
-        auto buildingOnly = type.abilities[0]; buildingOnly.targeting = AbilityTargeting::FriendlyBuilding;
+        auto buildingOnly = type.abilities[0]; buildingOnly.targeting = AbilityTargeting::Building;
         require(!game.canTargetAbility(game.worker(), buildingOnly, recipient), "Building filter accepts units");
         target.owner = 1; require(!game.canTargetAbility(game.worker(), type.abilities[0], recipient), "Restoration accepts enemy unit"); target.owner = 0;
         require(game.command(std::array{caster}, target.cell, recipient), "Right click did not restore unit");
@@ -217,7 +357,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             Scenario scene{Map(32, 24), {1, 1}, {5, 5}, {{{8, 5}, 7}, {{23, 15}, 11}}};
             for (const auto& node : scene.crystals) scene.map.occupy(node.cell);
             scene.slots[0].startingCrystals = 200; scene.slots[1].startingCrystals = 400;
-            auto worker = gatheringWorker(); worker.gatherAbility->harvest = {credit, 1, 3};
+            auto worker = gatheringWorker(); worker.gatherAbility()->harvest = {credit, 1, 3};
             worker.trainingTicks = 3;
             scene.units = {{worker.id, 1, {20, 15}}};
             auto depot = fixtureDepot(worker); depot.constructionTicks = 1;
@@ -310,8 +450,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Direct harvest batches clamp to the reserve and Stop resets progress", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         auto type = definitions.entity("church.worker");
-        type.gatherAbility->harvest->intervalTicks = 4;
-        type.gatherAbility->harvest->amount = 3;
+        type.gatherAbility()->harvest->intervalTicks = 4;
+        type.gatherAbility()->harvest->amount = 3;
         auto s = flatScenario(7); s.worker = {6,7};
         auto game = makeTestSimulation(std::move(s), {}, type);
         const auto start = [&] {
@@ -332,8 +472,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
     test("Catalog cargo harvesting still fills capacity and credits only on delivery", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
         auto type = definitions.entity("church.worker");
-        type.gatherAbility = definitions.ability(3); type.carryCapacity = 10;
-        type.gatherAbility->harvest->amount = 6;
+        *type.gatherAbility() = definitions.ability(3); type.carryCapacity = 10;
+        type.gatherAbility()->harvest->amount = 6;
         auto s = flatScenario(); s.worker = {6,7};
         auto game = makeTestSimulation(std::move(s), {}, type);
         game.command({7,7});

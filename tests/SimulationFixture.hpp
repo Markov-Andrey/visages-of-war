@@ -6,9 +6,12 @@
 namespace rts::tests {
 inline EntityDefinition fixtureWorker() {
     EntityDefinition worker;
-    worker.gatherAbility = AbilityDefinition{3, "Test cargo harvesting", "Deliver crystals to a depot", 0, 0,
-        HarvestDefinition{HarvestCredit::Cargo, 10, 1}};
-    worker.gatherAbility->animation = AbilityAnimation::Work;
+    worker.abilities = {AbilityDefinition{3, "Test cargo harvesting", "Deliver crystals to a depot", 0, 0,
+        HarvestDefinition{HarvestCredit::Cargo, 10, 1}}};
+    worker.gatherAbility()->targeting = AbilityTargeting::Crystal;
+    worker.gatherAbility()->targets.relations = {TargetRelation::Neutral};
+    worker.gatherAbility()->rightClick = true;
+    worker.gatherAbility()->animation = AbilityAnimation::Work;
     return worker;
 }
 // Synthetic balance for isolated mechanics tests, never used by the game or Forge.
@@ -24,7 +27,7 @@ inline BuildingSpriteDefinition fixtureBuildingSprite() {
 inline EntityDefinition fixtureDepot(const EntityDefinition& worker) {
     EntityDefinition depot;
     depot.id = "church.hall"; depot.displayName = "Test hall"; depot.factionId = worker.factionId;
-    depot.mobile = false; depot.movementPerSecond = 0; depot.canBuild = false; depot.carryCapacity = 0;
+    depot.collision = CollisionShape::Footprint; depot.mobile = false; depot.movementPerSecond = 0; depot.canBuild = false; depot.carryCapacity = 0;
     depot.constructible = true; depot.width = 3; depot.height = 2; depot.cost = {200, 0};
     depot.constructionTicks = 300; depot.dayVision = 11; depot.nightVision = 8; depot.maximumHealth = 1000;
     depot.acceptsCargo = true; depot.trainableUnits = {worker.id};

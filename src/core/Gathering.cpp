@@ -3,9 +3,10 @@
 
 namespace rts {
 void Simulation::harvest(Unit& u) {
-    if (!activePlayer(u.owner) || u.state != UnitState::Harvesting || u.targetCrystal < 0 || !u.definition.canGather()) return;
+    if (!activePlayer(u.owner) || u.state != UnitState::Harvesting || u.targetCrystal < 0 || !u.harvestAbility()) return;
     auto& crystal = scenario_.crystals[static_cast<size_t>(u.targetCrystal)];
-    const auto ability = u.definition.harvesting();
+    if (!crystalVisibleTo(u.owner, crystal)) { issue(u, {OrderKind::Stop}); return; }
+    const auto ability = *u.harvestAbility()->harvest;
     const bool direct = ability.credit == HarvestCredit::Direct;
     if (crystal.remaining > 0 && ++u.harvestTicks >= ability.intervalTicks) {
         u.harvestTicks = 0;
@@ -24,9 +25,21 @@ void Simulation::harvest(Unit& u) {
     if (crystal.remaining == 0 || (!direct && u.cargo >= u.definition.carryCapacity)) {
         if (!direct && u.cargo > 0) returnCargo(u); else seekCrystal(u);
     }
-    if (u.state == UnitState::Harvesting) u.abilityAnimation.sustain(*u.definition.gatherAbility, u.definition);
+    if (u.state == UnitState::Harvesting) u.abilityAnimation.sustain(*u.harvestAbility(), u.definition);
 }
 bool Simulation::returnCargo(Unit& u) {
+    if (!u.definition.mobile) {
+        u.state = UnitState::Idle; u.route.clear(); u.next = 0;
+        for (const auto& b : buildings_) if (b.health > 0 && b.complete() && b.definition.acceptsCargo && b.owner == u.owner) {
+            AbilityDefinition delivery; delivery.targeting = AbilityTargeting::Entity;
+            if (abilityReach(u, delivery, b.id, u.position)) {
+                mutableEconomy(u.owner).crystals += u.cargo; u.cargo = 0;
+                if (u.repeatGather) seekCrystal(u);
+                return true;
+            }
+        }
+        return false;
+    }
     std::optional<Path> best;
     EntityId depot{};
     for (const auto& b : buildings_) {
@@ -82,7 +95,14 @@ bool Simulation::seekCrystal(Unit& u) {
     };
     for (size_t target : candidates) {
         const auto& node = crystals()[target];
-        auto slots = perimeter(map(), node.cell, node.width, node.height, u.definition.movement);
+        const auto* ability = u.harvestAbility();
+        if (!ability) return false;
+        if (abilityReach(u, *ability, node.id, u.position)) {
+            u.targetCrystal = static_cast<int>(target); u.state = UnitState::Harvesting; u.harvestTicks = 0;
+            return true;
+        }
+        if (!u.definition.mobile) continue;
+        auto slots = abilityPositions(u, *ability, node.id);
         if (!waitingPath) {
             waitingPath = findUnitPath(map(), u.position, slots, {}, u.definition.collisionRadius, u.definition.movement);
             if (waitingPath) waitingTarget = static_cast<int>(target);

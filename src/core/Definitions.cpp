@@ -28,7 +28,7 @@ Json read(const std::filesystem::path& file) {
 }
 void version(const Json& root) { if (number(root.at("version"), 1, 1) != 1) throw std::runtime_error("Unsupported catalog version"); }
 EntityDefinition parseEntity(const Json& j) {
-    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "alternateForms", "attack", "sprite"}, {"buildingSprite", "canDecompose", "abilities"});
+    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "alternateForms", "attack", "sprite", "collision"}, {"buildingSprite", "canDecompose", "abilities"});
     EntityDefinition e;
     e.id = string(j.at("id")); e.factionId = string(j.at("factionId"));
     e.displayName = string(j.at("name")); e.description = string(j.at("description"));
@@ -42,11 +42,17 @@ EntityDefinition parseEntity(const Json& j) {
     data::parseWeapon(e, j.at("attack"), j.at("sprite"));
     e.level = number(stats.at("level"), 1, 100);
     e.dayVision = number(stats.at("dayVision"), 1, 32); e.nightVision = number(stats.at("nightVision"), 1, 32);
-    const auto& motion = j.at("mobility"); fields(motion, {"enabled", "type", "speed", "formationPriority", "collisionRadius"});
+    const auto& collision = j.at("collision"); fields(collision, {"shape", "radius", "footprint"});
+    const auto shape = string(collision.at("shape"));
+    if (shape == "circle") e.collision = CollisionShape::Circle;
+    else if (shape == "footprint") e.collision = CollisionShape::Footprint;
+    else throw std::runtime_error("Unknown collision shape");
+    e.collisionRadius = real(collision.at("radius"), .05f, .5f);
+    const auto& footprint = collision.at("footprint");
+    if (!footprint.is_array() || footprint.size() != 2) throw std::runtime_error("Footprint must contain width and height");
+    e.width = number(footprint[0], 1, 8); e.height = number(footprint[1], 1, 8);
+    const auto& motion = j.at("mobility"); fields(motion, {"enabled", "type", "speed", "formationPriority"});
     e.mobile = motion.at("enabled").get<bool>();
-    e.collisionRadius = motion.at("collisionRadius").get<float>();
-    if (!motion.at("collisionRadius").is_number() || !std::isfinite(e.collisionRadius) || e.collisionRadius < .05f || e.collisionRadius > .5f)
-        throw std::runtime_error("Collision radius must be in [0.05, 0.5] map units");
     e.movementPerSecond = motion.at("speed").get<float>();
     if (!std::isfinite(e.movementPerSecond) || e.movementPerSecond < 0 || e.movementPerSecond > 15 ||
         (e.mobile && e.movementPerSecond <= 0)) throw std::runtime_error("Invalid movement speed");
@@ -57,9 +63,9 @@ EntityDefinition parseEntity(const Json& j) {
     else if (movement == "amphibious") e.movement = MovementType::Amphibious;
     else if (movement == "flying") e.movement = MovementType::Flying;
     else throw std::runtime_error("Unknown movement type: " + movement);
-    const auto& worker = j.at("worker"); fields(worker, {"builder", "carryCapacity"}, {"gatherAbility"});
+    const auto& worker = j.at("worker"); fields(worker, {"builder", "carryCapacity"});
     e.canBuild = worker.at("builder").get<bool>(); e.carryCapacity = number(worker.at("carryCapacity"), 0, 1000000);
-    const auto& construction = j.at("construction"); fields(construction, {"enabled", "ticks", "footprint"}, {"mode"});
+    const auto& construction = j.at("construction"); fields(construction, {"enabled", "ticks"}, {"mode"});
     e.constructible = construction.at("enabled").get<bool>(); e.constructionTicks = number(construction.at("ticks"), 1, 1000000);
     if (construction.contains("mode")) {
         const auto mode = string(construction.at("mode"));
@@ -67,9 +73,6 @@ EntityDefinition parseEntity(const Json& j) {
         else if (mode == "summoning") e.constructionMode = ConstructionMode::Summoning;
         else throw std::runtime_error("Unknown construction mode: " + mode);
     }
-    const auto& footprint = construction.at("footprint");
-    if (!footprint.is_array() || footprint.size() != 2) throw std::runtime_error("Footprint must contain width and height");
-    e.width = number(footprint[0], 1, 8); e.height = number(footprint[1], 1, 8);
     const auto& production = j.at("production"); fields(production, {"trainingTicks", "trains"});
     e.trainingTicks = number(production.at("trainingTicks"), 1, 1000000);
     const auto& trains = production.at("trains");
@@ -123,21 +126,42 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     fields(abilities, {"version", "abilities"}); version(abilities);
     if (!abilities.at("abilities").is_array()) throw std::runtime_error("Expected ability array");
     for (const auto& j : abilities.at("abilities")) {
-        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks"}, {"harvest", "repair", "autocast", "rightClick", "animation"});
+        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks"}, {"harvest", "repair", "autocast", "rightClick", "animation", "targets", "range"});
         const bool gathering = j.contains("harvest");
         const bool repairing = j.contains("repair");
         if (gathering && repairing) throw std::runtime_error("Ability must have a single effect");
         const auto targeting = string(j.at("targeting"));
-        if (repairing ? targeting != "friendly_building" && targeting != "friendly_unit" && targeting != "friendly_entity" :
-            targeting != (gathering ? "crystal" : "none"))
-            throw std::runtime_error("Ability targeting does not match its effect");
         AbilityDefinition ability{number(j.at("id"), 1, 1000000), string(j.at("name")), string(j.at("description")),
-            number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), gathering || repairing ? 0 : 1, 1000000)};
-        ability.targeting = gathering ? AbilityTargeting::Crystal : repairing ? AbilityTargeting::FriendlyBuilding : AbilityTargeting::None;
-        if (targeting == "friendly_unit") ability.targeting = AbilityTargeting::FriendlyUnit;
-        if (targeting == "friendly_entity") ability.targeting = AbilityTargeting::FriendlyEntity;
+            number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), 0, 1000000)};
+        if (targeting == "none") ability.targeting = AbilityTargeting::None;
+        else if (targeting == "crystal") ability.targeting = AbilityTargeting::Crystal;
+        else if (targeting == "building") ability.targeting = AbilityTargeting::Building;
+        else if (targeting == "unit") ability.targeting = AbilityTargeting::Unit;
+        else if (targeting == "entity") ability.targeting = AbilityTargeting::Entity;
+        else throw std::runtime_error("Unknown ability targeting");
+        if (gathering && ability.targeting != AbilityTargeting::Crystal)
+            throw std::runtime_error("Harvest requires crystal targets");
+        if (repairing && (ability.targeting == AbilityTargeting::None || ability.targeting == AbilityTargeting::Crystal))
+            throw std::runtime_error("Repair requires entity targets");
+        if (j.contains("targets")) {
+            const auto& t = j.at("targets"); fields(t, {"relations", "damagedOnly", "completedOnly", "allowSelf"});
+            if (!t.at("relations").is_array() || t.at("relations").empty()) throw std::runtime_error("Expected target relations");
+            ability.targets.relations.clear();
+            for (const auto& value : t.at("relations")) {
+                const auto relation = string(value);
+                if (relation == "own") ability.targets.relations.push_back(TargetRelation::Own);
+                else if (relation == "enemy") ability.targets.relations.push_back(TargetRelation::Enemy);
+                else if (relation == "neutral") ability.targets.relations.push_back(TargetRelation::Neutral);
+                else throw std::runtime_error("Unknown target relation");
+            }
+            ability.targets.damagedOnly = t.at("damagedOnly").get<bool>();
+            ability.targets.completedOnly = t.at("completedOnly").get<bool>();
+            ability.targets.allowSelf = t.at("allowSelf").get<bool>();
+        }
+        if (j.contains("range")) ability.range = real(j.at("range"), 0, 64);
         if (j.contains("rightClick")) ability.rightClick = j.at("rightClick").get<bool>();
-        if (ability.rightClick && !repairing) throw std::runtime_error("Right-click casting requires a supported targeted effect");
+        if (ability.rightClick && ability.targeting == AbilityTargeting::None)
+            throw std::runtime_error("Right-click casting requires a target");
         if (j.contains("animation")) {
             const auto animation = string(j.at("animation"));
             if (animation == "work") ability.animation = AbilityAnimation::Work;
@@ -151,14 +175,12 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
                 number(r.at("constructionCostPercent"), 0, 1000)};
         }
         if (j.contains("autocast")) {
-            if (!repairing) throw std::runtime_error("Autocast requires a supported targeted effect");
             const auto& a = j.at("autocast"); fields(a, {"radius", "scanIntervalTicks", "enabledByDefault", "condition"});
             if (string(a.at("condition")) != "stopped") throw std::runtime_error("Unknown autocast condition");
             ability.autocast = AutocastDefinition{real(a.at("radius"), .1f, 64), number(a.at("scanIntervalTicks"), 1, 3600),
                 a.at("enabledByDefault").get<bool>(), AutocastCondition::Stopped};
         }
         if (gathering) {
-            if (ability.manaCost || ability.cooldownTicks) throw std::runtime_error("Harvest uses its interval, without mana or activation cooldown");
             const auto& h = j.at("harvest"); fields(h, {"credit", "intervalTicks", "amount"}, {"effect"});
             HarvestDefinition harvest;
             const auto credit = string(h.at("credit"));
@@ -201,24 +223,17 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         for (const auto& j : content.at("entities")) {
             try {
                 auto entity = parseEntity(j);
-                const auto& worker = j.at("worker");
-                if (worker.contains("gatherAbility")) {
-                    entity.gatherAbility = result.ability(number(worker.at("gatherAbility"), 1, 1000000));
-                    if (!entity.mobile || !entity.gatherAbility->harvest)
-                        throw std::runtime_error("gatherAbility requires a mobile unit and a harvest ability");
-                    if (entity.harvesting().credit == HarvestCredit::Cargo && entity.carryCapacity == 0)
-                        throw std::runtime_error("Cargo harvesting requires positive carryCapacity");
-                }
                 if (j.contains("abilities")) {
                     const auto& ids = j.at("abilities");
-                    if (!ids.is_array() || ids.size() > 3 || (!entity.mobile && !ids.empty()))
-                        throw std::runtime_error("Units support up to three active abilities");
+                    if (!ids.is_array() || ids.size() > 3)
+                        throw std::runtime_error("Entities support up to three active abilities");
                     std::set<int> unique;
                     for (const auto& value : ids) {
                         const int id = number(value, 1, 1000000);
-                        if (!unique.insert(id).second) throw std::runtime_error("Duplicate unit ability");
+                        if (!unique.insert(id).second) throw std::runtime_error("Duplicate entity ability");
                         const auto& ability = result.ability(id);
-                        if (ability.harvest) throw std::runtime_error("Assign harvesting through worker.gatherAbility, not active ability slots");
+                        if (ability.harvest && ability.harvest->credit == HarvestCredit::Cargo && entity.carryCapacity == 0)
+                            throw std::runtime_error("Cargo harvesting requires positive carryCapacity");
                         entity.abilities.push_back(ability);
                     }
                 }
@@ -235,7 +250,8 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     for (const auto& e : result.entities_) {
         for (const auto& id : e.trainableUnits) {
             const auto& unit = result.entity(id);
-            if (!unit.mobile || unit.width != 1 || unit.height != 1) throw std::runtime_error("Production needs a mobile one-cell unit: " + id);
+            if (unit.collision != CollisionShape::Circle || unit.width != 1 || unit.height != 1)
+                throw std::runtime_error("Production currently needs a one-cell circle collider: " + id);
         }
         std::set<std::string> forms;
         for (const auto& id : e.alternateForms) {

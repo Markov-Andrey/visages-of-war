@@ -100,7 +100,7 @@ void projectileTests(TestSuite& test, const TestContext&) {
         auto gun = weapon(ProjectileTargeting::Point); gun.attackDamage = 2000;
         gun.projectile->friendlyFire = true; gun.projectile->splashRadius = .2f;
         auto builder = dummy(); builder.canBuild = true;
-        EntityDefinition structure; structure.id = "test.structure"; structure.mobile = false; structure.constructible = true; structure.cost = {75, 3}; structure.constructionTicks = 200;
+        EntityDefinition structure; structure.id = "test.structure"; structure.collision = CollisionShape::Footprint; structure.mobile = false; structure.constructible = true; structure.cost = {75, 3}; structure.constructionTicks = 200;
         auto scene = range(); scene.slots[0].startingCrystals = 1000; scene.units = {{builder.id, 0, {6, 6}}};
         auto game = makeTestSimulation(std::move(scene), {}, gun, {gun, builder, structure});
         const auto builderId = game.units().back().id;

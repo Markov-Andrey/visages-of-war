@@ -317,7 +317,7 @@ void GameApplication::exerciseUnitCommands() {
         throw std::runtime_error("Forced attack: invalid entity fell through to attack-move");
     onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
     auto healing = *game_.unit(repairer)->ability(repairId);
-    healing.id = 831; healing.targeting = rts::AbilityTargeting::FriendlyUnit;
+    healing.id = 831; healing.targeting = rts::AbilityTargeting::Unit;
     const_cast<rts::Unit&>(*game_.unit(fighter)).definition.abilities = {healing};
     const_cast<rts::Unit&>(*game_.unit(friendHero)).health -= 50;
     game_.stop(std::array{fighter, repairer}); ui_.selection.ids = {repairer, fighter};
@@ -333,5 +333,21 @@ void GameApplication::exerciseUnitCommands() {
     onMessage(WM_KEYDOWN, 'Q', 0); click(healPoint);
     if (ui_.orderMode || game_.unit(fighter)->currentOrder.target != friendHero)
         throw std::runtime_error("Repair: manual unit targeting failed");
+    auto& casterBuilding = const_cast<rts::Building&>(game_.buildings().front());
+    casterBuilding.definition.abilities = {definitions_.ability(1), definitions_.ability(4)};
+    casterBuilding.definition.maximumMana = casterBuilding.mana = 50;
+    ui_.selection.ids = {casterBuilding.id}; clearCommandMode();
+    onMessage(WM_KEYDOWN, 'Z', 0);
+    if (casterBuilding.mana != 25 || casterBuilding.abilityCooldown(1) != 150)
+        throw std::runtime_error("Building ability hotkey did not use shared mana and cooldown");
+    const auto autocastButton = layout.commands[rts::firstAbilitySlot + 1];
+    onMessage(WM_RBUTTONDOWN, 0, at({autocastButton.x + 10, autocastButton.y + 10}));
+    if (!casterBuilding.autocastEnabled(4)) throw std::runtime_error("Building autocast button failed");
+    onMessage(WM_KEYDOWN, 'C', 0);
+    if (ui_.orderMode != rts::OrderKind::UseAbility || ui_.pendingAbility != 4)
+        throw std::runtime_error("Building targeted ability hotkey failed");
+    onMessage(WM_KEYDOWN, 'S', 0);
+    if (ui_.orderMode || casterBuilding.currentOrder.kind != rts::OrderKind::Stop)
+        throw std::runtime_error("Building stop failed");
 }
 }

@@ -22,7 +22,11 @@ struct HeroProgression {
     std::shared_ptr<const ProgressionRules> rules;
 };
 struct HeroLevelChanged { EntityId id; int level; };
-struct Unit {
+struct ProductionJob {
+    std::string definitionId;
+    int remainingTicks{}, totalTicks{}, paidCrystals{}, reservedSupply{};
+};
+struct Entity {
     EntityId id{};
     PlayerId owner{};
     std::string definitionId;
@@ -71,6 +75,19 @@ struct Unit {
     EntityId unreachableTarget{};
     int targetRetryTicks{};
     std::optional<HeroProgression> hero;
+    static constexpr size_t productionQueueLimit = 10;
+    Cell origin, rally;
+    int constructionProgress{};
+    std::deque<ProductionJob> production;
+    bool complete() const { return !definition.constructible || constructionProgress >= definition.constructionTicks; }
+    bool training() const { return complete() && !production.empty() && production.front().remainingTicks > 0; }
+    bool contains(Cell c) const {
+        return c.x >= origin.x && c.y >= origin.y && c.x < origin.x + definition.width && c.y < origin.y + definition.height;
+    }
+    const AbilityDefinition* harvestAbility() const {
+        const auto* selected = ability(currentOrder.abilityId);
+        return selected && selected->harvest ? selected : nullptr;
+    }
     int level() const { return hero ? hero->level : definition.level; }
     int maximumHealth() const { return definition.maximumHealth + (hero ? (level() - 1) * definition.hero->healthPerLevel : 0); }
     int maximumMana() const { return definition.maximumMana; }
@@ -91,6 +108,9 @@ struct Unit {
     int experienceToLevel() const { return hero && !atMaxLevel() ? hero->rules->thresholds[level()] - hero->rules->thresholds[level() - 1] : 0; }
     float experienceFraction() const { return atMaxLevel() ? 1.0f : experienceToLevel() ? float(experienceInLevel()) / experienceToLevel() : 0.0f; }
 };
+// Spatial collections retain their names; both store exactly the same entity model.
+using Unit = Entity;
+using Building = Entity;
 enum class CorpsePhase { Body, Fading, Vanishing };
 struct Corpse {
     static constexpr int lifetimeTicks = 60 * simulationTicksPerSecond;
@@ -119,27 +139,6 @@ struct Bones {
     std::uint32_t variation{}; // Chosen once; renderer maps it to the catalog's variants.
     int remainingTicks = lifetimeTicks;
     bool fading{};
-};
-struct ProductionJob {
-    std::string definitionId;
-    int remainingTicks{}, totalTicks{}, paidCrystals{}, reservedSupply{};
-};
-struct Building {
-    static constexpr size_t productionQueueLimit = 10;
-    EntityId id{};
-    PlayerId owner{};
-    EntityDefinition definition;
-    Cell origin;
-    int health{}, constructionProgress{};
-    Cell rally;
-    std::deque<ProductionJob> production;
-    // Prepaid fractional crystals, shared by every repairer and retained across orders.
-    std::int64_t repairCredit{};
-    bool complete() const { return constructionProgress >= definition.constructionTicks; }
-    bool training() const { return complete() && !production.empty() && production.front().remainingTicks > 0; }
-    bool contains(Cell c) const {
-        return c.x >= origin.x && c.y >= origin.y && c.x < origin.x + definition.width && c.y < origin.y + definition.height;
-    }
 };
 struct ConstructionFinished { EntityId building; };
 struct UnitProduced { EntityId building; EntityId unit; };
@@ -198,6 +197,7 @@ public:
     const std::vector<ProjectileImpact>& projectileImpacts() const { return projectileImpacts_; }
     const std::vector<Building>& buildings() const { return buildings_; }
     const std::vector<const EntityDefinition*>& buildingTypes() const { return buildable_; }
+    const Entity* entity(EntityId id) const;
     const Unit* unit(EntityId id) const;
     const Unit* hero() const;
     bool heroFallen() const { return heroFallen_; }
@@ -252,6 +252,8 @@ public:
     void tick();
 private:
     void setMessage(std::wstring message) { message_ = std::move(message); ++messageRevision_; }
+    Entity* mutableEntity(EntityId id);
+    Entity makeEntity(const EntityDefinition& type, Cell cell, PlayerId owner);
     Unit* mutableUnit(EntityId id);
     Building* mutableBuilding(EntityId id);
     EntityId spawn(const EntityDefinition& definition, Cell cell, bool reserved, PlayerId owner);
@@ -276,14 +278,17 @@ private:
     bool seekCrystal(Unit& unit);
     bool returnCargo(Unit& unit);
     void harvest(Unit& unit);
-    bool startRepair(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic);
+    bool startTargetedAbility(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic);
+    bool abilityEffectEligible(const Entity& caster, const AbilityDefinition& ability, EntityId target, bool automatic) const;
     bool useAbility(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic = false);
     void commitAbility(Unit& unit, const AbilityDefinition& ability);
-    std::vector<Cell> repairPositions(const Unit& unit, EntityId target) const;
-    bool repairReach(const Unit& unit, EntityId target, Vec2 position) const;
-    void approachRepair(Unit& unit);
+    std::vector<Cell> abilityPositions(const Entity& unit, const AbilityDefinition& ability, EntityId target) const;
+    bool abilityReach(const Entity& unit, const AbilityDefinition& ability, EntityId target, Vec2 position) const;
+    void approachAbility(Unit& unit);
     void tickAutocast(Unit& unit);
-    void tickRepair(Unit& unit);
+    void tickRepair(Entity& unit);
+    void tickAbility(Entity& unit);
+    void prepareAbilityTick(Entity& unit);
     void arrived(Unit& unit);
     void issue(Unit& unit, Order order);
     void applyOrder(Unit& unit, Order order, std::optional<Path> path = {});
@@ -298,11 +303,12 @@ private:
         const Unit* unit{};
         const Building* building{};
         explicit operator bool() const { return unit || building; }
-        EntityId id() const { return unit ? unit->id : building->id; }
-        PlayerId owner() const { return unit ? unit->owner : building->owner; }
-        int health() const { return unit ? unit->health : building->health; }
-        bool air() const { return unit && airborne(unit->definition.movement); }
-        Vec2 position() const { return unit ? unit->position : Vec2{building->origin.x + building->definition.width * .5f, building->origin.y + building->definition.height * .5f}; }
+        const Entity& entity() const { return unit ? *unit : *building; }
+        EntityId id() const { return entity().id; }
+        PlayerId owner() const { return entity().owner; }
+        int health() const { return entity().health; }
+        bool air() const { return airborne(entity().definition.movement); }
+        Vec2 position() const { return entity().position; }
     };
     CombatTarget combatTarget(EntityId id) const;
     bool canAttack(const Unit& attacker, CombatTarget target, bool forced) const;
