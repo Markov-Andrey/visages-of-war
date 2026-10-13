@@ -3,7 +3,7 @@
 namespace rts::game {
 void GameApplication::clearCommandMode() {
     ui_.placement.clear(); ui_.rallyMode = false; ui_.orderMode.reset(); ui_.buildMenu = false;
-    ui_.commandGroup.clear();
+    ui_.commandGroup.clear(); ui_.pendingAbility = 0;
 }
 void GameApplication::selectControlGroup(size_t slot) {
     if (ui_.controlGroups.recall(slot, game_, ui_.selection)) clearCommandMode();
@@ -19,7 +19,11 @@ void GameApplication::unitAction(size_t index) {
     if (const auto* ability = rts::abilityCommandAt(game_, ui_, index)) {
         const auto* unit = ui_.selection.activeUnit(game_);
         clearCommandMode();
-        game_.activateAbility(unit->id, ability->id);
+        if (ability->targeting == AbilityTargeting::None) game_.activateAbility(unit->id, ability->id);
+        else {
+            ui_.orderMode = OrderKind::UseAbility; ui_.pendingAbility = ability->id;
+            ui_.commandGroup = ui_.selection.activeGroup(game_).type;
+        }
         return;
     }
     if (ui_.buildMenu) {
@@ -60,13 +64,18 @@ bool GameApplication::unitHotkey(unsigned key) {
 bool GameApplication::executeTarget(rts::Cell target) {
     if (!ui_.orderMode) return false;
     bool accepted = false;
-    bool enemy = false;
     const auto recipients = rts::commandRecipients(game_, ui_, *ui_.orderMode);
-    if (*ui_.orderMode == rts::OrderKind::AttackMove) for (const auto& unit : game_.units())
-        if (unit.cell == target && unit.owner != game_.player().id && unit.owner != rts::neutralPlayer && game_.fog().visible(unit.cell)) {
-            enemy = true; accepted = game_.attack(recipients, unit.id); break;
-        }
-    if (!enemy) accepted = game_.order(recipients, *ui_.orderMode, target);
+    if (*ui_.orderMode == OrderKind::UseAbility) {
+        const auto entity = pickCommandEntity(target);
+        if (entity) for (auto id : recipients) accepted = game_.activateAbility(id, ui_.pendingAbility, entity) || accepted;
+        if (accepted) { ui_.commandFeedback.confirm(entity); clearCommandMode(); }
+        return accepted;
+    }
+    const auto entity = *ui_.orderMode == rts::OrderKind::AttackMove ? pickCommandEntity(target) : 0;
+    if (entity) {
+        accepted = game_.attack(recipients, entity, true);
+        if (accepted) ui_.commandFeedback.confirm(entity);
+    } else accepted = game_.order(recipients, *ui_.orderMode, target);
     if (accepted) clearCommandMode();
     return accepted;
 }

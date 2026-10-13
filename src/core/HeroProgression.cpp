@@ -14,6 +14,7 @@ bool Simulation::grantExperience(EntityId id, int amount) {
         events_.emplace_back(HeroLevelChanged{u->id, u->level()});
     }
     u->health += u->maximumHealth() - oldMaximum; // Preserve damage already sustained.
+    u->repairCredit = u->repairCredit * u->maximumHealth() / oldMaximum;
     return true;
 }
 void Simulation::rewardKill(const Unit& victim, PlayerId killer) {

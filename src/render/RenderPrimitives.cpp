@@ -23,6 +23,38 @@ void Renderer::commandHotkey(UiRect area, wchar_t key, bool enabled) {
     target_->DrawTextW(&key, 1, hotkeyFormat_.Get(), square, brush_.Get());
 }
 
+void Renderer::autocastFrame(UiRect area, AutocastState state) {
+    const bool on = state != AutocastState::Off;
+    const unsigned color = !on ? 0x71817f : state == AutocastState::Mixed ? 0xb7a886 : 0xf2c968;
+    if (on) {
+        const float x = area.x + 2, y = area.y + 2, w = area.width - 4, h = area.height - 4;
+        brush_->SetColor(D2D1::ColorF(color));
+        target_->DrawRectangle(rect(x, y, w, h), brush_.Get(), 2);
+        // Presentation time keeps the indicator moving while the match is paused.
+        const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        const float perimeter = 2 * (w + h), head = float(std::fmod(seconds / 2.4, 1.0)) * perimeter;
+        const auto at = [&](float distance) -> Vec2 {
+            distance = std::fmod(distance + perimeter, perimeter);
+            if (distance < w) return {x + distance, y};
+            distance -= w;
+            if (distance < h) return {x + w, y + distance};
+            distance -= h;
+            if (distance < w) return {x + w - distance, y + h};
+            return {x, y + h - (distance - w)};
+        };
+        for (int i = 24; i >= 0; --i) {
+            brush_->SetColor(D2D1::ColorF(0xfff5cc, 1.f - i / 25.f));
+            target_->DrawLine(point(at(head - i)), point(at(head - i + .8f)), brush_.Get(), 3);
+        }
+    }
+    const UiRect badge{area.x + area.width - 20, area.y + area.height - 20, 17, 17};
+    brush_->SetColor(D2D1::ColorF(0x101821, .95f));
+    target_->FillRectangle(rect(badge.x, badge.y, badge.width, badge.height), brush_.Get());
+    brush_->SetColor(D2D1::ColorF(color));
+    const wchar_t mark = state == AutocastState::Mixed ? L'±' : L'А';
+    target_->DrawTextW(&mark, 1, hotkeyFormat_.Get(), rect(badge.x, badge.y, badge.width, badge.height), brush_.Get());
+}
+
 void Renderer::polygon(std::span<const Vec2> points, unsigned color, float opacity, bool fill) {
     if (points.size() < 3) return;
     ComPtr<ID2D1PathGeometry> geometry;

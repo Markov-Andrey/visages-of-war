@@ -88,6 +88,7 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
         const auto& harvest = entity.harvesting();
         heading(ability.displayName);
         paragraph(ability.description);
+        stat("Анимация добычи", abilityAnimationName(ability.animation));
         stat("За цикл добычи", std::to_string(harvest.amount), "crystal");
         stat("Интервал добычи", seconds(harvest.intervalTicks));
         stat("Зачисление", harvest.credit == HarvestCredit::Direct ? "Сразу в запас игрока" : "После доставки на склад");
@@ -121,6 +122,20 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
             paragraph(ability.description);
             stat("Расход маны", std::to_string(ability.manaCost));
             stat("Перезарядка", seconds(ability.cooldownTicks));
+            stat("Цели", abilityTargetDescription(ability.targeting));
+            stat("Анимация способности", abilityAnimationName(ability.animation));
+            if (ability.rightClick) stat("Применение по ПКМ", "По подходящей цели");
+            if (ability.repair) {
+                const bool buildingsOnly = ability.targeting == AbilityTargeting::FriendlyBuilding;
+                stat("Время полного ремонта", std::to_string(ability.repair->constructionTimePercent) + (buildingsOnly ? "% времени строительства" : "% времени строительства / обучения цели"));
+                stat("Цена полного ремонта", std::to_string(ability.repair->constructionCostPercent) + (buildingsOnly ? "% цены здания" : "% цены цели"));
+            }
+            if (ability.autocast) {
+                stat("Радиус автокаста", amount(ability.autocast->radius));
+                stat("Проверка целей", seconds(ability.autocast->scanIntervalTicks));
+                stat("Автокаст по умолчанию", ability.autocast->enabledByDefault ? "Включён" : "Выключен");
+                stat("Условие автокаста", "Бездействие с приказом «Стоп»");
+            }
         }
     }
     return result;

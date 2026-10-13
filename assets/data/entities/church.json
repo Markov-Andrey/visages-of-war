@@ -3,6 +3,7 @@
   "entities": [
     {
       "id": "church.worker",
+      "abilities": [4],
       "canDecompose": true,
       "factionId": "church",
       "name": "Послушница",

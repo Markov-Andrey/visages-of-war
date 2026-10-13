@@ -84,6 +84,8 @@ EntityId Simulation::spawn(const EntityDefinition& type, Cell cell, bool reserve
     u.id = nextId_++; u.owner = owner; u.definitionId = type.id; u.definition = type;
     u.cell = cell; u.position = u.tickPosition = center(cell); u.health = type.maximumHealth; u.mana = type.maximumMana;
     if (type.hero) u.hero = HeroProgression{1, 0, progression_};
+    for (const auto& ability : type.abilities)
+        if (ability.autocast && ability.autocast->enabledByDefault) u.autocastAbilities.push_back(ability.id);
     units_.push_back(std::move(u));
     return units_.back().id;
 }

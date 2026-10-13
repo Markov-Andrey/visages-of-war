@@ -24,7 +24,7 @@ struct UnitCommandInfo {
 inline constexpr std::array<UnitCommandInfo, 9> unitCommands{{
     {UnitCommand::Move, 0, "move", L'M', L"Идти", L"Идти к точке, не отвлекаясь на врагов.", OrderKind::Move},
     {UnitCommand::Stop, 1, "stop", L'S', L"Стоять", L"Отменить приказ. Юнит может сам вступить в бой с замеченным врагом.", OrderKind::Stop},
-    {UnitCommand::Attack, 2, "attack", L'A', L"Атаковать", L"Выбрать врага или идти к точке, атакуя встреченных врагов.", OrderKind::AttackMove},
+    {UnitCommand::Attack, 2, "attack", L'A', L"Атаковать", L"ЛКМ по юниту или зданию — атаковать выбранную цель, включая своих. ЛКМ по земле — идти, атакуя встреченных врагов.", OrderKind::AttackMove},
     {UnitCommand::Hold, 3, "hold", L'H', L"Позиция", L"Удерживать позицию: атаковать в пределах дальности без преследования.", OrderKind::Hold},
     {UnitCommand::Patrol, 4, "patrol", L'P', L"Патруль", L"Ходить между текущей позицией и точкой. После боя продолжать патруль.", OrderKind::Patrol},
     {UnitCommand::Gather, 5, "gather", L'G', L"Добывать", L"Выбрать видимую залежь кристаллов для добычи и доставки.", OrderKind::Gather, CommandScope::ActiveGroup},
@@ -39,10 +39,11 @@ inline const UnitCommandInfo* unitCommandAt(size_t slot) {
 inline OrderKind unitOrder(const Unit& unit) {
     const auto kind = unit.currentOrder.kind;
     if (kind == OrderKind::Hold || kind == OrderKind::Patrol || kind == OrderKind::AttackMove || kind == OrderKind::AttackGround) return kind;
-    if (unit.targetUnit) return OrderKind::Attack;
+    if (unit.attackTarget) return OrderKind::Attack;
     switch (unit.state) {
     case UnitState::Moving: return OrderKind::Move;
     case UnitState::ToBuild: case UnitState::Building: return OrderKind::Build;
+    case UnitState::ToAbility: case UnitState::UsingAbility: return OrderKind::UseAbility;
     case UnitState::ToCrystal: case UnitState::Harvesting: case UnitState::ToHall: case UnitState::WaitingForCrystal: return OrderKind::Gather;
     default: return OrderKind::Stop;
     }
@@ -53,6 +54,7 @@ inline const wchar_t* orderName(OrderKind kind) {
     if (kind == OrderKind::Hold) return L"Удерживать позицию";
     if (kind == OrderKind::AttackGround) return L"Удар по площади";
     if (kind == OrderKind::Interact) return L"Взаимодействовать";
+    if (kind == OrderKind::UseAbility) return L"Применить способность";
     for (const auto& command : unitCommands) if (command.order == kind) return command.label;
     return L"Стоять";
 }
@@ -69,7 +71,7 @@ inline bool commandCapable(const Unit& unit, UnitCommand command) {
 }
 inline bool idleWorker(const Simulation& game, const Unit& unit) {
     return unit.owner == game.player().id && unit.health > 0 && unit.definition.isWorker() &&
-        unit.state == UnitState::Idle && !unit.targetUnit && unitOrder(unit) == OrderKind::Stop;
+        unit.state == UnitState::Idle && !unit.attackTarget && unitOrder(unit) == OrderKind::Stop;
 }
 std::map<std::string, IconAsset> loadCommandIcons(const Paths& paths);
 }

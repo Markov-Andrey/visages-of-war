@@ -22,6 +22,8 @@ void Simulation::issue(Unit& u, Order order) {
 }
 void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     u.currentOrder = order;
+    u.automaticAbility = u.abilityWorking = false; u.repairProgress = 0;
+    u.activityTicks = 0;
     if (u.replanQueued) std::erase(movementReplans_, u.id);
     u.progressPosition = u.position; u.progressTicks = u.stagnantTicks = 0;
     u.replanQueued = false; u.replanAfter = 0; u.relaxedAttempt = 0; u.yieldingTo = 0;
@@ -30,19 +32,25 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     if (!u.moveGroup) u.groupRadius = 0;
     u.velocity = {};
     u.motionFacing.reset();
-    u.targetUnit = 0; cancelAttack(u); u.chaseTicks = 0;
+    u.attackTarget = 0; cancelAttack(u); u.chaseTicks = 0;
     u.unreachableTarget = 0; u.targetRetryTicks = 0;
     u.route.clear(); u.next = 0; u.blockedTicks = 0;
     u.repeatGather = false; u.targetCrystal = -1; u.gatherOriginCrystal = -1; u.targetBuilding = 0; u.harvestTicks = 0;
     if (order.kind == OrderKind::Attack) {
-        const auto* target = unit(order.target);
-        if (target && canAttack(u, *target) && targetVisible(u, *target)) {
-            u.targetUnit = target->id;
-            chase(u, *target);
+        const auto target = combatTarget(order.target);
+        if (canAttack(u, target, order.forceAttack) && targetVisible(u, target)) {
+            u.attackTarget = target.id();
+            chase(u, target);
         } else { u.route.clear(); u.next = 0; u.state = UnitState::Idle; }
         return;
     }
     if (order.kind == OrderKind::Stop || order.kind == OrderKind::Hold) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
+    if (order.kind == OrderKind::UseAbility) {
+        u.targetBuilding = building(order.target) ? order.target : 0;
+        if (path) followPath(u, std::move(*path), UnitState::ToAbility);
+        else u.state = UnitState::Idle;
+        return;
+    }
     if (order.kind == OrderKind::AttackGround) { chaseGround(u); return; }
     if (order.kind == OrderKind::Build) {
         const auto* b = building(order.target);
@@ -78,9 +86,29 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     else if (!setRoute(u, std::span<const Cell>(&order.cell, 1), UnitState::Moving)) setMessage(L"Нет доступного пути.");
 }
 bool Simulation::command(Cell c) { if (units_.empty()) return false; const EntityId id = worker().id; return command(std::span<const EntityId>(&id, 1), c); }
-bool Simulation::command(std::span<const EntityId> ids, Cell c) {
+bool Simulation::command(std::span<const EntityId> ids, Cell c, EntityId target) {
     if (!map().contains(c)) return false;
-    for (const auto& target : units_) if (target.owner != player_.id && target.cell == c && fog_.visible(c)) return attack(ids, target.id);
+    if (!target) {
+        for (const auto& candidate : units_) if (candidate.cell == c && candidate.health > 0 && fog_.visible(c)) {
+            target = candidate.id;
+            if (candidate.owner != player_.id) break;
+        }
+        if (!target) if (const auto* b = buildingAt(c)) target = b->id;
+    }
+    bool matched = false, accepted = false;
+    std::vector<EntityId> visited;
+    for (auto id : ids) {
+        auto* u = mutableUnit(id);
+        if (!u || u->owner != player_.id || std::find(visited.begin(), visited.end(), id) != visited.end()) continue;
+        visited.push_back(id);
+        if (const auto* ability = contextualAbility(*u, target)) {
+            matched = true;
+            accepted = activateAbility(id, ability->id, target) || accepted;
+        }
+    }
+    // Like gathering and attacking, a contextual cast only orders eligible members.
+    if (matched) return accepted;
+    if (const auto* enemy = unit(target); enemy && enemy->owner != player_.id && fog_.visible(enemy->cell)) return attack(ids, target);
     auto kind = buildingAt(c) ? OrderKind::Interact : OrderKind::Move;
     for (const auto& node : crystals()) if (node.contains(c) && node.remaining > 0 && crystalVisible(node)) kind = OrderKind::Gather;
     return order(ids, kind, c);
@@ -89,7 +117,7 @@ bool Simulation::order(std::span<const EntityId> ids, OrderKind kind, Cell c) { 
 bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKind kind, Cell c) {
     if (!activePlayer(actor)) return false;
     if (!map().contains(c)) return false;
-    if (kind == OrderKind::Attack || kind == OrderKind::Build) return false;
+    if (kind == OrderKind::Attack || kind == OrderKind::Build || kind == OrderKind::UseAbility) return false;
     if (kind == OrderKind::Gather && std::none_of(crystals().begin(), crystals().end(),
         [&](const Crystal& crystal) { return crystal.contains(c) && crystal.remaining > 0 && crystalVisibleTo(actor, crystal); })) return false;
     std::vector<FormationMember> members;
@@ -189,6 +217,7 @@ void Simulation::arrived(Unit& u) {
         break;
     }
     case UnitState::ToBuild: u.state = UnitState::Building; break;
+    case UnitState::ToAbility: u.state = UnitState::UsingAbility; break;
     case UnitState::ToHall: {
         const auto* depot = building(u.targetBuilding);
         if (depot && depot->complete() && depot->definition.acceptsCargo && depot->owner == u.owner) { mutableEconomy(u.owner).crystals += u.cargo; u.cargo = 0; }
@@ -209,6 +238,19 @@ void Simulation::arrived(Unit& u) {
     }
 }
 void Simulation::tickUnit(Unit& u) {
+    if (u.state == UnitState::Harvesting || u.state == UnitState::Building || u.state == UnitState::UsingAbility)
+        u.activityTicks = (u.activityTicks + 1) % 1000000;
+    else u.activityTicks = 0;
+    tickAutocast(u);
+    if (u.currentOrder.kind == OrderKind::UseAbility) {
+        const auto* ability = u.ability(u.currentOrder.abilityId);
+        if (!ability || !canTargetAbility(u, *ability, u.currentOrder.target)) { issue(u, {OrderKind::Stop}); return; }
+        if (unit(u.currentOrder.target)) {
+            if (repairReach(u, u.currentOrder.target, u.position)) {
+                u.route.clear(); u.next = 0; u.velocity = {}; u.state = UnitState::UsingAbility;
+            } else if (--u.chaseTicks <= 0) approachRepair(u);
+        }
+    }
     if (u.state == UnitState::ToBuild || u.state == UnitState::Building) {
         const auto* b = building(u.targetBuilding);
         if (!b || b->complete() || u.health <= 0 ||
@@ -217,7 +259,7 @@ void Simulation::tickUnit(Unit& u) {
         }
     }
     if (u.state == UnitState::Idle && u.moveGroup) yieldFormation(u);
-    if (u.state == UnitState::Idle && !u.targetUnit &&
+    if (u.state == UnitState::Idle && !u.attackTarget &&
         (u.currentOrder.kind == OrderKind::Patrol || u.currentOrder.kind == OrderKind::AttackMove) && ++u.blockedTicks >= 15)
         resumeOrder(u);
     if (u.state == UnitState::WaitingForCrystal) {
@@ -232,6 +274,7 @@ void Simulation::tickUnit(Unit& u) {
         moveUnit(u);
         return;
     }
+    if (u.state == UnitState::UsingAbility) { tickRepair(u); return; }
     if (u.state == UnitState::Building) {
         auto* b = mutableBuilding(u.targetBuilding);
         if (!b || b->complete()) { u.state = UnitState::Idle; return; }

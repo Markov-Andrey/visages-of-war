@@ -30,10 +30,10 @@ void Simulation::tickCombat() {
         if (u.attackDamage() <= 0) continue;
         const bool ground = u.currentOrder.kind == OrderKind::AttackGround;
         const bool automatic = !ground && u.currentOrder.kind != OrderKind::Attack;
-        if (automatic && u.targetUnit && u.targetUnit == u.unreachableTarget && u.targetRetryTicks > 0) {
-            u.targetUnit = 0; u.route.clear(); u.next = 0; u.state = UnitState::Idle;
+        if (automatic && u.attackTarget && u.attackTarget == u.unreachableTarget && u.targetRetryTicks > 0) {
+            u.attackTarget = 0; u.route.clear(); u.next = 0; u.state = UnitState::Idle;
         }
-        if (!u.targetUnit && !ground && u.state == UnitState::Attacking) resumeOrder(u);
+        if (!u.attackTarget && !ground && u.state == UnitState::Attacking) resumeOrder(u);
         const bool scanning = u.state == UnitState::Idle || u.currentOrder.kind == OrderKind::AttackMove ||
             u.currentOrder.kind == OrderKind::Patrol;
         const auto acquire = [&](bool onlyInReach) {
@@ -42,7 +42,7 @@ void Simulation::tickCombat() {
             const int vision = clock_.phase() == DayPhase::Day ? u.definition.dayVision : u.definition.nightVision;
             for (const auto& candidate : units_) {
                 if (!canAttack(u, candidate) || (candidate.id == u.unreachableTarget && u.targetRetryTicks > 0)) continue;
-                const bool inReach = attackReach(u, candidate);
+                const bool inReach = attackReach(u, CombatTarget{&candidate});
                 if ((onlyInReach || u.currentOrder.kind == OrderKind::Hold) && !inReach) continue;
                 float score = groundLengthSquared(candidate.position - u.position);
                 if (inReach) score -= 10000;
@@ -50,8 +50,8 @@ void Simulation::tickCombat() {
                     // Spread automatic melee acquisition along the front. A focused
                     // click never passes through this target replacement policy.
                     for (const auto& ally : units_) if (ally.id != u.id && ally.owner == u.owner &&
-                        ally.targetUnit == candidate.id && !ally.definition.projectile) score += 2;
-                    if (candidate.id == u.targetUnit && u.blockedTicks >= 18) score += 8;
+                        ally.attackTarget == candidate.id && !ally.definition.projectile) score += 2;
+                    if (candidate.id == u.attackTarget && u.blockedTicks >= 18) score += 8;
                 }
                 if (score < bestScore && visionReaches(map(), {u.cell, vision, airborne(u.definition.movement)}, candidate.cell)) {
                     best = &candidate; bestScore = score;
@@ -59,29 +59,29 @@ void Simulation::tickCombat() {
             }
             return best;
         };
-        if (!u.targetUnit && !ground && scanning) {
+        if (!u.attackTarget && !ground && scanning) {
             const auto* best = acquire(false);
-            if (best) { u.targetUnit = best->id; chase(u, *best); }
-        } else if (automatic && u.targetUnit && u.attackPhase != AttackPhase::Windup && u.attackPhase != AttackPhase::Recovery &&
+            if (best) { u.attackTarget = best->id; chase(u, CombatTarget{best}); }
+        } else if (automatic && u.attackTarget && u.attackPhase != AttackPhase::Windup && u.attackPhase != AttackPhase::Recovery &&
             (clock_.elapsedTicks() + u.id) % 6 == 0) {
-            const auto* current = unit(u.targetUnit);
-            if (current && !attackReach(u, *current)) {
+            const auto current = combatTarget(u.attackTarget);
+            if (current && !attackReach(u, current)) {
                 const auto* best = acquire(u.blockedTicks < 18);
-                if (best && best->id != u.targetUnit) {
-                    u.targetUnit = best->id; u.route.clear(); u.next = 0; u.blockedTicks = 0;
-                    chase(u, *best);
+                if (best && best->id != u.attackTarget) {
+                    u.attackTarget = best->id; u.route.clear(); u.next = 0; u.blockedTicks = 0;
+                    chase(u, CombatTarget{best});
                 }
             }
         }
-        if (!u.targetUnit && !ground) continue;
-        const auto* target = unit(u.targetUnit);
-        if (!ground && (!target || !canAttack(u, *target) || !targetVisible(u, *target) ||
-            (u.currentOrder.kind == OrderKind::Hold && !attackReach(u, *target)))) {
+        if (!u.attackTarget && !ground) continue;
+        const auto target = combatTarget(u.attackTarget);
+        if (!ground && (!canAttack(u, target, !automatic && u.currentOrder.forceAttack) || !targetVisible(u, target) ||
+            (u.currentOrder.kind == OrderKind::Hold && !attackReach(u, target)))) {
             resumeOrder(u);
             continue;
         }
-        const bool inReach = (ground ? groundAttackReach(u, u.currentOrder.cell) : attackReach(u, *target));
-        const auto release = [&] { if (ground) releaseGroundAttack(u); else releaseAttack(u, *target, hits); };
+        const bool inReach = (ground ? groundAttackReach(u, u.currentOrder.cell) : attackReach(u, target));
+        const auto release = [&] { if (ground) releaseGroundAttack(u); else releaseAttack(u, target, hits); };
         if (u.attackPhase == AttackPhase::Windup) {
             if (--u.attackTicks <= 0) {
                 if (inReach) release();
@@ -92,14 +92,14 @@ void Simulation::tickCombat() {
         if (u.attackPhase == AttackPhase::Recovery) continue;
         if (inReach) {
             u.route.clear(); u.next = 0; u.state = UnitState::Attacking;
-            const auto delta = (ground ? center(u.currentOrder.cell) : target->position) - u.position;
+            const auto delta = (ground ? center(u.currentOrder.cell) : attackAim(target, u.position)) - u.position;
             u.facing = {delta.x > .2f ? 1 : delta.x < -.2f ? -1 : 0, delta.y > .2f ? 1 : delta.y < -.2f ? -1 : 0};
             if (u.attackPhase == AttackPhase::Ready) {
                 u.attackPhase = AttackPhase::Windup; u.attackTicks = u.definition.attackWindupTicks;
                 if (u.attackTicks == 0) { release(); combat::recover(u); }
             }
         } else if (u.chaseTicks == 0) {
-            if (ground) chaseGround(u); else chase(u, *target);
+            if (ground) chaseGround(u); else chase(u, target);
         }
     }
     resolveHits(hits);

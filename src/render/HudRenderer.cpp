@@ -230,6 +230,18 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             L"  ·  Перезарядка: " + std::to_wstring(ability->cooldownTicks / Simulation::ticksPerSecond) + L" с";
         buttonKeys[i] = abilityKeys[i - firstAbilitySlot];
         enabled[i] = unit->abilityCooldown(ability->id) == 0 && unit->mana >= ability->manaCost;
+        active[i] = ui.orderMode == OrderKind::UseAbility && ui.pendingAbility == ability->id;
+        details[i] += L"\nЦели: " + wide(abilityTargetDescription(ability->targeting)) + L".";
+        if (ability->rightClick) details[i] += L"\nПКМ по подходящей цели — применить.";
+        if (ability->repair) details[i] += L"\nПолный ремонт: " + std::to_wstring(ability->repair->constructionTimePercent) +
+            (ability->targeting == AbilityTargeting::FriendlyBuilding ? L"% времени строительства, " : L"% времени строительства / обучения цели, ") +
+            std::to_wstring(ability->repair->constructionCostPercent) + L"% цены цели.";
+        if (ability->autocast) {
+            const auto state = autocastState(game, ui, ability->id);
+            std::wostringstream radius; radius << ability->autocast->radius;
+            details[i] += L"\nАвтокаст: " + std::wstring(state == AutocastState::On ? L"включён" : state == AutocastState::Mixed ? L"у части группы" : L"выключен") +
+                L". Радиус: " + radius.str() + L".\nПКМ — переключить для активной группы.\nЛКМ / " + buttonKeys[i] + L" — выбрать цель вручную.\nАвтоматически работает только при приказе «Стоп».";
+        }
     }
     const auto commandPanel = layout.commandPanel;
     panel({commandPanel.x - 3, commandPanel.y - 3, commandPanel.width + 6, commandPanel.height + 6}, 0x31464c);
@@ -275,7 +287,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 centeredText(std::to_wstring((cooldown + Simulation::ticksPerSecond - 1) / Simulation::ticksPerSecond),
                     {b.x + 22, b.y + 3, b.width - 22, b.height - 22}, 0xe2eaff, b.height >= 48);
             }
-            centeredText(std::to_wstring(ability->manaCost), {b.x, b.y + b.height - 19, b.width, 19},
+            if (ability->manaCost > 0) centeredText(std::to_wstring(ability->manaCost), {b.x, b.y + b.height - 19, b.width, 19},
                 unit->mana >= ability->manaCost ? 0x8bbaff : 0xed8b80);
         }
         buttonFrame(b);
@@ -284,6 +296,8 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             target_->DrawRectangle(rect(b.x + 1, b.y + 1, b.width - 2, b.height - 2), brush_.Get(), 2);
         }
     }
+    for (size_t i = firstAbilitySlot; i < firstAbilitySlot + abilityKeys.size(); ++i)
+        if (abilities[i] && abilities[i]->autocast) autocastFrame(layout.commands[i], autocastState(game, ui, abilities[i]->id));
     // Keep hotkeys above the button frames and cooldown overlays.
     for (size_t i = 0; i < layout.commandCount; ++i)
         if (!labels[i].empty() && buttonKeys[i]) commandHotkey(layout.commands[i], buttonKeys[i], enabled[i]);
@@ -316,12 +330,17 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         actionDescription = L"Занято: " + std::to_wstring(game.armySupply().used()) + L" / 100.\nКаждый юнит занимает часть лимита армии.";
     }
     if (!actionTitle.empty()) {
-        const float width = std::min(380.0f, extent.x - 24), height = 132;
+        const float width = std::min(420.0f, extent.x - 24);
+        ComPtr<IDWriteTextLayout> description;
+        check(writeFactory_->CreateTextLayout(actionDescription.c_str(), static_cast<UINT32>(actionDescription.size()),
+            bodyFormat_.Get(), width - 24, 10000, description.GetAddressOf()));
+        DWRITE_TEXT_METRICS metrics{}; check(description->GetMetrics(&metrics));
+        const float height = std::min(extent.y - 88, std::max(132.f, std::ceil(metrics.height) + 56));
         const float x = std::clamp(ui.mouse.x - width, 12.0f, extent.x - width - 12);
         const float y = std::clamp(ui.mouse.y - height - 12, 64.0f, extent.y - height - 12);
         panel({x, y, width, height}, 0x17272e);
         text(actionTitle, rect(x + 12, y + 8, width - 24, 30), 0xe9e1c5, true);
-        text(actionDescription, rect(x + 12, y + 44, width - 24, 80), 0xcbd7d0);
+        text(actionDescription, rect(x + 12, y + 44, width - 24, height - 52), 0xcbd7d0);
     } else if (tooltip) {
         const float width = std::min(420.0f, extent.x - 24), height = 224;
         const float x = std::clamp(ui.mouse.x + 20, 12.0f, extent.x - width - 12);

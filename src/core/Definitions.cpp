@@ -123,12 +123,39 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
     fields(abilities, {"version", "abilities"}); version(abilities);
     if (!abilities.at("abilities").is_array()) throw std::runtime_error("Expected ability array");
     for (const auto& j : abilities.at("abilities")) {
-        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks"}, {"harvest"});
+        fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks"}, {"harvest", "repair", "autocast", "rightClick", "animation"});
         const bool gathering = j.contains("harvest");
-        if (string(j.at("targeting")) != (gathering ? "crystal" : "none"))
-            throw std::runtime_error("Harvest abilities target crystals; immediate abilities use none");
+        const bool repairing = j.contains("repair");
+        if (gathering && repairing) throw std::runtime_error("Ability must have a single effect");
+        const auto targeting = string(j.at("targeting"));
+        if (repairing ? targeting != "friendly_building" && targeting != "friendly_unit" && targeting != "friendly_entity" :
+            targeting != (gathering ? "crystal" : "none"))
+            throw std::runtime_error("Ability targeting does not match its effect");
         AbilityDefinition ability{number(j.at("id"), 1, 1000000), string(j.at("name")), string(j.at("description")),
-            number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), gathering ? 0 : 1, 1000000)};
+            number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), gathering || repairing ? 0 : 1, 1000000)};
+        ability.targeting = gathering ? AbilityTargeting::Crystal : repairing ? AbilityTargeting::FriendlyBuilding : AbilityTargeting::None;
+        if (targeting == "friendly_unit") ability.targeting = AbilityTargeting::FriendlyUnit;
+        if (targeting == "friendly_entity") ability.targeting = AbilityTargeting::FriendlyEntity;
+        if (j.contains("rightClick")) ability.rightClick = j.at("rightClick").get<bool>();
+        if (ability.rightClick && !repairing) throw std::runtime_error("Right-click casting requires a supported targeted effect");
+        if (j.contains("animation")) {
+            const auto animation = string(j.at("animation"));
+            if (animation == "work") ability.animation = AbilityAnimation::Work;
+            else if (animation == "attack") ability.animation = AbilityAnimation::Attack;
+            else if (animation != "stand") throw std::runtime_error("Unknown ability animation");
+        }
+        if (repairing) {
+            const auto& r = j.at("repair"); fields(r, {"constructionTimePercent", "constructionCostPercent"});
+            ability.repair = RepairDefinition{number(r.at("constructionTimePercent"), 1, 1000),
+                number(r.at("constructionCostPercent"), 0, 1000)};
+        }
+        if (j.contains("autocast")) {
+            if (!repairing) throw std::runtime_error("Autocast requires a supported targeted effect");
+            const auto& a = j.at("autocast"); fields(a, {"radius", "scanIntervalTicks", "enabledByDefault", "condition"});
+            if (string(a.at("condition")) != "stopped") throw std::runtime_error("Unknown autocast condition");
+            ability.autocast = AutocastDefinition{real(a.at("radius"), .1f, 64), number(a.at("scanIntervalTicks"), 1, 3600),
+                a.at("enabledByDefault").get<bool>(), AutocastCondition::Stopped};
+        }
         if (gathering) {
             if (ability.manaCost || ability.cooldownTicks) throw std::runtime_error("Harvest uses its interval, without mana or activation cooldown");
             const auto& h = j.at("harvest"); fields(h, {"credit", "intervalTicks", "amount"}, {"effect"});

@@ -13,6 +13,52 @@ bool libraryText(const std::vector<LibraryDetail>& details, const std::string& t
 }
 }
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Repair and autocast metadata resolve for any unit and drive library details", [&] {
+        CatalogFixture fixture(context.assets);
+        auto definitions = fixture.load();
+        const auto& worker = definitions.entity("church.worker");
+        require(worker.abilities.size() == 1 && worker.abilities[0].repair && worker.abilities[0].autocast &&
+            worker.abilities[0].repair->constructionTimePercent == 75 && worker.abilities[0].repair->constructionCostPercent == 50 &&
+            !worker.abilities[0].autocast->enabledByDefault && worker.abilities[0].rightClick &&
+            worker.abilities[0].animation == AbilityAnimation::Work, "Worker repair contract missing");
+        auto& ability = fixture.abilities["abilities"].back();
+        ability["id"] = 117; ability["repair"]["constructionTimePercent"] = 120;
+        ability["repair"]["constructionCostPercent"] = 35; ability["autocast"]["radius"] = 6.5;
+        ability["autocast"]["enabledByDefault"] = true;
+        for (auto& entity : fixture.entities["entities"]) {
+            if (entity["id"] == "church.worker") entity.erase("abilities");
+            if (entity["id"] == "church.peacemaker") entity["abilities"] = Json::array({117});
+        }
+        definitions = fixture.load();
+        const auto& soldier = definitions.entity("church.peacemaker");
+        require(soldier.abilities.front().id == 117 && soldier.abilities.front().repair->constructionTimePercent == 120 &&
+            soldier.abilities.front().autocast->enabledByDefault, "Repair is hardcoded to worker or ability ID");
+        const auto details = libraryDetails(definitions, soldier);
+        require(libraryValue(details, "Время полного ремонта") == "120% времени строительства" &&
+            libraryValue(details, "Цена полного ремонта") == "35% цены здания" && libraryValue(details, "Радиус автокаста") == "6.5",
+            "Library repair values do not follow catalog");
+        const auto original = ability;
+        for (const auto& [name, targeting] : std::array{
+            std::pair{"friendly_unit", AbilityTargeting::FriendlyUnit}, std::pair{"friendly_entity", AbilityTargeting::FriendlyEntity}}) {
+            ability["targeting"] = name;
+            const auto changed = fixture.load();
+            require(changed.ability(117).targeting == targeting &&
+                libraryValue(libraryDetails(changed, changed.entity("church.peacemaker")), "Цели") == abilityTargetDescription(targeting),
+                "Ability target types do not follow catalog");
+        }
+        for (const auto& [field, value] : std::vector<std::pair<std::string, Json>>{
+            {"animation", "unknown"}, {"animation", 1}, {"rightClick", "yes"}, {"targeting", "enemy"}}) {
+            ability = original; ability[field] = value; mustThrow([&] { fixture.load(); });
+        }
+        for (const auto& [block, field, value] : std::vector<std::tuple<std::string, std::string, Json>>{
+            {"repair", "constructionTimePercent", 0}, {"repair", "constructionCostPercent", -1},
+            {"repair", "workPose", "yes"}, {"autocast", "radius", 0}, {"autocast", "radius", 65},
+            {"autocast", "scanIntervalTicks", 0}, {"autocast", "condition", "always"}, {"autocast", "enabledByDefault", 1}}) {
+            ability = original; ability[block][field] = value; mustThrow([&] { fixture.load(); });
+        }
+        ability = original; ability["targeting"] = "none"; mustThrow([&] { fixture.load(); });
+        ability = original; ability.erase("repair"); mustThrow([&] { fixture.load(); });
+    });
     test("Library details follow changed catalog values and hide inapplicable capabilities", [&] {
         CatalogFixture fixture(context.assets);
         for (auto& entity : fixture.entities["entities"]) {

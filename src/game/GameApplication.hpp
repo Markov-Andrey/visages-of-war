@@ -41,7 +41,8 @@ private:
     void exerciseUnitCommands();
     void exerciseInspection();
     std::optional<rts::Cell> pickCommandTarget() const;
-    void rightClick(std::optional<rts::Cell> target);
+    rts::EntityId pickCommandEntity(rts::Cell cell) const;
+    void rightClick(std::optional<rts::Cell> target, rts::EntityId entity = 0);
     rts::CursorKind cursorKind() const;
     void refreshCursor();
     void exerciseInterface();

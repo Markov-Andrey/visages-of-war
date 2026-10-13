@@ -62,7 +62,7 @@ void GameApplication::exerciseInspection() {
     const auto enemy = game_.units()[2].id, soldier = game_.units().back().id;
     ui_.selection.ids = {soldier};
     rightClick(game_.unit(enemy)->cell);
-    if (ui_.commandFeedback.target != enemy || game_.unit(soldier)->targetUnit != enemy)
+    if (ui_.commandFeedback.target != enemy || game_.unit(soldier)->attackTarget != enemy)
         throw std::runtime_error("Feedback: accepted right-click attack did not mark its actual target");
     const auto now = rts::CommandFeedback::Clock::now();
     const auto tick = game_.clock().elapsedTicks();

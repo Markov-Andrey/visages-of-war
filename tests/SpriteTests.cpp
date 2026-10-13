@@ -7,6 +7,29 @@
 
 namespace rts::tests {
 void spriteTests(TestSuite& test, const TestContext& context) {
+    test("Ability animation tags select sprite actions and missing work falls back to stand", [] {
+        Unit unit; unit.definition = fixtureWorker(); unit.definition.sprite.idle = 2; unit.definition.sprite.work = 9;
+        AbilityDefinition ability{71, "Restore", "", 0, 0}; ability.animation = AbilityAnimation::Work;
+        unit.definition.abilities = {ability}; unit.currentOrder = {OrderKind::UseAbility}; unit.currentOrder.abilityId = 71;
+        unit.state = UnitState::UsingAbility; unit.abilityWorking = true;
+        require(unitFrame(unit).column == 9, "Repair animation ignores ability work tag");
+        unit.definition.sprite.work = -1;
+        require(unitFrame(unit).column == 2, "Missing work animation does not use stand");
+        unit.definition.sprite.work = 9; unit.definition.abilities[0].animation = AbilityAnimation::Stand;
+        require(unitFrame(unit).column == 2, "Stand tag still uses work pose");
+        unit.definition.abilities[0].animation = AbilityAnimation::Attack;
+        unit.definition.sprite.windup = {6}; unit.definition.sprite.recovery = {7};
+        unit.activityTicks = 0; require(unitFrame(unit).column == 6, "Attack tag lost windup");
+        unit.activityTicks = std::max(1, unit.definition.attackWindupTicks);
+        require(unitFrame(unit).column == 7 && unit.attackPhase == AttackPhase::Ready, "Animation caused a gameplay attack or lost recovery");
+        unit.abilityWorking = false; require(unitFrame(unit).column == 2, "Paused ability retained action animation");
+        unit.state = UnitState::Harvesting;
+        require(unitFrame(unit).column == 9, "Harvest ignores work tag");
+        unit.definition.gatherAbility->animation = AbilityAnimation::Stand;
+        require(unitFrame(unit).column == 2, "Harvest ignores stand tag");
+        unit.definition.gatherAbility->animation = AbilityAnimation::Work; unit.definition.sprite.work = -1;
+        require(unitFrame(unit).column == 2, "Harvest missing work does not use stand");
+    });
     test("Harvest channel stops with orders, death and hidden workers or deposits", [&] {
         const auto definitions = Definitions::load(context.assets / "data/catalog.json");
         Scenario scene{Map(32, 32), {1, 1}, {6, 7}, {{{7, 7}, 23}, {{30, 30}, 23}}};

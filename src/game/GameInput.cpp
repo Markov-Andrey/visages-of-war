@@ -69,7 +69,17 @@ rts::CursorKind GameApplication::cursorKind() const {
     if (ui_.orderMode) {
         if (!target) return CursorKind::Blocked;
         switch (*ui_.orderMode) {
-        case rts::OrderKind::AttackMove: case rts::OrderKind::AttackGround: return CursorKind::Target;
+        case rts::OrderKind::UseAbility: {
+            const auto abilityTarget = pickCommandEntity(*target);
+            const auto* unit = ui_.selection.activeUnit(game_);
+            const auto* ability = unit ? unit->ability(ui_.pendingAbility) : nullptr;
+            return abilityTarget && ability && game_.canTargetAbility(*unit, *ability, abilityTarget) ? CursorKind::Target : CursorKind::Blocked;
+        }
+        case rts::OrderKind::AttackMove: {
+            const auto entity = pickCommandEntity(*target);
+            return !entity || selected([&](const rts::Unit& u) { return game_.canAttack(u, entity, true); }) ? CursorKind::Target : CursorKind::Blocked;
+        }
+        case rts::OrderKind::AttackGround: return CursorKind::Target;
         case rts::OrderKind::Gather:
             return std::any_of(game_.crystals().begin(), game_.crystals().end(),
                 [&](const auto& crystal) { return crystal.contains(*target) && crystal.remaining > 0 && game_.crystalVisible(crystal); }) ? CursorKind::Gather : CursorKind::Blocked;
@@ -83,6 +93,8 @@ rts::CursorKind GameApplication::cursorKind() const {
     }
     if (minimap) return CursorKind::Hand;
     if (!target) return CursorKind::Default;
+    const auto entity = pickCommandEntity(*target);
+    if (entity && selected([&](const rts::Unit& u) { return game_.contextualAbility(u, entity) != nullptr; })) return CursorKind::Target;
     for (const auto& enemy : game_.units()) if (enemy.owner != game_.player().id && enemy.cell == *target && game_.fog().visible(enemy.cell)) {
         if (!selected([](const rts::Unit&) { return true; })) return CursorKind::Select;
         return selected([&](const rts::Unit& u) { return game_.canAttack(u, enemy); }) ? CursorKind::Attack : CursorKind::Blocked;
@@ -245,8 +257,15 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         mouse_ = mousePosition(lParam);
         if (menu_.page != rts::MenuPage::Playing) return 0;
         const rts::BattleLayout layout(renderer_.size());
+        for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) {
+            if (rts::toggleAutocast(game_, ui_, i)) clearCommandMode();
+            return 0;
+        }
         if (layout.minimap.contains(mouse_)) rightClick(layout.minimapCell(mouse_, game_.map()));
-        else if (mouseInWorld()) rightClick(selectedBuilding() ? game_.map().pick(mouse_, view_) : pickCommandTarget());
+        else if (mouseInWorld()) {
+            const auto target = selectedBuilding() ? game_.map().pick(mouse_, view_) : pickCommandTarget();
+            rightClick(target, target ? pickCommandEntity(*target) : 0);
+        }
         return 0;
     }
     case WM_MOUSEWHEEL: {

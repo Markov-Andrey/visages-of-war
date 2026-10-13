@@ -1,8 +1,194 @@
 #include "TestSupport.hpp"
 
 namespace rts::tests {
+namespace {
+EntityDefinition repairWorker() {
+    auto worker = fixtureWorker(); worker.attackDamage = 0; worker.sprite.work = 9;
+    AbilityDefinition ability{17, "Repair", "", 0, 0};
+    ability.targeting = AbilityTargeting::FriendlyBuilding;
+    ability.rightClick = true;
+    ability.animation = AbilityAnimation::Work;
+    ability.repair = RepairDefinition{};
+    ability.autocast = AutocastDefinition{8, 1, false};
+    worker.abilities = {ability};
+    return worker;
+}
+Scenario repairScene() {
+    Scenario scene{Map(30, 24), {3, 3}, {3, 5}, {}};
+    scene.slots[0].startingCrystals = 1000;
+    return scene;
+}
+}
 void economyTests(TestSuite& test, const TestContext& context) {
     const auto& assets=context.assets;
+    test("Contextual repair follows abilities and readiness across a mixed selection", [] {
+        auto type = repairWorker(); type.id = "test.restorer"; type.canBuild = false; type.gatherAbility.reset();
+        type.abilities[0].id = 317;
+        auto scene = repairScene(); scene.extraWorkers = {{4, 5}, {6, 5}};
+        auto game = makeTestSimulation(std::move(scene), {}, type);
+        const auto first = game.units()[0].id, second = game.units()[1].id, third = game.units()[2].id;
+        auto& secondUnit = const_cast<Unit&>(*game.unit(second)); secondUnit.definition.abilities.clear();
+        auto& thirdUnit = const_cast<Unit&>(*game.unit(third)); thirdUnit.abilityCooldowns.push_back({317, 50});
+        const std::array ids{first, second, third, first};
+        game.order(ids, OrderKind::Hold);
+        auto& target = const_cast<Building&>(game.buildings().front()); target.health = 500;
+        require(game.command(ids, target.origin, target.id), "Contextual repair rejected non-worker ability holder");
+        require(game.unit(first)->currentOrder.kind == OrderKind::UseAbility && game.unit(first)->currentOrder.abilityId == 317 &&
+            !game.unit(first)->automaticAbility, "Context order depends on unit or ability ID or enables autocast");
+        require(game.unit(second)->currentOrder.kind == OrderKind::Hold && game.unit(third)->currentOrder.kind == OrderKind::Hold,
+            "Ineligible mixed selection members lost their orders");
+        auto& caster = const_cast<Unit&>(*game.unit(first));
+        caster.definition.abilities[0].rightClick = false;
+        require(!game.contextualAbility(caster, target.id), "Disabled right-click flag ignored");
+        caster.definition.abilities[0].rightClick = true; caster.definition.abilities[0].manaCost = 1; caster.mana = 0;
+        require(!game.contextualAbility(caster, target.id), "Context cast ignores mana");
+        caster.definition.abilities[0].manaCost = 0; target.health = target.definition.maximumHealth;
+        require(!game.contextualAbility(caster, target.id), "Full target accepts contextual restoration");
+    });
+    test("Unit restoration follows target filters, production cost and moving targets", [] {
+        auto type = repairWorker(); type.abilities[0].targeting = AbilityTargeting::FriendlyUnit;
+        type.maximumHealth = 100; type.trainingTicks = 200; type.cost = {120, 0};
+        auto scene = repairScene(); scene.extraWorkers = {{9, 8}};
+        auto game = makeTestSimulation(std::move(scene), {}, type);
+        const auto caster = game.worker().id, recipient = game.units()[1].id;
+        auto& target = const_cast<Unit&>(*game.unit(recipient)); target.health = 50;
+        require(!game.canTargetAbility(game.worker(), type.abilities[0], game.buildings().front().id), "Unit filter accepts buildings");
+        auto buildingOnly = type.abilities[0]; buildingOnly.targeting = AbilityTargeting::FriendlyBuilding;
+        require(!game.canTargetAbility(game.worker(), buildingOnly, recipient), "Building filter accepts units");
+        target.owner = 1; require(!game.canTargetAbility(game.worker(), type.abilities[0], recipient), "Restoration accepts enemy unit"); target.owner = 0;
+        require(game.command(std::array{caster}, target.cell, recipient), "Right click did not restore unit");
+        game.order(std::array{recipient}, OrderKind::Move, {15, 8});
+        game.tick(); require(target.health == 50, "Restoration heals remotely");
+        for (int i = 0; i < 600 && target.health < target.maximumHealth(); ++i) {
+            game.tick(); require(separated(game.worker(), target), "Restoration passed through its target");
+        }
+        require(target.health == 100 && game.storedCrystals() == 970, "Moving unit not restored at proportional training price");
+        game.stop(std::array{recipient}); target.health = 90;
+        game.setAutocast(caster, 17, true); game.stop(std::array{caster});
+        ticks(game, 150);
+        require(target.health == 100 && game.storedCrystals() == 964, "Autocast ignores unit targets");
+        target.health = 80;
+        require(game.activateAbility(caster, 17, recipient), "Manual unit restoration rejected");
+        target.health = 0; game.tick();
+        require(game.worker().currentOrder.kind == OrderKind::Stop, "Dead unit kept restoration active");
+    });
+    test("Repair time and proportional cost derive from ability and building data", [] {
+        const auto worker = repairWorker(); auto depot = fixtureDepot(worker); depot.constructionTicks = 400;
+        auto game = makeTestSimulation(repairScene(), {}, worker, {worker, depot});
+        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 600;
+        const auto id = game.worker().id;
+        require(game.activateAbility(id, 17, building.id), "Manual repair rejected");
+        game.tick();
+        require(game.worker().state == UnitState::UsingAbility && unitFrame(game.worker()).column == 9, "Repair does not use work pose");
+        ticks(game, 118);
+        require(building.health == 996 && game.storedCrystals() == 960, "Repair speed or proportional price wrong");
+        game.tick();
+        require(building.health == 1000 && game.storedCrystals() == 960 && game.worker().currentOrder.kind == OrderKind::Stop,
+            "Repair did not finish at 75% construction time scaled by missing health");
+        require(unitFrame(game.worker()).column != 9 && !game.activateAbility(id, 17, building.id), "Full building keeps work pose or accepts repair");
+    });
+    test("Repair credit survives repeated cancellation and workers share one exact price", [] {
+        const auto worker = repairWorker(); auto depot = fixtureDepot(worker); depot.cost.crystals = 101;
+        auto scene = repairScene(); scene.extraWorkers = {{4, 5}};
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, depot});
+        auto& building = const_cast<Building&>(game.buildings().front());
+        for (int i = 0; i < 100; ++i) {
+            building.health = 999;
+            const auto id = game.units()[i % 2].id;
+            require(game.activateAbility(id, 17, building.id), "Repeated repair rejected");
+            game.tick(); game.stop(std::array{id});
+            require(building.health == 1000, "One health repair failed");
+        }
+        require(game.storedCrystals() == 994, "Repair rounded each order separately or gave free healing");
+        building.health = 600;
+        for (const auto& unit : game.units()) require(game.activateAbility(unit.id, 17, building.id), "Shared repair rejected");
+        ticks(game, 45);
+        require(building.health == 1000 && game.storedCrystals() == 974, "Workers did not combine speed or share fractional cost");
+    });
+    test("Repair pauses without resources and rejects invalid targets without changing orders", [] {
+        auto scene = repairScene(); scene.slots[0].startingCrystals = 1;
+        auto game = makeTestSimulation(std::move(scene), {}, repairWorker());
+        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 600;
+        const auto id = game.worker().id;
+        require(game.activateAbility(id, 17, building.id), "Repair rejected"); ticks(game, 30);
+        require(building.health == 610 && game.storedCrystals() == 0 && !game.worker().abilityWorking &&
+            unitFrame(game.worker()).column != 9, "Insufficient balance healed freely or retained work pose");
+        for (int invalid = 0; invalid < 4; ++invalid) {
+            building.owner = invalid == 0 ? 1 : 0;
+            building.health = invalid == 1 ? 0 : invalid == 2 ? 1000 : 600;
+            building.constructionProgress = invalid == 3 ? 0 : building.definition.constructionTicks;
+            require(!game.activateAbility(id, 17, building.id), "Invalid building accepted");
+        }
+        require(!game.activateAbilityFor(1, id, 17, building.id) && !game.setAutocastFor(1, id, 17, true) &&
+            !game.activateAbility(id, 999, building.id) && !game.setAutocast(id, 999, true), "Ability bypassed ownership or catalog");
+        building.owner = 0; building.health = 600; building.constructionProgress = building.definition.constructionTicks;
+        game.order(std::array{id}, OrderKind::Hold);
+        require(!game.activateAbility(id, 17, 999999) && game.worker().currentOrder.kind == OrderKind::Hold,
+            "Rejected target interrupted current order");
+    });
+    test("Autocast respects Stop, radius and explicit orders; disabling cancels only automatic repair", [] {
+        auto scene = repairScene(); scene.worker = {12, 5}; scene.crystals = {{{14, 9}, 1000}};
+        scene.map.occupy({14, 9});
+        auto worker = repairWorker(); worker.abilities[0].autocast->radius = 2;
+        auto game = makeTestSimulation(std::move(scene), {}, worker);
+        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 500;
+        const auto id = game.worker().id;
+        require(!game.worker().autocastEnabled(17) && game.setAutocast(id, 17, true), "Autocast default or toggle wrong");
+        ticks(game, 3); require(game.worker().currentOrder.kind == OrderKind::Stop, "Autocast ignored radius");
+        auto& unit = const_cast<Unit&>(game.worker()); unit.definition.abilities[0].autocast->radius = 30;
+        for (auto order : {OrderKind::Hold, OrderKind::Move, OrderKind::Gather}) {
+            require(game.order(std::array{id}, order, order == OrderKind::Gather ? Cell{14, 9} : Cell{12, 6}), "Fixture order rejected");
+            ticks(game, 3); require(game.worker().currentOrder.kind == order && building.health == 500, "Autocast stole explicit order");
+        }
+        game.stop(std::array{id}); game.tick();
+        require(game.worker().automaticAbility && game.worker().state == UnitState::ToAbility && building.health == 500, "Idle autocast failed or healed remotely");
+        require(game.setAutocast(id, 17, false) && game.worker().currentOrder.kind == OrderKind::Stop, "Disabling left automatic approach running");
+        require(game.activateAbility(id, 17, building.id), "Manual approach failed");
+        game.setAutocast(id, 17, true); game.setAutocast(id, 17, false);
+        require(game.worker().currentOrder.kind == OrderKind::UseAbility && !game.worker().automaticAbility, "Toggle cancelled manual repair");
+        ticks(game, 500); require(building.health == 1000, "Worker never reached and repaired target");
+    });
+    test("Repair cannot cross cliffs or a solid surround and stops when target is destroyed", [] {
+        auto scene = repairScene(); scene.worker = {7, 5};
+        for (int y = 0; y < 24; ++y) for (int x = 0; x < 6; ++x) scene.map.at({x, y}).height = 1;
+        auto game = makeTestSimulation(std::move(scene), {}, repairWorker());
+        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 500;
+        require(!game.activateAbility(game.worker().id, 17, building.id), "Repair crossed impassable cliff");
+        game.setAutocast(game.worker().id, 17, true); ticks(game, 4);
+        require(building.health == 500 && game.worker().currentOrder.kind == OrderKind::Stop, "Autocast repairs unreachable cliff target");
+        auto surrounded = repairScene(); surrounded.worker = {12, 10};
+        for (Cell delta : std::array<Cell, 8>{{{-1,-1},{0,-1},{1,-1},{-1,0},{1,0},{-1,1},{0,1},{1,1}}})
+            surrounded.extraWorkers.push_back(surrounded.worker + delta);
+        auto trapped = makeTestSimulation(std::move(surrounded), {}, repairWorker());
+        auto& target = const_cast<Building&>(trapped.buildings().front()); target.health = 500;
+        const Vec2 position = trapped.worker().position;
+        require(trapped.activateAbility(trapped.worker().id, 17, target.id), "Traffic should allow queued approach");
+        for (int tick = 0; tick < 90; ++tick) {
+            trapped.tick();
+            require(target.health == 500, "Surrounded worker healed remotely");
+            require(groundLengthSquared(trapped.worker().position - position) < .5f, "Repair escaped solid surround");
+            for (size_t i = 1; i < trapped.units().size(); ++i) {
+                require(separated(trapped.worker(), trapped.units()[i]), "Repair crossed a surrounding body");
+                require(trapped.units()[i].position == center(trapped.units()[i].cell), "Repair pushed a surrounding body");
+            }
+        }
+        target.health = 0; trapped.tick();
+        require(trapped.worker().currentOrder.kind == OrderKind::Stop, "Destroyed repair target kept order alive");
+    });
+    test("Autocast group controls expose mixed state and keep other active groups unchanged", [] {
+        auto worker = repairWorker(); worker.abilities[0].autocast->enabledByDefault = true;
+        auto scene = repairScene(); scene.extraWorkers = {{4, 5}};
+        auto game = makeTestSimulation(std::move(scene), {}, worker);
+        GameplayUi ui; for (const auto& unit : game.units()) ui.selection.ids.push_back(unit.id);
+        require(autocastState(game, ui, 17) == AutocastState::On, "Catalog default not applied on spawn");
+        game.setAutocast(game.worker().id, 17, false);
+        require(autocastState(game, ui, 17) == AutocastState::Mixed, "Mixed state hidden");
+        require(toggleAutocast(game, ui, firstAbilitySlot) && autocastState(game, ui, 17) == AutocastState::On, "Mixed toggle did not enable group");
+        require(toggleAutocast(game, ui, firstAbilitySlot) && autocastState(game, ui, 17) == AutocastState::Off, "Group toggle did not disable");
+        ui.commandGroup = "different.type";
+        require(commandRecipients(game, ui, OrderKind::UseAbility).empty(), "Targeted ability survived incompatible active group");
+        ui.buildMenu = true; require(!toggleAutocast(game, ui, firstAbilitySlot), "Hidden ability accepted toggle");
+    });
     test("Ten player economies reserve supply independently and reject inactive or invalid owners", [] {
         Scenario scene{Map(40, 24), {1, 1}, {4, 3}, {}};
         auto worker = fixtureWorker(); worker.cost.supply = 100;

@@ -103,11 +103,46 @@ struct HarvestDefinition {
     int amount = 1;
     std::optional<HarvestEffectDefinition> effect;
 };
+enum class AbilityTargeting { None, Crystal, FriendlyBuilding, FriendlyUnit, FriendlyEntity };
+inline std::string abilityTargetDescription(AbilityTargeting targeting) {
+    switch (targeting) {
+    case AbilityTargeting::None: return "Без цели";
+    case AbilityTargeting::Crystal: return "Кристаллы";
+    case AbilityTargeting::FriendlyBuilding: return "Свои здания";
+    case AbilityTargeting::FriendlyUnit: return "Свои юниты и герои";
+    case AbilityTargeting::FriendlyEntity: return "Свои здания, юниты и герои";
+    }
+    return {};
+}
+enum class AutocastCondition { Stopped };
+enum class AbilityAnimation { Stand, Work, Attack };
+inline std::string abilityAnimationName(AbilityAnimation animation) {
+    switch (animation) {
+    case AbilityAnimation::Stand: return "stand";
+    case AbilityAnimation::Work: return "work";
+    case AbilityAnimation::Attack: return "attack";
+    }
+    return {};
+}
+struct AutocastDefinition {
+    float radius = 8;
+    int scanIntervalTicks = 15;
+    bool enabledByDefault{};
+    AutocastCondition condition = AutocastCondition::Stopped;
+};
+struct RepairDefinition {
+    int constructionTimePercent = 75, constructionCostPercent = 50;
+};
 struct AbilityDefinition {
     int id{};
     std::string displayName, description;
     int manaCost{}, cooldownTicks{};
     std::optional<HarvestDefinition> harvest;
+    AbilityTargeting targeting = AbilityTargeting::None;
+    std::optional<RepairDefinition> repair;
+    std::optional<AutocastDefinition> autocast;
+    bool rightClick{};
+    AbilityAnimation animation = AbilityAnimation::Stand;
 };
 struct AbilityCooldown { int abilityId{}, remainingTicks{}; };
 struct ResourceCost { int crystals{}, supply{}; };

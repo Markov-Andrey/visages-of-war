@@ -117,13 +117,17 @@ struct GameplayUi {
     bool rallyMode{};
     bool buildMenu{};
     std::optional<OrderKind> orderMode;
+    int pendingAbility{};
     std::string commandGroup;
     EntityId idleWorkerCursor{};
     Vec2 mouse{-1, -1};
 };
 inline bool commandEnabled(const Simulation& game, const GameplayUi& ui, UnitCommand command) {
-    const auto group = ui.selection.activeGroup(game);
-    return std::any_of(group.ids.begin(), group.ids.end(), [&](EntityId id) {
+    const bool wholeSelection = std::any_of(unitCommands.begin(), unitCommands.end(), [&](const auto& entry) {
+        return entry.command == command && entry.scope == CommandScope::Selection;
+    });
+    const auto ids = wholeSelection ? ui.selection.ids : ui.selection.activeGroup(game).ids;
+    return std::any_of(ids.begin(), ids.end(), [&](EntityId id) {
         const auto* unit = game.unit(id);
         return unit && unit->owner == game.player().id && unit->health > 0 && commandCapable(*unit, command);
     });
@@ -134,6 +138,26 @@ inline const AbilityDefinition* abilityCommandAt(const Simulation& game, const G
     const auto index = slot - firstAbilitySlot;
     return unit && index < unit->definition.abilities.size() ? &unit->definition.abilities[index] : nullptr;
 }
+enum class AutocastState { Off, On, Mixed };
+inline AutocastState autocastState(const Simulation& game, const GameplayUi& ui, int abilityId) {
+    size_t enabled = 0, total = 0;
+    for (auto id : ui.selection.activeGroup(game).ids) {
+        const auto* unit = game.unit(id);
+        const auto* ability = unit ? unit->ability(abilityId) : nullptr;
+        if (!ability || !ability->autocast) continue;
+        ++total;
+        if (unit->autocastEnabled(abilityId)) ++enabled;
+    }
+    return !enabled ? AutocastState::Off : enabled == total ? AutocastState::On : AutocastState::Mixed;
+}
+inline bool toggleAutocast(Simulation& game, const GameplayUi& ui, size_t slot) {
+    const auto* ability = abilityCommandAt(game, ui, slot);
+    if (!ability || !ability->autocast) return false;
+    const bool enabled = autocastState(game, ui, ability->id) != AutocastState::On;
+    bool changed = false;
+    for (auto id : ui.selection.activeGroup(game).ids) changed = game.setAutocast(id, ability->id, enabled) || changed;
+    return changed;
+}
 inline bool unitCommandVisible(const Simulation& game, const GameplayUi& ui, size_t slot) {
     if (!ui.selection.activeUnit(game)) return false;
     if (abilityCommandAt(game, ui, slot)) return true;
@@ -143,6 +167,10 @@ inline bool unitCommandVisible(const Simulation& game, const GameplayUi& ui, siz
     return command && commandEnabled(game, ui, command->command);
 }
 inline std::vector<EntityId> commandRecipients(const Simulation& game, const GameplayUi& ui, OrderKind order) {
+    if (order == OrderKind::UseAbility) {
+        const auto group = ui.selection.activeGroup(game);
+        return ui.commandGroup == group.type ? group.ids : std::vector<EntityId>{};
+    }
     for (const auto& command : unitCommands) if (command.order == order && command.scope == CommandScope::ActiveGroup) {
         const auto group = ui.selection.activeGroup(game);
         return ui.commandGroup.empty() || ui.commandGroup == group.type ? group.ids : std::vector<EntityId>{};

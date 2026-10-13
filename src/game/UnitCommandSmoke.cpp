@@ -59,7 +59,7 @@ void GameApplication::exerciseUnitCommands() {
     onMessage(WM_KEYDOWN, 'A', 0);
     const auto enemyBounds = rts::unitBounds(game_, *game_.unit(enemy), view_);
     click({enemyBounds.x + enemyBounds.width * .5f, enemyBounds.y + enemyBounds.height * .5f});
-    if (game_.unit(soldier)->targetUnit != enemy) throw std::runtime_error("Commands: A plus enemy failed");
+    if (game_.unit(soldier)->attackTarget != enemy) throw std::runtime_error("Commands: A plus enemy failed");
     ui_.selection.ids = {first}; onMessage(WM_KEYDOWN, 'G', 0);
     const auto crystalBounds = rts::crystalBounds(game_, game_.crystals().front(), view_);
     click({crystalBounds.x + crystalBounds.width * .5f, crystalBounds.y + crystalBounds.height * .5f});
@@ -211,5 +211,111 @@ void GameApplication::exerciseUnitCommands() {
     auto smallPreview = ui_; smallPreview.mouse = {-1, -1};
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"selection-small-preview.png", nullptr, false, &smallPreview,
         rts::MenuPage::BattleSetup, 0, nullptr, nullptr, {800, 600});
+
+    ui_ = {}; ui_.selection.ids = {first, second};
+    game_.stop(ui_.selection.ids);
+    const auto* repair = rts::abilityCommandAt(game_, ui_, rts::firstAbilitySlot);
+    if (!repair || !repair->repair || !repair->autocast) throw std::runtime_error("Repair: worker ability missing");
+    const int repairId = repair->id;
+    const rts::Vec2 buttonPoint{abilityButton.x + 28, abilityButton.y + 28};
+    onMessage(WM_RBUTTONDOWN, 0, at(buttonPoint));
+    if (rts::autocastState(game_, ui_, repairId) != rts::AutocastState::On || ui_.orderMode)
+        throw std::runtime_error("Repair: right click did not enable group autocast");
+    auto repairPreview = ui_;
+    const rts::BattleLayout smallLayout({800, 600});
+    repairPreview.mouse = {smallLayout.commands[rts::firstAbilitySlot].x + 28, smallLayout.commands[rts::firstAbilitySlot].y + 28};
+    renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"repair-autocast-on.png", nullptr, false, &repairPreview,
+        rts::MenuPage::Main, 0, nullptr, nullptr, {800, 600});
+    game_.setAutocast(first, repairId, false);
+    if (rts::autocastState(game_, ui_, repairId) != rts::AutocastState::Mixed) throw std::runtime_error("Repair: mixed group hidden");
+    onMessage(WM_RBUTTONDOWN, 0, at(buttonPoint));
+    if (rts::autocastState(game_, ui_, repairId) != rts::AutocastState::On) throw std::runtime_error("Repair: mixed toggle failed");
+    onMessage(WM_RBUTTONDOWN, 0, at(buttonPoint));
+    if (rts::autocastState(game_, ui_, repairId) != rts::AutocastState::Off) throw std::runtime_error("Repair: disabling group failed");
+    auto& hall = const_cast<rts::Building&>(game_.buildings().front()); hall.health -= 100;
+    onMessage(WM_KEYDOWN, 'Q', 0);
+    if (ui_.pendingAbility != repairId || ui_.orderMode != rts::OrderKind::UseAbility) throw std::runtime_error("Repair: Q did not request target");
+    onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
+    if (ui_.orderMode || ui_.pendingAbility) throw std::runtime_error("Repair: Escape retained targeting");
+    click(buttonPoint);
+    click(mini.project(rts::center(hall.origin)));
+    for (auto id : ui_.selection.ids) if (game_.unit(id)->currentOrder.target != hall.id || game_.unit(id)->currentOrder.kind != rts::OrderKind::UseAbility)
+        throw std::runtime_error("Repair: manual minimap target missed a worker");
+    if (ui_.orderMode || ui_.pendingAbility) throw std::runtime_error("Repair: accepted target kept cursor mode");
+    game_.stop(ui_.selection.ids);
+    onMessage(WM_RBUTTONDOWN, 0, at(mini.project(rts::center(hall.origin))));
+    for (auto id : ui_.selection.ids) if (game_.unit(id)->currentOrder.kind != rts::OrderKind::UseAbility ||
+        game_.unit(id)->currentOrder.target != hall.id || game_.unit(id)->automaticAbility)
+        throw std::runtime_error("Repair: contextual right click missed an eligible worker or toggled autocast");
+    game_.stop(ui_.selection.ids); focus(rts::center(hall.origin), true);
+    const auto repairHallBounds = rts::buildingBounds(game_, hall, view_);
+    mouse_ = {repairHallBounds.x + repairHallBounds.width * .5f, repairHallBounds.y + repairHallBounds.height * .65f};
+    if (cursorKind() != rts::CursorKind::Target) throw std::runtime_error("Repair: world cursor ignored contextual ability");
+    onMessage(WM_RBUTTONDOWN, 0, at(mouse_));
+    if (game_.unit(first)->currentOrder.target != hall.id || game_.unit(first)->currentOrder.kind != rts::OrderKind::UseAbility ||
+        ui_.commandFeedback.target != hall.id) throw std::runtime_error("Repair: world right click missed building");
+
+    rts::Scenario forcedScene{rts::Map(32,32), {4,4}, {10,10}, {}};
+    forcedScene.units = {{"church.peacemaker",0,{14,10}}, {"church.peacemaker",0,{18,10}},
+        {"church.flying_soldier",0,{14,14}}, {"church.slinger",0,{11,13}}};
+    forcedScene.heroSpawn = rts::Cell{18,14};
+    game_ = rts::Simulation(std::move(forcedScene), menu_.player, definitions_.entity("church.worker"), definitions_.entities(),
+        definitions_.startingDepot("church").id, "church.hero");
+    ui_ = {}; focus({14,12}, true);
+    for (const auto& u : game_.units()) ui_.selection.ids.push_back(u.id);
+    const auto repairer = game_.worker().id, fighter = game_.units()[1].id, friendTarget = game_.units()[2].id;
+    const auto flyer = game_.units()[3].id, archer = game_.units()[4].id, friendHero = game_.hero()->id;
+    ui_.selection.activateGroup(game_, repairer);
+    const auto forceClickUnit = [&](rts::EntityId id) {
+        onMessage(WM_KEYDOWN, 'S', 0); onMessage(WM_KEYDOWN, 'A', 0);
+        if (ui_.orderMode != rts::OrderKind::AttackMove) throw std::runtime_error("Forced attack: worker active group hid selection-wide A");
+        const auto bounds = rts::unitBounds(game_, *game_.unit(id), view_);
+        mouse_ = {bounds.x + bounds.width * .5f, bounds.y + bounds.height * .4f};
+        if (cursorKind() != rts::CursorKind::Target) throw std::runtime_error("Forced attack: ally cursor is blocked");
+        click(mouse_);
+        if (ui_.orderMode || ui_.commandFeedback.target != id) throw std::runtime_error("Forced attack: click did not select exact ally");
+    };
+    forceClickUnit(friendTarget);
+    for (auto id : {fighter, archer, friendHero}) if (game_.unit(id)->attackTarget != friendTarget)
+        throw std::runtime_error("Forced attack: capable selected member was skipped");
+    for (auto id : {repairer, friendTarget, flyer}) if (game_.unit(id)->attackTarget || game_.unit(id)->currentOrder.kind != rts::OrderKind::Stop)
+        throw std::runtime_error("Forced attack: worker, self or incompatible flyer received attack");
+    forceClickUnit(friendHero);
+    if (game_.unit(friendHero)->attackTarget || game_.unit(fighter)->attackTarget != friendHero)
+        throw std::runtime_error("Forced attack: hero target or self filtering failed");
+    game_.stop(ui_.selection.ids); focus({6,6}, true);
+    onMessage(WM_KEYDOWN, 'A', 0);
+    const auto& friendlyHall = game_.buildings().front();
+    const auto hallBounds = rts::buildingBounds(game_, friendlyHall, view_);
+    click({hallBounds.x + hallBounds.width * .5f, hallBounds.y + hallBounds.height * .65f});
+    if (ui_.orderMode || game_.unit(fighter)->attackTarget != friendlyHall.id || game_.unit(archer)->attackTarget != friendlyHall.id ||
+        game_.unit(repairer)->attackTarget || game_.unit(flyer)->attackTarget)
+        throw std::runtime_error("Forced attack: friendly building target failed");
+    game_.stop(ui_.selection.ids); ui_.selection.ids = {friendTarget}; focus({18,10}, true);
+    onMessage(WM_KEYDOWN, 'A', 0);
+    const auto selfBounds = rts::unitBounds(game_, *game_.unit(friendTarget), view_);
+    mouse_ = {selfBounds.x + selfBounds.width * .5f, selfBounds.y + selfBounds.height * .4f};
+    if (cursorKind() != rts::CursorKind::Blocked) throw std::runtime_error("Forced attack: self cursor is not blocked");
+    click(mouse_);
+    if (!ui_.orderMode || game_.unit(friendTarget)->currentOrder.kind != rts::OrderKind::Stop)
+        throw std::runtime_error("Forced attack: invalid entity fell through to attack-move");
+    onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
+    auto healing = *game_.unit(repairer)->ability(repairId);
+    healing.id = 831; healing.targeting = rts::AbilityTargeting::FriendlyUnit;
+    const_cast<rts::Unit&>(*game_.unit(fighter)).definition.abilities = {healing};
+    const_cast<rts::Unit&>(*game_.unit(friendHero)).health -= 50;
+    game_.stop(std::array{fighter, repairer}); ui_.selection.ids = {repairer, fighter};
+    focus(game_.unit(friendHero)->position, true);
+    const auto healBounds = rts::unitBounds(game_, *game_.unit(friendHero), view_);
+    const rts::Vec2 healPoint{healBounds.x + healBounds.width * .5f, healBounds.y + healBounds.height * .4f};
+    mouse_ = healPoint;
+    if (cursorKind() != rts::CursorKind::Target) throw std::runtime_error("Repair: contextual unit cursor missing");
+    onMessage(WM_RBUTTONDOWN, 0, at(healPoint));
+    if (game_.unit(fighter)->currentOrder.kind != rts::OrderKind::UseAbility || game_.unit(fighter)->currentOrder.target != friendHero ||
+        game_.unit(repairer)->currentOrder.kind != rts::OrderKind::Stop) throw std::runtime_error("Repair: unit right click is hardcoded to workers or buildings");
+    game_.stop(std::array{fighter}); ui_.selection.ids = {fighter};
+    onMessage(WM_KEYDOWN, 'Q', 0); click(healPoint);
+    if (ui_.orderMode || game_.unit(fighter)->currentOrder.target != friendHero)
+        throw std::runtime_error("Repair: manual unit targeting failed");
 }
 }

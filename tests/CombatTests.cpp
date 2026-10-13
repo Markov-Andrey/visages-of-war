@@ -17,6 +17,63 @@ void checkCombatMotion(const Simulation& game) {
 }
 }
 void combatTests(TestSuite& test, const TestContext& context) {
+    test("Forced friendly attacks filter the whole selection by weapon capabilities and reject self", [] {
+        EntityDefinition fighter; fighter.id = "fighter"; fighter.attackDamage = 10; fighter.maximumHealth = 1000;
+        fighter.attackWindupTicks = 0; fighter.attackRecoveryTicks = 0; fighter.attackCooldownTicks = 30;
+        fighter.dayVision = fighter.nightVision = 30; fighter.hero = HeroDefinition{};
+        auto worker = fixtureWorker(); worker.id = "worker";
+        auto flyer = fighter; flyer.id = "flyer"; flyer.movement = MovementType::Flying; flyer.hero.reset();
+        auto flexible = flyer; flexible.id = "flexible"; flexible.attackTargets = AttackTargets::Ground;
+        Scenario scene{Map(24, 20), {1,1}, {7,8}, {}};
+        scene.units = {{fighter.id,0,{8,8}}, {worker.id,0,{6,8}}, {flyer.id,0,{7,9}}, {flexible.id,0,{8,9}}};
+        auto game = makeTestSimulation(std::move(scene), {}, fighter, {fighter, worker, flyer, flexible});
+        std::vector<EntityId> ids; for (const auto& u : game.units()) ids.push_back(u.id);
+        const auto target = ids[1];
+        game.order(ids, OrderKind::Hold); ticks(game, 3);
+        require(game.unit(target)->health == 1000 && !game.attack(ids, target), "Automatic or ordinary attack harmed a friend");
+        require(!game.attack(std::array{target}, target, true), "Unit accepted an attack against itself");
+        require(game.attack(ids, target, true), "Forced friendly attack rejected");
+        require(game.unit(ids[0])->attackTarget == target && game.unit(ids[4])->attackTarget == target,
+            "Capable members did not receive attack or flight was hardcoded as incapable");
+        for (size_t i : {size_t{1}, size_t{2}, size_t{3}})
+            require(!game.unit(ids[i])->attackTarget && game.unit(ids[i])->currentOrder.kind == OrderKind::Hold,
+                "Self, zero damage worker or incompatible layer lost its old order");
+        ticks(game, 2);
+        require(game.unit(target)->health == 980, "Explicit allied melee hits were filtered out");
+        game.stop(ids); ticks(game, 40);
+        require(game.unit(target)->health == 980, "Stop caused automatic friendly retaliation");
+        auto& victim = const_cast<Unit&>(*game.unit(target)); victim.health = 1;
+        require(game.attack(std::array{ids[0]}, target, true), "Repeated forced attack rejected");
+        ticks(game, 2);
+        require(!game.unit(target) && game.unit(ids[0])->hero->experience == 0 && !game.unit(ids[0])->attackTarget,
+            "Friendly kill awarded XP or retained a destroyed target");
+    });
+    test("Forced melee attacks approach square buildings and never strike through cliffs", [] {
+        for (Cell start : {Cell{12,8}, Cell{3,12}, Cell{2,3}}) {
+            EntityDefinition fighter; fighter.attackDamage = 10; fighter.dayVision = fighter.nightVision = 30;
+            fighter.attackWindupTicks = 0; fighter.attackRecoveryTicks = 1; fighter.attackCooldownTicks = 1;
+            Scenario scene{Map(24, 20), {4,4}, start, {}};
+            auto game = makeTestSimulation(std::move(scene), {}, fighter);
+            const auto hall = game.buildings().front().id, attacker = game.worker().id;
+            require(!game.attack(std::array{attacker}, hall) && game.attack(std::array{attacker}, hall, true), "Building ownership filter is wrong");
+            for (int tick = 0; tick < 240 && game.building(hall)->health == 1000; ++tick) { game.tick(); checkCombatMotion(game); }
+            require(game.building(hall)->health < 1000, "Melee never approached a building perimeter");
+            const_cast<Building&>(*game.building(hall)).health = 1;
+            ticks(game, 5);
+            require(!game.building(hall) && !game.worker().attackTarget && game.worker().currentOrder.kind == OrderKind::Stop,
+                "Building death left an attack or occupied footprint");
+            require(game.map().walkable({4,4}), "Destroyed building kept its collision");
+        }
+        EntityDefinition fighter; fighter.attackDamage = 10; fighter.attackRange = 3;
+        fighter.dayVision = fighter.nightVision = 30;
+        Scenario cliff{Map(20,20), {4,4}, {7,5}, {}};
+        for (int y = 0; y < 20; ++y) for (int x = 0; x < 7; ++x) cliff.map.at({x,y}).height = 1;
+        auto game = makeTestSimulation(std::move(cliff), {}, fighter);
+        const auto hall = game.buildings().front().id;
+        require(game.attack(std::array{game.worker().id}, hall, true), "Visible cliff target order rejected");
+        ticks(game, 90);
+        require(game.building(hall)->health == 1000, "Melee struck a building through a cliff");
+    });
     test("Melee reaches continuous attack positions when no free cell centre is in range", [] {
         for (float radius : {.1f, .35f, .5f}) for (float reach : {0.0f, .15f}) {
             Scenario site{Map(24, 20), {1, 1}, {4, 8}, {}};
@@ -44,7 +101,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.attack(std::array{game.worker().id}, enemy), "Screen attack rejected");
         for (int tick = 0; tick < 360; ++tick) {
             game.tick(); checkCombatMotion(game);
-            require(game.worker().targetUnit == enemy && game.worker().currentOrder.kind == OrderKind::Attack, "Explicit target was replaced");
+            require(game.worker().attackTarget == enemy && game.worker().currentOrder.kind == OrderKind::Attack, "Explicit target was replaced");
         }
         require(game.unit(enemy)->health < 1000, "Attacker failed to go around a static screen");
         for (size_t i = 1; i < game.units().size(); ++i)
@@ -79,7 +136,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             for (int tick = 0; tick < 900; ++tick) { game.tick(); checkCombatMotion(game); }
             if (game.units().size() != 24) for (const auto& u : game.units())
                 std::cerr << "battle " << focused << " unit " << u.id << " owner=" << u.owner << " hp=" << u.health
-                          << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks << " target=" << u.targetUnit << '\n';
+                          << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks << " target=" << u.attackTarget << '\n';
             require(game.units().size() == 24 && std::all_of(game.units().begin(), game.units().end(), [](const Unit& u) { return u.owner == 0; }),
                 "Dense squad stopped attacking surviving enemies");
         }
@@ -253,11 +310,11 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const std::array own{friendly}, hostile{enemy};
         require(!game.command(hostile, {9, 9}) && !game.attack(hostile, friendly), "Player controlled enemy");
         ticks(game, 3);
-        const auto target = game.unit(enemy)->targetUnit;
+        const auto target = game.unit(enemy)->attackTarget;
         game.stop(hostile);
-        require(target == friendly && game.unit(enemy)->targetUnit == target, "Player stopped enemy");
+        require(target == friendly && game.unit(enemy)->attackTarget == target, "Player stopped enemy");
         require(game.command(own, {3, 8}), "Move rejected");
-        require(game.unit(friendly)->targetUnit == 0 && game.unit(friendly)->attackPhase != rts::AttackPhase::Windup, "Move failed to cancel combat");
+        require(game.unit(friendly)->attackTarget == 0 && game.unit(friendly)->attackPhase != rts::AttackPhase::Windup, "Move failed to cancel combat");
         ticks(game, 8);
         require(game.unit(enemy)->health == soldier.maximumHealth, "Cancelled swing still damaged enemy");
     });
@@ -289,7 +346,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const std::array own{game.worker().id};
         require(!game.attack(own, game.units()[1].id), "Unseen enemy accepted");
         ticks(game, 60);
-        for (const auto& u : game.units()) require(u.targetUnit == 0 && u.state == rts::UnitState::Idle, "Autoattack saw through high terrain");
+        for (const auto& u : game.units()) require(u.attackTarget == 0 && u.state == rts::UnitState::Idle, "Autoattack saw through high terrain");
     });
 }
 }

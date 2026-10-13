@@ -8,6 +8,7 @@ inline EntityDefinition fixtureWorker() {
     EntityDefinition worker;
     worker.gatherAbility = AbilityDefinition{3, "Test cargo harvesting", "Deliver crystals to a depot", 0, 0,
         HarvestDefinition{HarvestCredit::Cargo, 10, 1}};
+    worker.gatherAbility->animation = AbilityAnimation::Work;
     return worker;
 }
 // Synthetic balance for isolated mechanics tests, never used by the game or Forge.

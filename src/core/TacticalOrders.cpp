@@ -4,7 +4,7 @@
 
 namespace rts {
 void Simulation::resumeOrder(Unit& u) {
-    u.targetUnit = 0;
+    u.attackTarget = 0;
     cancelAttack(u);
     if (u.currentOrder.kind == OrderKind::AttackMove || u.currentOrder.kind == OrderKind::Patrol) {
         const Cell goal = u.currentOrder.cell;

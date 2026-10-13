@@ -47,17 +47,16 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
                 u.route.clear(); u.next = 0;
                 returnCargo(u);
             }
-            else if (u.state == UnitState::ToBuild || u.state == UnitState::Building) issue(u, {OrderKind::Stop});
+            else if (u.state == UnitState::ToBuild || u.state == UnitState::Building || u.currentOrder.kind == OrderKind::UseAbility) issue(u, {OrderKind::Stop});
         }
     }
-    if (deaths) {
+    if (deaths || buildingsDestroyed) {
         for (auto& u : units_) {
-            if (u.targetUnit && !unit(u.targetUnit)) {
+            if (u.attackTarget && !combatTarget(u.attackTarget)) {
                 resumeOrder(u);
             }
         }
         updateVision();
     }
-    else if (buildingsDestroyed) updateVision();
 }
 }

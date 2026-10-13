@@ -6,6 +6,7 @@
       "name": "Пустышка",
       "description": "Расходует ману и запускает перезарядку. Не требует цели.",
       "targeting": "none",
+      "animation": "attack",
       "manaCost": 25,
       "cooldownTicks": 150
     },
@@ -14,6 +15,7 @@
       "name": "Молитва недр",
       "description": "Светом лампады извлекает до 7 кристаллов из залежи каждые 10 секунд. Добыча сразу поступает в запас игрока, без возвращения к ратуше.",
       "targeting": "crystal",
+      "animation": "work",
       "manaCost": 0,
       "cooldownTicks": 0,
       "harvest": {
@@ -32,12 +34,33 @@
       "name": "Добыча кристаллов",
       "description": "Добывать кристаллы из выбранной залежи и доставлять груз в готовую ратушу.",
       "targeting": "crystal",
+      "animation": "work",
       "manaCost": 0,
       "cooldownTicks": 0,
       "harvest": {
         "credit": "cargo",
         "intervalTicks": 10,
         "amount": 1
+      }
+    },
+    {
+      "id": 4,
+      "name": "Восстановление",
+      "description": "Восстанавливает повреждённое готовое здание своего игрока. Кристаллы расходуются по мере ремонта. ПКМ по цели — восстановить; ПКМ по кнопке способности — переключить автокаст.",
+      "targeting": "friendly_building",
+      "rightClick": true,
+      "animation": "work",
+      "manaCost": 0,
+      "cooldownTicks": 0,
+      "repair": {
+        "constructionTimePercent": 75,
+        "constructionCostPercent": 50
+      },
+      "autocast": {
+        "radius": 8,
+        "scanIntervalTicks": 15,
+        "enabledByDefault": false,
+        "condition": "stopped"
       }
     }
   ]

@@ -22,6 +22,34 @@ Simulation stationary(EntityDefinition gun) {
 }
 }
 void projectileTests(TestSuite& test, const TestContext&) {
+    test("Forced ranged attacks hit allied units and buildings without enabling unrelated friendly splash", [] {
+        for (auto mode : {ProjectileTargeting::Unit, ProjectileTargeting::Point}) for (bool buildingTarget : {false, true}) {
+            auto gun = weapon(mode); gun.projectile->speed = 100; gun.projectile->friendlyFire = false;
+            auto scene = range(); scene.units = {{"dummy",0,{8,6}}, {"dummy",0,{8,7}}};
+            auto game = makeTestSimulation(std::move(scene), {}, gun, {gun, dummy()});
+            const auto attacker = game.worker().id, friendId = game.units()[1].id, bystander = game.units()[2].id;
+            const auto target = buildingTarget ? game.buildings().front().id : friendId;
+            require(game.attack(std::array{attacker}, target, true), "Forced ranged order rejected");
+            ticks(game, 10);
+            require((buildingTarget ? game.building(target)->health : game.unit(target)->health) == (buildingTarget ? 980 : 80),
+                "Ranged shot filtered explicit friendly target or damaged it more than once");
+            require(game.unit(bystander)->health == 100, "Forced target bypassed splash friendlyFire for unrelated ally");
+        }
+    });
+    test("Forced homing shots retain their allied target after Stop and never retarget a dead victim", [] {
+        auto gun = weapon();
+        auto scene = range(); scene.units = {{"dummy",0,{10,6}}, {"dummy",0,{10,7}}};
+        auto game = makeTestSimulation(std::move(scene), {}, gun, {gun, dummy()});
+        const auto attacker = game.worker().id, target = game.units()[1].id, other = game.units()[2].id;
+        require(game.attack(std::array{attacker}, target, true), "Forced shot rejected");
+        ticks(game, 3); require(game.projectiles().size() == 1, "Shot was not released");
+        game.stop(std::array{attacker}); ticks(game, 60);
+        require(game.unit(target)->health == 80, "Stop removed permission from an already released shot");
+        ticks(game, 300); require(game.attack(std::array{attacker}, target, true), "Second shot rejected");
+        ticks(game, 3); require(game.projectiles().size() == 1, "Second shot was not released");
+        const_cast<Unit&>(*game.unit(target)).health = 0; game.tick(); ticks(game, 60);
+        require(!game.unit(target) && game.unit(other)->health == 100, "Shot retargeted another ally after death");
+    });
     test("Splash hits building footprints once and respects ground targeting and friendly fire", [] {
         for (const auto [owner, friendlyFire, targets, expected] : {
             std::tuple{PlayerId{0}, false, AttackTargets::Ground, 1000},

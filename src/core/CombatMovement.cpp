@@ -1,9 +1,10 @@
 #include "rts/Simulation.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace rts {
-void Simulation::approachCombat(Unit& u, Vec2 aim, const Unit* target) {
+void Simulation::approachCombat(Unit& u, Vec2 aim, const CombatTarget* target) {
     // Reconsider at staggered intervals, but retain a useful route and its progress.
     u.chaseTicks = 12 + int(u.id % 7);
     const float radius = u.definition.collisionRadius, range = u.definition.attackRange;
@@ -32,11 +33,32 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const Unit* target) {
     // cramped terrain and occupied firing positions without changing weapon reach.
     const Vec2 offset = groundToPlane(u.position - aim);
     const float heading = std::atan2(offset.y, offset.x);
-    const float contact = target && airborne(target->definition.movement) == airborne(movement) ?
-        std::min(range, radius + target->definition.collisionRadius + .045f) : std::min(range, .05f);
+    const float contact = target && target->unit && target->air() == airborne(movement) ?
+        std::min(range, radius + target->unit->definition.collisionRadius + .045f) :
+        target && target->building ? std::min(range, radius + .045f) : std::min(range, .05f);
     const float outer = std::max(contact, range - .06f);
     std::vector<Vec2> goals;
     const auto ring = [&](float distance, bool firing) {
+        if (target && target->building) {
+            const auto& b = *target->building;
+            const float x = float(b.origin.x), y = float(b.origin.y);
+            const std::array<Vec2, 4> corners{{{x,y}, {x+b.definition.width,y},
+                {x+b.definition.width,y+b.definition.height}, {x,y+b.definition.height}}};
+            const auto add = [&](Vec2 p) { if ((!firing || reaches(p)) && free(p)) goals.push_back(p); };
+            for (size_t edgeIndex = 0; edgeIndex < corners.size(); ++edgeIndex) {
+                const Vec2 a = corners[edgeIndex], edge = corners[(edgeIndex + 1) % corners.size()] - a;
+                const Vec2 plane = groundToPlane(edge);
+                const Vec2 normal = planeToGround({plane.y, -plane.x}) * (distance / groundLength(edge));
+                const int samples = std::clamp(int(std::ceil(groundLength(edge) / (2 * radius + .1f))), 2, 64);
+                for (int i = 0; i <= samples; ++i) add(a + edge * (float(i) / samples) + normal);
+                add(a + edge * std::clamp(groundDot(u.position - a, edge) / groundLengthSquared(edge), 0.f, 1.f) + normal);
+                for (int i = 0; i < 16; ++i) {
+                    const float angle = i * (6.283185307f / 16);
+                    add(a + planeToGround({std::cos(angle), std::sin(angle)}) * distance);
+                }
+            }
+            return;
+        }
         const int count = std::clamp(int(std::ceil(distance * 12)), 24, 64);
         for (int i = 0; i < count; ++i) {
             const float angle = heading + i * (6.283185307f / count);
@@ -89,6 +111,6 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const Unit* target) {
     }
     u.route.clear(); u.next = 0; u.state = UnitState::ToAttack;
     u.chaseTicks = 30 + int(u.id % 13);
-    if (target) { u.unreachableTarget = target->id; u.targetRetryTicks = 90; }
+    if (target) { u.unreachableTarget = target->id(); u.targetRetryTicks = 90; }
 }
 }

@@ -95,6 +95,7 @@ private:
     void drawProjectiles(const Simulation& game, const WorldView& view);
     void polygon(std::span<const Vec2> points, unsigned color, float opacity = 1.0f, bool fill = true);
     void line(Vec2 a, Vec2 b, unsigned color, float width = 1.0f);
+    void autocastFrame(UiRect area, AutocastState state);
     void text(const std::wstring& value, D2D1_RECT_F rect, unsigned color, bool heading = false);
     void sprite(ID2D1Bitmap* bitmap, D2D1_RECT_F source, Vec2 topLeft, Vec2 extent, bool pixel = false, float lighting = 1, ID2D1Bitmap* emission = nullptr);
     void buttonFrame(UiRect area);

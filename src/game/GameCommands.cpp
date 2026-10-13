@@ -116,11 +116,20 @@ void GameApplication::action(size_t index) {
     unitAction(index);
 }
 
-void GameApplication::rightClick(std::optional<rts::Cell> target) {
+void GameApplication::rightClick(std::optional<rts::Cell> target, rts::EntityId entity) {
     if (!ui_.placement.empty() || ui_.rallyMode || ui_.orderMode || ui_.buildMenu) { clearCommandMode(); return; }
     if (!target || selectedCrystal()) return;
     if (const auto* b = selectedBuilding()) game_.setRally(b->id, *target);
-    else if (ui_.selection.activeUnit(game_) && game_.command(ui_.selection.ids, *target)) {
+    else if (ui_.selection.activeUnit(game_) && game_.command(ui_.selection.ids, *target, entity)) {
+        for (auto id : ui_.selection.ids) if (const auto* u = game_.unit(id))
+            if (u->currentOrder.kind == OrderKind::UseAbility) {
+                const auto* recipient = game_.unit(u->currentOrder.target);
+                const auto* building = game_.building(u->currentOrder.target);
+                if (entity ? u->currentOrder.target == entity :
+                    (recipient && recipient->cell == *target) || (building && building->contains(*target))) {
+                    ui_.commandFeedback.confirm(u->currentOrder.target); return;
+                }
+            }
         // Match Simulation::command's target precedence. In a mixed selection,
         // ineligible members retain old orders and must not confirm their old target.
         for (const auto& unit : game_.units()) if (unit.owner != game_.player().id && unit.cell == *target && game_.fog().visible(unit.cell)) {
@@ -133,6 +142,10 @@ void GameApplication::rightClick(std::optional<rts::Cell> target) {
 }
 
 std::optional<rts::Cell> GameApplication::pickCommandTarget() const {
+    if (const auto id = rts::pickEntity(game_, view_, mouse_)) {
+        if (const auto* unit = game_.unit(*id)) return unit->cell;
+        if (const auto* building = game_.building(*id)) return building->origin;
+    }
     std::optional<rts::Cell> result;
     float nearestDepth = -1;
     for (const auto& u : game_.units()) {
@@ -153,5 +166,16 @@ std::optional<rts::Cell> GameApplication::pickCommandTarget() const {
         if (rts::buildingDepth(*b) >= nearestDepth) result = b->origin;
     }
     return result ? result : game_.map().pick(mouse_, view_);
+}
+
+rts::EntityId GameApplication::pickCommandEntity(rts::Cell cell) const {
+    if (mouseInWorld()) {
+        const auto id = rts::pickEntity(game_, view_, mouse_);
+        return id && (game_.unit(*id) || game_.building(*id)) ? *id : 0;
+    }
+    for (const auto& unit : game_.units())
+        if (unit.cell == cell && unit.health > 0 && game_.fog().visible(unit.cell)) return unit.id;
+    const auto* building = game_.buildingAt(cell);
+    return building && rts::buildingVisible(game_, *building) ? building->id : 0;
 }
 }

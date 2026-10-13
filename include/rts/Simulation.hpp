@@ -13,9 +13,9 @@
 
 namespace rts {
 enum class EntityKind { Unit, Building };
-enum class UnitState { Idle, Moving, ToCrystal, Harvesting, ToHall, ToBuild, Building, WaitingForCrystal, ToAttack, Attacking };
-enum class OrderKind { Move, Interact, Stop, Build, Gather, Attack, AttackMove, Hold, Patrol, AttackGround };
-struct Order { OrderKind kind; Cell cell{}; EntityId target{}; uint64_t moveGroup{}; std::optional<Vec2> position; };
+enum class UnitState { Idle, Moving, ToCrystal, Harvesting, ToHall, ToBuild, Building, WaitingForCrystal, ToAttack, Attacking, ToAbility, UsingAbility };
+enum class OrderKind { Move, Interact, Stop, Build, Gather, Attack, AttackMove, Hold, Patrol, AttackGround, UseAbility };
+struct Order { OrderKind kind; Cell cell{}; EntityId target{}; uint64_t moveGroup{}; std::optional<Vec2> position; int abilityId{}; bool forceAttack{}; };
 struct HeroProgression {
     int level = 1; int experience{};
     std::shared_ptr<const ProgressionRules> rules;
@@ -41,6 +41,11 @@ struct Unit {
     UnitState state = UnitState::Idle;
     int health{}, mana{}, cargo{};
     std::vector<AbilityCooldown> abilityCooldowns;
+    std::vector<int> autocastAbilities;
+    bool automaticAbility{}, abilityWorking{};
+    int activityTicks{};
+    std::int64_t repairProgress{};
+    std::int64_t repairCredit{}; // Prepaid restoration cost, retained across casters and orders.
     HealthFeedback healthFeedback;
     std::vector<Cell> route;
     size_t next{};
@@ -59,7 +64,7 @@ struct Unit {
     bool repeatGather{};
     Order currentOrder{OrderKind::Stop};
     Vec2 patrolOrigin;
-    EntityId targetUnit{};
+    EntityId attackTarget{};
     AttackPhase attackPhase = AttackPhase::Ready;
     int attackTicks{}, chaseTicks{};
     EntityId unreachableTarget{};
@@ -75,6 +80,9 @@ struct Unit {
     int abilityCooldown(int abilityId) const {
         for (const auto& value : abilityCooldowns) if (value.abilityId == abilityId) return value.remainingTicks;
         return 0;
+    }
+    bool autocastEnabled(int abilityId) const {
+        return std::find(autocastAbilities.begin(), autocastAbilities.end(), abilityId) != autocastAbilities.end();
     }
     int attackDamage() const { return definition.attackDamage + (hero ? (level() - 1) * definition.hero->damagePerLevel : 0); }
     bool atMaxLevel() const { return hero && level() == static_cast<int>(hero->rules->thresholds.size()); }
@@ -124,6 +132,8 @@ struct Building {
     int health{}, constructionProgress{};
     Cell rally;
     std::deque<ProductionJob> production;
+    // Prepaid fractional crystals, shared by every repairer and retained across orders.
+    std::int64_t repairCredit{};
     bool complete() const { return constructionProgress >= definition.constructionTicks; }
     bool training() const { return complete() && !production.empty() && production.front().remainingTicks > 0; }
     bool contains(Cell c) const {
@@ -213,12 +223,18 @@ public:
     float unitHeight(const Unit& unit) const;
     float workerHeight() const { return unitHeight(worker()); }
     bool command(Cell c);
-    bool command(std::span<const EntityId> ids, Cell c);
+    bool command(std::span<const EntityId> ids, Cell c, EntityId target = 0);
     bool order(std::span<const EntityId> ids, OrderKind kind, Cell target = {});
     bool orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKind kind, Cell target = {});
-    bool attack(std::span<const EntityId> ids, EntityId target);
-    bool activateAbility(EntityId unit, int ability);
+    bool attack(std::span<const EntityId> ids, EntityId target, bool forced = false);
+    bool activateAbility(EntityId unit, int ability, EntityId target = 0);
+    bool activateAbilityFor(PlayerId actor, EntityId unit, int ability, EntityId target = 0);
+    bool setAutocast(EntityId unit, int ability, bool enabled);
+    bool setAutocastFor(PlayerId actor, EntityId unit, int ability, bool enabled);
+    bool canTargetAbility(const Unit& unit, const AbilityDefinition& ability, EntityId target) const;
+    const AbilityDefinition* contextualAbility(const Unit& unit, EntityId target) const;
     bool canAttack(const Unit& attacker, const Unit& target) const;
+    bool canAttack(const Unit& attacker, EntityId target, bool forced = false) const;
     void stop();
     void stop(std::span<const EntityId> ids);
     bool canPlace(const std::string& type, Cell origin) const;
@@ -259,6 +275,12 @@ private:
     bool seekCrystal(Unit& unit);
     bool returnCargo(Unit& unit);
     void harvest(Unit& unit);
+    bool startRepair(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic);
+    std::vector<Cell> repairPositions(const Unit& unit, EntityId target) const;
+    bool repairReach(const Unit& unit, EntityId target, Vec2 position) const;
+    void approachRepair(Unit& unit);
+    void tickAutocast(Unit& unit);
+    void tickRepair(Unit& unit);
     void arrived(Unit& unit);
     void issue(Unit& unit, Order order);
     void applyOrder(Unit& unit, Order order, std::optional<Path> path = {});
@@ -269,21 +291,34 @@ private:
     void tickCombat();
     void leaveRemains(const Unit& unit);
     void tickRemains();
-    bool targetVisible(const Unit& observer, const Unit& target) const;
-    bool attackReach(const Unit& attacker, const Unit& target, std::optional<Vec2> from = {}) const;
-    void approachCombat(Unit& unit, Vec2 point, const Unit* target);
+    struct CombatTarget {
+        const Unit* unit{};
+        const Building* building{};
+        explicit operator bool() const { return unit || building; }
+        EntityId id() const { return unit ? unit->id : building->id; }
+        PlayerId owner() const { return unit ? unit->owner : building->owner; }
+        int health() const { return unit ? unit->health : building->health; }
+        bool air() const { return unit && airborne(unit->definition.movement); }
+        Vec2 position() const { return unit ? unit->position : Vec2{building->origin.x + building->definition.width * .5f, building->origin.y + building->definition.height * .5f}; }
+    };
+    CombatTarget combatTarget(EntityId id) const;
+    bool canAttack(const Unit& attacker, CombatTarget target, bool forced) const;
+    bool targetVisible(const Unit& observer, CombatTarget target) const;
+    Vec2 attackAim(CombatTarget target, Vec2 from) const;
+    bool attackReach(const Unit& attacker, CombatTarget target, std::optional<Vec2> origin = {}) const;
+    void approachCombat(Unit& attacker, Vec2 aim, const CombatTarget* target);
     void cancelAttack(Unit& unit);
     void resumeOrder(Unit& unit);
     bool groundAttackReach(const Unit& unit, Cell target, std::optional<Cell> from = {}) const;
     void chaseGround(Unit& unit);
     struct Hit { EntityId target; int damage; PlayerId owner; };
-    void releaseAttack(Unit& attacker, const Unit& target, std::vector<Hit>& hits);
+    void releaseAttack(Unit& attacker, CombatTarget target, std::vector<Hit>& hits);
     void releaseGroundAttack(Unit& attacker);
     void releaseProjectile(Unit& attacker, Vec2 aim, float aimHeight, EntityId target);
     void tickProjectiles(std::vector<Hit>& hits);
     void resolveHits(const std::vector<Hit>& hits);
     void rewardKill(const Unit& victim, PlayerId killer);
-    void chase(Unit& attacker, const Unit& target);
+    void chase(Unit& attacker, CombatTarget target);
     void updateVision(bool force = true);
     Scenario scenario_;
     PlayerSettings player_;

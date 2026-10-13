@@ -6,6 +6,7 @@ struct Projectile {
     ProjectileDefinition definition;
     AttackTargets targets{};
     EntityId target{};
+    EntityId forcedTarget{}; // Only the explicitly ordered victim bypasses ownership filtering.
     PlayerId owner{};
     bool sourceAir{};
     int damage{}, elapsedTicks{}, flightTicks{};

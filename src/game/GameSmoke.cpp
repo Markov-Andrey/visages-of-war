@@ -384,7 +384,7 @@ void GameApplication::exerciseInterface() {
     const auto enemy = game_.units().back().id;
     const auto enemyBounds = rts::unitBounds(game_, *game_.unit(enemy), view_);
     onMessage(WM_RBUTTONDOWN, 0, at({enemyBounds.x + enemyBounds.width * .5f, enemyBounds.y + enemyBounds.height * .4f}));
-    if (game_.unit(fighter)->targetUnit != enemy) throw std::runtime_error("Smoke: right click on enemy sprite did not attack");
+    if (game_.unit(fighter)->attackTarget != enemy) throw std::runtime_error("Smoke: right click on enemy sprite did not attack");
     if (cursorKind() != rts::CursorKind::Attack) throw std::runtime_error("Smoke: attack cursor failed");
     for (int tick = 0; tick < 180 && game_.unit(enemy)->health == game_.unit(enemy)->definition.maximumHealth; ++tick) game_.tick();
     if (game_.unit(enemy)->health == game_.unit(enemy)->definition.maximumHealth) throw std::runtime_error("Smoke: ordered attack caused no damage");

@@ -144,11 +144,13 @@ void Simulation::replanMovement() {
                 u->definition.collisionRadius, u->definition.movement, 2048);
         }
         if (path) followPath(*u, std::move(*path), u->state);
-        else if (u->blockedTicks >= 90 && (u->state == UnitState::ToHall || u->state == UnitState::ToCrystal)) {
+        else if (u->blockedTicks >= 90 && (u->state == UnitState::ToHall || u->state == UnitState::ToCrystal || u->state == UnitState::ToAbility)) {
             // Retry another slot on the same target within the shared budget.
             // Exhaustion/fallback selection remains the gathering controller's job.
             std::vector<Cell> goals;
-            if (u->state == UnitState::ToHall) {
+            if (u->state == UnitState::ToAbility) {
+                goals = repairPositions(*u, u->currentOrder.target);
+            } else if (u->state == UnitState::ToHall) {
                 if (const auto* depot = building(u->targetBuilding))
                     goals = perimeter(map(), depot->origin, depot->definition.width, depot->definition.height, u->definition.movement);
             } else if (u->targetCrystal >= 0) {
@@ -343,7 +345,7 @@ void Simulation::moveUnit(Unit& u) {
             const float contact = u.definition.collisionRadius + other->definition.collisionRadius;
             // Prediction padding must not prevent a short-range weapon from
             // reaching contact. The actual swept bodies remain unchanged.
-            const float padding = other->id == u.targetUnit ? std::clamp(u.definition.attackRange - contact - .015f, 0.0f, .035f) : .035f;
+            const float padding = other->id == u.attackTarget ? std::clamp(u.definition.attackRange - contact - .015f, 0.0f, .035f) : .035f;
             const float radius = contact + padding;
             const float a = groundLengthSquared(approach), b = dot(relative, approach), c = groundLengthSquared(relative) - radius * radius;
             if (b <= 0 || a < .00001f) continue;
