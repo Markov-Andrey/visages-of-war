@@ -9,7 +9,7 @@ void GameApplication::exerciseUnitCommands() {
     scene.units = {{"church.peacemaker", 0, {10, 10}}, {"church.catapult", 0, {11, 11}}, {"church.peacemaker", 1, {14, 11}},
         {"church.slinger", 0, {10, 12}}, {"church.peacemaker", 0, {9, 12}}};
     scene.heroSpawn = rts::Cell{9, 8};
-    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id, "church.hero");
+    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id, "church.hero", definitions_.progression(), {}, definitions_.armorRules());
     ui_ = {}; menu_.page = rts::MenuPage::Playing; resetCamera();
     const auto first = game_.units()[0].id, second = game_.units()[1].id;
     const auto soldier = game_.units()[2].id, siege = game_.units()[3].id, enemy = game_.units()[4].id;
@@ -276,7 +276,7 @@ void GameApplication::exerciseUnitCommands() {
         {"church.flying_soldier",0,{14,14}}, {"church.slinger",0,{11,13}}};
     forcedScene.heroSpawn = rts::Cell{18,14};
     game_ = rts::Simulation(std::move(forcedScene), menu_.player, definitions_.entity("church.worker"), definitions_.entities(),
-        definitions_.startingDepot("church").id, "church.hero");
+        definitions_.startingDepot("church").id, "church.hero", definitions_.progression(), {}, definitions_.armorRules());
     ui_ = {}; focus({14,12}, true);
     for (const auto& u : game_.units()) ui_.selection.ids.push_back(u.id);
     const auto repairer = game_.worker().id, fighter = game_.units()[1].id, friendTarget = game_.units()[2].id;

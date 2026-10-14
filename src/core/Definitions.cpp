@@ -35,8 +35,9 @@ EntityDefinition parseEntity(const Json& j) {
     if (j.contains("canDecompose")) e.canDecompose = j.at("canDecompose").get<bool>();
     const auto& cost = j.at("cost"); fields(cost, {"crystals", "supply"});
     e.cost = {number(cost.at("crystals"), 0, 1000000), number(cost.at("supply"), 0, ArmySupply::maximum)};
-    const auto& stats = j.at("stats"); fields(stats, {"health", "damage", "level", "dayVision", "nightVision"}, {"mana"});
+    const auto& stats = j.at("stats"); fields(stats, {"health", "armor", "damage", "level", "dayVision", "nightVision"}, {"mana"});
     e.maximumHealth = number(stats.at("health"), 1, 1000000);
+    e.armor = number(stats.at("armor"), -1000000, 1000000);
     if (stats.contains("mana")) e.maximumMana = number(stats.at("mana"), 0, 1000000);
     e.attackDamage = number(stats.at("damage"), 0, 1000000);
     data::parseWeapon(e, j.at("attack"), j.at("sprite"));
@@ -212,7 +213,11 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         for (const auto& previous : result.abilities_) if (previous.id == ability.id) throw std::runtime_error("Duplicate ability ID");
         result.abilities_.push_back(std::move(ability));
     }
-    const auto rules = read(resolve(root.at("rulesFile"))); fields(rules, {"version", "hero"}); version(rules);
+    const auto rules = read(resolve(root.at("rulesFile"))); fields(rules, {"version", "hero", "armor"}); version(rules);
+    const auto& armor = rules.at("armor"); fields(armor, {"coefficient"});
+    if (!armor.at("coefficient").is_number()) throw std::runtime_error("Armor coefficient must be numeric");
+    result.armorRules_.coefficient = armor.at("coefficient").get<double>();
+    result.armorRules_.validate();
     const auto& hero = rules.at("hero"); fields(hero, {"experienceRadius", "experiencePerVictimLevel", "thresholds"});
     result.progression_.experienceRadius = number(hero.at("experienceRadius"), 1, 64);
     result.progression_.experiencePerVictimLevel = number(hero.at("experiencePerVictimLevel"), 0, 1000000);

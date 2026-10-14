@@ -34,6 +34,13 @@ std::string targetNames(const EntityDefinition& entity) {
     return {};
 }
 }
+std::string armorDescription(int armor, const ArmorRules& rules) {
+    const double change = (rules.damageMultiplier(armor) - 1.0) * 100.0;
+    // Do not display a rounded 100% immunity for finite armor.
+    const double percent = armor >= 0 ? std::floor(-change * 100) / 100 : std::round(change * 100) / 100;
+    return std::string(armor >= 0 ? "Снижение получаемого урона: " : "Дополнительный получаемый урон: ") +
+        amount(std::abs(percent)) + "%";
+}
 std::string abilityTargetDetails(const AbilityDefinition& ability) {
     if (ability.targeting == AbilityTargeting::None) return "Без цели";
     std::string text;
@@ -60,6 +67,8 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
     result.push_back({LibraryDetailKind::Title, entity.displayName, {}, {}});
     paragraph(entity.description);
     stat("Здоровье", std::to_string(entity.maximumHealth));
+    stat("Броня", std::to_string(entity.armor));
+    result.back().tooltip = armorDescription(entity.armor, definitions.armorRules());
     stat("Стоимость", std::to_string(entity.cost.crystals), "crystal");
     if (entity.cost.supply > 0) stat("Лимит армии", std::to_string(entity.cost.supply), "supply");
     stat("Обзор днём / ночью", std::to_string(entity.dayVision) + " / " + std::to_string(entity.nightVision) + " клеток");

@@ -118,7 +118,7 @@ rts::Simulation GameApplication::makeMatch() const {
     auto scenario=rts::loadScenario(mapFile_,worldAssets_,{depot.width,depot.height});
     const auto hero=scenario.heroSpawn?commander.startingHero:std::string{};
     return rts::Simulation(std::move(scenario),menu_.player,definitions_.entity(commander.startingWorker),
-        definitions_.entities(),depot.id,hero,definitions_.progression());
+        definitions_.entities(),depot.id,hero,definitions_.progression(),{},definitions_.armorRules());
 }
 
 RECT GameApplication::monitorBounds(HMONITOR monitor) {

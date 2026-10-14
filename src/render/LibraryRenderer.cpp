@@ -154,11 +154,14 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     const auto area = layout.details;
     const float maximum = std::max(0.0f, page.height - area.height);
     const float offset = std::clamp(menu.libraryDetailScroll, 0.0f, maximum);
+    std::string detailTooltip;
     target_->PushAxisAlignedClip(rect(area.x, area.y, area.width, area.height), D2D1_ANTIALIAS_MODE_ALIASED);
     for (const auto& row : page.lines) {
         const float y = area.y + row.y - offset;
         if (y + row.height < area.y || y >= area.y + area.height) continue;
         const bool stat = row.detail.kind == LibraryDetailKind::Stat;
+        if (!row.detail.tooltip.empty() && area.contains(mouse) && UiRect{area.x, y, area.width, row.height}.contains(mouse))
+            detailTooltip = row.detail.tooltip;
         brush_->SetColor(D2D1::ColorF(stat ? 0x76634a : 0x3b3026));
         target_->DrawTextLayout({area.x, y}, row.label.Get(), brush_.Get());
         if (stat) {
@@ -189,6 +192,11 @@ void Renderer::drawLibrary(const MenuState& menu, const Definitions& definitions
     }
     text(L"Командир: " + commander, rect(294, 742, 890, 26), 0xccb68d);
     drawColorSelect(ColorSelectLayout(layout.color, 800), menu, mouse);
+    if (!detailTooltip.empty()) {
+        const UiRect tip{std::clamp(mouse.x - 340, 16.f, 924.f), std::clamp(mouse.y - 88, 16.f, 696.f), 340, 76};
+        fill(tip, 0x17272e);
+        text(wide(detailTooltip), rect(tip.x + 12, tip.y + 12, tip.width - 24, tip.height - 24), 0xe9e1c5);
+    }
     target_->SetTransform(previous);
 }
 }

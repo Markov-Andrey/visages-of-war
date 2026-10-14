@@ -1,5 +1,6 @@
 #pragma once
 #include "rts/Types.hpp"
+#include "rts/Armor.hpp"
 #include "rts/Weapons.hpp"
 #include "rts/BuildingSprite.hpp"
 #include <array>
@@ -201,6 +202,7 @@ struct EntityDefinition {
     int trainingTicks = 90;
     int dayVision = 8, nightVision = 6;
     int maximumHealth = 60;
+    int armor{};
     int maximumMana{};
     std::vector<AbilityDefinition> abilities; // Resolved from the separate ability catalog.
     bool canBuild = true;

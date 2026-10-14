@@ -24,6 +24,7 @@ public:
     const EntityDefinition& startingDepot(const std::string& factionId) const;
     const std::vector<EntityDefinition>& entities() const { return entities_; }
     const ProgressionRules& progression() const { return progression_; }
+    const ArmorRules& armorRules() const { return armorRules_; }
 private:
     std::vector<EntityDefinition> entities_;
     std::vector<AbilityDefinition> abilities_;
@@ -31,5 +32,6 @@ private:
     std::vector<CommanderDefinition> commanders_;
     std::vector<FactionDefinition> factions_;
     ProgressionRules progression_;
+    ArmorRules armorRules_;
 };
 }

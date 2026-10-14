@@ -20,7 +20,7 @@ void Renderer::drawUnitStats(const Unit& unit, UiRect b) {
     const bool columns = width >= 360;
     text(wide(d.displayName), rect(b.x, b.y, b.width, 32), 0xe0eade, width >= 300);
     const std::wstring role = unit.hero ? L"Герой" : d.isWorker() ? L"Рабочий" : L"Воин";
-    text(width >= 300 ? wide(d.factionName) + L"  ·  " + role : role,
+    text(role + L"  ·  Броня " + std::to_wstring(unit.armor()),
         rect(b.x, b.y + 34, width, 24), 0x9eb6b7);
     const auto damage = unit.attackDamage() > 0 ? L"Атака  " + std::to_wstring(unit.attackDamage()) : L"Не атакует";
     const auto range = unit.attackDamage() > 0 ? L"Дальность  " + amount(d.attackRange) : L"";

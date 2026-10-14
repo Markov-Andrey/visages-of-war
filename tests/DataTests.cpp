@@ -13,6 +13,33 @@ bool libraryText(const std::vector<LibraryDetail>& details, const std::string& t
 }
 }
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Armor catalog values and tooltips share external balance rules", [&] {
+        CatalogFixture fixture(context.assets);
+        auto defs = fixture.load();
+        for (const auto& entity : defs.entities())
+            require(entity.armor == (entity.hero ? 2 : entity.collision == CollisionShape::Footprint ? 5 : entity.armor) &&
+                (entity.collision == CollisionShape::Footprint || (entity.armor >= 0 && entity.armor <= 2)), "Initial armor outside authored range");
+        fixture.entities["entities"][0]["stats"]["armor"] = -5;
+        fixture.rules["armor"]["coefficient"] = .1;
+        defs = fixture.load(); const auto& worker = defs.entity("church.worker");
+        const auto rows = libraryDetails(defs, worker);
+        require(worker.armor == -5 && defs.armorRules().damage(100, worker.armor) == 150 && libraryValue(rows, "Броня") == "-5",
+            "Catalog armor or coefficient ignored");
+        const auto row = std::find_if(rows.begin(), rows.end(), [](const auto& r) { return r.label == "Броня"; });
+        require(row != rows.end() && row->tooltip == "Дополнительный получаемый урон: 50%", "Negative armor tooltip differs from combat");
+        require(armorDescription(5, defs.armorRules()) == "Снижение получаемого урона: 33.33%" &&
+            armorDescription(0, defs.armorRules()) == "Снижение получаемого урона: 0%" &&
+            armorDescription(1000000, defs.armorRules()).find("100%") == std::string::npos, "Armor tooltip claims immunity");
+        for (Json invalid : {Json(-1000001), Json(1000001), Json(1.5), Json("2"), Json(nullptr)}) {
+            fixture.entities["entities"][0]["stats"]["armor"] = invalid;
+            mustThrow([&] { fixture.load(); });
+        }
+        fixture.entities["entities"][0]["stats"]["armor"] = 0;
+        for (Json invalid : {Json(0), Json(-.1), Json(1.1), Json("0.06"), Json(nullptr)}) {
+            fixture.rules["armor"]["coefficient"] = invalid;
+            mustThrow([&] { fixture.load(); });
+        }
+    });
     test("Stage two catalogs accept unlimited choices and ordered effect recipients", [&] {
         CatalogFixture fixture(context.assets);
         auto& worker = fixture.entities["entities"][0];

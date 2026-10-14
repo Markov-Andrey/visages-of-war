@@ -5,11 +5,12 @@
 
 namespace rts {
 Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinition workerType,
-    std::vector<EntityDefinition> entityTypes, std::string startingBuilding, std::string startingHero, ProgressionRules progression, ClockSettings clock)
+    std::vector<EntityDefinition> entityTypes, std::string startingBuilding, std::string startingHero, ProgressionRules progression, ClockSettings clock, ArmorRules armorRules)
     : scenario_(std::move(scenario)), player_(std::move(player)), workerType_(std::move(workerType)),
       entityTypes_(std::move(entityTypes)), progression_(std::make_shared<const ProgressionRules>(std::move(progression))), clock_(clock), fog_(map().width(), map().height()),
       knownCrystals_(crystals().size()), knownEnvironment_(environment().size()) {
     validatePlayerSlots(scenario_.slots);
+    armorRules.validate(); armorRules_ = armorRules;
     if (!activePlayer(player_.id) || scenario_.slots[player_.id].state != PlayerSlotState::Player)
         throw std::invalid_argument("Local player requires a player slot");
     for (size_t i = 0; i < maximumPlayers; ++i) economies_[i].crystals = scenario_.slots[i].startingCrystals;

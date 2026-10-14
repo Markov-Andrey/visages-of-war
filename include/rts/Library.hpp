@@ -7,9 +7,11 @@ enum class LibraryDetailKind { Title, Heading, Paragraph, Stat };
 struct LibraryDetail {
     LibraryDetailKind kind;
     std::string label, value, icon;
+    std::string tooltip;
 };
 // Presentation of resolved gameplay definitions; no per-entity stat inventories.
 std::string abilityTargetDetails(const AbilityDefinition& ability);
+std::string armorDescription(int armor, const ArmorRules& rules);
 std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const EntityDefinition& entity);
 inline constexpr std::array<LibraryTab, 3> libraryTabs{LibraryTab::Units, LibraryTab::Buildings, LibraryTab::Heroes};
 inline constexpr std::array<std::wstring_view, 3> libraryTabNames{L"Юниты", L"Здания", L"Герои"};

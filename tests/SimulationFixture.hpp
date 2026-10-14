@@ -35,7 +35,7 @@ inline EntityDefinition fixtureDepot(const EntityDefinition& worker) {
     return depot;
 }
 inline Simulation makeTestSimulation(Scenario scenario, PlayerSettings player = {}, EntityDefinition worker = fixtureWorker(),
-    std::vector<EntityDefinition> types = {}, std::string hero = {}, ProgressionRules progression = {}, ClockSettings clock = {}) {
+    std::vector<EntityDefinition> types = {}, std::string hero = {}, ProgressionRules progression = {}, ClockSettings clock = {}, ArmorRules armorRules = {}) {
     const auto depot = std::find_if(types.begin(), types.end(), [&](const auto& type) {
         return type.constructible && type.acceptsCargo && type.factionId == worker.factionId;
     });
@@ -46,6 +46,6 @@ inline Simulation makeTestSimulation(Scenario scenario, PlayerSettings player = 
         for (const auto& type : types) if (type.constructible && type.factionId == worker.factionId) worker.buildableTypes.push_back(type.id);
     for (auto& type : types) if (type.id == worker.id) type = worker;
     return Simulation(std::move(scenario), std::move(player), std::move(worker), std::move(types),
-        startingBuilding, std::move(hero), std::move(progression), clock);
+        startingBuilding, std::move(hero), std::move(progression), clock, armorRules);
 }
 }

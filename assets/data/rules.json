@@ -1,5 +1,8 @@
 {
   "version": 1,
+  "armor": {
+    "coefficient": 0.06
+  },
   "hero": {
     "experienceRadius": 8,
     "experiencePerVictimLevel": 50,

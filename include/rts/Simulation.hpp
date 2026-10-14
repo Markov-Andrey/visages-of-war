@@ -104,6 +104,7 @@ struct Entity {
         return std::find(autocastAbilities.begin(), autocastAbilities.end(), abilityId) != autocastAbilities.end();
     }
     int attackDamage() const { return definition.attackDamage + (hero ? (level() - 1) * definition.hero->damagePerLevel : 0); }
+    int armor() const { return definition.armor; }
     bool atMaxLevel() const { return hero && level() == static_cast<int>(hero->rules->thresholds.size()); }
     int experienceInLevel() const { return hero ? hero->experience - hero->rules->thresholds[level() - 1] : 0; }
     int experienceToLevel() const { return hero && !atMaxLevel() ? hero->rules->thresholds[level()] - hero->rules->thresholds[level() - 1] : 0; }
@@ -165,7 +166,8 @@ public:
     const MovementStatistics& movementStatistics() const { return movementStatistics_; }
     explicit Simulation(Scenario scenario, PlayerSettings player, EntityDefinition workerType,
         std::vector<EntityDefinition> entityTypes, std::string startingBuilding,
-        std::string startingHero = {}, ProgressionRules progression = {}, ClockSettings clock = {});
+        std::string startingHero = {}, ProgressionRules progression = {}, ClockSettings clock = {}, ArmorRules armorRules = {});
+    const ArmorRules& armorRules() const { return armorRules_; }
     Simulation(const Simulation&) = delete;
     Simulation& operator=(const Simulation&) = delete;
     Simulation(Simulation&&) noexcept = default;
@@ -340,6 +342,7 @@ private:
     EntityDefinition workerType_;
     std::vector<EntityDefinition> entityTypes_;
     std::shared_ptr<const ProgressionRules> progression_;
+    ArmorRules armorRules_;
     std::array<PlayerEconomy, maximumPlayers> economies_;
     WorldClock clock_;
     FogOfWar fog_;

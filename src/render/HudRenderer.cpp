@@ -126,7 +126,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         }
         const auto content = portrait.content;
         text(wide(b.definition.displayName), rect(content.x, content.y, content.width, 34), 0xe0eade, content.width >= 300);
-        text(wide(b.definition.factionName) + (b.definition.collision == CollisionShape::Footprint ? L"  ·  Здание" : L"  ·  Производитель"), rect(content.x, content.y + 39, content.width, 25), 0x9dc1b6);
+        text(std::wstring(b.definition.collision == CollisionShape::Footprint ? L"Здание" : L"Производитель") + L"  ·  Броня " + std::to_wstring(b.armor()), rect(content.x, content.y + 39, content.width, 25), 0x9dc1b6);
         if (!b.complete()) {
             text(L"Строительство  " + std::to_wstring(b.constructionProgress * 100 / b.definition.constructionTicks) + L"%", rect(content.x, content.y + 70, content.width, 28), 0xe4c388);
             labels[5] = L"Отменить строительство"; details[5] = L"Вернуть 50% стоимости в кристаллах и освободить лимит армии.";
@@ -354,6 +354,14 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         actionTitle = L"Лимит армии";
         actionDescription = L"Занято: " + std::to_wstring(game.armySupply().used()) + L" / 100.\nКаждый юнит занимает часть лимита армии.";
     }
+    const auto* inspected = building ? building : unit;
+    if (inspected && ui.selection.ids.size() == 1) {
+        const auto content = SelectionPanelLayout(info).content;
+        if (UiRect{content.x, content.y + 34, content.width, 30}.contains(ui.mouse)) {
+            actionTitle = L"Броня: " + std::to_wstring(inspected->armor());
+            actionDescription = wide(armorDescription(inspected->armor(), game.armorRules()));
+        }
+    }
     if (!actionTitle.empty()) {
         const float width = std::min(420.0f, extent.x - 24);
         ComPtr<IDWriteTextLayout> description;
@@ -367,7 +375,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         text(actionTitle, rect(x + 12, y + 8, width - 24, 30), 0xe9e1c5, true);
         text(actionDescription, rect(x + 12, y + 44, width - 24, height - 52), 0xcbd7d0);
     } else if (tooltip) {
-        const float width = std::min(420.0f, extent.x - 24), height = 224;
+        const float width = std::min(420.0f, extent.x - 24), height = 296;
         const float x = std::clamp(ui.mouse.x + 20, 12.0f, extent.x - width - 12);
         const float y = std::clamp(ui.mouse.y - height - 12, 64.0f, extent.y - height - 12);
         panel({x - 1, y - 1, width + 2, height + 2}, 0x677a6c);
@@ -383,6 +391,8 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         drawResourceIcon("supply", {x + 14, y + 191, 24, 24});
         text(L"Лимит армии: " + std::to_wstring(cost.supply),
             rect(x + 44, y + 193, width - 58, 23), game.armySupply().canReserve(cost.supply) ? 0xe4d4a5 : 0xed8b80);
+        text(L"Броня: " + std::to_wstring(tooltip->armor) + L"\n" + wide(armorDescription(tooltip->armor, game.armorRules())),
+            rect(x + 14, y + 223, width - 28, 66), 0xcbd7d0);
     }
     if (ui.consoleOpen) {
         const float width = std::min(720.0f, extent.x - 40);

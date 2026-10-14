@@ -7,7 +7,7 @@ void GameApplication::exerciseHarvestFeedback() {
     const auto& type = definitions_.entity("church.worker");
     Scenario scene{Map(24, 24), {3, 3}, {11, 12}, {worldAssets_.instantiateCrystal("crystal.small", {12, 12})}};
     scene.slots[menu_.player.id].startingCrystals = 0;
-    game_ = Simulation(std::move(scene), menu_.player, type, definitions_.entities(), definitions_.startingDepot(type.factionId).id);
+    game_ = Simulation(std::move(scene), menu_.player, type, definitions_.entities(), definitions_.startingDepot(type.factionId).id, {}, definitions_.progression(), {}, definitions_.armorRules());
     ui_ = {}; ui_.selection.ids = {game_.worker().id};
     if (!game_.command({12, 12})) throw std::runtime_error("Harvest smoke: command rejected");
     for (int i = 0; i < 180 && game_.worker().state != UnitState::Harvesting; ++i) { game_.tick(); processWorldEvents(); }

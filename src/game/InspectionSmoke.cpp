@@ -7,7 +7,7 @@ void GameApplication::exerciseInspection() {
     scene.extraWorkers = {{8, 7}};
     scene.units = {{"church.hero", 1, {11, 8}}, {"church.worker", rts::neutralPlayer, {10, 11}}, {"church.peacemaker", 0, {7, 10}}};
     scene.crystals.push_back({{12, 11}, 1000}); scene.map.occupy({12, 11});
-    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
+    game_ = rts::Simulation(std::move(scene), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id, {}, definitions_.progression(), {}, definitions_.armorRules());
     ui_ = {}; menu_.page = rts::MenuPage::Playing; clearCommandMode();
     const rts::BattleLayout layout(renderer_.size());
     const auto at = [&](rts::Vec2 point) {
@@ -100,7 +100,7 @@ void GameApplication::exerciseInspection() {
 
     rts::Scenario production{rts::Map(32, 32), {5, 5}, {12, 12}, {}};
     production.slots[0].startingCrystals = 10000;
-    game_ = rts::Simulation(std::move(production), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
+    game_ = rts::Simulation(std::move(production), menu_.player, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id, {}, definitions_.progression(), {}, definitions_.armorRules());
     auto& depot = const_cast<rts::Building&>(game_.buildings().front());
     depot.definition.trainableUnits = {"church.peacemaker", "church.slinger"};
     for (size_t i = 0; i < 10; ++i)

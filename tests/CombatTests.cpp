@@ -17,6 +17,41 @@ void checkCombatMotion(const Simulation& game) {
 }
 }
 void combatTests(TestSuite& test, const TestContext& context) {
+    test("Armor formula preserves damage and safely handles negative and extreme armor", [] {
+        const ArmorRules rules{.06};
+        require(rules.damage(100, 0) == 100 && rules.damage(100, 5) == 77 && rules.damage(100, -5) == 130,
+            "Armor formula changed");
+        require(rules.damage(0, -1000000) == 0 && rules.damage(1, 1000000) == 1 &&
+            rules.damageMultiplier(1000000) > 0 && rules.damageMultiplier(5) < rules.damageMultiplier(2),
+            "Armor created immunity, damage from zero, or reversed mitigation");
+        require(rules.damage(std::numeric_limits<int>::max(), std::numeric_limits<int>::min()) == std::numeric_limits<int>::max(),
+            "Negative armor damage overflowed");
+        require(ArmorRules{.1}.damage(100, 5) == 67, "Balance coefficient ignored");
+        for (double value : {0.0, -1.0, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN()})
+            mustThrow([&] { ArmorRules{value}.validate(); });
+    });
+    test("All entity shapes and heroes apply armor once to melee projectiles and splash", [] {
+        for (int kind = 0; kind < 3; ++kind) for (int weapon = 0; weapon < 3; ++weapon)
+            for (int armor : {0, 5, -5, 1000000}) {
+                auto attacker = fixtureWorker(); attacker.attackDamage = 100; attacker.attackRange = 20;
+                attacker.attackWindupTicks = attacker.attackRecoveryTicks = 0; attacker.attackCooldownTicks = 1000;
+                if (weapon) {
+                    auto& projectile = attacker.projectile.emplace(); projectile.speed = 100;
+                    if (weapon == 2) { projectile.targeting = ProjectileTargeting::Point; projectile.splashRadius = 2; }
+                }
+                auto victim = fixtureWorker(); victim.id = "armored.victim"; victim.maximumHealth = 1000; victim.armor = armor;
+                if (kind == 1) victim.hero = HeroDefinition{};
+                auto depot = fixtureDepot(attacker); depot.armor = armor;
+                Scenario scene{Map(24, 20), {1, 1}, {7, 6}, {}};
+                scene.units = {{victim.id, 0, {8, 6}}};
+                const ArmorRules rules{.1};
+                auto game = makeTestSimulation(scene, {}, attacker, {victim, depot}, {}, {}, {}, rules); game.revealMap();
+                const auto target = kind == 2 ? game.buildings()[0].id : game.units()[1].id;
+                require(game.attack(std::array{game.worker().id}, target, true), "Armored target rejected");
+                for (int tick = 0; tick < 120 && game.entity(target)->health == 1000; ++tick) game.tick();
+                require(game.entity(target)->health == 1000 - rules.damage(100, armor), "Hit skipped armor or applied it twice");
+            }
+    });
     test("Stage two footprint towers acquire targets and obey forced attack and stop", [] {
         auto worker = fixtureWorker(); worker.maximumHealth = 1000;
         auto tower = fixtureDepot(worker); tower.attackDamage = 10; tower.attackRange = 6;

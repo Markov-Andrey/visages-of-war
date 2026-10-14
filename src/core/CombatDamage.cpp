@@ -8,7 +8,7 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
     for (const auto hit : hits) {
         if (auto* target = mutableEntity(hit.target); target && target->health > 0) {
             const int before = target->health;
-            target->health = std::max(0, target->health - hit.damage);
+            target->health = std::max(0, target->health - armorRules_.damage(hit.damage, target->armor()));
             target->healthFeedback.record(before, target->health, clock_.elapsedTicks());
             if (target->health == 0) kills.emplace_back(target->id, hit.owner);
         }

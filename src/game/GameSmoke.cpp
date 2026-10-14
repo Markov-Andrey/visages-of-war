@@ -375,7 +375,7 @@ void GameApplication::exerciseInterface() {
     onMessage(WM_MBUTTONUP, 0, at(screenCenter));
     auto arena = rts::loadScenario(paths_.asset(L"maps/demo.rtsmap"));
     arena.units = {{"church.peacemaker", 0, {15, 18}}, {"church.peacemaker", 1, {17, 19}}};
-    game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
+    game_ = rts::Simulation(std::move(arena), {}, definitions_.entity("church.worker"), definitions_.entities(), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id, {}, definitions_.progression(), {}, definitions_.armorRules());
     ui_ = {}; resetCamera();
     onMessage(WM_KEYDOWN, VK_F1, 0);
     if (ui_.selection.ids.size() != 1 || game_.unit(ui_.selection.ids.front())->owner != game_.player().id)
@@ -391,7 +391,8 @@ void GameApplication::exerciseInterface() {
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"combat-preview.png");
     const auto combatUnitCount = game_.units().size();
     const auto& fighterType = game_.unit(fighter)->definition;
-    const int hitsToKill = (game_.unit(enemy)->maximumHealth() + fighterType.attackDamage - 1) / fighterType.attackDamage;
+    const int hitDamage = game_.armorRules().damage(fighterType.attackDamage, game_.unit(enemy)->armor());
+    const int hitsToKill = (game_.unit(enemy)->maximumHealth() + hitDamage - 1) / hitDamage;
     const int duelTicks = hitsToKill * (fighterType.attackWindupTicks + fighterType.attackRecoveryTicks + fighterType.attackCooldownTicks + 1) + 60;
     for (int tick = 0; tick < duelTicks && game_.units().size() == combatUnitCount; ++tick) game_.tick();
     ui_.selection.prune(game_);
@@ -403,8 +404,8 @@ void GameApplication::exerciseInterface() {
     heroScenario.extraWorkers.clear();
     heroScenario.units = {{"church.hero", 0, {15, 18}}, {"church.peacemaker", 1, {16, 18}}};
     auto heroTypes = definitions_.entities();
-    for (auto& type : heroTypes) if (type.id == "church.hero") { type.maximumHealth = 12; type.attackDamage = 0; }
-    game_ = rts::Simulation(std::move(heroScenario), menu_.player, definitions_.entity("church.worker"), std::move(heroTypes), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id);
+    for (auto& type : heroTypes) if (type.id == "church.hero") { type.maximumHealth = 1; type.attackDamage = 0; }
+    game_ = rts::Simulation(std::move(heroScenario), menu_.player, definitions_.entity("church.worker"), std::move(heroTypes), definitions_.startingDepot(definitions_.entity("church.worker").factionId).id, {}, definitions_.progression(), {}, definitions_.armorRules());
     onMessage(WM_KEYDOWN, VK_F2, 0);
     for (int tick = 0; tick < 30 && game_.hero(); ++tick) game_.tick();
     if (game_.hero() || !game_.heroFallen()) throw std::runtime_error("Smoke: hero did not die");
