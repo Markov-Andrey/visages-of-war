@@ -3,6 +3,7 @@
   "entities": [
     {
       "id": "church.worker",
+      "tags": ["humanoid", "organic"],
       "abilities": [4, 2],
       "canDecompose": true,
       "factionId": "church",
@@ -174,6 +175,7 @@
     },
     {
       "id": "church.peacemaker",
+      "tags": ["humanoid", "organic"],
       "canDecompose": true,
       "factionId": "church",
       "name": "Миротворец",
@@ -335,6 +337,7 @@
     },
     {
       "id": "church.hero",
+      "tags": ["humanoid", "organic"],
       "abilities": [1],
       "canDecompose": false,
       "factionId": "church",
@@ -501,6 +504,7 @@
     },
     {
       "id": "church.hall",
+      "tags": ["structure"],
       "factionId": "church",
       "name": "Ратуша",
       "description": "Главное здание поселения. Принимает добытые кристаллы и обучает рабочих.",
@@ -861,6 +865,7 @@
     },
     {
       "id": "church.barracks",
+      "tags": ["structure"],
       "factionId": "church",
       "name": "Миротворческий корпус",
       "description": "Обучает миротворцев, пращников и катапульты. Точка сбора определяет, куда отправятся новые бойцы.",
@@ -955,6 +960,7 @@
     },
     {
       "id": "church.flying_soldier",
+      "tags": [],
       "canDecompose": true,
       "factionId": "church",
       "name": "Летун",
@@ -1012,6 +1018,7 @@
     },
     {
       "id": "church.slinger",
+      "tags": ["humanoid", "organic"],
       "canDecompose": true,
       "factionId": "church",
       "name": "Пращник",
@@ -1233,6 +1240,7 @@
     },
     {
       "id": "church.catapult",
+      "tags": ["mechanical"],
       "canDecompose": true,
       "factionId": "church",
       "name": "Катапульта",

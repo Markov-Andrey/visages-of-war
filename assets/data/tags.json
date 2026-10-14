@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "tags": [
+    {"id": "humanoid", "name": "Гуманоид", "description": "Существо гуманоидного строения."},
+    {"id": "mechanical", "name": "Механический", "description": "Механизм или машина."},
+    {"id": "organic", "name": "Органический", "description": "Органическая сущность."},
+    {"id": "structure", "name": "Сооружение", "description": "Построенное сооружение."},
+    {"id": "plant", "name": "Растение", "description": "Растительный объект."},
+    {"id": "mineral", "name": "Минерал", "description": "Минеральный объект."},
+    {"id": "resource", "name": "Ресурс", "description": "Источник добываемых ресурсов."}
+  ]
+}

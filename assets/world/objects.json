@@ -1,6 +1,7 @@
 [
   {
     "id": "tree",
+    "tags": ["plant", "organic"],
     "name": "Oak (core)",
     "gameplay": true,
     "kind": "tree",
@@ -38,6 +39,7 @@
   },
   {
     "id": "rock",
+    "tags": ["mineral"],
     "name": "Rock (partial footprint)",
     "gameplay": true,
     "kind": "rock",
@@ -78,6 +80,7 @@
   },
   {
     "id": "arch",
+    "tags": ["structure"],
     "name": "Arch (open passage)",
     "gameplay": true,
     "kind": "arch",

@@ -55,6 +55,7 @@ void editorTests(TestSuite& test, const TestContext& context) {
         s.map.at({5,18})={-1,false,{},rts::Surface::ShallowWater}; s.map.at({6,18})={-1,false,{},rts::Surface::DeepWater};
         s.map.at({23,23}).blocked=true;
         s.environment={worldAssets.instantiate("tree",1500,{8,8}),worldAssets.instantiate("rock",1501,{12,12})}; s.environment[0].hitPoints=0;
+        s.environment[0].tags = TagSet({"mechanical"}); // Derived metadata must reload from the catalog, not the map.
         s.crystals={{{9,18},777}};
         s.units={{"church.peacemaker",1,{8,9}},{"church.flying_soldier",0,{8,9}}};
         s.landscape.baseMaterial="dark_grass";
@@ -72,6 +73,9 @@ void editorTests(TestSuite& test, const TestContext& context) {
         require(loaded.map.at({23,23}).blocked&&loaded.map.at({23,23}).height==1,"Blocked terrain lost its height");
         require(loaded.units.size()==2&&loaded.crystals[0].remaining==777&&loaded.heroSpawn==s.heroSpawn,"Spawn data changed after saving");
         std::ifstream before(file); const auto document=nlohmann::json::parse(before); before.close();
+        require(!document["environment"][0].contains("tags") && !document["resources"][0].contains("tags") &&
+            loaded.environment[0].tags.contains("plant") && !loaded.environment[0].tags.contains("mechanical") &&
+            loaded.crystals[0].tags.contains("resource"), "Map persisted derived tags or failed to resolve them");
         rts::saveScenario(loaded,file); std::ifstream after(file); require(nlohmann::json::parse(after)==document,"Map serialization is not stable"); after.close();
         auto invalid=s; invalid.hall={23,23}; mustThrow([&]{rts::saveScenario(invalid,file);});
         require(loadScenario(file).name==s.name,"Rejected save damaged original map");
@@ -163,7 +167,8 @@ void editorTests(TestSuite& test, const TestContext& context) {
         const auto root=worldPaths.writable(L"catalog-test/world/catalog.json").parent_path().parent_path();
         const rts::Paths fixture(root,root/"user");
         std::filesystem::copy_file(assets/"sprites/units/novice/novice-icon.png",root/"image.png",std::filesystem::copy_options::overwrite_existing);
-        writeMap(root/"world/catalog.json",{{"materialFiles",{"world/materials.json"}},{"objectFiles",{"world/objects.json"}},{"remainsFile","world/remains.json"},{"resourcesFile","world/resources.json"}});
+        writeMap(root/"world/catalog.json",{{"tagsFile","tags.json"},{"materialFiles",{"world/materials.json"}},{"objectFiles",{"world/objects.json"}},{"remainsFile","world/remains.json"},{"resourcesFile","world/resources.json"}});
+        std::filesystem::copy_file(assets/"data/tags.json",root/"tags.json",std::filesystem::copy_options::overwrite_existing);
         std::ifstream resourceFile(assets/"world/resources.json"); auto resources=Json::parse(resourceFile);
         for (auto& icon : resources["icons"]) icon="image.png";
         for (auto& crystal : resources["crystals"]) crystal["image"]="image.png";
@@ -175,9 +180,22 @@ void editorTests(TestSuite& test, const TestContext& context) {
             {"sprite",{{"image","image.png"},{"source",{0,0,16,16}},{"size",{128,160}},{"anchor",{.5,.9}}}}};
         writeMap(root/"world/materials.json",materials); writeMap(root/"world/objects.json",nlohmann::json::array({object}));
         auto loaded=rts::WorldAssets::load(fixture); require(loaded.instantiate("custom_tree",77,{5,5}).maximumHitPoints==250,"Custom parameters did not reach instances");
+        require(loaded.object("custom_tree").tags.ids().empty(), "World tags inferred from kind");
+        object["tags"]={"humanoid","mechanical"};
+        writeMap(root/"world/objects.json",Json::array({object})); loaded=rts::WorldAssets::load(fixture);
+        require(loaded.instantiate("custom_tree",77,{5,5}).tags.contains("mechanical"), "World objects restrict tag combinations");
+        for (const auto& invalid : {Json::array({"unknown"}), Json::array({"plant","plant"}), Json("plant")}) {
+            object["tags"] = invalid; writeMap(root/"world/objects.json",Json::array({object}));
+            mustThrow([&] { rts::WorldAssets::load(fixture); });
+        }
+        object["tags"]={"humanoid","mechanical"};
+        resources["crystals"][0]["tags"]={"unknown"}; writeMap(root/"world/resources.json",resources);
+        mustThrow([&] { rts::WorldAssets::load(fixture); });
+        resources["crystals"][0]["tags"]={"mineral","resource"}; writeMap(root/"world/resources.json",resources);
         object["id"]="custom_bush"; object["gameplay"]=false; object["collision"]={false}; object["blocksVision"]=false;
         writeMap(root/"world/objects.json",nlohmann::json::array({object})); loaded=rts::WorldAssets::load(fixture);
         require(!loaded.object("custom_bush").gameplay,"New cosmetic definition did not load");
+        require(loaded.object("custom_bush").tags.contains("humanoid"), "Cosmetic definitions lost tags");
         object["collision"]={true}; writeMap(root/"world/objects.json",nlohmann::json::array({object})); mustThrow([&]{rts::WorldAssets::load(fixture);});
         object["collision"]={false}; object["sprite"]["image"]="../outside.png"; writeMap(root/"world/objects.json",nlohmann::json::array({object})); mustThrow([&]{rts::WorldAssets::load(fixture);});
         object["sprite"]["image"]="image.png"; writeMap(root/"world/objects.json",Json::array({object}));

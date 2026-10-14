@@ -1,6 +1,7 @@
 #pragma once
 #include "rts/Types.hpp"
 #include "rts/Armor.hpp"
+#include "rts/Tags.hpp"
 #include "rts/Weapons.hpp"
 #include "rts/BuildingSprite.hpp"
 #include <array>
@@ -187,6 +188,7 @@ inline constexpr int cancellationRefund(int paidCrystals) { return paidCrystals 
 enum class CollisionShape { Circle, Footprint };
 enum class ConstructionMode { Worker, Summoning };
 struct EntityDefinition {
+    TagSet tags;
     std::string id = "church.worker";
     std::string factionId = "church";
     std::string factionName = "Церковь Святого Пламени"; // Resolved from the faction catalog.

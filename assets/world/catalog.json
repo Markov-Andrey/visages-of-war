@@ -1,4 +1,5 @@
 {
+  "tagsFile": "data/tags.json",
   "materialFiles": [
     "world/materials.json",
     "world/tilesets/sunny-hills/materials.json",

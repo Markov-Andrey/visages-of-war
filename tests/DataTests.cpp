@@ -13,6 +13,61 @@ bool libraryText(const std::vector<LibraryDetail>& details, const std::string& t
 }
 }
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Tags support arbitrary combinations beyond bitmask limits and stable catalog identities", [&] {
+        CatalogFixture fixture(context.assets);
+        std::vector<std::string> ids;
+        for (int i = 0; i < 130; ++i) {
+            const auto id = "custom.tag_" + std::to_string(i); ids.push_back(id);
+            fixture.tags["tags"].push_back({{"id", id}, {"name", "Custom " + std::to_string(i)}, {"description", "Test"}});
+        }
+        for (auto& entity : fixture.entities["entities"]) entity["tags"] = ids;
+        auto defs = fixture.load();
+        for (const auto& entity : defs.entities()) require(entity.tags.ids().size() == 130 && entity.tags.containsAll(ids), "Tag count or entity kind limited assignment");
+        const auto original = defs.entity("church.worker").tags;
+        std::reverse(fixture.tags["tags"].begin(), fixture.tags["tags"].end());
+        std::reverse(ids.begin(), ids.end()); fixture.entities["entities"][0]["tags"] = ids;
+        defs = fixture.load(); require(defs.entity("church.worker").tags == original, "Catalog order changed tag identities");
+        const std::vector<std::string> mixed{"absent", "custom.tag_129"};
+        require(original.containsAny(mixed) && !original.containsAll(mixed) && !original.contains("custom.tag_130") &&
+            original.containsAll({}) && !original.containsAny({}), "Tag matching or empty filter semantics wrong");
+        require(libraryValue(libraryDetails(defs, defs.entity("church.hero")), "Теги").find("Custom 129") != std::string::npos,
+            "Codex omitted catalog tags");
+        fixture.entities["entities"][0].erase("tags");
+        require(fixture.load().entity("church.worker").tags.ids().empty(), "Missing tags inferred from entity category");
+    });
+    test("Tags reject unknown duplicate and malformed catalog references", [&] {
+        const CatalogFixture original(context.assets);
+        for (const auto& invalid : {Json("humanoid"), Json(nullptr), Json::array({1}), Json::array({"missing"}), Json::array({"humanoid", "humanoid"})}) {
+            auto fixture = original; fixture.entities["entities"][0]["tags"] = invalid;
+            mustThrow([&] { fixture.load(); });
+        }
+        auto fixture = original; fixture.tags["tags"].push_back(fixture.tags["tags"][0]);
+        mustThrow([&] { fixture.load(); });
+        for (const auto& invalid : {Json(""), Json("bad id"), Json(3)}) {
+            fixture = original; fixture.tags["tags"][0]["id"] = invalid; mustThrow([&] { fixture.load(); });
+        }
+        fixture = original; fixture.tags["tags"][0]["extra"] = true; mustThrow([&] { fixture.load(); });
+        fixture = original; fixture.tags["version"] = 2; mustThrow([&] { fixture.load(); });
+        fixture = original; fixture.catalog["tagsFile"] = "../outside.json"; mustThrow([&] { fixture.load(); });
+    });
+    test("Tags reach units heroes buildings resources and persistent environment instances", [&] {
+        auto worker = fixtureWorker(); worker.tags = TagSet({"mechanical", "humanoid"});
+        auto hero = worker; hero.id = "tagged.hero"; hero.hero = HeroDefinition{};
+        auto depot = fixtureDepot(worker); depot.tags = worker.tags;
+        Scenario scene{Map(24,24), {1,1}, {5,5}, {context.worldAssets.instantiateCrystal("crystal.small", {12,12})}};
+        scene.environment = {context.worldAssets.instantiate("tree", 1500, {10,10})};
+        scene.units = {{hero.id, 0, {7,7}}}; scene.slots[0].startingCrystals = 1000;
+        rebuildScenario(scene, {depot.width, depot.height});
+        auto game = makeTestSimulation(scene, {}, worker, {hero, depot});
+        for (auto id : {game.worker().id, game.hero()->id, game.buildings()[0].id})
+            require(game.hasTag(id, "mechanical") && game.hasTag(id, "humanoid"), "Entity instance lost arbitrary tag combination");
+        require(game.hasTag(1500, "plant") && game.hasTag(game.crystals()[0].id, "resource") &&
+            !game.hasTag(0, "plant") && !game.tags(0), "Common lookup confused target kinds");
+        require(game.setEnvironmentHealth(1500, 0) && game.hasTag(1500, "plant") &&
+            game.setEnvironmentHealth(1500, 100) && game.hasTag(1500, "plant"), "Death or restoration lost tag identity");
+        require(game.train(game.buildings()[0].id, worker.id), "Tagged production rejected"); ticks(game, 200);
+        require(game.units().size() == 3 && game.hasTag(game.units().back().id, "mechanical"), "Production lost definition tags");
+    });
     test("Armor catalog values and tooltips share external balance rules", [&] {
         CatalogFixture fixture(context.assets);
         auto defs = fixture.load();

@@ -66,6 +66,14 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
     };
     result.push_back({LibraryDetailKind::Title, entity.displayName, {}, {}});
     paragraph(entity.description);
+    if (!entity.tags.ids().empty()) {
+        std::string names;
+        for (const auto& id : entity.tags.ids()) {
+            if (!names.empty()) names += ", ";
+            names += definitions.tagCatalog().tag(id).displayName;
+        }
+        stat("Теги", names);
+    }
     stat("Здоровье", std::to_string(entity.maximumHealth));
     stat("Броня", std::to_string(entity.armor));
     result.back().tooltip = armorDescription(entity.armor, definitions.armorRules());

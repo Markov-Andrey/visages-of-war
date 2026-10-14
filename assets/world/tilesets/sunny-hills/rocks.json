@@ -1,6 +1,7 @@
 [
   {
     "id": "sunny_hills.rock.small_1",
+    "tags": ["mineral"],
     "name": "Rock / Small 1",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -39,6 +40,7 @@
   },
   {
     "id": "sunny_hills.rock.small_2",
+    "tags": ["mineral"],
     "name": "Rock / Small 2",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -77,6 +79,7 @@
   },
   {
     "id": "sunny_hills.rock.small_3",
+    "tags": ["mineral"],
     "name": "Rock / Small 3",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -115,6 +118,7 @@
   },
   {
     "id": "sunny_hills.rock.small_4",
+    "tags": ["mineral"],
     "name": "Rock / Small 4",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -153,6 +157,7 @@
   },
   {
     "id": "sunny_hills.rock.small_5",
+    "tags": ["mineral"],
     "name": "Rock / Small 5",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -191,6 +196,7 @@
   },
   {
     "id": "sunny_hills.rock.small_6",
+    "tags": ["mineral"],
     "name": "Rock / Small 6",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -229,6 +235,7 @@
   },
   {
     "id": "sunny_hills.rock.small_7",
+    "tags": ["mineral"],
     "name": "Rock / Small 7",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -267,6 +274,7 @@
   },
   {
     "id": "sunny_hills.rock.small_8",
+    "tags": ["mineral"],
     "name": "Rock / Small 8",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -305,6 +313,7 @@
   },
   {
     "id": "sunny_hills.rock.small_9",
+    "tags": ["mineral"],
     "name": "Rock / Small 9",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -343,6 +352,7 @@
   },
   {
     "id": "sunny_hills.rock.small_10",
+    "tags": ["mineral"],
     "name": "Rock / Small 10",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -381,6 +391,7 @@
   },
   {
     "id": "sunny_hills.rock.small_11",
+    "tags": ["mineral"],
     "name": "Rock / Small 11",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -419,6 +430,7 @@
   },
   {
     "id": "sunny_hills.rock.small_12",
+    "tags": ["mineral"],
     "name": "Rock / Small 12",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -457,6 +469,7 @@
   },
   {
     "id": "sunny_hills.rock.small_13",
+    "tags": ["mineral"],
     "name": "Rock / Small 13",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -495,6 +508,7 @@
   },
   {
     "id": "sunny_hills.rock.small_14",
+    "tags": ["mineral"],
     "name": "Rock / Small 14",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -533,6 +547,7 @@
   },
   {
     "id": "sunny_hills.rock.small_15",
+    "tags": ["mineral"],
     "name": "Rock / Small 15",
     "group": "Sunny Hills / Rocks",
     "gameplay": false,
@@ -571,6 +586,7 @@
   },
   {
     "id": "sunny_hills.rock.medium_1",
+    "tags": ["mineral"],
     "name": "Rock / Medium 1",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -612,6 +628,7 @@
   },
   {
     "id": "sunny_hills.rock.medium_2",
+    "tags": ["mineral"],
     "name": "Rock / Medium 2",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -653,6 +670,7 @@
   },
   {
     "id": "sunny_hills.rock.medium_3",
+    "tags": ["mineral"],
     "name": "Rock / Medium 3",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -694,6 +712,7 @@
   },
   {
     "id": "sunny_hills.rock.medium_4",
+    "tags": ["mineral"],
     "name": "Rock / Medium 4",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -735,6 +754,7 @@
   },
   {
     "id": "sunny_hills.rock.medium_5",
+    "tags": ["mineral"],
     "name": "Rock / Medium 5",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -776,6 +796,7 @@
   },
   {
     "id": "sunny_hills.rock.medium_6",
+    "tags": ["mineral"],
     "name": "Rock / Medium 6",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -817,6 +838,7 @@
   },
   {
     "id": "sunny_hills.rock.large_1",
+    "tags": ["mineral"],
     "name": "Rock / Large 1",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -863,6 +885,7 @@
   },
   {
     "id": "sunny_hills.rock.large_2",
+    "tags": ["mineral"],
     "name": "Rock / Large 2",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -909,6 +932,7 @@
   },
   {
     "id": "sunny_hills.rock.large_3",
+    "tags": ["mineral"],
     "name": "Rock / Large 3",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -955,6 +979,7 @@
   },
   {
     "id": "sunny_hills.rock.large_4",
+    "tags": ["mineral"],
     "name": "Rock / Large 4",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -1001,6 +1026,7 @@
   },
   {
     "id": "sunny_hills.rock.large_5",
+    "tags": ["mineral"],
     "name": "Rock / Large 5",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,
@@ -1047,6 +1073,7 @@
   },
   {
     "id": "sunny_hills.rock.large_6",
+    "tags": ["mineral"],
     "name": "Rock / Large 6",
     "group": "Sunny Hills / Rocks",
     "gameplay": true,

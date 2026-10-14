@@ -69,6 +69,12 @@ bool Simulation::visibleTo(PlayerId id, Cell cell) const {
     return false;
 }
 const Entity* Simulation::entity(EntityId id) const { if (const auto* u = unit(id)) return u; return building(id); }
+const TagSet* Simulation::tags(EntityId id) const {
+    if (const auto* e = entity(id)) return &e->definition.tags;
+    if (const auto* c = crystal(id)) return &c->tags;
+    for (const auto& object : environment()) if (object.id == id) return &object.tags;
+    return nullptr;
+}
 Entity* Simulation::mutableEntity(EntityId id) { if (auto* u = mutableUnit(id)) return u; return mutableBuilding(id); }
 Entity Simulation::makeEntity(const EntityDefinition& type, Cell cell, PlayerId owner) {
     Entity e;

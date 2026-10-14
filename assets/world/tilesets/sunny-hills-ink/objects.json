@@ -1,6 +1,7 @@
 [
   {
     "id": "sunny_hills_ink.tree.olive_1",
+    "tags": ["plant", "organic"],
     "name": "Olive 1 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -39,6 +40,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.olive_2",
+    "tags": ["plant", "organic"],
     "name": "Olive 2 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -77,6 +79,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.olive_3",
+    "tags": ["plant", "organic"],
     "name": "Olive 3 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -115,6 +118,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.olive_4",
+    "tags": ["plant", "organic"],
     "name": "Olive 4 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -153,6 +157,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.olive_5",
+    "tags": ["plant", "organic"],
     "name": "Olive 5 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -191,6 +196,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.stone_pine_1",
+    "tags": ["plant", "organic"],
     "name": "Stone Pine 1 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -229,6 +235,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.stone_pine_2",
+    "tags": ["plant", "organic"],
     "name": "Stone Pine 2 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -267,6 +274,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.stone_pine_3",
+    "tags": ["plant", "organic"],
     "name": "Stone Pine 3 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -305,6 +313,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.stone_pine_4",
+    "tags": ["plant", "organic"],
     "name": "Stone Pine 4 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -343,6 +352,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.stone_pine_5",
+    "tags": ["plant", "organic"],
     "name": "Stone Pine 5 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -381,6 +391,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.cypress_1",
+    "tags": ["plant", "organic"],
     "name": "Cypress 1 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -419,6 +430,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.cypress_2",
+    "tags": ["plant", "organic"],
     "name": "Cypress 2 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -457,6 +469,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.cypress_3",
+    "tags": ["plant", "organic"],
     "name": "Cypress 3 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -495,6 +508,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.cypress_4",
+    "tags": ["plant", "organic"],
     "name": "Cypress 4 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -533,6 +547,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.cypress_5",
+    "tags": ["plant", "organic"],
     "name": "Cypress 5 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -571,6 +586,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.lemon_1",
+    "tags": ["plant", "organic"],
     "name": "Lemon 1 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -609,6 +625,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.lemon_2",
+    "tags": ["plant", "organic"],
     "name": "Lemon 2 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -647,6 +664,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.lemon_3",
+    "tags": ["plant", "organic"],
     "name": "Lemon 3 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -685,6 +703,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.lemon_4",
+    "tags": ["plant", "organic"],
     "name": "Lemon 4 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,
@@ -723,6 +742,7 @@
   },
   {
     "id": "sunny_hills_ink.tree.lemon_5",
+    "tags": ["plant", "organic"],
     "name": "Lemon 5 (Ink)",
     "group": "Sunny Hills Ink / Trees",
     "gameplay": true,

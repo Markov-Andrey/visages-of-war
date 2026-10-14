@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "tagsFile": "tags.json",
   "factions": [
     {
       "id": "church",

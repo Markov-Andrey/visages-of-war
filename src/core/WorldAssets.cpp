@@ -28,6 +28,7 @@ std::string identifier(const Json& j, std::set<std::string>& used) {
 WorldAssets WorldAssets::load(const Paths& paths) {
     WorldAssets result;
     const auto index = read(paths.asset(L"world/catalog.json"));
+    result.tags_ = TagCatalog::load(paths.asset(utf8Path(index.at("tagsFile").get<std::string>())));
     const auto remains = read(paths.asset(utf8Path(index.at("remainsFile").get<std::string>())));
     const auto& bones = remains.at("bones");
     auto& sprite = result.bonesSprite_;
@@ -59,6 +60,7 @@ WorldAssets WorldAssets::load(const Paths& paths) {
         throw std::runtime_error("Missing resource icon: " + std::string(id));
     for (const auto& crystal : resources.at("crystals")) {
         CrystalSpriteDefinition resource;
+        resource.tags = result.tags_.resolve(crystal.value("tags", std::vector<std::string>{}));
         resource.id = identifier(crystal.at("id"), ids);
         resource.name = crystal.at("name").get<std::string>();
         resource.width = crystal.at("footprint").at(0).get<int>();
@@ -106,6 +108,7 @@ WorldAssets WorldAssets::load(const Paths& paths) {
     ids.clear();
     for (const auto& file : index.at("objectFiles")) for (const auto& j : read(paths.asset(utf8Path(file.get<std::string>())))) {
         WorldObjectDefinition d;
+        d.tags = result.tags_.resolve(j.value("tags", std::vector<std::string>{}));
         d.id = identifier(j.at("id"), ids); d.name = j.at("name").get<std::string>();
         d.group = j.value("group", std::string("Core"));
         d.gameplay = j.at("gameplay").get<bool>();
@@ -153,7 +156,7 @@ const CrystalSpriteDefinition& WorldAssets::crystalSprite(const std::string& id)
 }
 Crystal WorldAssets::instantiateCrystal(const std::string& id, Cell origin) const {
     const auto& d = crystalSprite(id);
-    return {origin, d.capacity, 0, d.id, d.width, d.height, d.capacity};
+    return {origin, d.capacity, 0, d.id, d.width, d.height, d.capacity, d.tags};
 }
 const TerrainMaterial& WorldAssets::material(const std::string& id) const {
     for (const auto& d : materials_) if (d.id == id) return d;
@@ -166,6 +169,6 @@ const WorldObjectDefinition& WorldAssets::object(const std::string& id) const {
 EnvironmentObject WorldAssets::instantiate(const std::string& id, EntityId instance, Cell origin) const {
     const auto& d = object(id);
     if (!d.gameplay) throw std::runtime_error("Cosmetic definition used as gameplay object");
-    return {instance, d.kind, origin, d.width, d.height, d.collision, Interaction::Destructible, d.health, d.health, d.blocksVision, id};
+    return {instance, d.kind, origin, d.width, d.height, d.collision, Interaction::Destructible, d.health, d.health, d.blocksVision, id, d.tags};
 }
 }

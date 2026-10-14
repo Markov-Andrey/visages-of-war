@@ -73,6 +73,7 @@ struct Crystal {
     EntityId id{}; // Assigned once by the match; depletion keeps this identity.
     std::string definitionId = "crystal.small";
     int width = 1, height = 1, capacity = defaultReserve; // Derived from the resource catalog.
+    TagSet tags;
     bool contains(Cell c) const { return c.x >= cell.x && c.y >= cell.y && c.x < cell.x + width && c.y < cell.y + height; }
     Vec2 center() const { return {cell.x + width * .5f, cell.y + height * .5f}; }
     float depth() const { return cell.x + cell.y + width + height - 1.0f; }

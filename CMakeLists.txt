@@ -23,6 +23,7 @@ add_subdirectory(libs)
 add_library(rts_core
     src/core/Map.cpp
     src/core/Definitions.cpp
+    src/core/Tags.cpp
     src/core/Library.cpp
     src/core/MatchAssets.cpp
     src/core/WeaponDefinitions.cpp

@@ -25,6 +25,7 @@ public:
     const std::vector<EntityDefinition>& entities() const { return entities_; }
     const ProgressionRules& progression() const { return progression_; }
     const ArmorRules& armorRules() const { return armorRules_; }
+    const TagCatalog& tagCatalog() const { return tags_; }
 private:
     std::vector<EntityDefinition> entities_;
     std::vector<AbilityDefinition> abilities_;
@@ -33,5 +34,6 @@ private:
     std::vector<FactionDefinition> factions_;
     ProgressionRules progression_;
     ArmorRules armorRules_;
+    TagCatalog tags_;
 };
 }

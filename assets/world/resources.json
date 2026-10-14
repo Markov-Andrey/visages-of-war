@@ -3,6 +3,7 @@
   "crystals": [
     {
       "id": "crystal.small",
+      "tags": ["mineral", "resource"],
       "name": "Малая жила",
       "footprint": [1, 1],
       "capacity": 1000,
@@ -26,6 +27,7 @@
     },
     {
       "id": "crystal.medium",
+      "tags": ["mineral", "resource"],
       "name": "Средняя жила",
       "footprint": [2, 1],
       "capacity": 5500,
@@ -49,6 +51,7 @@
     },
     {
       "id": "crystal.big",
+      "tags": ["mineral", "resource"],
       "name": "Большая жила",
       "footprint": [3, 2],
       "capacity": 15000,

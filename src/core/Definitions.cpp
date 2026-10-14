@@ -27,9 +27,10 @@ Json read(const std::filesystem::path& file) {
     }
 }
 void version(const Json& root) { if (number(root.at("version"), 1, 1) != 1) throw std::runtime_error("Unsupported catalog version"); }
-EntityDefinition parseEntity(const Json& j) {
-    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "alternateForms", "attack", "sprite", "collision"}, {"buildingSprite", "canDecompose", "abilities"});
+EntityDefinition parseEntity(const Json& j, const TagCatalog& tags) {
+    fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "alternateForms", "attack", "sprite", "collision"}, {"buildingSprite", "canDecompose", "abilities", "tags"});
     EntityDefinition e;
+    e.tags = tags.resolve(j.value("tags", std::vector<std::string>{}));
     e.id = string(j.at("id")); e.factionId = string(j.at("factionId"));
     e.displayName = string(j.at("name")); e.description = string(j.at("description"));
     if (j.contains("canDecompose")) e.canDecompose = j.at("canDecompose").get<bool>();
@@ -114,7 +115,8 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         return paths.asset(std::filesystem::path(std::u8string(text.begin(), text.end())));
     };
     const auto root = read(catalogPath);
-    fields(root, {"version", "factions", "entityFiles", "commandersFile", "rulesFile", "abilitiesFile"}); version(root);
+    fields(root, {"version", "factions", "entityFiles", "commandersFile", "rulesFile", "abilitiesFile", "tagsFile"}); version(root);
+    result.tags_ = TagCatalog::load(resolve(root.at("tagsFile")));
     if (!root.at("factions").is_array() || root.at("factions").empty()) throw std::runtime_error("No factions");
     for (const auto& j : root.at("factions")) {
         fields(j, {"id", "name", "description"}, {"startingBuilding"});
@@ -237,7 +239,7 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         if (!content.at("entities").is_array()) throw std::runtime_error("Expected entity array");
         for (const auto& j : content.at("entities")) {
             try {
-                auto entity = parseEntity(j);
+                auto entity = parseEntity(j, result.tags_);
                 if (j.contains("abilities")) {
                     const auto& ids = j.at("abilities");
                     if (!ids.is_array()) throw std::runtime_error("Expected ability array");

@@ -20,6 +20,7 @@ struct EnvironmentObject {
     int maximumHitPoints{};
     bool blocksVision{};
     std::string definitionId;
+    TagSet tags;
     bool active() const { return hitPoints > 0; }
     bool blocks(int x, int y) const { return collision.at(static_cast<size_t>(y) * width + x); }
     bool occludes(int x, int y) const { return active() && blocksVision && blocks(x, y); }

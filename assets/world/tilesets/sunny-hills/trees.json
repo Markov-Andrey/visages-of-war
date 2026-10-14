@@ -1,6 +1,7 @@
 [
   {
     "id": "sunny_hills.tree.orange_1",
+    "tags": ["plant", "organic"],
     "name": "Orange 1",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -39,6 +40,7 @@
   },
   {
     "id": "sunny_hills.tree.orange_2",
+    "tags": ["plant", "organic"],
     "name": "Orange 2",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -77,6 +79,7 @@
   },
   {
     "id": "sunny_hills.tree.orange_3",
+    "tags": ["plant", "organic"],
     "name": "Orange 3",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -115,6 +118,7 @@
   },
   {
     "id": "sunny_hills.tree.orange_4",
+    "tags": ["plant", "organic"],
     "name": "Orange 4",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -153,6 +157,7 @@
   },
   {
     "id": "sunny_hills.tree.orange_5",
+    "tags": ["plant", "organic"],
     "name": "Orange 5",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -191,6 +196,7 @@
   },
   {
     "id": "sunny_hills.tree.oak_1",
+    "tags": ["plant", "organic"],
     "name": "Oak 1",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -229,6 +235,7 @@
   },
   {
     "id": "sunny_hills.tree.oak_2",
+    "tags": ["plant", "organic"],
     "name": "Oak 2",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -267,6 +274,7 @@
   },
   {
     "id": "sunny_hills.tree.oak_3",
+    "tags": ["plant", "organic"],
     "name": "Oak 3",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -305,6 +313,7 @@
   },
   {
     "id": "sunny_hills.tree.oak_4",
+    "tags": ["plant", "organic"],
     "name": "Oak 4",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -343,6 +352,7 @@
   },
   {
     "id": "sunny_hills.tree.oak_5",
+    "tags": ["plant", "organic"],
     "name": "Oak 5",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -381,6 +391,7 @@
   },
   {
     "id": "sunny_hills.tree.pomegranate_1",
+    "tags": ["plant", "organic"],
     "name": "Pomegranate 1",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -419,6 +430,7 @@
   },
   {
     "id": "sunny_hills.tree.pomegranate_2",
+    "tags": ["plant", "organic"],
     "name": "Pomegranate 2",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -457,6 +469,7 @@
   },
   {
     "id": "sunny_hills.tree.pomegranate_3",
+    "tags": ["plant", "organic"],
     "name": "Pomegranate 3",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -495,6 +508,7 @@
   },
   {
     "id": "sunny_hills.tree.pomegranate_4",
+    "tags": ["plant", "organic"],
     "name": "Pomegranate 4",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -533,6 +547,7 @@
   },
   {
     "id": "sunny_hills.tree.pomegranate_5",
+    "tags": ["plant", "organic"],
     "name": "Pomegranate 5",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -571,6 +586,7 @@
   },
   {
     "id": "sunny_hills.tree.fig_1",
+    "tags": ["plant", "organic"],
     "name": "Fig 1",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -609,6 +625,7 @@
   },
   {
     "id": "sunny_hills.tree.fig_2",
+    "tags": ["plant", "organic"],
     "name": "Fig 2",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -647,6 +664,7 @@
   },
   {
     "id": "sunny_hills.tree.fig_3",
+    "tags": ["plant", "organic"],
     "name": "Fig 3",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -685,6 +703,7 @@
   },
   {
     "id": "sunny_hills.tree.fig_4",
+    "tags": ["plant", "organic"],
     "name": "Fig 4",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -723,6 +742,7 @@
   },
   {
     "id": "sunny_hills.tree.fig_5",
+    "tags": ["plant", "organic"],
     "name": "Fig 5",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -761,6 +781,7 @@
   },
   {
     "id": "sunny_hills.tree.cypress_1",
+    "tags": ["plant", "organic"],
     "name": "Cypress 1",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -799,6 +820,7 @@
   },
   {
     "id": "sunny_hills.tree.cypress_2",
+    "tags": ["plant", "organic"],
     "name": "Cypress 2",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -837,6 +859,7 @@
   },
   {
     "id": "sunny_hills.tree.cypress_3",
+    "tags": ["plant", "organic"],
     "name": "Cypress 3",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -875,6 +898,7 @@
   },
   {
     "id": "sunny_hills.tree.cypress_4",
+    "tags": ["plant", "organic"],
     "name": "Cypress 4",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -913,6 +937,7 @@
   },
   {
     "id": "sunny_hills.tree.cypress_5",
+    "tags": ["plant", "organic"],
     "name": "Cypress 5",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -951,6 +976,7 @@
   },
   {
     "id": "sunny_hills.tree.lemon_1",
+    "tags": ["plant", "organic"],
     "name": "Lemon 1",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -989,6 +1015,7 @@
   },
   {
     "id": "sunny_hills.tree.lemon_2",
+    "tags": ["plant", "organic"],
     "name": "Lemon 2",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1027,6 +1054,7 @@
   },
   {
     "id": "sunny_hills.tree.lemon_3",
+    "tags": ["plant", "organic"],
     "name": "Lemon 3",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1065,6 +1093,7 @@
   },
   {
     "id": "sunny_hills.tree.lemon_4",
+    "tags": ["plant", "organic"],
     "name": "Lemon 4",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1103,6 +1132,7 @@
   },
   {
     "id": "sunny_hills.tree.lemon_5",
+    "tags": ["plant", "organic"],
     "name": "Lemon 5",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1141,6 +1171,7 @@
   },
   {
     "id": "sunny_hills.tree.olive_1",
+    "tags": ["plant", "organic"],
     "name": "Olive 1",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1179,6 +1210,7 @@
   },
   {
     "id": "sunny_hills.tree.olive_2",
+    "tags": ["plant", "organic"],
     "name": "Olive 2",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1217,6 +1249,7 @@
   },
   {
     "id": "sunny_hills.tree.olive_3",
+    "tags": ["plant", "organic"],
     "name": "Olive 3",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1255,6 +1288,7 @@
   },
   {
     "id": "sunny_hills.tree.olive_4",
+    "tags": ["plant", "organic"],
     "name": "Olive 4",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1293,6 +1327,7 @@
   },
   {
     "id": "sunny_hills.tree.olive_5",
+    "tags": ["plant", "organic"],
     "name": "Olive 5",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1331,6 +1366,7 @@
   },
   {
     "id": "sunny_hills.tree.stone_pine_1",
+    "tags": ["plant", "organic"],
     "name": "Stone pine 1",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1369,6 +1405,7 @@
   },
   {
     "id": "sunny_hills.tree.stone_pine_2",
+    "tags": ["plant", "organic"],
     "name": "Stone pine 2",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1407,6 +1444,7 @@
   },
   {
     "id": "sunny_hills.tree.stone_pine_3",
+    "tags": ["plant", "organic"],
     "name": "Stone pine 3",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1445,6 +1483,7 @@
   },
   {
     "id": "sunny_hills.tree.stone_pine_4",
+    "tags": ["plant", "organic"],
     "name": "Stone pine 4",
     "group": "Sunny Hills / Trees",
     "gameplay": true,
@@ -1483,6 +1522,7 @@
   },
   {
     "id": "sunny_hills.tree.stone_pine_5",
+    "tags": ["plant", "organic"],
     "name": "Stone pine 5",
     "group": "Sunny Hills / Trees",
     "gameplay": true,

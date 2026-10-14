@@ -202,6 +202,10 @@ public:
     std::vector<const EntityDefinition*> buildingTypes(const EntityDefinition& builder) const;
     std::vector<const Entity*> entities() const;
     const Entity* entity(EntityId id) const;
+    const TagSet* tags(EntityId id) const;
+    bool hasTag(EntityId id, std::string_view tag) const {
+        const auto* set = tags(id); return set && set->contains(tag);
+    }
     const Unit* unit(EntityId id) const;
     const Unit* hero() const;
     bool heroFallen() const { return heroFallen_; }

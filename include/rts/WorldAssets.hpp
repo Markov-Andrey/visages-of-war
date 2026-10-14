@@ -15,6 +15,7 @@ struct TerrainMaterial {
     bool isometric = false;
 };
 struct WorldObjectDefinition {
+    TagSet tags;
     std::string id, name;
     bool gameplay{};
     EnvironmentKind kind = EnvironmentKind::Decoration;
@@ -35,6 +36,7 @@ struct BonesSpriteDefinition {
     bool pixelArt{};
 };
 struct CrystalSpriteDefinition {
+    TagSet tags;
     std::string id, name;
     int width = 1, height = 1, capacity = 1000;
     std::filesystem::path image;
@@ -50,6 +52,7 @@ public:
     const WorldObjectDefinition& object(const std::string& id) const;
     const auto& materials() const { return materials_; }
     const auto& objects() const { return objects_; }
+    const TagCatalog& tagCatalog() const { return tags_; }
     const BonesSpriteDefinition& bonesSprite() const { return bonesSprite_; }
     const CrystalSpriteDefinition& crystalSprite(const std::string& id = "crystal.small") const;
     const auto& crystalSprites() const { return crystalSprites_; }
@@ -57,6 +60,7 @@ public:
     const auto& resourceIcons() const { return resourceIcons_; }
     EnvironmentObject instantiate(const std::string& id, EntityId instance, Cell origin) const;
 private:
+    TagCatalog tags_;
     std::vector<TerrainMaterial> materials_;
     std::vector<WorldObjectDefinition> objects_;
     BonesSpriteDefinition bonesSprite_;
