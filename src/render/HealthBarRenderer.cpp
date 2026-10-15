@@ -6,7 +6,7 @@ void Renderer::drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick
     drawHealthBar(unit.health, unit.maximumHealth(), unit.healthFeedback.remaining(tick), bounds, border, beveled);
 }
 
-void Renderer::drawHealthBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled) {
+void Renderer::drawHealthBar(Vital current, Vital maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled) {
     if (current <= 0) return;
     drawVitalBar(current, maximum, recentDamage, bounds, border, beveled, false);
 }
@@ -16,13 +16,13 @@ void Renderer::drawManaBar(const Unit& unit, UiRect bounds, bool beveled) {
     drawVitalBar(unit.mana, unit.maximumMana(), 0, bounds, 0x315595, beveled, true);
 }
 
-void Renderer::drawVitalBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana) {
+void Renderer::drawVitalBar(Vital current, Vital maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana) {
     if (maximum <= 0 || bounds.width <= 0 || bounds.height <= 0) return;
     auto& gradients = mana ? manaBarGradients_ : healthBarGradients_;
     const unsigned fillColor = mana ? 0x699fff : friendlySelectionColor;
     const float health = std::clamp(float(current), 0.0f, float(maximum));
     const float trail = std::min(float(maximum), health + std::max(0.f, recentDamage));
-    const float pixelsPerHealth = bounds.width / maximum;
+    const float pixelsPerHealth = bounds.width / float(maximum);
     const auto antialias = target_->GetAntialiasMode();
     if (beveled) {
         // Empty, healthy and recently damaged sections share the same geometry.
@@ -66,13 +66,13 @@ void Renderer::drawVitalBar(int current, int maximum, float recentDamage, UiRect
         const float healthEnd = bounds.x + health * pixelsPerHealth;
         const float trailEnd = bounds.x + trail * pixelsPerHealth;
         for (int first = 0; first < maximum; first += 100) {
-            const int last = std::min(first + 100, maximum);
+            const float last = std::min(float(first + 100), float(maximum));
             const float sectionWidth = (last - first) * pixelsPerHealth;
             // Keep the allocated width proportional even for a tiny final remainder.
             const float inset = std::min(gap, sectionWidth * .12f);
             const float left = bounds.x + first * pixelsPerHealth + (first == 0 ? 0 : inset);
-            const float right = bounds.x + last * pixelsPerHealth - (last == maximum ? 0 : inset);
-            const bool cap = first == 0 || last == maximum;
+            const float right = bounds.x + last * pixelsPerHealth - (last == float(maximum) ? 0 : inset);
+            const bool cap = first == 0 || last == float(maximum);
             const float rounding = std::min(bounds.height * (cap ? .28f : .16f), (right - left) * .5f);
             const auto section = D2D1::RoundedRect(rect(left, bounds.y, right - left, bounds.height), rounding, rounding);
             target_->FillRoundedRectangle(section, gradients[0].Get());

@@ -13,6 +13,7 @@ struct LibraryDetail {
 std::string abilityTargetDetails(const AbilityDefinition& ability);
 std::string armorDescription(int armor, const ArmorRules& rules);
 std::string attackDescription(const EntityDefinition& entity, int damage);
+std::string regenerationDescription(int hundredths);
 std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const EntityDefinition& entity);
 inline constexpr std::array<LibraryTab, 3> libraryTabs{LibraryTab::Units, LibraryTab::Buildings, LibraryTab::Heroes};
 inline constexpr std::array<std::wstring_view, 3> libraryTabNames{L"Юниты", L"Здания", L"Герои"};

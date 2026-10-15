@@ -1,5 +1,6 @@
 #pragma once
 #include "rts/Types.hpp"
+#include "rts/Vital.hpp"
 #include "rts/Armor.hpp"
 #include "rts/Tags.hpp"
 #include "rts/Weapons.hpp"
@@ -85,7 +86,7 @@ public:
 private:
     int used_{};
 };
-struct HeroDefinition { int healthPerLevel = 40; int damagePerLevel = 4; };
+struct HeroDefinition { Vital healthPerLevel = 40; int damagePerLevel = 4; };
 struct PlayerEconomy {
     std::int64_t crystals{};
     ArmySupply supply;
@@ -146,7 +147,7 @@ struct RepairDefinition {
 };
 enum class EffectRecipient { Target, Caster };
 enum class RestoredStat { Health, Mana };
-struct RestoreDefinition { RestoredStat stat = RestoredStat::Health; int amount = 1; };
+struct RestoreDefinition { RestoredStat stat = RestoredStat::Health; Vital amount = 1; };
 struct AbilityEffect {
     std::variant<HarvestDefinition, RepairDefinition, RestoreDefinition> value;
     EffectRecipient recipient = EffectRecipient::Target;
@@ -157,7 +158,8 @@ struct AbilityEffect {
 struct AbilityDefinition {
     int id{};
     std::string displayName, description;
-    int manaCost{}, cooldownTicks{};
+    Vital manaCost{};
+    int cooldownTicks{};
     std::vector<AbilityEffect> effects;
     AbilityTargeting targeting = AbilityTargeting::None;
     std::optional<AutocastDefinition> autocast;
@@ -203,9 +205,11 @@ struct EntityDefinition {
     int carryCapacity = 10;
     int trainingTicks = 90;
     int dayVision = 8, nightVision = 6;
-    int maximumHealth = 60;
+    Vital maximumHealth = 60;
     int armor{};
-    int maximumMana{};
+    Vital maximumMana{};
+    // Signed hundredths of a point per simulation second, resolved from catalog decimals.
+    int healthRegenHundredths{}, manaRegenHundredths{};
     std::vector<AbilityDefinition> abilities; // Resolved from the separate ability catalog.
     bool canBuild = true;
     std::vector<std::string> buildableTypes;

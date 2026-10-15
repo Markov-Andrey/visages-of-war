@@ -99,7 +99,7 @@ void GameApplication::exerciseUnitCommands() {
     if (portraits.cards.front().id != hero || !portraits.cards.front().active)
         throw std::runtime_error("Commands: hero was not first in the portrait strip");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"active-hero-preview.png", nullptr, false, &ui_);
-    const int manaBefore = game_.unit(hero)->mana;
+    const auto manaBefore = game_.unit(hero)->mana;
     const auto* ability = rts::abilityCommandAt(game_, ui_, rts::firstAbilitySlot);
     if (!ability) throw std::runtime_error("Abilities: hero button missing");
     onMessage(WM_KEYDOWN, rts::abilityKeys[0], 0);

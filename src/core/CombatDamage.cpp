@@ -7,14 +7,17 @@ void Simulation::resolveHits(const std::vector<Hit>& hits) {
     std::vector<std::pair<EntityId, PlayerId>> kills;
     for (const auto hit : hits) {
         if (auto* target = mutableEntity(hit.target); target && target->health > 0) {
-            const int before = target->health;
-            target->health = std::max(0, target->health - armorRules_.damage(hit.damage, target->armor()));
+            const auto before = target->health;
+            target->health = std::max(Vital{}, target->health - armorRules_.damage(hit.damage, target->armor()));
             target->healthFeedback.record(before, target->health, clock_.elapsedTicks());
             if (target->health == 0) kills.emplace_back(target->id, hit.owner);
         }
     }
     // Dead heroes cannot gain levels or heal out of a simultaneous lethal hit.
     for (const auto [victim, killer] : kills) rewardKill(*entity(victim), killer);
+    removeDeadEntities();
+}
+void Simulation::removeDeadEntities() {
     bool deaths = false;
     for (const auto& u : units_) if (u.health == 0) {
         if (u.hero && u.owner == player_.id) heroFallen_ = true;

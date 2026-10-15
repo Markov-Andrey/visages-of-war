@@ -68,9 +68,9 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         unitIcon(hero->definition.sprite, {heroArea.x, heroArea.y + 18, 58, 58}, teamColor_);
         text(L"F2  " + wide(hero->definition.displayName), rect(heroArea.x + 9, heroArea.y + 4, 147, 24), 0xebd693);
         text(L"Уровень " + std::to_wstring(hero->level()), rect(heroArea.x + 58, heroArea.y + 28, 102, 23), 0xe2dfc7);
-        text(std::to_wstring(hero->health) + L" / " + std::to_wstring(hero->maximumHealth()), rect(heroArea.x + 58, heroArea.y + 50, 102, 23), 0x99d8ad);
+        text(std::to_wstring((hero->health).rounded()) + L" / " + std::to_wstring((hero->maximumHealth()).rounded()), rect(heroArea.x + 58, heroArea.y + 50, 102, 23), 0x99d8ad);
         if (hero->maximumMana() > 0)
-            text(std::to_wstring(hero->mana) + L" / " + std::to_wstring(hero->maximumMana()), rect(heroArea.x + 58, heroArea.y + 71, 102, 22), 0x8bbaff);
+            text(std::to_wstring((hero->mana).rounded()) + L" / " + std::to_wstring((hero->maximumMana()).rounded()), rect(heroArea.x + 58, heroArea.y + 71, 102, 22), 0x8bbaff);
         panel({heroArea.x + 8, heroArea.y + 96, 148, 4}, 0x17222a);
         panel({heroArea.x + 8, heroArea.y + 96, 148 * hero->experienceFraction(), 4}, 0xaca0ec);
     } else {
@@ -236,7 +236,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
         if (!ability) continue;
         abilities[i] = ability;
         labels[i] = wide(ability->displayName);
-        details[i] = wide(ability->description) + L"\nМана: " + std::to_wstring(ability->manaCost) +
+        details[i] = wide(ability->description) + L"\nМана: " + std::to_wstring((ability->manaCost).rounded()) +
             L"  ·  Перезарядка: " + std::to_wstring(ability->cooldownTicks / Simulation::ticksPerSecond) + L" с";
         buttonKeys[i] = abilityKey(game, ui, i - firstAbilitySlot);
         enabled[i] = caster->abilityCooldown(ability->id) == 0 && caster->mana >= ability->manaCost;
@@ -251,7 +251,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             else if (const auto* harvest = std::get_if<HarvestDefinition>(&effect.value))
                 details[i] += L"добыча " + std::to_wstring(harvest->amount) + (harvest->credit == HarvestCredit::Direct ? L" крист., напрямую." : L" крист., в груз.");
             else if (const auto* restore = std::get_if<RestoreDefinition>(&effect.value))
-                details[i] += L"+" + std::to_wstring(restore->amount) + (restore->stat == RestoredStat::Health ? L" здоровья." : L" маны.");
+                details[i] += L"+" + std::to_wstring(restore->amount.rounded()) + (restore->stat == RestoredStat::Health ? L" здоровья." : L" маны.");
         }
         if (ability->autocast) {
             const auto state = autocastState(game, ui, ability->id);
@@ -311,7 +311,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                 centeredText(std::to_wstring((cooldown + Simulation::ticksPerSecond - 1) / Simulation::ticksPerSecond),
                     {b.x + 22, b.y + 3, b.width - 22, b.height - 22}, 0xe2eaff, b.height >= 48);
             }
-            if (ability->manaCost > 0) centeredText(std::to_wstring(ability->manaCost), {b.x, b.y + b.height - 19, b.width, 19},
+            if (ability->manaCost > 0) centeredText(std::to_wstring((ability->manaCost).rounded()), {b.x, b.y + b.height - 19, b.width, 19},
                 caster->mana >= ability->manaCost ? 0x8bbaff : 0xed8b80);
         }
         buttonFrame(b);
@@ -357,6 +357,16 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     if (inspected && ui.selection.ids.size() == 1) {
         selectionStatsTooltip(*inspected, SelectionPanelLayout(info).content, ui.mouse, game.armorRules(),
             actionTitle, actionDescription);
+        const SelectionPanelLayout portrait(info);
+        if (portrait.health.contains(ui.mouse)) {
+            actionTitle = L"Здоровье";
+            actionDescription = std::to_wstring((inspected->health).rounded()) + L" / " + std::to_wstring((inspected->maximumHealth()).rounded()) +
+                L"\nРегенерация: " + wide(regenerationDescription(inspected->definition.healthRegenHundredths));
+        } else if (inspected->maximumMana() > 0 && portrait.mana.contains(ui.mouse)) {
+            actionTitle = L"Мана";
+            actionDescription = std::to_wstring((inspected->mana).rounded()) + L" / " + std::to_wstring((inspected->maximumMana()).rounded()) +
+                L"\nРегенерация: " + wide(regenerationDescription(inspected->definition.manaRegenHundredths));
+        }
     }
     if (!actionTitle.empty()) {
         const float width = std::min(420.0f, extent.x - 24);

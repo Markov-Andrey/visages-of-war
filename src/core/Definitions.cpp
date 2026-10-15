@@ -27,6 +27,20 @@ Json read(const std::filesystem::path& file) {
     }
 }
 void version(const Json& root) { if (number(root.at("version"), 1, 1) != 1) throw std::runtime_error("Unsupported catalog version"); }
+int hundredthsNumber(const Json& value) {
+    if (!value.is_number()) throw std::runtime_error("Expected a number with at most two decimal places");
+    const double rate = value.get<double>();
+    if (!std::isfinite(rate) || std::abs(rate) > 1000000 ||
+        std::abs(rate * 100 - std::round(rate * 100)) > .000001)
+        throw std::runtime_error("Value must be between -1000000 and 1000000 with at most two decimal places");
+    return static_cast<int>(std::round(rate * 100));
+}
+Vital vital(const Json& value, double minimum, double maximum) {
+    const auto hundredths = hundredthsNumber(value);
+    if (hundredths < minimum * 100 || hundredths > maximum * 100)
+        throw std::runtime_error("Vital value is out of range");
+    return Vital::fromHundredths(hundredths);
+}
 EntityDefinition parseEntity(const Json& j, const TagCatalog& tags) {
     fields(j, {"id", "factionId", "name", "description", "cost", "stats", "mobility", "worker", "construction", "production", "depot", "hero", "alternateForms", "attack", "sprite", "collision"}, {"buildingSprite", "canDecompose", "abilities", "tags"});
     EntityDefinition e;
@@ -36,10 +50,13 @@ EntityDefinition parseEntity(const Json& j, const TagCatalog& tags) {
     if (j.contains("canDecompose")) e.canDecompose = j.at("canDecompose").get<bool>();
     const auto& cost = j.at("cost"); fields(cost, {"crystals", "supply"});
     e.cost = {number(cost.at("crystals"), 0, 1000000), number(cost.at("supply"), 0, ArmySupply::maximum)};
-    const auto& stats = j.at("stats"); fields(stats, {"health", "armor", "damage", "level", "dayVision", "nightVision"}, {"mana"});
-    e.maximumHealth = number(stats.at("health"), 1, 1000000);
+    const auto& stats = j.at("stats"); fields(stats, {"health", "armor", "damage", "level", "dayVision", "nightVision"},
+        {"mana", "healthRegenPerSecond", "manaRegenPerSecond"});
+    e.maximumHealth = vital(stats.at("health"), .01, 1000000);
     e.armor = number(stats.at("armor"), -1000000, 1000000);
-    if (stats.contains("mana")) e.maximumMana = number(stats.at("mana"), 0, 1000000);
+    if (stats.contains("mana")) e.maximumMana = vital(stats.at("mana"), 0, 1000000);
+    if (stats.contains("healthRegenPerSecond")) e.healthRegenHundredths = hundredthsNumber(stats.at("healthRegenPerSecond"));
+    if (stats.contains("manaRegenPerSecond")) e.manaRegenHundredths = hundredthsNumber(stats.at("manaRegenPerSecond"));
     e.attackDamage = number(stats.at("damage"), 0, 1000000);
     data::parseWeapon(e, j.at("attack"), j.at("sprite"));
     e.level = number(stats.at("level"), 1, 100);
@@ -90,7 +107,7 @@ EntityDefinition parseEntity(const Json& j, const TagCatalog& tags) {
     if (!hero.is_null()) {
         fields(hero, {"healthPerLevel", "damagePerLevel"});
         if (e.level != 1) throw std::runtime_error("Hero must start at level one");
-        e.hero = HeroDefinition{number(hero.at("healthPerLevel"), 0, 100000), number(hero.at("damagePerLevel"), 0, 100000)};
+        e.hero = HeroDefinition{vital(hero.at("healthPerLevel"), 0, 100000), number(hero.at("damagePerLevel"), 0, 100000)};
     }
     e.alternateForms = j.at("alternateForms").get<std::vector<std::string>>();
     if (j.contains("buildingSprite")) data::parseBuildingSprite(e, j.at("buildingSprite"));
@@ -132,7 +149,7 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
         fields(j, {"id", "name", "description", "targeting", "manaCost", "cooldownTicks", "effects"}, { "autocast", "rightClick", "animation", "targets", "range"});
         const auto targeting = string(j.at("targeting"));
         AbilityDefinition ability{number(j.at("id"), 1, 1000000), string(j.at("name")), string(j.at("description")),
-            number(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), 0, 1000000)};
+            vital(j.at("manaCost"), 0, 1000000), number(j.at("cooldownTicks"), 0, 1000000)};
         if (targeting == "none") ability.targeting = AbilityTargeting::None;
         else if (targeting == "crystal") ability.targeting = AbilityTargeting::Crystal;
         else if (targeting == "building") ability.targeting = AbilityTargeting::Building;
@@ -208,7 +225,7 @@ Definitions Definitions::load(const std::filesystem::path& catalog) {
                 } else {
                     fields(effect, {"type", "recipient", "amount"});
                     ability.effects.emplace_back(RestoreDefinition{kind == "restoreHealth" ? RestoredStat::Health : RestoredStat::Mana,
-                        number(effect.at("amount"), 1, 1000000)}, recipient);
+                        vital(effect.at("amount"), .01, 1000000)}, recipient);
                 }
             } else throw std::runtime_error("Unknown ability effect: " + kind);
         }

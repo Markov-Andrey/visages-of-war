@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "rts/Vital.hpp"
 #include <cstdint>
 
 namespace rts {
@@ -17,7 +18,7 @@ public:
         const float t = float(age - holdTicks) / drainTicks;
         return damage_ * (1 - t * t * (3 - 2 * t));
     }
-    void record(int before, int after, std::uint64_t tick) {
+    void record(Vital before, Vital after, std::uint64_t tick) {
         if (after <= 0) { damage_ = 0; lastHit_ = 0; return; }
         if (after >= before) return;
         damage_ = remaining(tick) + float(before - after);

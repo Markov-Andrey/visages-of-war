@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "rts/Vital.hpp"
 #include <cmath>
 #include <limits>
 #include <stdexcept>
@@ -15,10 +16,10 @@ struct ArmorRules {
         const double scaled = coefficient * double(armor);
         return armor >= 0 ? 1.0 / (1.0 + scaled) : 1.0 - scaled;
     }
-    int damage(int incoming, int armor) const {
+    Vital damage(int incoming, int armor) const {
         if (incoming <= 0) return 0;
-        const double rounded = std::round(double(incoming) * damageMultiplier(armor));
-        return static_cast<int>(std::clamp(rounded, 1.0, double(std::numeric_limits<int>::max())));
+        const double rounded = std::round(double(incoming) * damageMultiplier(armor) * 100) / 100;
+        return Vital(std::clamp(rounded, .01, double(std::numeric_limits<int>::max())));
     }
 };
 }

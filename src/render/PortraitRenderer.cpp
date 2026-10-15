@@ -29,10 +29,10 @@ void Renderer::drawPortraitBackdrop(UiRect bounds, unsigned color) {
     gradient->SetRadiusY(bounds.height * .5f);
     target_->FillRectangle(area, gradient.Get());
 }
-void Renderer::portraitVitals(const SelectionPanelLayout& layout, int current, int maximum, unsigned color, int mana, int maximumMana) {
-    centeredText(std::to_wstring(current) + L" / " + std::to_wstring(maximum), layout.health, color);
+void Renderer::portraitVitals(const SelectionPanelLayout& layout, Vital current, Vital maximum, unsigned color, Vital mana, Vital maximumMana) {
+    centeredText(std::to_wstring((current).rounded()) + L" / " + std::to_wstring((maximum).rounded()), layout.health, color);
     if (maximumMana > 0)
-        centeredText(std::to_wstring(mana) + L" / " + std::to_wstring(maximumMana), layout.mana, 0x8bbaff);
+        centeredText(std::to_wstring((mana).rounded()) + L" / " + std::to_wstring((maximumMana).rounded()), layout.mana, 0x8bbaff);
 }
 
 void Renderer::buildingPortrait(const BuildingSpriteStage& stage, UiRect art, unsigned color, std::uint64_t tick, bool training) {

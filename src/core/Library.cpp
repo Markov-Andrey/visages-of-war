@@ -41,6 +41,13 @@ std::string armorDescription(int armor, const ArmorRules& rules) {
     return std::string(armor >= 0 ? "Снижение получаемого урона: " : "Дополнительный получаемый урон: ") +
         amount(std::abs(percent)) + "%";
 }
+std::string regenerationDescription(int hundredths) {
+    std::ostringstream result;
+    result.imbue(std::locale::classic());
+    if (hundredths > 0) result << '+';
+    result << std::fixed << std::setprecision(2) << double(hundredths) / 100 << " ед./с";
+    return result.str();
+}
 std::string attackDescription(const EntityDefinition& entity, int damage) {
     if (damage <= 0) return "Не может атаковать.";
     const int cycle = entity.attackWindupTicks + entity.attackRecoveryTicks + entity.attackCooldownTicks;
@@ -88,13 +95,15 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
         }
         stat("Теги", names);
     }
-    stat("Здоровье", std::to_string(entity.maximumHealth));
+    stat("Здоровье", std::to_string((entity.maximumHealth).rounded()));
+    stat("Регенерация здоровья", regenerationDescription(entity.healthRegenHundredths));
+    stat("Регенерация маны", regenerationDescription(entity.manaRegenHundredths));
     stat("Броня", std::to_string(entity.armor));
     result.back().tooltip = armorDescription(entity.armor, definitions.armorRules());
     stat("Стоимость", std::to_string(entity.cost.crystals), "crystal");
     if (entity.cost.supply > 0) stat("Лимит армии", std::to_string(entity.cost.supply), "supply");
     stat("Обзор днём / ночью", std::to_string(entity.dayVision) + " / " + std::to_string(entity.nightVision) + " клеток");
-    if (entity.maximumMana > 0) stat("Мана", std::to_string(entity.maximumMana));
+    if (entity.maximumMana > 0) stat("Мана", std::to_string((entity.maximumMana).rounded()));
 
     if (entity.attackDamage > 0) {
         heading("Бой");
@@ -146,7 +155,7 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
         heading("Развитие героя");
         paragraph("Здоровье и урон указаны для первого уровня.");
         stat("Максимальный уровень", std::to_string(definitions.progression().thresholds.size()));
-        stat("Здоровье за уровень", "+" + std::to_string(entity.hero->healthPerLevel));
+        stat("Здоровье за уровень", "+" + std::to_string((entity.hero->healthPerLevel).rounded()));
         stat("Урон за уровень", "+" + std::to_string(entity.hero->damagePerLevel));
     }
     if (!entity.abilities.empty()) {
@@ -154,7 +163,7 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
         for (const auto& ability : entity.abilities) {
             heading(ability.displayName);
             paragraph(ability.description);
-            stat("Расход маны", std::to_string(ability.manaCost));
+            stat("Расход маны", std::to_string((ability.manaCost).rounded()));
             stat("Перезарядка", seconds(ability.cooldownTicks));
             stat("Цели", abilityTargetDescription(ability.targeting));
             if (ability.targeting != AbilityTargeting::None) stat("Условия выбора цели", abilityTargetDetails(ability));
@@ -175,7 +184,7 @@ std::vector<LibraryDetail> libraryDetails(const Definitions& definitions, const 
                     stat("Время полного ремонта", std::to_string(repair->constructionTimePercent) + (buildingsOnly ? "% времени строительства" : "% времени строительства / обучения цели"));
                     stat("Цена полного ремонта", std::to_string(repair->constructionCostPercent) + (buildingsOnly ? "% цены здания" : "% цены цели"));
                 } else if (const auto* restore = std::get_if<RestoreDefinition>(&effect.value)) {
-                    stat(restore->stat == RestoredStat::Health ? "Восстановление здоровья" : "Восстановление маны", std::to_string(restore->amount));
+                    stat(restore->stat == RestoredStat::Health ? "Восстановление здоровья" : "Восстановление маны", std::to_string(restore->amount.rounded()));
                 }
             }
             if (ability.autocast) {

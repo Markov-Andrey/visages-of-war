@@ -40,7 +40,7 @@ void GameApplication::exerciseInspection() {
             throw std::runtime_error("Inspection: foreign unit was not selected singly");
         onMessage(WM_LBUTTONDBLCLK, MK_SHIFT, at(point)); onMessage(WM_LBUTTONUP, MK_SHIFT, at(point));
         if (ui_.selection.ids != std::vector{unit.id}) throw std::runtime_error("Inspection: double click changed foreign selection");
-        const int mana = unit.mana; const auto state = unit.state;
+        const auto mana = unit.mana; const auto state = unit.state;
         rejectControls();
         if (unit.mana != mana || unit.state != state || !unit.abilityCooldowns.empty()) throw std::runtime_error("Inspection: foreign unit accepted a command");
         renderer_.snapshot(game_, rts::Paths::executable().parent_path() /

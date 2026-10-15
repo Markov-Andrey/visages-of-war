@@ -399,8 +399,8 @@ void GameApplication::exerciseInterface() {
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"combat-preview.png");
     const auto combatUnitCount = game_.units().size();
     const auto& fighterType = game_.unit(fighter)->definition;
-    const int hitDamage = game_.armorRules().damage(fighterType.attackDamage, game_.unit(enemy)->armor());
-    const int hitsToKill = (game_.unit(enemy)->maximumHealth() + hitDamage - 1) / hitDamage;
+    const auto hitDamage = game_.armorRules().damage(fighterType.attackDamage, game_.unit(enemy)->armor());
+    const int hitsToKill = static_cast<int>(std::ceil(double(game_.unit(enemy)->maximumHealth()) / double(hitDamage)));
     const int duelTicks = hitsToKill * (fighterType.attackWindupTicks + fighterType.attackRecoveryTicks + fighterType.attackCooldownTicks + 1) + 60;
     for (int tick = 0; tick < duelTicks && game_.units().size() == combatUnitCount; ++tick) game_.tick();
     ui_.selection.prune(game_);

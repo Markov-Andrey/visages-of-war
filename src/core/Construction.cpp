@@ -74,7 +74,7 @@ std::optional<EntityId> Simulation::constructFor(PlayerId actor, std::span<const
     scenario_.map = std::move(preview);
     auto entity = makeEntity(type, origin, actor);
     const EntityId id = entity.id;
-    entity.health = 1; entity.constructionProgress = 0;
+    entity.health = std::min(Vital{1}, entity.maximumHealth()); entity.constructionProgress = 0;
     buildings_.push_back(std::move(entity));
     economy.crystals -= type.cost.crystals;
     issue(*mutableEntity(builderId), {OrderKind::Build, {}, id});
@@ -142,9 +142,9 @@ bool Simulation::setRally(EntityId id, Cell c) {
 void Simulation::advanceConstruction(Building& b) {
     if (b.health <= 0 || b.complete()) return;
     const auto builtHealth = [&] {
-        return std::max(1, int(std::int64_t(b.definition.maximumHealth) * b.constructionProgress / b.definition.constructionTicks));
+        return std::min(b.definition.maximumHealth, std::max(Vital{1}, Vital::fromHundredths(b.definition.maximumHealth.hundredths() * b.constructionProgress / b.definition.constructionTicks)));
     };
-    const int previousHealth = builtHealth();
+    const auto previousHealth = builtHealth();
     ++b.constructionProgress;
     b.health = std::min(b.definition.maximumHealth, b.health + builtHealth() - previousHealth);
     if (b.complete()) {

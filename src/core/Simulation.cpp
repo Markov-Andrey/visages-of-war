@@ -225,6 +225,7 @@ void Simulation::tick() {
     // An unchanged observer set does not need another full fog raster update.
     updateVision(false);
     tickCombat(); // Damage is simultaneous; removals happen after all movement pointers are no longer used.
+    tickRegeneration();
     tickProduction();
     // Combat and production may remove or add observers. Periodic forced updates
     // also refresh remembered resources and externally changed terrain.

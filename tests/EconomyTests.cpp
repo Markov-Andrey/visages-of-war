@@ -217,7 +217,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(!game.canTargetAbility(game.worker(), ability, own), "Self filter ignored");
         ability.targets.allowSelf = true; ability.targets.damagedOnly = true;
         require(!game.canTargetAbility(game.worker(), ability, own), "State filter ignored");
-        const_cast<Entity&>(game.worker()).health--;
+        const_cast<Entity&>(game.worker()).health -= 1;
         require(game.canTargetAbility(game.worker(), ability, own), "Damaged target rejected");
         require(game.command(std::array{own}, game.worker().cell, own), "Generic right click requires repair");
         game.tick();
@@ -275,7 +275,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto scene = repairScene(); scene.worker = {20, 18};
         auto game = makeTestSimulation(scene, {}, worker);
         const auto id = game.worker().id, b = game.buildings().front().id;
-        const_cast<Building&>(game.buildings().front()).health--;
+        const_cast<Building&>(game.buildings().front()).health -= 1;
         game.revealMap();
         require(!game.activateAbility(id, repair.id, b) && game.worker().mana == 20 && game.worker().route.empty(),
             "Stationary caster moved or charged an unreachable cast");
@@ -306,7 +306,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto depot = fixtureDepot(worker); depot.abilities = {repair};
         auto scene = repairScene(); scene.map.at(scene.worker).height = -1;
         auto game = makeTestSimulation(scene, {}, worker, {worker, depot}); game.revealMap();
-        const_cast<Entity&>(game.worker()).health--;
+        const_cast<Entity&>(game.worker()).health -= 1;
         const auto id = game.buildings().front().id;
         require(!game.activateAbility(id, repair.id, game.worker().id), "Contact effect crossed a shore cliff");
         const_cast<Entity&>(*game.entity(id)).definition.abilities.front().range = 2;
@@ -372,11 +372,22 @@ void economyTests(TestSuite& test, const TestContext& context) {
         game.tick();
         require(game.worker().state == UnitState::UsingAbility && unitFrame(game.worker()).column == 9, "Repair does not use work pose");
         ticks(game, 118);
-        require(building.health == 996 && game.storedCrystals() == 960, "Repair speed or proportional price wrong");
+        require(building.health == 996.66 && game.storedCrystals() == 960, "Repair speed or proportional price wrong");
         game.tick();
         require(building.health == 1000 && game.storedCrystals() == 960 && game.worker().currentOrder.kind == OrderKind::Stop,
             "Repair did not finish at 75% construction time scaled by missing health");
         require(unitFrame(game.worker()).column != 9 && !game.activateAbility(id, 17, building.id), "Full building keeps work pose or accepts repair");
+    });
+    test("Repair reaches a fractional maximum and charges for fractional missing health", [] {
+        const auto worker = repairWorker(); auto depot = fixtureDepot(worker);
+        depot.maximumHealth = 1000.25;
+        auto game = makeTestSimulation(repairScene(), {}, worker, {worker, depot});
+        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 1000.24;
+        const auto balance = game.storedCrystals();
+        require(game.activateAbility(game.worker().id, 17, building.id), "Fractional damage rejected by repair");
+        game.tick();
+        require(building.health == 1000.25 && game.storedCrystals() == balance - 1,
+            "Repair truncated missing hundredth, maximum, or proportional cost");
     });
     test("Repair credit survives repeated cancellation and workers share one exact price", [] {
         const auto worker = repairWorker(); auto depot = fixtureDepot(worker); depot.cost.crystals = 101;

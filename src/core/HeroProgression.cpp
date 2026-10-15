@@ -7,14 +7,15 @@ bool Simulation::grantExperience(EntityId id, int amount) {
     auto* u = mutableEntity(id);
     if (!u || !u->hero || u->health <= 0 || amount <= 0 || u->atMaxLevel()) return false;
     const auto& thresholds = progression_->thresholds;
-    const int oldMaximum = u->maximumHealth();
+    const auto oldMaximum = u->maximumHealth();
     u->hero->experience += std::min(amount, thresholds.back() - u->hero->experience);
     while (!u->atMaxLevel() && u->hero->experience >= thresholds[u->level()]) {
         ++u->hero->level;
         events_.emplace_back(HeroLevelChanged{u->id, u->level()});
     }
     u->health += u->maximumHealth() - oldMaximum; // Preserve damage already sustained.
-    u->repairCredit = u->repairCredit * u->maximumHealth() / oldMaximum;
+    const auto before = oldMaximum.hundredths(), after = u->maximumHealth().hundredths();
+    u->repairCredit = (u->repairCredit / before) * after + (u->repairCredit % before) * after / before;
     return true;
 }
 void Simulation::rewardKill(const Unit& victim, PlayerId killer) {

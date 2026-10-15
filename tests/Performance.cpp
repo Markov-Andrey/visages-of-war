@@ -98,9 +98,9 @@ void combatBenchmark() {
         }
         const double first = samples.front();
         std::sort(samples.begin(), samples.end());
-        int damage = 0, engaged = 0;
+        double damage = 0; int engaged = 0;
         for (const auto& u : game.units()) {
-            damage += u.maximumHealth() - u.health;
+            damage += double(u.maximumHealth() - u.health);
             engaged += u.state == rts::UnitState::Attacking;
         }
         std::cout << "combat " << count << "v" << count << (focus ? " focus" : " automatic")

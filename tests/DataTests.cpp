@@ -13,6 +13,61 @@ bool libraryText(const std::vector<LibraryDetail>& details, const std::string& t
 }
 }
 void dataTests(TestSuite& test, const TestContext& context) {
+    test("Vital catalog accepts hundredths for maxima costs and restoration", [&] {
+        CatalogFixture fixture(context.assets);
+        for (auto& entity : fixture.entities["entities"]) {
+            entity["stats"]["health"] = 60.25;
+            entity["stats"]["mana"] = 10.75;
+            if (!entity["hero"].is_null()) entity["hero"]["healthPerLevel"] = .25;
+        }
+        for (auto& ability : fixture.abilities["abilities"]) ability["manaCost"] = .01;
+        fixture.abilities["abilities"][0]["effects"] = Json::array({
+            {{"type", "restoreHealth"}, {"recipient", "caster"}, {"amount", .25}},
+            {{"type", "restoreMana"}, {"recipient", "caster"}, {"amount", .01}}});
+        const auto definitions = fixture.load();
+        const auto& effects = definitions.ability(1).effects;
+        require(std::get<RestoreDefinition>(effects[0].value).amount == .25 &&
+            std::get<RestoreDefinition>(effects[1].value).amount == .01, "Catalog truncated restoration");
+        for (const auto& entity : definitions.entities()) {
+            require(entity.maximumHealth == 60.25 && entity.maximumMana == 10.75, "Catalog truncated maxima");
+            if (entity.hero) require(entity.hero->healthPerLevel == .25, "Catalog truncated level gain");
+            for (const auto& ability : entity.abilities) require(ability.manaCost == .01, "Catalog truncated mana cost");
+        }
+        auto& stats = fixture.entities["entities"][0]["stats"];
+        for (const auto* field : {"health", "mana"}) {
+            for (Json invalid : {Json(.001), Json(-.01), Json(1000000.01), Json("1.25"), Json(true)}) {
+                stats[field] = invalid; mustThrow([&] { fixture.load(); });
+            }
+            stats[field] = .01;
+        }
+        require(fixture.load().entity("church.worker").maximumHealth == .01, "Minimum positive health rejected");
+        stats["health"] = 0; mustThrow([&] { fixture.load(); });
+    });
+    test("Regeneration catalog supports signed hundredths for every entity and rejects excess precision", [&] {
+        CatalogFixture fixture(context.assets);
+        for (auto& entity : fixture.entities["entities"]) {
+            entity["stats"]["healthRegenPerSecond"] = .01;
+            entity["stats"]["manaRegenPerSecond"] = -1.25;
+        }
+        auto definitions = fixture.load();
+        for (const auto& entity : definitions.entities()) {
+            require(entity.healthRegenHundredths == 1 && entity.manaRegenHundredths == -125, "Catalog regeneration lost sign or precision");
+            const auto details = libraryDetails(definitions, entity);
+            require(libraryValue(details, "Регенерация здоровья") == "+0.01 ед./с" &&
+                libraryValue(details, "Регенерация маны") == "-1.25 ед./с", "Regeneration display differs from catalog");
+        }
+        auto& stats = fixture.entities["entities"][0]["stats"];
+        for (const auto* field : {"healthRegenPerSecond", "manaRegenPerSecond"}) {
+            for (Json invalid : {Json(.001), Json(-.001), Json(1000001), Json(-1000001), Json("1.25"), Json(true), Json(nullptr)}) {
+                stats[field] = invalid;
+                mustThrow([&] { fixture.load(); });
+            }
+            stats.erase(field);
+        }
+        definitions = fixture.load();
+        require(definitions.entity("church.worker").healthRegenHundredths == 0 &&
+            definitions.entity("church.worker").manaRegenHundredths == 0, "Absent regeneration is not zero");
+    });
     test("Tags support arbitrary combinations beyond bitmask limits and stable catalog identities", [&] {
         CatalogFixture fixture(context.assets);
         std::vector<std::string> ids;
@@ -409,7 +464,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         worker["stats"]["mana"] = 75; worker["abilities"] = Json::array({1});
         require(fixture.load().entity("church.worker").maximumMana == 75 &&
             fixture.load().entity("church.worker").abilities.front().id == 1, "Mana or ability is hardcoded to heroes");
-        for (const auto& value : {Json(-1), Json(1000001), Json(1.5), Json("50"), Json(true), Json(nullptr)}) {
+        for (const auto& value : {Json(-1), Json(1000001), Json(1.005), Json("50"), Json(true), Json(nullptr)}) {
             worker["stats"]["mana"] = value; mustThrow([&] { fixture.load(); });
         }
         worker["stats"]["mana"] = 0;
@@ -420,7 +475,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
         worker.erase("abilities");
         const auto original = fixture.abilities;
         fixture.abilities["abilities"].push_back(fixture.abilities["abilities"][0]); mustThrow([&] { fixture.load(); });
-        for (const auto& value : {Json(-1), Json(1.5), Json("25")}) {
+        for (const auto& value : {Json(-1), Json(1.005), Json("25")}) {
             fixture.abilities = original; fixture.abilities["abilities"][0]["manaCost"] = value;
             mustThrow([&] { fixture.load(); });
         }

@@ -12,7 +12,7 @@ void Simulation::tickRepair(Entity& u, const AbilityDefinition& ability, const R
     auto& credit = recipient->repairCredit;
     const int productionTicks = definition.constructible ? definition.constructionTicks : definition.trainingTicks;
     const std::int64_t duration = std::max<std::int64_t>(1, (std::int64_t(productionTicks) * repair.constructionTimePercent + 99) / 100);
-    const std::int64_t maximum = recipient->maximumHealth();
+    const std::int64_t maximum = recipient->maximumHealth().hundredths();
     const std::int64_t denominator = maximum * 100;
     const std::int64_t pricePerHealth = std::int64_t(definition.cost.crystals) * repair.constructionCostPercent;
     auto& balance = mutableEconomy(u.owner).crystals;
@@ -23,7 +23,7 @@ void Simulation::tickRepair(Entity& u, const AbilityDefinition& ability, const R
     const Cell facing{delta.x > .2f ? 1 : delta.x < -.2f ? -1 : 0, delta.y > .2f ? 1 : delta.y < -.2f ? -1 : 0};
     if (facing != Cell{}) u.facing = facing;
     state.progress += maximum;
-    std::int64_t restored = std::min(state.progress / duration, maximum - health);
+    std::int64_t restored = std::min(state.progress / duration, maximum - health.hundredths());
     state.progress %= duration;
     if (restored <= 0) return;
     const auto chargeFor = [&](std::int64_t health) {
@@ -38,6 +38,6 @@ void Simulation::tickRepair(Entity& u, const AbilityDefinition& ability, const R
     if (!restored) { u.abilityWorking = false; return; }
     balance -= charge;
     credit += charge * denominator - restored * pricePerHealth;
-    health += static_cast<int>(restored);
+    health += Vital::fromHundredths(restored);
 }
 }

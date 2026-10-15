@@ -16,6 +16,8 @@
       "stats": {
         "health": 90,
         "armor": 0,
+        "healthRegenPerSecond": 0.25,
+        "manaRegenPerSecond": 0,
         "damage": 0,
         "level": 1,
         "dayVision": 8,
@@ -187,6 +189,8 @@
       "stats": {
         "health": 550,
         "armor": 2,
+        "healthRegenPerSecond": 0.25,
+        "manaRegenPerSecond": 0,
         "damage": 12,
         "level": 1,
         "dayVision": 9,
@@ -350,6 +354,8 @@
       "stats": {
         "health": 1000,
         "armor": 2,
+        "healthRegenPerSecond": 0.25,
+        "manaRegenPerSecond": 0,
         "mana": 200,
         "damage": 24,
         "level": 1,
@@ -515,6 +521,8 @@
       "stats": {
         "health": 2500,
         "armor": 5,
+        "healthRegenPerSecond": 0,
+        "manaRegenPerSecond": 0,
         "damage": 0,
         "level": 1,
         "dayVision": 11,
@@ -876,6 +884,8 @@
       "stats": {
         "health": 1500,
         "armor": 5,
+        "healthRegenPerSecond": 0,
+        "manaRegenPerSecond": 0,
         "damage": 0,
         "level": 1,
         "dayVision": 9,
@@ -972,6 +982,8 @@
       "stats": {
         "health": 180,
         "armor": 0,
+        "healthRegenPerSecond": 0.25,
+        "manaRegenPerSecond": 0,
         "damage": 12,
         "level": 1,
         "dayVision": 9,
@@ -1030,6 +1042,8 @@
       "stats": {
         "health": 375,
         "armor": 1,
+        "healthRegenPerSecond": 0.25,
+        "manaRegenPerSecond": 0,
         "damage": 14,
         "level": 1,
         "dayVision": 10,
@@ -1252,6 +1266,8 @@
       "stats": {
         "health": 330,
         "armor": 2,
+        "healthRegenPerSecond": 0.25,
+        "manaRegenPerSecond": 0,
         "damage": 45,
         "level": 1,
         "dayVision": 10,

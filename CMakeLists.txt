@@ -45,6 +45,7 @@ add_library(rts_core
     src/core/Gathering.cpp
     src/core/Abilities.cpp
     src/core/Repair.cpp
+    src/core/Regeneration.cpp
     src/core/Combat.cpp
     src/core/CombatTargeting.cpp
     src/core/CombatMovement.cpp

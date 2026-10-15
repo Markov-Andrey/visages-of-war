@@ -101,7 +101,7 @@ private:
     void buttonFrame(UiRect area);
     void commandHotkey(UiRect area, wchar_t key, bool enabled);
     void centeredText(const std::wstring& value, UiRect bounds, unsigned color, bool heading = false);
-    void portraitVitals(const SelectionPanelLayout& layout, int current, int maximum, unsigned color, int mana = 0, int maximumMana = 0);
+    void portraitVitals(const SelectionPanelLayout& layout, Vital current, Vital maximum, unsigned color, Vital mana = 0, Vital maximumMana = 0);
     void buildingPortrait(const BuildingSpriteStage& stage, UiRect area, unsigned color, std::uint64_t tick = 0, bool training = false);
     void drawBuildingPortrait(const Simulation& game, const Building& building, const SelectionPanelLayout& layout);
     void drawCrystalPortrait(const Crystal& crystal, const SelectionPanelLayout& layout);
@@ -127,9 +127,9 @@ private:
     void selectionStatsTooltip(const Unit& unit, UiRect bounds, Vec2 mouse, const ArmorRules& rules,
         std::wstring& title, std::wstring& description);
     void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14, bool beveled = false);
-    void drawHealthBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled);
+    void drawHealthBar(Vital current, Vital maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled);
     void drawManaBar(const Unit& unit, UiRect bounds, bool beveled = false);
-    void drawVitalBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana);
+    void drawVitalBar(Vital current, Vital maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana);
     void drawMinimap(const Simulation& game, const BattleLayout& layout, const WorldView& view);
     void buildingSprite(const Simulation& game, const Building& building, const WorldView& view, bool selected, float preview = -1);
     void buildingGroundSelection(const Simulation& game, const Building& building, const WorldView& view, int row, bool preview);

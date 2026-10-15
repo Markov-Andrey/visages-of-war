@@ -17,16 +17,114 @@ void checkCombatMotion(const Simulation& game) {
 }
 }
 void combatTests(TestSuite& test, const TestContext& context) {
+    test("Fractional vitals retain exact maxima costs restoration and level gains", [] {
+        auto worker = fixtureWorker(); worker.maximumHealth = 60.25; worker.maximumMana = 10.75;
+        worker.hero = HeroDefinition{.25, 0};
+        AbilityDefinition heal; heal.id = 900; heal.manaCost = .26;
+        heal.effects.emplace_back(RestoreDefinition{RestoredStat::Health, .01}, EffectRecipient::Caster);
+        worker.abilities = {heal};
+        auto game = makeTestSimulation({Map(12, 12), {1,1}, {8,8}, {}}, {}, worker);
+        const auto id = game.worker().id;
+        auto& entity = const_cast<Entity&>(*game.entity(id));
+        require(entity.health == 60.25 && entity.mana == 10.75, "Spawn truncated fractional maxima");
+        entity.health = 60.24; entity.mana = .25;
+        require(!game.activateAbility(id, heal.id) && entity.mana == .25, "Rounded mana admitted unaffordable cast");
+        entity.mana = .27;
+        require(game.activateAbility(id, heal.id) && entity.health == 60.25 && entity.mana == .01,
+            "Fractional restoration or payment lost hundredths");
+        entity.health -= .01;
+        require(game.grantExperience(id, 100) && entity.maximumHealth() == 60.50 && entity.health == 60.49,
+            "Level gain lost fractional maximum or existing damage");
+        require(Vital{60.49}.rounded() == 60 && Vital{60.50}.rounded() == 61,
+            "Display does not round to nearest whole point");
+        entity.health = .01; entity.definition.healthRegenHundredths = -1;
+        ticks(game, 29); require(game.entity(id) != nullptr, "Positive fractional health treated as dead");
+        game.tick(); require(!game.entity(id), "Fractional decay failed to kill at exact zero");
+    });
+    test("Regeneration applies signed fractional rates each second to every entity kind", [] {
+        for (int kind = 0; kind < 4; ++kind) {
+            auto worker = fixtureWorker(); worker.maximumMana = 100;
+            worker.healthRegenHundredths = 125; worker.manaRegenHundredths = -25;
+            if (kind == 1) worker.hero = HeroDefinition{};
+            auto depot = fixtureDepot(worker); depot.maximumMana = 100;
+            depot.healthRegenHundredths = 125; depot.manaRegenHundredths = -25;
+            auto game = makeTestSimulation({Map(16, 16), {1,1}, {8,8}, {}}, {}, worker, {depot});
+            const auto id = kind >= 2 ? game.buildings().front().id : game.worker().id;
+            auto& entity = const_cast<Entity&>(*game.entity(id));
+            entity.health = 10; entity.mana = 10;
+            if (kind == 3) entity.constructionProgress = 0;
+            ticks(game, 29);
+            require(game.entity(id)->health == 10 && game.entity(id)->mana == 10, "Regeneration ran before one second");
+            ticks(game, 1);
+            require(game.entity(id)->health == 11.25 && game.entity(id)->mana == 9.75, "First regeneration pulse is incorrect");
+            ticks(game, 90);
+            require(game.entity(id)->health == 15 && game.entity(id)->mana == 9, "Fractional regeneration was lost or entity kind excluded");
+        }
+    });
+    test("Regeneration preserves hundredths at resource boundaries without banking overflow", [] {
+        auto worker = fixtureWorker(); worker.maximumMana = 10;
+        worker.healthRegenHundredths = -1; worker.manaRegenHundredths = 1;
+        auto game = makeTestSimulation({Map(12, 12), {1,1}, {8,8}, {}}, {}, worker);
+        const auto id = game.worker().id;
+        auto& entity = const_cast<Entity&>(*game.entity(id)); entity.mana = 0;
+        ticks(game, 99 * Simulation::ticksPerSecond);
+        require(game.entity(id)->health == worker.maximumHealth - .99 && game.entity(id)->mana == .99, "Hundredths were not applied each second");
+        ticks(game, Simulation::ticksPerSecond);
+        require(game.entity(id)->health == worker.maximumHealth - 1 && game.entity(id)->mana == 1, "Hundredths vanished at full health or empty mana");
+        entity.definition.healthRegenHundredths = 125; entity.health = entity.maximumHealth();
+        entity.definition.manaRegenHundredths = -25; entity.mana = 0;
+        ticks(game, 10 * Simulation::ticksPerSecond);
+        entity.health -= 5; entity.mana = 5;
+        ticks(game, Simulation::ticksPerSecond);
+        require(entity.health == entity.maximumHealth() - 3.75 && entity.mana == 4.75, "Capped regeneration accumulated a hidden burst");
+        entity.definition.healthRegenHundredths = 100000000;
+        entity.definition.manaRegenHundredths = -100000000;
+        ticks(game, Simulation::ticksPerSecond);
+        require(entity.health == entity.maximumHealth() && entity.mana == 0, "Regeneration exceeded resource bounds");
+    });
+    test("Regeneration decay ignores armor and releases dead entities and reserved production supply", [] {
+        auto worker = fixtureWorker(); worker.hero = HeroDefinition{}; worker.armor = 1000000;
+        worker.healthRegenHundredths = -100; worker.maximumHealth = 1;
+        auto depot = fixtureDepot(worker); depot.armor = 1000000; depot.maximumHealth = 1;
+        depot.healthRegenHundredths = -100;
+        Scenario scene{Map(16, 16), {1,1}, {8,8}, {}}; scene.slots[0].startingCrystals = 500;
+        auto game = makeTestSimulation(std::move(scene), {}, worker, {depot});
+        const auto unitId = game.worker().id, depotId = game.buildings().front().id;
+        require(game.train(depotId, worker.id), "Could not queue decay fixture production");
+        ticks(game, Simulation::ticksPerSecond);
+        require(!game.entity(unitId) && !game.entity(depotId) && game.heroFallen(), "Decay did not use normal death lifecycle");
+        require(game.armySupply().used() == 0 && game.map().walkable({1,1}), "Decay retained supply or building occupancy");
+        int deaths = 0;
+        for (const auto& event : game.takeEvents())
+            if (std::holds_alternative<UnitDied>(event) || std::holds_alternative<BuildingDestroyed>(event)) ++deaths;
+        require(deaths == 2, "Decay did not emit exactly one event per victim");
+        ticks(game, 60);
+        require(game.units().empty() && game.buildings().empty(), "Regeneration resurrected dead entities");
+    });
+    test("Regeneration for produced entities starts a full second after spawning", [] {
+        auto worker = fixtureWorker(); worker.maximumMana = 10; worker.trainingTicks = 35;
+        worker.manaRegenHundredths = -100;
+        Scenario scene{Map(16, 16), {1,1}, {8,8}, {}}; scene.slots[0].startingCrystals = 500;
+        auto game = makeTestSimulation(std::move(scene), {}, worker);
+        require(game.train(game.buildings().front().id, worker.id), "Could not train regeneration fixture");
+        ticks(game, 35);
+        require(game.units().size() == 2, "Regeneration fixture failed to produce");
+        const auto id = game.units().back().id;
+        ticks(game, 29);
+        require(game.entity(id)->mana == 10, "Spawn inherited global regeneration phase");
+        ticks(game, 1);
+        require(game.entity(id)->mana == 9, "Spawn did not inherit catalog regeneration");
+    });
     test("Armor formula preserves damage and safely handles negative and extreme armor", [] {
         const ArmorRules rules{.06};
-        require(rules.damage(100, 0) == 100 && rules.damage(100, 5) == 77 && rules.damage(100, -5) == 130,
+        require(rules.damage(100, 0) == 100 && rules.damage(100, 5) == 76.92 && rules.damage(100, -5) == 130,
             "Armor formula changed");
-        require(rules.damage(0, -1000000) == 0 && rules.damage(1, 1000000) == 1 &&
+        require(rules.damage(0, -1000000) == 0 && rules.damage(1, 1000000) == .01 &&
             rules.damageMultiplier(1000000) > 0 && rules.damageMultiplier(5) < rules.damageMultiplier(2),
             "Armor created immunity, damage from zero, or reversed mitigation");
         require(rules.damage(std::numeric_limits<int>::max(), std::numeric_limits<int>::min()) == std::numeric_limits<int>::max(),
             "Negative armor damage overflowed");
-        require(ArmorRules{.1}.damage(100, 5) == 67, "Balance coefficient ignored");
+        require(ArmorRules{.1}.damage(100, 5) == 66.67, "Balance coefficient ignored");
         for (double value : {0.0, -1.0, std::numeric_limits<double>::infinity(), std::numeric_limits<double>::quiet_NaN()})
             mustThrow([&] { ArmorRules{value}.validate(); });
     });
@@ -185,7 +283,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             if (focused) require(game.attack(own, target), "Dense focus rejected");
             for (int tick = 0; tick < 900; ++tick) { game.tick(); checkCombatMotion(game); }
             if (game.units().size() != 24) for (const auto& u : game.units())
-                std::cerr << "battle " << focused << " unit " << u.id << " owner=" << u.owner << " hp=" << u.health
+                std::cerr << "battle " << focused << " unit " << u.id << " owner=" << u.owner << " hp=" << double(u.health)
                           << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks << " target=" << u.attackTarget << '\n';
             require(game.units().size() == 24 && std::all_of(game.units().begin(), game.units().end(), [](const Unit& u) { return u.owner == 0; }),
                 "Dense squad stopped attacking surviving enemies");
@@ -277,7 +375,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
     test("Melee windup, simultaneous deaths, supply, events, corpses and empty army", [] {
         auto scenario = flatScenario();
         rts::EntityDefinition soldier;
-        soldier.attackDamage = soldier.maximumHealth; soldier.canBuild = false; soldier.cost.supply = 2;
+        soldier.attackDamage = 60; soldier.maximumHealth = 60; soldier.canBuild = false; soldier.cost.supply = 2;
         scenario.units.push_back({soldier.id, 1, {5, 3}});
         auto game = makeTestSimulation(std::move(scenario), {}, soldier);
         const auto friendly = game.units()[0].id, enemy = game.units()[1].id;

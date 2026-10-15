@@ -45,7 +45,9 @@ struct Entity {
     Cell groupTarget{};
     float groupRadius{};
     UnitState state = UnitState::Idle;
-    int health{}, mana{}, cargo{};
+    Vital health{}, mana{};
+    int cargo{};
+    int regenerationTicks{};
     std::vector<AbilityCooldown> abilityCooldowns;
     std::vector<int> autocastAbilities;
     bool automaticAbility{}, abilityWorking{}, abilityStarted{};
@@ -90,8 +92,8 @@ struct Entity {
         return selected && selected->harvest() ? selected : nullptr;
     }
     int level() const { return hero ? hero->level : definition.level; }
-    int maximumHealth() const { return definition.maximumHealth + (hero ? (level() - 1) * definition.hero->healthPerLevel : 0); }
-    int maximumMana() const { return definition.maximumMana; }
+    Vital maximumHealth() const { return definition.maximumHealth + (hero ? (level() - 1) * definition.hero->healthPerLevel : 0); }
+    Vital maximumMana() const { return definition.maximumMana; }
     const AbilityDefinition* ability(int abilityId) const {
         for (const auto& value : definition.abilities) if (value.id == abilityId) return &value;
         return nullptr;
@@ -318,7 +320,7 @@ private:
         const Entity& entity() const { return unit ? *unit : *building; }
         EntityId id() const { return entity().id; }
         PlayerId owner() const { return entity().owner; }
-        int health() const { return entity().health; }
+        Vital health() const { return entity().health; }
         bool air() const { return airborne(entity().definition.movement); }
         Vec2 position() const { return entity().position; }
     };
@@ -338,6 +340,8 @@ private:
     void releaseProjectile(Unit& attacker, Vec2 aim, float aimHeight, EntityId target);
     void tickProjectiles(std::vector<Hit>& hits);
     void resolveHits(const std::vector<Hit>& hits);
+    void removeDeadEntities();
+    void tickRegeneration();
     void rewardKill(const Unit& victim, PlayerId killer);
     void chase(Unit& attacker, CombatTarget target);
     void updateVision(bool force = true);
