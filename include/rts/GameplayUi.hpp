@@ -131,13 +131,13 @@ inline bool commandEnabled(const Simulation& game, const GameplayUi& ui, UnitCom
     if (ids.empty() && ui.selection.ids.size() == 1) ids = ui.selection.ids;
     return std::any_of(ids.begin(), ids.end(), [&](EntityId id) {
         const auto* unit = game.entity(id);
-        return unit && unit->owner == game.player().id && unit->health > 0 && commandCapable(*unit, command);
+        return unit && unit->owner == game.player().id && unit->vitals().health > 0 && commandCapable(*unit, command);
     });
 }
 inline const Entity* activeAbilityEntity(const Simulation& game, const GameplayUi& ui) {
     if (const auto* e = ui.selection.activeUnit(game)) return e;
     const auto* e = ui.selection.ids.size() == 1 ? game.entity(ui.selection.ids.front()) : nullptr;
-    return e && e->owner == game.player().id && e->health > 0 && e->complete() ? e : nullptr;
+    return e && e->owner == game.player().id && e->vitals().health > 0 && e->complete() ? e : nullptr;
 }
 inline std::vector<EntityId> abilityRecipients(const Simulation& game, const GameplayUi& ui) {
     auto ids = ui.selection.activeGroup(game).ids;
@@ -205,7 +205,7 @@ inline bool unitCommandVisible(const Simulation& game, const GameplayUi& ui, siz
     if (slot == backCommandSlot) return ui.buildMenu || ui.productionMenu || ui.orderMode || ui.rallyMode || !ui.placement.empty();
     if (ui.buildMenu || ui.productionMenu) {
         if (slot == previousPageSlot || slot == nextPageSlot) return commandPageCount(game, ui) > 1;
-        if (ui.productionMenu && (slot == 1 || slot == 5)) return slot == 1 || !e->production.empty();
+        if (ui.productionMenu && (slot == 1 || slot == 5)) return slot == 1 || !e->productionState().production.empty();
         return catalogCommandAt(game, ui, slot) != nullptr;
     }
     if (slot == abilityPageSlot) return e->definition.abilities.size() > abilityKeys.size();
@@ -226,7 +226,7 @@ inline std::vector<EntityId> commandRecipients(const Simulation& game, const Gam
     return ui.selection.ids;
 }
 inline bool rallyPointVisible(const Simulation& game, const Building& building, const GameplayUi& ui) {
-    return building.owner == game.player().id && building.owner != neutralPlayer && building.health > 0 &&
+    return building.owner == game.player().id && building.owner != neutralPlayer && building.vitals().health > 0 &&
         building.complete() && ui.selection.contains(building.id) && !building.definition.trainableUnits.empty() &&
         game.map().contains(building.rally);
 }

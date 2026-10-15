@@ -4,6 +4,15 @@
 #include <utility>
 
 namespace rts::tests {
+// Test-only detached ECS fixture; copying an Entity handle must never alias mutable state.
+inline void copyEntityState(Entity& target, const Entity& source) {
+    target.owner = source.owner; target.definition = source.definition; target.definitionId = source.definitionId;
+    target.cell = source.cell; target.position = source.position; target.facing = source.facing;
+    target.origin = source.origin; target.rally = source.rally;
+    target.vitals() = source.vitals(); target.motion() = source.motion(); target.orders() = source.orders();
+    target.casting() = source.casting(); target.gathering() = source.gathering(); target.combat() = source.combat();
+    target.progression() = source.progression(); target.productionState() = source.productionState();
+}
 inline EntityDefinition fixtureWorker() {
     EntityDefinition worker;
     worker.abilities = {AbilityDefinition{3, "Test cargo harvesting", "Deliver crystals to a depot", 0, 0,

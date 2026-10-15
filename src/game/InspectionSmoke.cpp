@@ -40,9 +40,9 @@ void GameApplication::exerciseInspection() {
             throw std::runtime_error("Inspection: foreign unit was not selected singly");
         onMessage(WM_LBUTTONDBLCLK, MK_SHIFT, at(point)); onMessage(WM_LBUTTONUP, MK_SHIFT, at(point));
         if (ui_.selection.ids != std::vector{unit.id}) throw std::runtime_error("Inspection: double click changed foreign selection");
-        const auto mana = unit.mana; const auto state = unit.state;
+        const auto mana = unit.vitals().mana; const auto state = unit.orders().state;
         rejectControls();
-        if (unit.mana != mana || unit.state != state || !unit.abilityCooldowns.empty()) throw std::runtime_error("Inspection: foreign unit accepted a command");
+        if (unit.vitals().mana != mana || unit.orders().state != state || !unit.casting().abilityCooldowns.empty()) throw std::runtime_error("Inspection: foreign unit accepted a command");
         renderer_.snapshot(game_, rts::Paths::executable().parent_path() /
             (index == 2 ? L"enemy-inspection-preview.png" : L"neutral-inspection-preview.png"), nullptr, false, &ui_);
     }
@@ -55,14 +55,14 @@ void GameApplication::exerciseInspection() {
     const auto rally = building.rally;
     const auto balance = game_.storedCrystals();
     rejectControls();
-    if (building.rally != rally || !building.production.empty() || game_.storedCrystals() != balance)
+    if (building.rally != rally || !building.productionState().production.empty() || game_.storedCrystals() != balance)
         throw std::runtime_error("Inspection: enemy building accepted a command");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"enemy-building-inspection-preview.png", nullptr, false, &ui_);
 
     const auto enemy = game_.units()[2].id, soldier = game_.units().back().id;
     ui_.selection.ids = {soldier};
     rightClick(game_.unit(enemy)->cell);
-    if (ui_.commandFeedback.target != enemy || game_.unit(soldier)->attackTarget != enemy)
+    if (ui_.commandFeedback.target != enemy || game_.unit(soldier)->combat().attackTarget != enemy)
         throw std::runtime_error("Feedback: accepted right-click attack did not mark its actual target");
     const auto now = rts::CommandFeedback::Clock::now();
     const auto tick = game_.clock().elapsedTicks();
@@ -74,7 +74,7 @@ void GameApplication::exerciseInspection() {
     ui_.selection.ids = {enemy}; rightClick(game_.worker().cell);
     if (ui_.commandFeedback.target) throw std::runtime_error("Feedback: inspected enemy produced a command confirmation");
     ui_.selection.ids = {game_.worker().id}; rightClick(game_.crystals().front().cell);
-    if (ui_.commandFeedback.target != game_.crystals().front().id || game_.worker().gatherOriginCrystal != 0)
+    if (ui_.commandFeedback.target != game_.crystals().front().id || game_.worker().gathering().gatherOriginCrystal != 0)
         throw std::runtime_error("Feedback: accepted gathering did not mark the resource");
     ui_.selection.ids = {soldier, game_.worker().id}; rightClick(game_.crystals().front().cell);
     if (ui_.commandFeedback.target != game_.crystals().front().id)
@@ -125,30 +125,30 @@ void GameApplication::exerciseInspection() {
     mouse_ = queuePoint(4);
     if (cursorKind() == rts::CursorKind::Hand) throw std::runtime_error("Queue: foreign icon has a clickable cursor");
     click(mouse_);
-    if (depot.production.size() != 10 || game_.storedCrystals() != beforeForeign)
+    if (depot.productionState().production.size() != 10 || game_.storedCrystals() != beforeForeign)
         throw std::runtime_error("Queue: click cancelled a foreign order");
     depot.owner = game_.player().id;
     for (size_t index : {size_t{4}, size_t{0}, size_t{7}}) {
-        auto expected = depot.production;
+        auto expected = depot.productionState().production;
         const auto job = expected[index]; expected.erase(expected.begin() + index);
         const auto queueBalance = game_.storedCrystals(); const int supply = game_.armySupply().used();
         mouse_ = queuePoint(index);
         if (cursorKind() != rts::CursorKind::Hand) throw std::runtime_error("Queue: production icon lacks a clickable cursor");
         click(mouse_);
-        if (depot.production.size() != expected.size() || game_.storedCrystals() != queueBalance + job.paidCrystals / 2 ||
+        if (depot.productionState().production.size() != expected.size() || game_.storedCrystals() != queueBalance + job.paidCrystals / 2 ||
             game_.armySupply().used() != supply - job.reservedSupply || ui_.selection.ids != std::vector{depot.id})
             throw std::runtime_error("Queue: icon click did not cancel exactly one job with half refund");
         for (size_t i = 0; i < expected.size(); ++i)
-            if (depot.production[i].definitionId != expected[i].definitionId || depot.production[i].remainingTicks != expected[i].remainingTicks)
+            if (depot.productionState().production[i].definitionId != expected[i].definitionId || depot.productionState().production[i].remainingTicks != expected[i].remainingTicks)
                 throw std::runtime_error("Queue: icon click changed another job or its progress");
     }
     const auto beforeEmpty = game_.storedCrystals();
     click(queuePoint(9));
-    if (depot.production.size() != 7 || game_.storedCrystals() != beforeEmpty)
+    if (depot.productionState().production.size() != 7 || game_.storedCrystals() != beforeEmpty)
         throw std::runtime_error("Queue: empty slot changed production");
-    const auto last = depot.production.back();
+    const auto last = depot.productionState().production.back();
     onMessage(WM_KEYDOWN, 'Y', 0); onMessage(WM_KEYDOWN, 'D', 0);
-    if (depot.production.size() != 6 || game_.storedCrystals() != beforeEmpty + last.paidCrystals / 2)
+    if (depot.productionState().production.size() != 6 || game_.storedCrystals() != beforeEmpty + last.paidCrystals / 2)
         throw std::runtime_error("Queue: production menu did not cancel the last order with half refund");
 
     clearCommandMode();

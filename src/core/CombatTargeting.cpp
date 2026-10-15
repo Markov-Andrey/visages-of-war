@@ -23,7 +23,7 @@ bool Simulation::canAttack(const Unit& attacker, EntityId target, bool forced) c
     return canAttack(attacker, combatTarget(target), forced);
 }
 bool Simulation::canAttack(const Unit& attacker, CombatTarget target, bool forced) const {
-    return target && attacker.complete() && attacker.health > 0 && attacker.id != target.id() && attacker.attackDamage() > 0 && target.health() > 0 &&
+    return target && attacker.complete() && attacker.vitals().health > 0 && attacker.id != target.id() && attacker.attackDamage() > 0 && target.health() > 0 &&
         (forced || combat::hostile(attacker.owner, target.owner())) &&
         combat::accepts(attacker.definition.attackTargets, airborne(attacker.definition.movement), target.air());
 }
@@ -90,7 +90,7 @@ bool Simulation::attack(std::span<const EntityId> ids, EntityId targetId, bool f
 }
 void Simulation::chase(Unit& u, CombatTarget target) {
     if (attackReach(u, target)) {
-        u.route.clear(); u.next = 0; u.blockedTicks = 0; u.state = UnitState::Attacking;
+        u.motion().route.clear(); u.motion().next = 0; u.motion().blockedTicks = 0; u.orders().state = UnitState::Attacking;
         return;
     }
     approachCombat(u, attackAim(target, u.position), &target);

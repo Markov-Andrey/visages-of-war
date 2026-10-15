@@ -100,8 +100,8 @@ void combatBenchmark() {
         std::sort(samples.begin(), samples.end());
         double damage = 0; int engaged = 0;
         for (const auto& u : game.units()) {
-            damage += double(u.maximumHealth() - u.health);
-            engaged += u.state == rts::UnitState::Attacking;
+            damage += double(u.maximumHealth() - u.vitals().health);
+            engaged += u.orders().state == rts::UnitState::Attacking;
         }
         std::cout << "combat " << count << "v" << count << (focus ? " focus" : " automatic")
                   << " / 96x96 / 300 ticks: command=" << commandMs << " ms; first=" << first
@@ -156,7 +156,7 @@ void crowdScaleBenchmark() {
             candidates += stats.candidates; pending = std::max(pending, stats.pending); searches = std::max(searches, stats.searches);
         }
         const auto finished = Clock::now();
-        const auto arrived = std::count_if(game.units().begin(), game.units().end(), [](const auto& u) { return u.state == rts::UnitState::Idle; });
+        const auto arrived = std::count_if(game.units().begin(), game.units().end(), [](const auto& u) { return u.orders().state == rts::UnitState::Idle; });
         std::cout << "10 armies x " << count << " / 256x256 / 180 ticks: commands="
             << std::chrono::duration<double, std::milli>(started - commands).count() << " ms; simulation="
             << std::chrono::duration<double, std::milli>(finished - started).count() << " ms; broad candidates=" << candidates
@@ -193,16 +193,16 @@ int main(int argc, char** argv) {
             game.tick();
             int arrived = 0;
             for (const auto& u : game.units()) {
-                distance += std::sqrt(rts::groundLengthSquared(u.position - u.tickPosition));
-                if (u.state == rts::UnitState::Idle) ++arrived;
+                distance += std::sqrt(rts::groundLengthSquared(u.position - u.motion().tickPosition));
+                if (u.orders().state == rts::UnitState::Idle) ++arrived;
             }
             if (arrived && first < 0) first = tick;
             if (arrived == 12) break;
         }
         if (tick == 1800) for (const auto& u : game.units())
-            std::cout << "  unit " << u.id << " at " << u.position.x << ',' << u.position.y << " state=" << int(u.state)
-                      << " blocked=" << u.blockedTicks << " next=" << u.next << '/' << u.route.size()
-                      << " goal=" << u.routeDestination.x << ',' << u.routeDestination.y << '\n';
+            std::cout << "  unit " << u.id << " at " << u.position.x << ',' << u.position.y << " state=" << int(u.orders().state)
+                      << " blocked=" << u.motion().blockedTicks << " next=" << u.motion().next << '/' << u.motion().route.size()
+                      << " goal=" << u.motion().routeDestination.x << ',' << u.motion().routeDestination.y << '\n';
         std::cout << "crowd 12 direction " << direction.x << ',' << direction.y << ": settle=" << tick
                   << " ticks; arrival spread=" << tick - first << " ticks; travel=" << distance << " cells\n";
     }
@@ -222,15 +222,15 @@ int main(int argc, char** argv) {
         int tick = 0, first = -1, idle = 0;
         for (; tick < 1200; ++tick) {
             game.tick(); idle = 0;
-            for (const auto& u : game.units()) if (u.state == rts::UnitState::Idle) ++idle;
+            for (const auto& u : game.units()) if (u.orders().state == rts::UnitState::Idle) ++idle;
             if (idle && first < 0) first = tick;
             if (idle == count) break;
         }
         std::cout << "crowd " << count << " on 96x96: command=" << commandTime << " ms; simulation="
                   << std::chrono::duration<double, std::milli>(Clock::now() - motionStart).count() << " ms; settled=" << idle
                   << "; ticks=" << tick << "; arrival spread=" << tick - first << '\n';
-        for (const auto& u : game.units()) if (u.state != rts::UnitState::Idle)
-            std::cout << "  moving " << u.id << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks << '\n';
+        for (const auto& u : game.units()) if (u.orders().state != rts::UnitState::Idle)
+            std::cout << "  moving " << u.id << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.motion().blockedTicks << '\n';
     }
     {
         rts::Scenario s{rts::Map(64, 48), {1, 1}, {10, 19}, {}};
@@ -243,13 +243,13 @@ int main(int argc, char** argv) {
         int tick = 0;
         for (; tick < 900; ++tick) {
             game.tick();
-            if (std::all_of(game.units().begin(), game.units().end(), [](const auto& u) { return u.state == rts::UnitState::Idle; })) break;
+            if (std::all_of(game.units().begin(), game.units().end(), [](const auto& u) { return u.orders().state == rts::UnitState::Idle; })) break;
         }
         std::cout << "crowd 12 one-cell gate: " << tick << " ticks\n";
         if (tick == 900) for (const auto& u : game.units())
-            std::cout << "  gate unit " << u.id << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks
-                      << " state=" << int(u.state) << " next=" << u.next << '/' << u.route.size()
-                      << " goal=" << u.routeDestination.x << ',' << u.routeDestination.y << '\n';
+            std::cout << "  gate unit " << u.id << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.motion().blockedTicks
+                      << " state=" << int(u.orders().state) << " next=" << u.motion().next << '/' << u.motion().route.size()
+                      << " goal=" << u.motion().routeDestination.x << ',' << u.motion().routeDestination.y << '\n';
     }
     rts::Map map(128, 128);
     std::vector<rts::EnvironmentObject> forest;

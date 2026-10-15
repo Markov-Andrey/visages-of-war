@@ -16,23 +16,23 @@ inline SpriteFrame locomotionFrame(const Unit& unit) {
     constexpr std::array<Cell, 8> facings{{{1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}}};
     int row = 0;
     for (size_t i = 0; i < facings.size(); ++i) if (unit.facing == facings[i]) row = static_cast<int>(i);
-    const bool walking = unit.next < unit.route.size() && unit.position != unit.tickPosition;
+    const bool walking = unit.motion().next < unit.motion().route.size() && unit.position != unit.motion().tickPosition;
     const auto& sprite = unit.definition.sprite;
-    return {walking ? sprite.walk[static_cast<size_t>(unit.walkCycle * sprite.walk.size()) % sprite.walk.size()] : sprite.idle, sprite.rows[row]};
+    return {walking ? sprite.walk[static_cast<size_t>(unit.motion().walkCycle * sprite.walk.size()) % sprite.walk.size()] : sprite.idle, sprite.rows[row]};
 }
 inline SpriteFrame unitFrame(const Unit& unit) {
     auto frame = locomotionFrame(unit);
     const auto& d = unit.definition;
-    if (unit.state == UnitState::Building && unit.next >= unit.route.size())
+    if (unit.orders().state == UnitState::Building && unit.motion().next >= unit.motion().route.size())
         frame.column = abilityAnimationColumn(d, AbilityAnimation::Work, 0);
-    const bool windup = unit.attackPhase == AttackPhase::Windup;
-    if (windup || unit.attackPhase == AttackPhase::Recovery) {
+    const bool windup = unit.combat().attackPhase == AttackPhase::Windup;
+    if (windup || unit.combat().attackPhase == AttackPhase::Recovery) {
         const auto& frames = windup ? d.sprite.windup : d.sprite.recovery;
         const int duration = windup ? d.attackWindupTicks : d.attackRecoveryTicks;
-        const auto index = static_cast<size_t>(std::max(0, duration - unit.attackTicks)) * frames.size() / std::max(1, duration);
+        const auto index = static_cast<size_t>(std::max(0, duration - unit.combat().attackTicks)) * frames.size() / std::max(1, duration);
         frame.column = frames.empty() ? d.sprite.idle : frames[std::min(index, frames.size() - 1)];
     }
-    if (unit.health > 0) if (const auto* animation = unit.abilityAnimation.current())
+    if (unit.vitals().health > 0) if (const auto* animation = unit.casting().abilityAnimation.current())
         frame.column = abilityAnimationColumn(d, animation->action, animation->elapsedTicks);
     return frame;
 }

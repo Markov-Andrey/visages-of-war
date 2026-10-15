@@ -5,16 +5,16 @@
 
 namespace rts {
 bool Simulation::setRoute(Unit& u, std::span<const Cell> goals, UnitState state, bool waitForTraffic) {
-    if (!u.definition.mobile) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return false; }
-    const bool precise = goals.size() == 1 && u.currentOrder.position && goals.front() == u.currentOrder.cell && state == UnitState::Moving;
+    if (!u.definition.mobile) { u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::Idle; return false; }
+    const bool precise = goals.size() == 1 && u.orders().currentOrder.position && goals.front() == u.orders().currentOrder.cell && state == UnitState::Moving;
     const auto search = [&](std::span<const Circle> obstacles) {
-        return precise ? findUnitPathTo(map(), u.position, *u.currentOrder.position, obstacles, u.definition.collisionRadius, u.definition.movement) :
+        return precise ? findUnitPathTo(map(), u.position, *u.orders().currentOrder.position, obstacles, u.definition.collisionRadius, u.definition.movement) :
             findUnitPath(map(), u.position, goals, obstacles, u.definition.collisionRadius, u.definition.movement);
     };
     auto path = search(unitObstacles(u, true, true));
     if (!path && waitForTraffic) path = search({});
-    u.route.clear(); u.next = 0; u.blockedTicks = 0;
-    if (!path) { u.state = UnitState::Idle; return false; }
+    u.motion().route.clear(); u.motion().next = 0; u.motion().blockedTicks = 0;
+    if (!path) { u.orders().state = UnitState::Idle; return false; }
     followPath(u, std::move(*path), state);
     return true;
 }
@@ -22,45 +22,45 @@ void Simulation::issue(Unit& u, Order order) {
     applyOrder(u, order);
 }
 void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
-    u.currentOrder = order;
-    u.automaticAbility = u.abilityWorking = u.abilityStarted = false; u.abilityEffects.clear();
-    u.abilityAnimation.clear();
-    if (u.replanQueued) std::erase(movementReplans_, u.id);
-    u.progressPosition = u.position; u.progressTicks = u.stagnantTicks = 0;
-    u.replanQueued = false; u.replanAfter = 0; u.relaxedAttempt = 0; u.yieldingTo = 0;
-    if (order.kind == OrderKind::Patrol) u.patrolOrigin = u.position;
-    u.moveGroup = order.moveGroup;
-    if (!u.moveGroup) u.groupRadius = 0;
-    u.velocity = {};
-    u.motionFacing.reset();
-    u.attackTarget = 0; cancelAttack(u); u.chaseTicks = 0;
-    u.unreachableTarget = 0; u.targetRetryTicks = 0;
-    u.route.clear(); u.next = 0; u.blockedTicks = 0;
-    u.repeatGather = false; u.targetCrystal = -1; u.gatherOriginCrystal = -1; u.targetBuilding = 0; u.harvestTicks = 0;
+    u.orders().currentOrder = order;
+    u.casting().automaticAbility = u.casting().abilityWorking = u.casting().abilityStarted = false; u.casting().abilityEffects.clear();
+    u.casting().abilityAnimation.clear();
+    if (u.motion().replanQueued) std::erase(movementReplans_, u.id);
+    u.motion().progressPosition = u.position; u.motion().progressTicks = u.motion().stagnantTicks = 0;
+    u.motion().replanQueued = false; u.motion().replanAfter = 0; u.motion().relaxedAttempt = 0; u.motion().yieldingTo = 0;
+    if (order.kind == OrderKind::Patrol) u.orders().patrolOrigin = u.position;
+    u.motion().moveGroup = order.moveGroup;
+    if (!u.motion().moveGroup) u.motion().groupRadius = 0;
+    u.motion().velocity = {};
+    u.motion().motionFacing.reset();
+    u.combat().attackTarget = 0; cancelAttack(u); u.combat().chaseTicks = 0;
+    u.combat().unreachableTarget = 0; u.combat().targetRetryTicks = 0;
+    u.motion().route.clear(); u.motion().next = 0; u.motion().blockedTicks = 0;
+    u.gathering().repeatGather = false; u.gathering().targetCrystal = -1; u.gathering().gatherOriginCrystal = -1; u.orders().targetBuilding = 0; u.gathering().harvestTicks = 0;
     if (order.kind == OrderKind::Attack) {
         const auto target = combatTarget(order.target);
         if (canAttack(u, target, order.forceAttack) && targetVisible(u, target)) {
-            u.attackTarget = target.id();
+            u.combat().attackTarget = target.id();
             chase(u, target);
-        } else { u.route.clear(); u.next = 0; u.state = UnitState::Idle; }
+        } else { u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::Idle; }
         return;
     }
-    if (order.kind == OrderKind::Stop || order.kind == OrderKind::Hold) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
+    if (order.kind == OrderKind::Stop || order.kind == OrderKind::Hold) { u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::Idle; return; }
     if (order.kind == OrderKind::UseAbility) {
-        u.targetBuilding = building(order.target) ? order.target : 0;
+        u.orders().targetBuilding = building(order.target) ? order.target : 0;
         if (path) followPath(u, std::move(*path), UnitState::ToAbility);
-        else u.state = UnitState::Idle;
+        else u.orders().state = UnitState::Idle;
         return;
     }
     if (order.kind == OrderKind::AttackGround) { chaseGround(u); return; }
     if (order.kind == OrderKind::Build) {
         const auto* b = building(order.target);
-        if (!b || b->owner != u.owner || b->complete() || !u.definition.canConstruct(b->definitionId)) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
-        if (b->definition.constructionMode == ConstructionMode::Summoning && b->constructionProgress > 0) {
+        if (!b || b->owner != u.owner || b->complete() || !u.definition.canConstruct(b->definitionId)) { u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::Idle; return; }
+        if (b->definition.constructionMode == ConstructionMode::Summoning && b->productionState().constructionProgress > 0) {
             applyOrder(u, {OrderKind::Stop}); return;
         }
-        u.targetBuilding = b->id;
-        if (constructionReach(u, b->definition, b->origin)) { u.state = UnitState::Building; return; }
+        u.orders().targetBuilding = b->id;
+        if (constructionReach(u, b->definition, b->origin)) { u.orders().state = UnitState::Building; return; }
         if (!setRoute(u, perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement), UnitState::ToBuild))
             setMessage(L"Рабочий не может добраться до стройки.");
         return;
@@ -68,7 +68,7 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
     if (order.kind == OrderKind::Interact) {
         if (const auto* b = buildingAt(order.cell)) {
             if (b->owner == u.owner && !b->complete() && u.definition.canConstruct(b->definitionId)) { applyOrder(u, {OrderKind::Build, {}, b->id}); return; }
-            if (b->owner == u.owner && b->complete() && b->definition.acceptsCargo && u.cargo > 0) { returnCargo(u); return; }
+            if (b->owner == u.owner && b->complete() && b->definition.acceptsCargo && u.gathering().cargo > 0) { returnCargo(u); return; }
             setRoute(u, perimeter(map(), b->origin, b->definition.width, b->definition.height, u.definition.movement), UnitState::Moving);
             return;
         }
@@ -77,21 +77,21 @@ void Simulation::applyOrder(Unit& u, Order order, std::optional<Path> path) {
         for (size_t i = 0; i < crystals().size(); ++i) {
             // Keep the clicked deposit as the origin throughout this gathering order.
             if (!crystals()[i].contains(order.cell)) continue;
-            u.targetCrystal = u.gatherOriginCrystal = static_cast<int>(i); u.repeatGather = true;
-            if (u.harvestAbility()->usesCargo() && u.cargo >= u.definition.carryCapacity)
+            u.gathering().targetCrystal = u.gathering().gatherOriginCrystal = static_cast<int>(i); u.gathering().repeatGather = true;
+            if (u.harvestAbility()->usesCargo() && u.gathering().cargo >= u.definition.carryCapacity)
                 returnCargo(u);
             else seekCrystal(u);
             return;
         }
     }
-    if (path) { u.blockedTicks = 0; followPath(u, std::move(*path), UnitState::Moving); }
+    if (path) { u.motion().blockedTicks = 0; followPath(u, std::move(*path), UnitState::Moving); }
     else if (!setRoute(u, std::span<const Cell>(&order.cell, 1), UnitState::Moving)) setMessage(L"Нет доступного пути.");
 }
-bool Simulation::command(Cell c) { if (units_.empty()) return false; const EntityId id = worker().id; return command(std::span<const EntityId>(&id, 1), c); }
+bool Simulation::command(Cell c) { if (world_.circles().empty()) return false; const EntityId id = worker().id; return command(std::span<const EntityId>(&id, 1), c); }
 bool Simulation::command(std::span<const EntityId> ids, Cell c, EntityId target) {
     if (!map().contains(c)) return false;
     if (!target) {
-        for (const auto& candidate : units_) if (candidate.cell == c && candidate.health > 0 && fog_.visible(c)) {
+        for (const auto& candidate : world_.circles()) if (candidate.cell == c && candidate.vitals().health > 0 && fog_.visible(c)) {
             target = candidate.id;
             if (candidate.owner != player_.id) break;
         }
@@ -113,7 +113,7 @@ bool Simulation::command(std::span<const EntityId> ids, Cell c, EntityId target)
     if (matched) return accepted;
     if (const auto* depot = entity(target); depot && depot->owner == player_.id && depot->complete() && depot->definition.acceptsCargo) {
         bool delivered = false;
-        for (auto id : ids) if (auto* u = mutableEntity(id); u && u->owner == player_.id && u->cargo > 0) delivered = returnCargo(*u) || delivered;
+        for (auto id : ids) if (auto* u = mutableEntity(id); u && u->owner == player_.id && u->gathering().cargo > 0) delivered = returnCargo(*u) || delivered;
         if (delivered) return true;
     }
     if (const auto* enemy = entity(target); enemy && enemy->owner != player_.id && fog_.visible(enemy->cell)) return attack(ids, target);
@@ -149,7 +149,7 @@ bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKi
         if (kind == OrderKind::AttackGround && (u->attackDamage() <= 0 || !u->definition.projectile ||
             u->definition.projectile->targeting != ProjectileTargeting::Point || u->definition.projectile->splashRadius <= 0)) continue;
         members.push_back({id, u->cell,
-            u->definition.movement, u->definition.formationPriority, u->formationForward, u->definition.collisionRadius, u->position});
+            u->definition.movement, u->definition.formationPriority, u->motion().formationForward, u->definition.collisionRadius, u->position});
     }
     // The public click target is a tile. A solo patrol needs another tile;
     // grouped endpoints may share tiles but retain distinct continuous positions.
@@ -159,7 +159,7 @@ bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKi
         for (const auto& member : members) { issue(*mutableEntity(member.id), {kind, c}); any = true; }
     } else {
         std::vector<FormationObstacle> held;
-        for (const auto& u : units_) if (std::none_of(members.begin(), members.end(), [&](const auto& m) { return m.id == u.id; })) {
+        for (const auto& u : world_.circles()) if (std::none_of(members.begin(), members.end(), [&](const auto& m) { return m.id == u.id; })) {
             held.push_back({u.cell, airborne(u.definition.movement), u.position, u.definition.collisionRadius});
         }
         const auto destinations = planFormation(map(), members, c, held);
@@ -179,9 +179,9 @@ bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKi
         for (size_t i = 0; i < destinations.size(); ++i) {
             const auto& destination = destinations[i];
             auto* u = participants[i];
-            u->moveGroup = group; u->formationForward = destination.forward; u->groupSpeed = speed;
-            u->groupTarget = c;
-            u->groupRadius = groupRadius;
+            u->motion().moveGroup = group; u->motion().formationForward = destination.forward; u->motion().groupSpeed = speed;
+            u->motion().groupTarget = c;
+            u->motion().groupRadius = groupRadius;
         }
         std::array<std::optional<RouteField>, 4> fields;
         for (size_t i = 0; i < destinations.size(); ++i) {
@@ -213,98 +213,98 @@ bool Simulation::orderFor(PlayerId actor, std::span<const EntityId> ids, OrderKi
     setMessage(any ? L"" : L"Нет доступного пути.");
     return any;
 }
-void Simulation::stop() { if (units_.empty()) return; const EntityId id = worker().id; stop(std::span<const EntityId>(&id, 1)); }
+void Simulation::stop() { if (world_.circles().empty()) return; const EntityId id = worker().id; stop(std::span<const EntityId>(&id, 1)); }
 void Simulation::stop(std::span<const EntityId> ids) {
     for (EntityId id : ids) if (auto* u = mutableEntity(id); u && u->owner == player_.id) issue(*u, {OrderKind::Stop});
     setMessage({});
 }
 void Simulation::arrived(Unit& u) {
-    u.route.clear(); u.next = 0;
-    if (u.moveGroup && u.state == UnitState::Moving) {
+    u.motion().route.clear(); u.motion().next = 0;
+    if (u.motion().moveGroup && u.orders().state == UnitState::Moving) {
         constexpr std::array<Cell, 8> headings{{{1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}}};
-        const int heading = int(std::lround(std::atan2(u.formationForward.y, u.formationForward.x) / .7853981634f));
+        const int heading = int(std::lround(std::atan2(u.motion().formationForward.y, u.motion().formationForward.x) / .7853981634f));
         u.facing = headings[(heading + 8) % 8];
     }
-    switch (u.state) {
-    case UnitState::ToAttack: u.state = UnitState::Attacking; break;
+    switch (u.orders().state) {
+    case UnitState::ToAttack: u.orders().state = UnitState::Attacking; break;
     case UnitState::ToCrystal: {
-        u.state = UnitState::Harvesting; u.harvestTicks = 0;
-        if (u.targetCrystal >= 0) {
-            const auto& node = crystals()[static_cast<size_t>(u.targetCrystal)];
+        u.orders().state = UnitState::Harvesting; u.gathering().harvestTicks = 0;
+        if (u.gathering().targetCrystal >= 0) {
+            const auto& node = crystals()[static_cast<size_t>(u.gathering().targetCrystal)];
             const Vec2 delta = Vec2{node.cell.x + node.width * .5f, node.cell.y + node.height * .5f} - u.position;
             const Cell facing{delta.x > .2f ? 1 : delta.x < -.2f ? -1 : 0, delta.y > .2f ? 1 : delta.y < -.2f ? -1 : 0};
             if (facing != Cell{}) u.facing = facing;
         }
         break;
     }
-    case UnitState::ToBuild: u.state = UnitState::Building; break;
-    case UnitState::ToAbility: u.state = UnitState::UsingAbility; break;
+    case UnitState::ToBuild: u.orders().state = UnitState::Building; break;
+    case UnitState::ToAbility: u.orders().state = UnitState::UsingAbility; break;
     case UnitState::ToHall:
         // A mobile depot may have left the route's original destination.
         returnCargo(u);
         break;
     default:
-        u.state = UnitState::Idle;
-        if (u.currentOrder.kind == OrderKind::Patrol &&
-            groundLengthSquared(u.currentOrder.position.value_or(center(u.currentOrder.cell)) - u.patrolOrigin) > 1e-8f) {
-            const Vec2 destination = u.currentOrder.position.value_or(center(u.currentOrder.cell));
-            u.currentOrder.position = u.patrolOrigin; u.currentOrder.cell = cellAt(u.patrolOrigin);
-            u.patrolOrigin = destination;
+        u.orders().state = UnitState::Idle;
+        if (u.orders().currentOrder.kind == OrderKind::Patrol &&
+            groundLengthSquared(u.orders().currentOrder.position.value_or(center(u.orders().currentOrder.cell)) - u.orders().patrolOrigin) > 1e-8f) {
+            const Vec2 destination = u.orders().currentOrder.position.value_or(center(u.orders().currentOrder.cell));
+            u.orders().currentOrder.position = u.orders().patrolOrigin; u.orders().currentOrder.cell = cellAt(u.orders().patrolOrigin);
+            u.orders().patrolOrigin = destination;
             resumeOrder(u);
-        } else if (u.currentOrder.kind == OrderKind::AttackMove) u.currentOrder = {OrderKind::Stop};
+        } else if (u.orders().currentOrder.kind == OrderKind::AttackMove) u.orders().currentOrder = {OrderKind::Stop};
         break;
     }
 }
 void Simulation::tickUnit(Unit& u) {
-    if (u.health <= 0) { issue(u, {OrderKind::Stop}); return; }
+    if (u.vitals().health <= 0) { issue(u, {OrderKind::Stop}); return; }
     tickAutocast(u);
-    if (u.state == UnitState::ToHall && --u.chaseTicks <= 0) {
-        u.chaseTicks = 15;
-        const auto* depot = entity(u.targetBuilding);
+    if (u.orders().state == UnitState::ToHall && --u.combat().chaseTicks <= 0) {
+        u.combat().chaseTicks = 15;
+        const auto* depot = entity(u.orders().targetBuilding);
         AbilityDefinition delivery; delivery.targeting = AbilityTargeting::Entity;
-        if (!depot || depot->health <= 0 || !depot->complete() || !depot->definition.acceptsCargo || depot->owner != u.owner ||
-            !abilityReach(u, delivery, depot->id, u.routeDestination)) { returnCargo(u); return; }
+        if (!depot || depot->vitals().health <= 0 || !depot->complete() || !depot->definition.acceptsCargo || depot->owner != u.owner ||
+            !abilityReach(u, delivery, depot->id, u.motion().routeDestination)) { returnCargo(u); return; }
     }
-    if (u.currentOrder.kind == OrderKind::UseAbility) {
-        const auto* ability = u.ability(u.currentOrder.abilityId);
-        if (!ability || !canTargetAbility(u, *ability, u.currentOrder.target)) { issue(u, {OrderKind::Stop}); return; }
-        if (abilityReach(u, *ability, u.currentOrder.target, u.position)) {
-            u.route.clear(); u.next = 0; u.velocity = {}; u.state = UnitState::UsingAbility;
+    if (u.orders().currentOrder.kind == OrderKind::UseAbility) {
+        const auto* ability = u.ability(u.orders().currentOrder.abilityId);
+        if (!ability || !canTargetAbility(u, *ability, u.orders().currentOrder.target)) { issue(u, {OrderKind::Stop}); return; }
+        if (abilityReach(u, *ability, u.orders().currentOrder.target, u.position)) {
+            u.motion().route.clear(); u.motion().next = 0; u.motion().velocity = {}; u.orders().state = UnitState::UsingAbility;
         } else {
-            u.state = UnitState::ToAbility; u.abilityWorking = false;
-            if (const auto* animation = u.abilityAnimation.current(); animation && animation->abilityId == ability->id)
-                u.abilityAnimation.clear();
-            if (--u.chaseTicks <= 0) approachAbility(u);
+            u.orders().state = UnitState::ToAbility; u.casting().abilityWorking = false;
+            if (const auto* animation = u.casting().abilityAnimation.current(); animation && animation->abilityId == ability->id)
+                u.casting().abilityAnimation.clear();
+            if (--u.combat().chaseTicks <= 0) approachAbility(u);
         }
     }
-    if (u.state == UnitState::ToBuild || u.state == UnitState::Building) {
-        const auto* b = building(u.targetBuilding);
-        if (!b || b->complete() || u.health <= 0 ||
-            (b->definition.constructionMode == ConstructionMode::Summoning && b->constructionProgress > 0)) {
+    if (u.orders().state == UnitState::ToBuild || u.orders().state == UnitState::Building) {
+        const auto* b = building(u.orders().targetBuilding);
+        if (!b || b->complete() || u.vitals().health <= 0 ||
+            (b->definition.constructionMode == ConstructionMode::Summoning && b->productionState().constructionProgress > 0)) {
             issue(u, {OrderKind::Stop}); return;
         }
     }
-    if (u.state == UnitState::Idle && u.moveGroup) yieldFormation(u);
-    if (u.state == UnitState::Idle && !u.attackTarget &&
-        (u.currentOrder.kind == OrderKind::Patrol || u.currentOrder.kind == OrderKind::AttackMove) && ++u.blockedTicks >= 15)
+    if (u.orders().state == UnitState::Idle && u.motion().moveGroup) yieldFormation(u);
+    if (u.orders().state == UnitState::Idle && !u.combat().attackTarget &&
+        (u.orders().currentOrder.kind == OrderKind::Patrol || u.orders().currentOrder.kind == OrderKind::AttackMove) && ++u.motion().blockedTicks >= 15)
         resumeOrder(u);
-    if (u.state == UnitState::WaitingForCrystal) {
-        if (++u.blockedTicks >= ticksPerSecond) seekCrystal(u);
+    if (u.orders().state == UnitState::WaitingForCrystal) {
+        if (++u.motion().blockedTicks >= ticksPerSecond) seekCrystal(u);
         return;
     }
-    if (u.state == UnitState::ToCrystal && u.targetCrystal >= 0 && crystals()[u.targetCrystal].remaining == 0) {
+    if (u.orders().state == UnitState::ToCrystal && u.gathering().targetCrystal >= 0 && crystals()[u.gathering().targetCrystal].remaining == 0) {
         seekCrystal(u);
         return;
     }
-    if (u.next < u.route.size()) {
+    if (u.motion().next < u.motion().route.size()) {
         moveUnit(u);
         return;
     }
-    if (u.state == UnitState::UsingAbility) { tickAbility(u); return; }
-    if (u.state == UnitState::Building) {
-        auto* b = mutableBuilding(u.targetBuilding);
-        if (!b || b->complete()) { u.state = UnitState::Idle; return; }
-        if (!constructionReach(u, b->definition, b->origin)) { u.state = UnitState::Idle; return; }
+    if (u.orders().state == UnitState::UsingAbility) { tickAbility(u); return; }
+    if (u.orders().state == UnitState::Building) {
+        auto* b = mutableBuilding(u.orders().targetBuilding);
+        if (!b || b->complete()) { u.orders().state = UnitState::Idle; return; }
+        if (!constructionReach(u, b->definition, b->origin)) { u.orders().state = UnitState::Idle; return; }
         advanceConstruction(*b);
         if (b->complete() || b->definition.constructionMode == ConstructionMode::Summoning)
             issue(u, {OrderKind::Stop});

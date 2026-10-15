@@ -8,14 +8,14 @@ bool Simulation::activateAbility(EntityId id, int abilityId, EntityId target) {
 }
 bool Simulation::activateAbilityFor(PlayerId actor, EntityId id, int abilityId, EntityId target) {
     auto* unit = mutableEntity(id);
-    if (!activePlayer(actor) || !unit || !unit->complete() || unit->health <= 0 || unit->owner != actor) return false;
+    if (!activePlayer(actor) || !unit || !unit->complete() || unit->vitals().health <= 0 || unit->owner != actor) return false;
     const auto* ability = unit->ability(abilityId);
     if (!ability) return false;
     return useAbility(*unit, *ability, target);
 }
 bool Simulation::useAbility(Unit& unit, const AbilityDefinition& ability, EntityId target, bool automatic) {
     if (unit.abilityCooldown(ability.id) > 0) { if (!automatic) setMessage(L"Способность ещё перезаряжается."); return false; }
-    if (unit.mana < ability.manaCost) { if (!automatic) setMessage(L"Недостаточно маны."); return false; }
+    if (unit.vitals().mana < ability.manaCost) { if (!automatic) setMessage(L"Недостаточно маны."); return false; }
     if (!canTargetAbility(unit, ability, target)) { if (!automatic) setMessage(L"Способность нельзя применить к этой цели."); return false; }
     const bool channel = std::any_of(ability.effects.begin(), ability.effects.end(), [](const auto& e) {
         return !std::holds_alternative<RestoreDefinition>(e.value);
@@ -25,7 +25,7 @@ bool Simulation::useAbility(Unit& unit, const AbilityDefinition& ability, Entity
         if (!node || (!unit.definition.mobile && !abilityReach(unit, ability, target, unit.position))) return false;
         Order order{OrderKind::Gather, node->cell, target}; order.abilityId = ability.id;
         applyOrder(unit, order);
-        unit.automaticAbility = automatic;
+        unit.casting().automaticAbility = automatic;
     } else if ((channel || ability.targeting != AbilityTargeting::None) && !startTargetedAbility(unit, ability, target, automatic)) {
         if (!automatic) setMessage(L"Цель вне досягаемости способности.");
         return false;
@@ -34,27 +34,27 @@ bool Simulation::useAbility(Unit& unit, const AbilityDefinition& ability, Entity
         commitAbility(unit, ability);
         std::vector<AbilityEffectState> states(ability.effects.size());
         applyInstantEffects(unit, ability, target, states);
-    } else unit.abilityEffects.assign(ability.effects.size(), {});
+    } else unit.casting().abilityEffects.assign(ability.effects.size(), {});
     if (!automatic) setMessage({});
     return true;
 }
 void Simulation::commitAbility(Unit& unit, const AbilityDefinition& ability) {
-    unit.mana -= ability.manaCost;
-    if (ability.cooldownTicks) unit.abilityCooldowns.push_back({ability.id, ability.cooldownTicks});
-    unit.abilityAnimation.start(ability, unit.definition);
+    unit.vitals().mana -= ability.manaCost;
+    if (ability.cooldownTicks) unit.casting().abilityCooldowns.push_back({ability.id, ability.cooldownTicks});
+    unit.casting().abilityAnimation.start(ability, unit.definition);
 }
 bool Simulation::setAutocast(EntityId id, int abilityId, bool enabled) {
     return setAutocastFor(player_.id, id, abilityId, enabled);
 }
 bool Simulation::setAutocastFor(PlayerId actor, EntityId id, int abilityId, bool enabled) {
     auto* u = mutableEntity(id);
-    if (!activePlayer(actor) || !u || u->health <= 0 || u->owner != actor) return false;
+    if (!activePlayer(actor) || !u || u->vitals().health <= 0 || u->owner != actor) return false;
     const auto* ability = u->ability(abilityId);
     if (!ability || !ability->autocast) return false;
-    if (enabled && !u->autocastEnabled(abilityId)) u->autocastAbilities.push_back(abilityId);
+    if (enabled && !u->autocastEnabled(abilityId)) u->casting().autocastAbilities.push_back(abilityId);
     if (!enabled) {
-        std::erase(u->autocastAbilities, abilityId);
-        if (u->automaticAbility && u->currentOrder.abilityId == abilityId) issue(*u, {OrderKind::Stop});
+        std::erase(u->casting().autocastAbilities, abilityId);
+        if (u->casting().automaticAbility && u->orders().currentOrder.abilityId == abilityId) issue(*u, {OrderKind::Stop});
     }
     return true;
 }
@@ -65,15 +65,15 @@ bool Simulation::effectEligible(const Entity& caster, const AbilityEffect& effec
         return node && node->remaining > 0 && (harvest->credit != HarvestCredit::Cargo || caster.definition.carryCapacity > 0);
     }
     const auto* recipient = entity(recipientId);
-    if (!recipient || recipient->health <= 0 || !recipient->complete()) return false;
+    if (!recipient || recipient->vitals().health <= 0 || !recipient->complete()) return false;
     if (const auto* repair = std::get_if<RepairDefinition>(&effect.value)) {
-        if (recipient->health >= recipient->maximumHealth()) return false;
-        if (automatic && economy(caster.owner).crystals == 0 && recipient->repairCredit <
+        if (recipient->vitals().health >= recipient->maximumHealth()) return false;
+        if (automatic && economy(caster.owner).crystals == 0 && recipient->vitals().repairCredit <
             std::int64_t(recipient->definition.cost.crystals) * repair->constructionCostPercent) return false;
         return true;
     }
     const auto& restore = std::get<RestoreDefinition>(effect.value);
-    return restore.stat == RestoredStat::Health ? recipient->health < recipient->maximumHealth() : recipient->mana < recipient->maximumMana();
+    return restore.stat == RestoredStat::Health ? recipient->vitals().health < recipient->maximumHealth() : recipient->vitals().mana < recipient->maximumMana();
 }
 bool Simulation::abilityEffectEligible(const Entity& caster, const AbilityDefinition& ability, EntityId target, bool automatic) const {
     return ability.effects.empty() || std::any_of(ability.effects.begin(), ability.effects.end(), [&](const auto& effect) {
@@ -88,12 +88,12 @@ void Simulation::applyInstantEffects(Entity& caster, const AbilityDefinition& ab
         states[i].applied = true;
         if (!effectEligible(caster, effect, target, false)) continue;
         auto& recipient = *mutableEntity(effect.recipient == EffectRecipient::Caster ? caster.id : target);
-        if (restore->stat == RestoredStat::Health) recipient.health = std::min(recipient.maximumHealth(), recipient.health + restore->amount);
-        else recipient.mana = std::min(recipient.maximumMana(), recipient.mana + restore->amount);
+        if (restore->stat == RestoredStat::Health) recipient.vitals().health = std::min(recipient.maximumHealth(), recipient.vitals().health + restore->amount);
+        else recipient.vitals().mana = std::min(recipient.maximumMana(), recipient.vitals().mana + restore->amount);
     }
 }
 bool Simulation::canTargetAbility(const Entity& u, const AbilityDefinition& ability, EntityId target) const {
-    if (u.health <= 0 || !u.complete() || !activePlayer(u.owner)) return false;
+    if (u.vitals().health <= 0 || !u.complete() || !activePlayer(u.owner)) return false;
     if (!abilityEffectEligible(u, ability, target, false)) return false;
     if (ability.targeting == AbilityTargeting::None) return target == 0;
     if (const auto* node = crystal(target)) {
@@ -101,7 +101,7 @@ bool Simulation::canTargetAbility(const Entity& u, const AbilityDefinition& abil
         return std::find(ability.targets.relations.begin(), ability.targets.relations.end(), TargetRelation::Neutral) != ability.targets.relations.end();
     }
     const auto* recipient = entity(target);
-    if (!recipient || recipient->health <= 0 || ability.targeting == AbilityTargeting::Crystal) return false;
+    if (!recipient || recipient->vitals().health <= 0 || ability.targeting == AbilityTargeting::Crystal) return false;
     const bool footprint = recipient->definition.collision == CollisionShape::Footprint;
     if (ability.targeting != AbilityTargeting::Entity &&
         ability.targeting != (footprint ? AbilityTargeting::Building : AbilityTargeting::Unit)) return false;
@@ -110,7 +110,7 @@ bool Simulation::canTargetAbility(const Entity& u, const AbilityDefinition& abil
     const auto& filter = ability.targets;
     if (std::find(filter.relations.begin(), filter.relations.end(), relation) == filter.relations.end() ||
         (!filter.allowSelf && target == u.id) || (filter.completedOnly && !recipient->complete()) ||
-        (filter.damagedOnly && recipient->health >= recipient->maximumHealth())) return false;
+        (filter.damagedOnly && recipient->vitals().health >= recipient->maximumHealth())) return false;
     if (!footprint) return visibleTo(u.owner, recipient->cell);
     for (int y = 0; y < recipient->definition.height; ++y) for (int x = 0; x < recipient->definition.width; ++x)
         if (visibleTo(u.owner, recipient->origin + Cell{x, y})) return true;
@@ -118,7 +118,7 @@ bool Simulation::canTargetAbility(const Entity& u, const AbilityDefinition& abil
 }
 const AbilityDefinition* Simulation::contextualAbility(const Unit& u, EntityId target) const {
     for (const auto& ability : u.definition.abilities)
-        if (ability.rightClick && canTargetAbility(u, ability, target) && !u.abilityCooldown(ability.id) && u.mana >= ability.manaCost)
+        if (ability.rightClick && canTargetAbility(u, ability, target) && !u.abilityCooldown(ability.id) && u.vitals().mana >= ability.manaCost)
             return &ability;
     return nullptr;
 }
@@ -206,89 +206,84 @@ bool Simulation::startTargetedAbility(Entity& u, const AbilityDefinition& abilit
     }
     Order order{OrderKind::UseAbility, target ? cellAt(bounds(*this, target).position) : u.cell, target}; order.abilityId = ability.id;
     applyOrder(u, order, std::move(path));
-    u.automaticAbility = automatic; u.chaseTicks = 15 + int(u.id % 7);
-    if (reached) u.state = UnitState::UsingAbility;
+    u.casting().automaticAbility = automatic; u.combat().chaseTicks = 15 + int(u.id % 7);
+    if (reached) u.orders().state = UnitState::UsingAbility;
     return true;
 }
 void Simulation::approachAbility(Entity& u) {
-    const auto* ability = u.ability(u.currentOrder.abilityId);
+    const auto* ability = u.ability(u.orders().currentOrder.abilityId);
     if (!ability || !u.definition.mobile) { issue(u, {OrderKind::Stop}); return; }
-    u.chaseTicks = 15 + int(u.id % 7); u.abilityWorking = false;
-    if (u.next < u.route.size() && abilityReach(u, *ability, u.currentOrder.target, u.routeDestination)) return;
-    if (combatSearchBudget_ <= 0) { u.chaseTicks = 1; u.state = UnitState::ToAbility; return; }
+    u.combat().chaseTicks = 15 + int(u.id % 7); u.casting().abilityWorking = false;
+    if (u.motion().next < u.motion().route.size() && abilityReach(u, *ability, u.orders().currentOrder.target, u.motion().routeDestination)) return;
+    if (combatSearchBudget_ <= 0) { u.combat().chaseTicks = 1; u.orders().state = UnitState::ToAbility; return; }
     --combatSearchBudget_;
-    const auto positions = abilityPositions(u, *ability, u.currentOrder.target);
+    const auto positions = abilityPositions(u, *ability, u.orders().currentOrder.target);
     if (auto path = findUnitPath(map(), u.position, positions, unitObstacles(u, true, true), u.definition.collisionRadius, u.definition.movement, 2048))
         followPath(u, std::move(*path), UnitState::ToAbility);
-    else { u.route.clear(); u.next = 0; u.state = UnitState::ToAbility; }
-}
-void Simulation::prepareAbilityTick(Entity& u) {
-    u.abilityAnimation.beginTick();
-    for (auto& cooldown : u.abilityCooldowns) --cooldown.remainingTicks;
-    std::erase_if(u.abilityCooldowns, [](const auto& cooldown) { return cooldown.remainingTicks <= 0; });
+    else { u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::ToAbility; }
 }
 void Simulation::tickAbility(Entity& u) {
-    const auto* ability = u.ability(u.currentOrder.abilityId);
-    if (!ability || (u.state != UnitState::UsingAbility && u.state != UnitState::Harvesting)) return;
-    if (u.abilityEffects.size() != ability->effects.size()) u.abilityEffects.assign(ability->effects.size(), {});
-    const bool gathering = u.state == UnitState::Harvesting;
-    const auto target = gathering && u.targetCrystal >= 0 ? crystals()[u.targetCrystal].id : u.currentOrder.target;
+    const auto* ability = u.ability(u.orders().currentOrder.abilityId);
+    if (!ability || (u.orders().state != UnitState::UsingAbility && u.orders().state != UnitState::Harvesting)) return;
+    if (u.casting().abilityEffects.size() != ability->effects.size()) u.casting().abilityEffects.assign(ability->effects.size(), {});
+    const bool gathering = u.orders().state == UnitState::Harvesting;
+    const auto target = gathering && u.gathering().targetCrystal >= 0 ? crystals()[u.gathering().targetCrystal].id : u.orders().currentOrder.target;
     if (gathering && !crystalVisibleTo(u.owner, *crystal(target))) { issue(u, {OrderKind::Stop}); return; }
     if (!abilityReach(u, *ability, target, u.position)) return;
     // Accepting an order is not casting: commit only when execution can begin.
-    if (!u.abilityStarted) {
-        if (u.mana < ability->manaCost || u.abilityCooldown(ability->id) > 0 || !canTargetAbility(u, *ability, target)) {
+    if (!u.casting().abilityStarted) {
+        if (u.vitals().mana < ability->manaCost || u.abilityCooldown(ability->id) > 0 || !canTargetAbility(u, *ability, target)) {
             issue(u, {OrderKind::Stop}); return;
         }
         // A channel waiting for effect resources has not begun execution yet.
         if (!abilityEffectEligible(u, *ability, target, true)) return;
         commitAbility(u, *ability);
-        u.abilityStarted = true;
+        u.casting().abilityStarted = true;
     }
-    u.abilityWorking = false;
+    u.casting().abilityWorking = false;
     // Effects run in catalog order. Each owns its progress; costs and animation belong to the cast.
     for (size_t i = 0; i < ability->effects.size(); ++i) {
-        const auto& effect = ability->effects[i]; auto& state = u.abilityEffects[i];
+        const auto& effect = ability->effects[i]; auto& state = u.casting().abilityEffects[i];
         const auto recipientId = effect.recipient == EffectRecipient::Caster ? u.id : target;
         if (const auto* restore = std::get_if<RestoreDefinition>(&effect.value)) {
             if (state.applied) continue;
             state.applied = true; // An ineligible instantaneous effect is skipped, never deferred.
             if (!effectEligible(u, effect, target, false)) continue;
             auto& recipient = *mutableEntity(recipientId);
-            if (restore->stat == RestoredStat::Health) recipient.health = std::min(recipient.maximumHealth(), recipient.health + restore->amount);
-            else recipient.mana = std::min(recipient.maximumMana(), recipient.mana + restore->amount);
+            if (restore->stat == RestoredStat::Health) recipient.vitals().health = std::min(recipient.maximumHealth(), recipient.vitals().health + restore->amount);
+            else recipient.vitals().mana = std::min(recipient.maximumMana(), recipient.vitals().mana + restore->amount);
         } else if (effectEligible(u, effect, target, false)) {
             if (const auto* repair = std::get_if<RepairDefinition>(&effect.value)) tickRepair(u, *ability, *repair, recipientId, state);
             else if (gathering) harvest(u, std::get<HarvestDefinition>(effect.value), state);
         }
     }
     if (gathering) {
-        const auto& node = crystals()[u.targetCrystal];
-        if (node.remaining == 0 || (ability->usesCargo() && u.cargo >= u.definition.carryCapacity)) {
-            if (u.cargo > 0) returnCargo(u); else seekCrystal(u);
+        const auto& node = crystals()[u.gathering().targetCrystal];
+        if (node.remaining == 0 || (ability->usesCargo() && u.gathering().cargo >= u.definition.carryCapacity)) {
+            if (u.gathering().cargo > 0) returnCargo(u); else seekCrystal(u);
         }
-        if (u.state == UnitState::Harvesting) u.abilityAnimation.sustain(*ability, u.definition);
-        else if (const auto* animation = u.abilityAnimation.current(); animation && animation->abilityId == ability->id)
-            u.abilityAnimation.clear();
+        if (u.orders().state == UnitState::Harvesting) u.casting().abilityAnimation.sustain(*ability, u.definition);
+        else if (const auto* animation = u.casting().abilityAnimation.current(); animation && animation->abilityId == ability->id)
+            u.casting().abilityAnimation.clear();
         return;
     }
     const bool pending = std::any_of(ability->effects.begin(), ability->effects.end(), [&](const auto& effect) {
         return std::holds_alternative<RepairDefinition>(effect.value) && effectEligible(u, effect, target, false);
     });
-    if (pending && !u.abilityWorking) {
-        if (const auto* animation = u.abilityAnimation.current(); animation && animation->abilityId == ability->id)
-            u.abilityAnimation.clear();
+    if (pending && !u.casting().abilityWorking) {
+        if (const auto* animation = u.casting().abilityAnimation.current(); animation && animation->abilityId == ability->id)
+            u.casting().abilityAnimation.clear();
     }
     if (!pending) {
         if (ability->repair()) issue(u, {OrderKind::Stop});
-        else { u.state = UnitState::Idle; u.currentOrder = {OrderKind::Stop}; u.automaticAbility = false; }
+        else { u.orders().state = UnitState::Idle; u.orders().currentOrder = {OrderKind::Stop}; u.casting().automaticAbility = false; }
     }
 }
 void Simulation::tickAutocast(Entity& u) {
-    if (u.health <= 0 || !u.complete() || !activePlayer(u.owner) || u.state != UnitState::Idle ||
-        u.currentOrder.kind != OrderKind::Stop || u.next < u.route.size() || u.attackTarget) return;
+    if (u.vitals().health <= 0 || !u.complete() || !activePlayer(u.owner) || u.orders().state != UnitState::Idle ||
+        u.orders().currentOrder.kind != OrderKind::Stop || u.motion().next < u.motion().route.size() || u.combat().attackTarget) return;
     for (const auto& ability : u.definition.abilities) {
-        if (!ability.autocast || !u.autocastEnabled(ability.id) || u.abilityCooldown(ability.id) || u.mana < ability.manaCost) continue;
+        if (!ability.autocast || !u.autocastEnabled(ability.id) || u.abilityCooldown(ability.id) || u.vitals().mana < ability.manaCost) continue;
         const auto& automatic = *ability.autocast;
         if ((clock_.elapsedTicks() + u.id) % automatic.scanIntervalTicks) continue;
         if (ability.targeting == AbilityTargeting::None) { if (useAbility(u, ability, 0, true)) return; continue; }
@@ -305,8 +300,8 @@ void Simulation::tickAutocast(Entity& u) {
             }
             if (distance <= automatic.radius * automatic.radius) candidates.emplace_back(distance, id);
         };
-        for (const auto& e : buildings_) consider(e.id);
-        for (const auto& e : units_) consider(e.id);
+        for (const auto& e : world_.footprints()) consider(e.id);
+        for (const auto& e : world_.circles()) consider(e.id);
         for (const auto& c : crystals()) consider(c.id);
         std::sort(candidates.begin(), candidates.end());
         for (const auto& candidate : candidates) if (useAbility(u, ability, candidate.second, true)) return;

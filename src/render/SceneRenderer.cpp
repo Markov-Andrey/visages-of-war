@@ -36,7 +36,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     struct Item { float depth; Kind kind; size_t index; };
     std::vector<Item> items;
     std::vector<const Building*> groundSelections;
-    for (const auto& b : game.buildings()) if (b.health > 0 && buildingVisible(game, b) && (ui.selection.contains(b.id) || hoverEntity == b.id || !b.complete()) &&
+    for (const auto& b : game.buildings()) if (b.vitals().health > 0 && buildingVisible(game, b) && (ui.selection.contains(b.id) || hoverEntity == b.id || !b.complete()) &&
         onScreen(view.project(center(b.origin), float(map.at(b.origin).height)))) groundSelections.push_back(&b);
     for (size_t i = 0; i < game.landscape().decorations.size(); ++i) {
         const auto p = game.landscape().decorations[i].position;
@@ -48,7 +48,7 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
         const auto& object = game.environment()[i];
         items.push_back({object.origin.x + object.origin.y + object.width + object.height - 1.0f, Kind::Environment, i});
     }
-    for (size_t i = 0; i < game.buildings().size(); ++i) if (game.buildings()[i].health > 0 && buildingVisible(game, game.buildings()[i]))
+    for (size_t i = 0; i < game.buildings().size(); ++i) if (game.buildings()[i].vitals().health > 0 && buildingVisible(game, game.buildings()[i]))
         items.push_back({buildingDepth(game.buildings()[i]), Kind::Building, i});
     for (size_t i = 0; i < game.corpses().size(); ++i) if (game.fog().visible(game.corpses()[i].cell))
         items.push_back({unitDrawDepth(game.corpses()[i].position), Kind::Corpse, i});
@@ -158,8 +158,8 @@ void Renderer::draw(const Simulation& game, const WorldView& view, std::optional
     }
     if (grid) for (const auto& u : game.units()) if (u.owner == game.player().id && ui.selection.contains(u.id)) {
         Vec2 previous = unitScreenAnchor(view, u.position, game.unitHeight(u));
-        for (size_t i = u.next; i < u.route.size(); ++i) {
-            const Cell c = u.route[i];
+        for (size_t i = u.motion().next; i < u.motion().route.size(); ++i) {
+            const Cell c = u.motion().route[i];
             if (!game.fog().explored(c)) break;
             const auto next = unitScreenAnchor(view, center(c), airborne(u.definition.movement) ? 5.0f : map.surfaceHeight(c, center(c)));
             line(previous, next, 0xe5ce92, 1.5f); previous = next;

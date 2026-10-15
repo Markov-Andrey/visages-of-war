@@ -20,37 +20,37 @@ void spriteTests(TestSuite& test, const TestContext& context) {
             } else type.abilities = {ability};
             Scenario scene{Map(24, 24), {3, 3}, {3, 5}, {{{2, 5}, 1000}}}; scene.map.occupy({2, 5});
             auto game = makeTestSimulation(std::move(scene), {}, type);
-            auto& building = const_cast<Building&>(game.buildings().front()); building.health = 500;
+            auto& building = const_cast<Building&>(game.buildings().front()); building.vitals().health = 500;
             const auto id = game.worker().id;
             require(effect == 2 ? game.command({2, 5}) : game.activateAbility(id, ability.id, effect == 1 ? building.id : 0),
                 "Ability activation rejected");
             if (effect != 0) {
-                require(!game.worker().abilityAnimation.current(), "Order acceptance started playback");
-                for (int tick = 0; tick < 300 && !game.worker().abilityStarted; ++tick) game.tick();
-                require(game.worker().abilityStarted, "Ability never began execution");
+                require(!game.worker().casting().abilityAnimation.current(), "Order acceptance started playback");
+                for (int tick = 0; tick < 300 && !game.worker().casting().abilityStarted; ++tick) game.tick();
+                require(game.worker().casting().abilityStarted, "Ability never began execution");
             }
             for (int tick = 0; tick < 8; ++tick) {
                 require(unitFrame(game.worker()).column == 4 + tick / 2, "Ability effect changed animation startup or timing");
-                require(game.worker().attackPhase == AttackPhase::Ready && game.projectiles().empty(), "Animation fired a weapon");
+                require(game.worker().combat().attackPhase == AttackPhase::Ready && game.projectiles().empty(), "Animation fired a weapon");
                 game.tick();
             }
-            require(game.worker().mana == 50 - ability.manaCost, "Animation or sustained work charged mana twice");
-            if (effect == 0) require(!game.worker().abilityAnimation.current() && unitFrame(game.worker()).column == 2,
+            require(game.worker().vitals().mana == 50 - ability.manaCost, "Animation or sustained work charged mana twice");
+            if (effect == 0) require(!game.worker().casting().abilityAnimation.current() && unitFrame(game.worker()).column == 2,
                 "Instant ability did not return to stand after one cycle");
-            else require(game.worker().abilityAnimation.current(), "Active channel lost its animation");
+            else require(game.worker().casting().abilityAnimation.current(), "Active channel lost its animation");
             if (effect == 2) {
                 auto& caster = const_cast<Unit&>(game.worker());
                 AbilityDefinition instant{190, "Instant over channel", "", 1, 60}; instant.animation = AbilityAnimation::Work;
                 caster.definition.sprite.work = 9; caster.definition.abilities.push_back(instant);
                 require(game.activateAbility(id, instant.id), "Instant cast during gathering rejected");
                 ticks(game, 5);
-                require(unitFrame(game.worker()).column == 9 && game.worker().currentOrder.kind == OrderKind::Gather,
+                require(unitFrame(game.worker()).column == 9 && game.worker().orders().currentOrder.kind == OrderKind::Gather,
                     "Sustained work overwrote a new cast or cast replaced gathering");
                 ticks(game, Simulation::ticksPerSecond - 5);
-                require(game.worker().abilityAnimation.current() && game.worker().abilityAnimation.current()->abilityId == ability.id,
+                require(game.worker().casting().abilityAnimation.current() && game.worker().casting().abilityAnimation.current()->abilityId == ability.id,
                     "Sustained action did not resume after instant animation");
             }
-            game.stop(); require(!game.worker().abilityAnimation.current() && unitFrame(game.worker()).column == 2,
+            game.stop(); require(!game.worker().casting().abilityAnimation.current() && unitFrame(game.worker()).column == 2,
                 "Stop retained an ability animation");
         }
     });
@@ -62,19 +62,19 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         game.order(std::array{id}, OrderKind::Move, {5, 6});
         require(game.activateAbility(id, 831), "Instant cast rejected");
         const auto before = game.worker().position; game.tick();
-        require(game.worker().currentOrder.kind == OrderKind::Move && game.worker().position != before,
+        require(game.worker().orders().currentOrder.kind == OrderKind::Move && game.worker().position != before,
             "Cosmetic animation replaced movement order or stopped movement");
-        const int elapsed = game.worker().abilityAnimation.current()->elapsedTicks;
+        const int elapsed = game.worker().casting().abilityAnimation.current()->elapsedTicks;
         require(!game.activateAbility(id, 831) && !game.activateAbilityFor(1, id, 831) &&
-            game.worker().abilityAnimation.current()->elapsedTicks == elapsed && game.worker().mana == 5,
+            game.worker().casting().abilityAnimation.current()->elapsedTicks == elapsed && game.worker().vitals().mana == 5,
             "Rejected activation restarted animation or charged mana");
         game.stop(); ticks(game, 60);
-        auto& caster = const_cast<Unit&>(game.worker()); caster.mana = 0;
-        require(!game.activateAbility(id, 831) && !caster.abilityAnimation.current(), "Insufficient mana played animation");
-        caster.mana = 10;
-        require(!game.activateAbility(id, 831, 99999) && !caster.abilityAnimation.current(), "Invalid target played animation");
+        auto& caster = const_cast<Unit&>(game.worker()); caster.vitals().mana = 0;
+        require(!game.activateAbility(id, 831) && !caster.casting().abilityAnimation.current(), "Insufficient mana played animation");
+        caster.vitals().mana = 10;
+        require(!game.activateAbility(id, 831, 99999) && !caster.casting().abilityAnimation.current(), "Invalid target played animation");
         caster.definition.abilities[0].animation.reset();
-        require(game.activateAbility(id, 831) && !caster.abilityAnimation.current(), "Missing animation field started playback");
+        require(game.activateAbility(id, 831) && !caster.casting().abilityAnimation.current(), "Missing animation field started playback");
     });
     test("Ability animation tags select available actions and missing artwork falls back to stand", [] {
         for (auto action : {AbilityAnimation::Stand, AbilityAnimation::Work, AbilityAnimation::Attack}) {
@@ -96,15 +96,15 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         scene.map.occupy({7, 7}); scene.map.occupy({30, 30});
         auto game = makeTestSimulation(std::move(scene), {}, definitions.entity("church.worker"));
         require(game.command({7, 7}), "Harvest channel fixture rejected order");
-        for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
+        for (int i = 0; i < 100 && game.worker().orders().state != UnitState::Harvesting; ++i) game.tick();
         require(harvestEffectTarget(game, game.worker()), "Active harvesting channel missing");
-        auto unit = game.worker(); unit.health = 0;
+        ecs::World fixture; auto& unit = fixture.create(game.worker().id, game.worker().definition); copyEntityState(unit, game.worker()); unit.vitals().health = 0;
         require(!harvestEffectTarget(game, unit), "Dead worker still channels");
-        unit = game.worker(); unit.cell = {game.map().width() - 1, game.map().height() - 1};
+        copyEntityState(unit, game.worker()); unit.cell = {game.map().width() - 1, game.map().height() - 1};
         require(!harvestEffectTarget(game, unit), "Hidden worker reveals channel");
-        unit = game.worker(); unit.targetCrystal = 1;
+        copyEntityState(unit, game.worker()); unit.gathering().targetCrystal = 1;
         require(!harvestEffectTarget(game, unit), "Hidden deposit reveals channel");
-        unit = game.worker(); unit.targetCrystal = -1;
+        copyEntityState(unit, game.worker()); unit.gathering().targetCrystal = -1;
         require(!harvestEffectTarget(game, unit), "Invalid harvest target accepted");
         game.stop(); require(!harvestEffectTarget(game, game.worker()), "Stopped worker still channels");
     });
@@ -124,20 +124,20 @@ void spriteTests(TestSuite& test, const TestContext& context) {
             recipe.sources[1][5].source == std::array<int,4>{1536,0,512,512}, "Work views were replaced with attack frames");
         for (const auto& direction : recipe.sources) for (const auto& frame : direction)
             require(frame.teamMask == sprite.death->teamMask, "Novice animation lost its aligned team mask");
-        Unit unit; unit.definition = type; unit.health = type.maximumHealth; unit.facing = {1,0};
+        ecs::World entities; auto& unit = entities.create(1, type); unit.vitals().health = type.maximumHealth; unit.facing = {1,0};
         for (const auto state : {UnitState::Harvesting, UnitState::Building}) {
-            unit.abilityAnimation.clear();
-            if (state == UnitState::Harvesting) unit.abilityAnimation.sustain(*type.gatherAbility(), type);
-            unit.state = state; require(unitFrame(unit).column == 5 && unitFrame(unit).row == 1, "Work pose not selected");
+            unit.casting().abilityAnimation.clear();
+            if (state == UnitState::Harvesting) unit.casting().abilityAnimation.sustain(*type.gatherAbility(), type);
+            unit.orders().state = state; require(unitFrame(unit).column == 5 && unitFrame(unit).row == 1, "Work pose not selected");
         }
-        unit.abilityAnimation.clear();
+        unit.casting().abilityAnimation.clear();
         for (const auto state : {UnitState::Idle, UnitState::ToCrystal, UnitState::ToBuild, UnitState::ToHall}) {
-            unit.state = state; require(unitFrame(unit).column == 0, "Work pose leaked into travel or idle");
+            unit.orders().state = state; require(unitFrame(unit).column == 0, "Work pose leaked into travel or idle");
         }
-        unit.state = UnitState::Moving; unit.route = {{1,0}}; unit.position = {.1f,0}; unit.walkCycle = .5f;
+        unit.orders().state = UnitState::Moving; unit.motion().route = {{1,0}}; unit.position = {.1f,0}; unit.motion().walkCycle = .5f;
         require(unitFrame(unit).column == 3, "Novice lost its four-frame walk");
-        unit.definition.sprite.work = -1; unit.route.clear(); unit.state = UnitState::Harvesting;
-        unit.abilityAnimation.sustain(*type.gatherAbility(), type);
+        unit.definition.sprite.work = -1; unit.motion().route.clear(); unit.orders().state = UnitState::Harvesting;
+        unit.casting().abilityAnimation.sustain(*type.gatherAbility(), type);
         require(unitFrame(unit).column == 0, "Existing units lost their idle fallback while working");
         Renderer renderer(context.worldPaths);
         renderer.snapshotUnitDirections(sprite, Paths::executable().parent_path() / "novice-directions.png");
@@ -198,7 +198,7 @@ void spriteTests(TestSuite& test, const TestContext& context) {
         require(combat.worker().facing == Cell{1, 0}, "Combat setup did not face east");
         const auto attackPosition = combat.worker().position;
         require(combat.attack(std::array{id}, target), "Attack rejected"); combat.tick();
-        require(combat.worker().state == UnitState::Attacking && combat.worker().facing == Cell{-1, -1},
+        require(combat.worker().orders().state == UnitState::Attacking && combat.worker().facing == Cell{-1, -1},
             "Movement smoothing delayed facing the attack target");
         require(combat.worker().position == attackPosition, "Facing the attack target changed collision position");
     });

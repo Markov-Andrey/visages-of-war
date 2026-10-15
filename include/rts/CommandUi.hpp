@@ -37,10 +37,10 @@ inline const UnitCommandInfo* unitCommandAt(size_t slot) {
     return nullptr;
 }
 inline OrderKind unitOrder(const Unit& unit) {
-    const auto kind = unit.currentOrder.kind;
+    const auto kind = unit.orders().currentOrder.kind;
     if (kind == OrderKind::Hold || kind == OrderKind::Patrol || kind == OrderKind::AttackMove || kind == OrderKind::AttackGround) return kind;
-    if (unit.attackTarget) return OrderKind::Attack;
-    switch (unit.state) {
+    if (unit.combat().attackTarget) return OrderKind::Attack;
+    switch (unit.orders().state) {
     case UnitState::Moving: return OrderKind::Move;
     case UnitState::ToBuild: case UnitState::Building: return OrderKind::Build;
     case UnitState::ToAbility: case UnitState::UsingAbility: return OrderKind::UseAbility;
@@ -71,8 +71,8 @@ inline bool commandCapable(const Unit& unit, UnitCommand command) {
     }
 }
 inline bool idleWorker(const Simulation& game, const Unit& unit) {
-    return unit.owner == game.player().id && unit.health > 0 && unit.definition.isWorker() &&
-        unit.state == UnitState::Idle && !unit.attackTarget && unitOrder(unit) == OrderKind::Stop;
+    return unit.owner == game.player().id && unit.vitals().health > 0 && unit.definition.isWorker() &&
+        unit.orders().state == UnitState::Idle && !unit.combat().attackTarget && unitOrder(unit) == OrderKind::Stop;
 }
 std::map<std::string, IconAsset> loadCommandIcons(const Paths& paths);
 }

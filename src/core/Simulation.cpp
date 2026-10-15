@@ -26,7 +26,7 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
         throw std::invalid_argument("Invalid starting building for faction " + workerType_.factionId + ": " + startingBuilding);
     reserveScenarioHall(scenario_, {initial->width, initial->height});
     if (!mutableEconomy(player_.id).supply.reserve(initial->cost.supply)) throw std::invalid_argument("Initial depot exceeds supply cap");
-    buildings_.push_back(makeEntity(*initial, hall(), player_.id));
+    makeEntity(*initial, hall(), player_.id);
     spawn(workerType_, scenario_.worker, false, player_.id);
     for (Cell cell : scenario_.extraWorkers) spawn(workerType_, cell, false, player_.id);
     for (const auto& initialUnit : scenario_.units) spawn(entityType(initialUnit.definitionId), initialUnit.cell, false, initialUnit.owner);
@@ -39,15 +39,15 @@ Simulation::Simulation(Scenario scenario, PlayerSettings player, EntityDefinitio
     updateVision();
 }
 std::vector<const Entity*> Simulation::entities() const {
-    std::vector<const Entity*> result; result.reserve(units_.size() + buildings_.size());
-    for (const auto& e : units_) result.push_back(&e);
-    for (const auto& e : buildings_) result.push_back(&e);
+    std::vector<const Entity*> result; result.reserve(world_.circles().size() + world_.footprints().size());
+    for (const auto& e : world_.circles()) result.push_back(&e);
+    for (const auto& e : world_.footprints()) result.push_back(&e);
     return result;
 }
 std::vector<Entity*> Simulation::mutableEntities() {
-    std::vector<Entity*> result; result.reserve(units_.size() + buildings_.size());
-    for (auto& e : units_) result.push_back(&e);
-    for (auto& e : buildings_) result.push_back(&e);
+    std::vector<Entity*> result; result.reserve(world_.circles().size() + world_.footprints().size());
+    for (auto& e : world_.circles()) result.push_back(&e);
+    for (auto& e : world_.footprints()) result.push_back(&e);
     return result;
 }
 std::vector<const EntityDefinition*> Simulation::buildingTypes(const EntityDefinition& builder) const {
@@ -59,44 +59,44 @@ bool Simulation::visibleTo(PlayerId id, Cell cell) const {
     if (!activePlayer(id)) return false;
     if (id == player_.id) return fog_.visible(cell);
     const bool day = clock_.phase() == DayPhase::Day;
-    for (const auto& u : units_) if (u.owner == id && u.health > 0 &&
+    for (const auto& u : world_.circles()) if (u.owner == id && u.vitals().health > 0 &&
         visionReaches(map(), {u.cell, day ? u.definition.dayVision : u.definition.nightVision,
             airborne(u.definition.movement)}, cell)) return true;
-    for (const auto& b : buildings_) if (b.owner == id && b.health > 0) {
+    for (const auto& b : world_.footprints()) if (b.owner == id && b.vitals().health > 0) {
         const int radius = b.complete() ? (day ? b.definition.dayVision : b.definition.nightVision) : 2;
         if (visionReaches(map(), {b.origin + Cell{b.definition.width / 2, b.definition.height / 2}, radius}, cell)) return true;
     }
     return false;
 }
-const Entity* Simulation::entity(EntityId id) const { if (const auto* u = unit(id)) return u; return building(id); }
+const Entity* Simulation::entity(EntityId id) const { return world_.find(id); }
 const TagSet* Simulation::tags(EntityId id) const {
     if (const auto* e = entity(id)) return &e->definition.tags;
     if (const auto* c = crystal(id)) return &c->tags;
     for (const auto& object : environment()) if (object.id == id) return &object.tags;
     return nullptr;
 }
-Entity* Simulation::mutableEntity(EntityId id) { if (auto* u = mutableUnit(id)) return u; return mutableBuilding(id); }
-Entity Simulation::makeEntity(const EntityDefinition& type, Cell cell, PlayerId owner) {
-    Entity e;
-    e.id = nextId_++; e.owner = owner; e.definitionId = type.id; e.definition = type;
+Entity* Simulation::mutableEntity(EntityId id) { return world_.find(id); }
+Entity& Simulation::makeEntity(const EntityDefinition& type, Cell cell, PlayerId owner) {
+    auto& e = world_.create(nextId_++, type);
+    e.owner = owner;
     e.cell = e.origin = cell;
-    e.position = e.tickPosition = type.collision == CollisionShape::Footprint ?
+    e.position = e.motion().tickPosition = type.collision == CollisionShape::Footprint ?
         Vec2{cell.x + type.width * .5f, cell.y + type.height * .5f} : center(cell);
-    e.health = type.maximumHealth; e.mana = type.maximumMana;
-    e.constructionProgress = type.constructionTicks;
+    e.vitals().health = type.maximumHealth; e.vitals().mana = type.maximumMana;
+    e.productionState().constructionProgress = type.constructionTicks;
     e.rally = defaultRally(type, cell);
-    if (type.hero) e.hero = HeroProgression{1, 0, progression_};
+    if (type.hero) e.progression().hero = HeroProgression{1, 0, progression_};
     for (const auto& ability : type.abilities)
-        if (ability.autocast && ability.autocast->enabledByDefault) e.autocastAbilities.push_back(ability.id);
+        if (ability.autocast && ability.autocast->enabledByDefault) e.casting().autocastAbilities.push_back(ability.id);
     return e;
 }
-const Unit* Simulation::unit(EntityId id) const { for (const auto& u : units_) if (u.id == id) return &u; return nullptr; }
+const Unit* Simulation::unit(EntityId id) const { for (const auto& u : world_.circles()) if (u.id == id) return &u; return nullptr; }
 const Unit* Simulation::hero() const {
-    for (const auto& u : units_) if (u.owner == player_.id && u.hero && u.health > 0) return &u;
-    for (const auto& b : buildings_) if (b.owner == player_.id && b.hero && b.health > 0) return &b;
+    for (const auto& u : world_.circles()) if (u.owner == player_.id && u.progression().hero && u.vitals().health > 0) return &u;
+    for (const auto& b : world_.footprints()) if (b.owner == player_.id && b.progression().hero && b.vitals().health > 0) return &b;
     return nullptr;
 }
-const Building* Simulation::building(EntityId id) const { for (const auto& b : buildings_) if (b.id == id) return &b; return nullptr; }
+const Building* Simulation::building(EntityId id) const { for (const auto& b : world_.footprints()) if (b.id == id) return &b; return nullptr; }
 const Crystal* Simulation::crystal(EntityId id) const { for (const auto& node : crystals()) if (node.id == id) return &node; return nullptr; }
 bool Simulation::crystalVisible(const Crystal& node) const {
     return crystalVisibleTo(player_.id, node);
@@ -106,9 +106,9 @@ bool Simulation::crystalVisibleTo(PlayerId id, const Crystal& node) const {
         if (visibleTo(id, node.cell + Cell{x, y})) return true;
     return false;
 }
-Unit* Simulation::mutableUnit(EntityId id) { for (auto& u : units_) if (u.id == id) return &u; return nullptr; }
-Building* Simulation::mutableBuilding(EntityId id) { for (auto& b : buildings_) if (b.id == id) return &b; return nullptr; }
-const Building* Simulation::buildingAt(Cell c) const { for (const auto& b : buildings_) if (b.contains(c)) return &b; return nullptr; }
+Unit* Simulation::mutableUnit(EntityId id) { for (auto& u : world_.circles()) if (u.id == id) return &u; return nullptr; }
+Building* Simulation::mutableBuilding(EntityId id) { for (auto& b : world_.footprints()) if (b.id == id) return &b; return nullptr; }
+const Building* Simulation::buildingAt(Cell c) const { for (const auto& b : world_.footprints()) if (b.contains(c)) return &b; return nullptr; }
 const EntityDefinition& Simulation::entityType(const std::string& id) const {
     for (const auto& type : entityTypes_) if (type.id == id) return type;
     throw std::out_of_range("Unknown entity definition: " + id);
@@ -120,9 +120,7 @@ EntityId Simulation::spawn(const EntityDefinition& type, Cell cell, bool reserve
     if (!unitPositionFree(center(cell), type)) throw std::invalid_argument("Unit spawn is occupied");
     if (owner != neutralPlayer && !activePlayer(owner)) throw std::invalid_argument("Unit owner requires an active player slot");
     if (activePlayer(owner) && !reserved && !mutableEconomy(owner).supply.reserve(type.cost.supply)) throw std::invalid_argument("Initial army exceeds supply cap");
-    auto u = makeEntity(type, cell, owner);
-    units_.push_back(std::move(u));
-    return units_.back().id;
+    return makeEntity(type, cell, owner).id;
 }
 std::vector<Simulation::WorldEvent> Simulation::takeEvents() { std::vector<WorldEvent> result; result.swap(events_); return result; }
 bool Simulation::damageEnvironment(EntityId id, int damage) {
@@ -170,8 +168,8 @@ void Simulation::revealMap() {
 void Simulation::updateVision(bool force) {
     std::vector<VisionSource> sources;
     const bool day = clock_.phase() == DayPhase::Day;
-    for (const auto& u : units_) if (u.owner == player_.id && u.health > 0) sources.push_back({u.cell, day ? u.definition.dayVision : u.definition.nightVision, airborne(u.definition.movement)});
-    for (const auto& b : buildings_) if (b.owner == player_.id && b.health > 0) {
+    for (const auto& u : world_.circles()) if (u.owner == player_.id && u.vitals().health > 0) sources.push_back({u.cell, day ? u.definition.dayVision : u.definition.nightVision, airborne(u.definition.movement)});
+    for (const auto& b : world_.footprints()) if (b.owner == player_.id && b.vitals().health > 0) {
         const int radius = b.complete() ? (day ? b.definition.dayVision : b.definition.nightVision) : 2;
         sources.push_back({b.origin + Cell{b.definition.width / 2, b.definition.height / 2}, radius});
     }
@@ -181,52 +179,60 @@ void Simulation::updateVision(bool force) {
     for (size_t i = 0; i < crystals().size(); ++i) if (crystalVisible(crystals()[i])) knownCrystals_[i] = crystals()[i].remaining;
     for (size_t i = 0; i < environment().size(); ++i) if (environmentVisible(i)) knownEnvironment_[i] = environment()[i].active();
 }
+void Simulation::runSystems(ecs::Phase phase) {
+    ecs::SystemContext context{world_, map(), scenario_.slots, economies_, clock_.elapsedTicks()};
+    if (systems_.run(phase, context)) removeDeadEntities();
+}
 void Simulation::tick() {
     combatSearchBudget_ = 8;
     const auto phase = clock_.tick();
     if (phase) events_.emplace_back(*phase);
+    runSystems(ecs::Phase::BeforeOrders);
     // Run before workers: a newly initiated summon gets only its first tick from the builder.
     tickConstruction();
+    ecs::advanceAbilityTimers(world_);
     // Advance the front of each moving group first, so IDs do not make a convoy wait backwards.
     std::vector<Unit*> updateOrder;
-    for (auto& u : units_) {
-        prepareAbilityTick(u);
-        u.tickPosition = u.position; u.tickVelocity = u.velocity; u.velocity = {}; updateOrder.push_back(&u);
+    for (auto& u : world_.circles()) {
+        u.motion().tickPosition = u.position; u.motion().tickVelocity = u.motion().velocity; u.motion().velocity = {}; updateOrder.push_back(&u);
     }
     prepareMovement();
     arbitrateTraffic();
     replanMovement();
     std::stable_sort(updateOrder.begin(), updateOrder.end(), [](const Unit* a, const Unit* b) {
-        if (a->moveGroup != b->moveGroup) return a->moveGroup < b->moveGroup;
-        if (!a->moveGroup) return a->id < b->id;
-        const auto f = a->formationForward;
+        if (a->motion().moveGroup != b->motion().moveGroup) return a->motion().moveGroup < b->motion().moveGroup;
+        if (!a->motion().moveGroup) return a->id < b->id;
+        const auto f = a->motion().formationForward;
         const float da = groundDot(a->position, f);
         const float db = groundDot(b->position, f);
         return da != db ? da > db : a->id < b->id;
     });
     for (auto* u : updateOrder) {
         tickUnit(*u);
-        u->abilityAnimation.endTick();
-        if (u->next >= u->route.size() || u->state == UnitState::Attacking ||
-            u->attackPhase == AttackPhase::Windup || u->attackPhase == AttackPhase::Recovery) {
-            u->motionFacing.reset(); // Preserve explicit arrival and combat orientations.
+        u->casting().abilityAnimation.endTick();
+        if (u->motion().next >= u->motion().route.size() || u->orders().state == UnitState::Attacking ||
+            u->combat().attackPhase == AttackPhase::Windup || u->combat().attackPhase == AttackPhase::Recovery) {
+            u->motion().motionFacing.reset(); // Preserve explicit arrival and combat orientations.
         } else {
-            const float speed = u->moveGroup ? std::min(u->definition.movementPerSecond, u->groupSpeed) : u->definition.movementPerSecond;
-            u->facing = u->motionFacing.update(u->facing, u->position - u->tickPosition, speed / ticksPerSecond);
+            const float speed = u->motion().moveGroup ? std::min(u->definition.movementPerSecond, u->motion().groupSpeed) : u->definition.movementPerSecond;
+            u->facing = u->motion().motionFacing.update(u->facing, u->position - u->motion().tickPosition, speed / ticksPerSecond);
         }
     }
-    for (auto& b : buildings_) {
-        prepareAbilityTick(b);
-        if (b.health > 0 && b.complete()) tickUnit(b);
-        b.abilityAnimation.endTick();
+    for (auto& b : world_.footprints()) {
+        if (b.vitals().health > 0 && b.complete()) tickUnit(b);
+        b.casting().abilityAnimation.endTick();
     }
     movementIndexActive_ = false;
+    runSystems(ecs::Phase::AfterOrders);
     // Cell/radius changes must affect targeting and presentation in this tick.
     // An unchanged observer set does not need another full fog raster update.
     updateVision(false);
     tickCombat(); // Damage is simultaneous; removals happen after all movement pointers are no longer used.
+    runSystems(ecs::Phase::AfterCombat);
     tickRegeneration();
+    runSystems(ecs::Phase::AfterRegeneration);
     tickProduction();
+    runSystems(ecs::Phase::AfterProduction);
     // Combat and production may remove or add observers. Periodic forced updates
     // also refresh remembered resources and externally changed terrain.
     updateVision(clock_.elapsedTicks() % 5 == 0);

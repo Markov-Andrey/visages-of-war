@@ -26,7 +26,7 @@ inline UnitOcclusion unitOcclusion(const Simulation& game, const Unit& unit, con
     return {unitBounds(game, unit, view), 5 * view.zoom, 14 * view.zoom};
 }
 inline bool occlusionEligible(const Simulation& game, const Unit& unit, float depth) {
-    return unit.health > 0 && game.fog().visible(unit.cell) && !airborne(unit.definition.movement) &&
+    return unit.vitals().health > 0 && game.fog().visible(unit.cell) && !airborne(unit.definition.movement) &&
         unitDrawDepth(unit.position) < depth;
 }
 }

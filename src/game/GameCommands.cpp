@@ -117,12 +117,12 @@ void GameApplication::rightClick(std::optional<rts::Cell> target, rts::EntityId 
     }
     else if (ui_.selection.activeUnit(game_) && game_.command(ui_.selection.ids, *target, entity)) {
         for (auto id : ui_.selection.ids) if (const auto* u = game_.unit(id))
-            if (u->currentOrder.kind == OrderKind::UseAbility) {
-                const auto* recipient = game_.unit(u->currentOrder.target);
-                const auto* building = game_.building(u->currentOrder.target);
-                if (entity ? u->currentOrder.target == entity :
+            if (u->orders().currentOrder.kind == OrderKind::UseAbility) {
+                const auto* recipient = game_.unit(u->orders().currentOrder.target);
+                const auto* building = game_.building(u->orders().currentOrder.target);
+                if (entity ? u->orders().currentOrder.target == entity :
                     (recipient && recipient->cell == *target) || (building && building->contains(*target))) {
-                    ui_.commandFeedback.confirm(u->currentOrder.target); return;
+                    ui_.commandFeedback.confirm(u->orders().currentOrder.target); return;
                 }
             }
         // Match Simulation::command's target precedence. In a mixed selection,
@@ -169,7 +169,7 @@ rts::EntityId GameApplication::pickCommandEntity(rts::Cell cell) const {
         if (id && (game_.entity(*id) || game_.crystal(*id))) return *id;
     }
     for (const auto& unit : game_.units())
-        if (unit.cell == cell && unit.health > 0 && game_.fog().visible(unit.cell)) return unit.id;
+        if (unit.cell == cell && unit.vitals().health > 0 && game_.fog().visible(unit.cell)) return unit.id;
     const auto* building = game_.buildingAt(cell);
     if (building && rts::buildingVisible(game_, *building)) return building->id;
     for (const auto& node : game_.crystals()) if (node.contains(cell) && game_.crystalVisible(node)) return node.id;

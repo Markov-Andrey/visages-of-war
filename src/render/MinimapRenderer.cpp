@@ -24,7 +24,7 @@ void Renderer::drawMinimap(const Simulation& game, const BattleLayout& layout, c
         const auto& node = game.crystals()[i];
         crystalMapMarker(target_.Get(), brush_.Get(), worldAssets_, node, miniView.project(node.center()));
     }
-    for (const auto& b : game.buildings()) if (b.health > 0 && buildingVisible(game, b))
+    for (const auto& b : game.buildings()) if (b.vitals().health > 0 && buildingVisible(game, b))
         dot({b.origin.x + b.definition.width * .5f, b.origin.y + b.definition.height * .5f},
             b.owner == game.player().id ? teamColor_ : b.owner == neutralPlayer ? 0xffd34d : enemyColor_, 3);
     for (const auto& u : game.units()) if (u.owner == game.player().id || game.fog().visible(u.cell))

@@ -154,6 +154,7 @@ struct TestContext {
     }
 };
 void navigationTests(TestSuite& test, const TestContext& context);
+void ecsTests(TestSuite& test);
 void economyTests(TestSuite& test, const TestContext& context);
 void combatTests(TestSuite& test, const TestContext& context);
 void projectileTests(TestSuite& test, const TestContext& context);

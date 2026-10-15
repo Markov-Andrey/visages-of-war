@@ -5,9 +5,9 @@ namespace rts {
 std::vector<SelectionGroup> Selection::groups(const Simulation& game) const {
     std::vector<const Unit*> units;
     for (const auto id : ids) if (const auto* unit = game.unit(id);
-        unit && unit->owner == game.player().id && unit->health > 0) units.push_back(unit);
+        unit && unit->owner == game.player().id && unit->vitals().health > 0) units.push_back(unit);
     const auto key = [](const Unit* unit) {
-        return std::tuple{!unit->hero.has_value(), unit->definition.formationPriority, unit->definition.id, unit->id};
+        return std::tuple{!unit->progression().hero.has_value(), unit->definition.formationPriority, unit->definition.id, unit->id};
     };
     std::sort(units.begin(), units.end(), [&](const Unit* a, const Unit* b) { return key(a) < key(b); });
     units.erase(std::unique(units.begin(), units.end()), units.end());
@@ -45,7 +45,7 @@ bool Selection::cycleGroup(const Simulation& game, bool reverse) {
 
 bool Selection::activateGroup(const Simulation& game, EntityId member) {
     const auto* unit = game.unit(member);
-    if (!contains(member) || !unit || unit->owner != game.player().id || unit->health <= 0) return false;
+    if (!contains(member) || !unit || unit->owner != game.player().id || unit->vitals().health <= 0) return false;
     if (activeGroup(game).type == unit->definition.id) return false;
     activeType_ = unit->definition.id;
     return true;

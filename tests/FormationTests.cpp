@@ -5,16 +5,16 @@ namespace {
 void checkMotion(const Simulation& game) {
     for (size_t i = 0; i < game.units().size(); ++i) {
         const auto& a = game.units()[i];
-        require(game.map().canTraverse(a.tickPosition, a.position, a.definition.collisionRadius, a.definition.movement), "Crowd crossed square terrain or a cliff");
+        require(game.map().canTraverse(a.motion().tickPosition, a.position, a.definition.collisionRadius, a.definition.movement), "Crowd crossed square terrain or a cliff");
         // A 256-cell map needs a few coordinate ULPs of slack when subtracting
         // two float positions; the speed bound itself is independent of size.
         const float rounding = 4 * std::numeric_limits<float>::epsilon() *
             std::max({1.0f, std::abs(a.position.x), std::abs(a.position.y)});
-        require(groundLengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f + rounding, 2), "Crowd teleported");
+        require(groundLengthSquared(a.position - a.motion().tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f + rounding, 2), "Crowd teleported");
         for (size_t j = i + 1; j < game.units().size(); ++j) {
             const auto& b = game.units()[j];
             if (airborne(a.definition.movement) != airborne(b.definition.movement)) continue;
-            require(!sweptCircleIntersects(a.tickPosition - b.tickPosition, a.position - b.position,
+            require(!sweptCircleIntersects(a.motion().tickPosition - b.motion().tickPosition, a.position - b.position,
                 a.definition.collisionRadius, {{}, b.definition.collisionRadius}), "Circles intersected during a tick");
         }
     }
@@ -25,7 +25,7 @@ std::vector<EntityId> selected(const Simulation& game) {
     return ids;
 }
 bool settled(const Simulation& game) {
-    return std::all_of(game.units().begin(), game.units().end(), [](const Unit& u) { return u.state == UnitState::Idle; });
+    return std::all_of(game.units().begin(), game.units().end(), [](const Unit& u) { return u.orders().state == UnitState::Idle; });
 }
 }
 void formationTests(TestSuite& test, const TestContext& context) {
@@ -52,14 +52,14 @@ void formationTests(TestSuite& test, const TestContext& context) {
             require(stats.searches <= Simulation::movementSearchesPerTick, "Movement exceeded shared search budget");
         }
         require(peakQueue > 0 && requests >= 20, "Scenario did not exercise deferred path requests");
-        for (auto id : ids) require(game.unit(id)->replanAfter > 100, "A late request starved behind earlier units");
+        for (auto id : ids) require(game.unit(id)->motion().replanAfter > 100, "A late request starved behind earlier units");
         game.order(std::span(ids).first(10), OrderKind::Stop);
         game.order(std::span(ids).subspan(10), OrderKind::Hold);
         std::vector<Vec2> positions;
         for (auto id : ids) positions.push_back(game.unit(id)->position);
         for (int tick = 0; tick < 60; ++tick) { game.tick(); checkMotion(game); }
         for (size_t i = 0; i < ids.size(); ++i)
-            require(game.unit(ids[i])->position == positions[i] && !game.unit(ids[i])->yieldingTo, "Deferred movement displaced Stop/Hold");
+            require(game.unit(ids[i])->position == positions[i] && !game.unit(ids[i])->motion().yieldingTo, "Deferred movement displaced Stop/Hold");
         require(game.movementStatistics().pending == 0, "Cancelled orders remained in the retry queue");
     });
     test("Ten independent armies cross and arrive in their own formations", [] {
@@ -78,7 +78,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         }
         for (int tick = 0; tick < 700 && !settled(game); ++tick) { game.tick(); checkMotion(game); }
         require(settled(game), "One of ten armies did not arrive");
-        for (const auto& u : game.units()) require(groundLength(u.position - center(u.groupTarget)) <= u.groupRadius + .71f, "Army failed to reform");
+        for (const auto& u : game.units()) require(groundLength(u.position - center(u.motion().groupTarget)) <= u.motion().groupRadius + .71f, "Army failed to reform");
     });
     test("A thousand moving units preserve sweeps and the per-player supply limit", [] {
         Scenario s{Map(256, 256), {1, 1}, {10, 20}, {}};
@@ -121,23 +121,23 @@ void formationTests(TestSuite& test, const TestContext& context) {
             bool yielded = false;
             for (int tick = 0; tick < 1800 && !settled(game); ++tick) {
                 game.tick(); checkMotion(game);
-                for (const auto& u : game.units()) yielded |= u.yieldingTo != 0;
+                for (const auto& u : game.units()) yielded |= u.motion().yieldingTo != 0;
                 require(game.movementStatistics().searches <= Simulation::movementSearchesPerTick, "Passage retries exceeded budget");
             }
-            if (!settled(game)) for (const auto& u : game.units()) std::cerr << "passage=" << width << " mixed=" << mixed << " ramp=" << ramp << " group=" << u.moveGroup
-                << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks << " yield=" << u.yieldingTo
-                << " next=" << u.next << '/' << u.route.size() << " radius=" << u.definition.collisionRadius
-                << " waypoint=" << (u.next < u.route.size() ? u.route[u.next].x : -1) << ',' << (u.next < u.route.size() ? u.route[u.next].y : -1) << '\n';
+            if (!settled(game)) for (const auto& u : game.units()) std::cerr << "passage=" << width << " mixed=" << mixed << " ramp=" << ramp << " group=" << u.motion().moveGroup
+                << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.motion().blockedTicks << " yield=" << u.motion().yieldingTo
+                << " next=" << u.motion().next << '/' << u.motion().route.size() << " radius=" << u.definition.collisionRadius
+                << " waypoint=" << (u.motion().next < u.motion().route.size() ? u.motion().route[u.motion().next].x : -1) << ',' << (u.motion().next < u.motion().route.size() ? u.motion().route[u.motion().next].y : -1) << '\n';
             require(settled(game), "Opposing groups did not arrive after passage");
             if (mixed && width == 1) require(yielded, "Narrow passage did not exercise traffic arbitration");
             for (size_t i = 0; i < ids.size(); ++i) {
                 const auto& u = *game.unit(ids[i]);
                 require(i < 6 ? u.position.x > 28 : u.position.x < 20, "Arrival accepted on wrong side");
-                require(groundLength(u.position - center(u.groupTarget)) < u.groupRadius + .71f, "Group did not reform");
+                require(groundLength(u.position - center(u.motion().groupTarget)) < u.motion().groupRadius + .71f, "Group did not reform");
             }
             for (const auto& a : game.units()) for (const auto& b : game.units())
-                if (a.moveGroup == b.moveGroup && a.definition.formationPriority < b.definition.formationPriority)
-                    require(groundDot(a.position - b.position, a.formationForward) >= -.05f, "Roles did not reform after passage");
+                if (a.motion().moveGroup == b.motion().moveGroup && a.definition.formationPriority < b.definition.formationPriority)
+                    require(groundDot(a.position - b.position, a.motion().formationForward) >= -.05f, "Roles did not reform after passage");
         }
     });
     test("Stop and Hold cancel an active retreat inside a contested corridor", [] {
@@ -152,7 +152,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
         bool yielding = false;
         for (int tick = 0; tick < 300 && !yielding; ++tick) {
             game.tick(); checkMotion(game);
-            yielding = game.unit(ids[3])->yieldingTo != 0;
+            yielding = game.unit(ids[3])->motion().yieldingTo != 0;
         }
         require(yielding, "Encounter inside corridor did not initiate retreat");
         game.order(std::array{ids[3]}, OrderKind::Stop);
@@ -162,7 +162,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
             game.tick(); checkMotion(game);
             require(game.unit(ids[3])->position == stopped && game.unit(ids[4])->position == held, "Traffic displaced a cancelled retreat");
         }
-        require(!game.unit(ids[3])->yieldingTo && !game.unit(ids[4])->yieldingTo, "Cancelled retreat kept a reservation");
+        require(!game.unit(ids[3])->motion().yieldingTo && !game.unit(ids[4])->motion().yieldingTo, "Cancelled retreat kept a reservation");
     });
     test("Contested corridors arbitrate both directions across different owners", [] {
         for (bool transpose : {false, true}) for (bool rightFirst : {false, true}) {
@@ -181,7 +181,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
             bool yielded = false;
             for (int tick = 0; tick < 1800 && !settled(game); ++tick) {
                 game.tick(); checkMotion(game);
-                for (const auto& u : game.units()) if (u.yieldingTo) {
+                for (const auto& u : game.units()) if (u.motion().yieldingTo) {
                     yielded = true;
                     require(u.owner != PlayerId(rightFirst), "Earlier order gave up right of way");
                 }
@@ -208,17 +208,17 @@ void formationTests(TestSuite& test, const TestContext& context) {
                 const Cell target{31 + sign * direction.x * 12, 31 + sign * direction.y * 12};
                 require(game.command(ids, target), "Mixed role movement rejected");
                 float distance = 0;
-                for (const auto& u : game.units()) distance = std::max(distance, groundLength(u.routeDestination - u.position));
+                for (const auto& u : game.units()) distance = std::max(distance, groundLength(u.motion().routeDestination - u.position));
                 const int deadline = int(std::ceil(distance / siege.movementPerSecond * Simulation::ticksPerSecond)) + 400;
                 for (int tick = 0; tick < deadline && !settled(game); ++tick) { game.tick(); checkMotion(game); }
                 if (!settled(game)) for (const auto& u : game.units()) std::cerr << "mixed " << direction.x << ',' << direction.y << " sign=" << sign
                     << " role=" << u.definition.formationPriority << " pos=" << u.position.x << ',' << u.position.y
-                    << " goal=" << u.routeDestination.x << ',' << u.routeDestination.y << " state=" << int(u.state)
-                    << " blocked=" << u.blockedTicks << " next=" << u.next << '/' << u.route.size() << '\n';
+                    << " goal=" << u.motion().routeDestination.x << ',' << u.motion().routeDestination.y << " state=" << int(u.orders().state)
+                    << " blocked=" << u.motion().blockedTicks << " next=" << u.motion().next << '/' << u.motion().route.size() << '\n';
                 require(settled(game), "Mixed group did not finish reforming");
                 for (const auto& a : game.units()) for (const auto& b : game.units()) if (a.definition.formationPriority < b.definition.formationPriority) {
                     const Vec2 delta = a.position - b.position;
-                    require(groundDot(delta, a.formationForward) >= -.05f, "Rear role finished ahead of front role");
+                    require(groundDot(delta, a.motion().formationForward) >= -.05f, "Rear role finished ahead of front role");
                 }
                 std::vector<Vec2> positions;
                 for (const auto& u : game.units()) positions.push_back(u.position);
@@ -267,8 +267,8 @@ void formationTests(TestSuite& test, const TestContext& context) {
                 game.tick(); checkMotion(game);
                 for (size_t i = 0; i < game.units().size(); ++i) {
                     const auto& u = game.units()[i];
-                    distances[i] += std::sqrt(groundLengthSquared(u.position - u.tickPosition));
-                    if (u.state == UnitState::Idle && first < 0) first = tick;
+                    distances[i] += std::sqrt(groundLengthSquared(u.position - u.motion().tickPosition));
+                    if (u.orders().state == UnitState::Idle && first < 0) first = tick;
                 }
                 if (settled(game)) break;
             }
@@ -299,8 +299,8 @@ void formationTests(TestSuite& test, const TestContext& context) {
             game.tick(); checkMotion(game);
             for (size_t i = 0; i < game.units().size(); ++i) {
                 const auto& u = game.units()[i]; auto& trace = facings[i];
-                if (u.next >= u.route.size()) continue; // Arrival has an explicit final group heading.
-                const auto delta = u.position - u.tickPosition;
+                if (u.motion().next >= u.motion().route.size()) continue; // Arrival has an explicit final group heading.
+                const auto delta = u.position - u.motion().tickPosition;
                 Cell raw = trace.raw;
                 if (groundLengthSquared(delta) > 1e-10f) {
                     constexpr std::array<Cell, 8> headings{{{1,0},{1,1},{0,1},{-1,1},{-1,0},{-1,-1},{0,-1},{1,-1}}};
@@ -359,7 +359,7 @@ void formationTests(TestSuite& test, const TestContext& context) {
                 for (size_t i = 1; i < game.units().size(); ++i) require(game.units()[i].position == center(game.units()[i].cell), "Enemy ring was displaced");
                 if (!open) require(groundLengthSquared(game.worker().position - start) < .5f, "Unit escaped a closed surround");
             }
-            if (open) require(game.worker().cell == Cell{17, 10} && game.worker().state == UnitState::Idle, "Unit failed to escape through open gap");
+            if (open) require(game.worker().cell == Cell{17, 10} && game.worker().orders().state == UnitState::Idle, "Unit failed to escape through open gap");
         }
     });
 }

@@ -61,19 +61,19 @@ void Renderer::drawUnitStats(const Unit& unit, UiRect b, bool showExtra) {
     if (!showExtra) return;
     std::wstring extra;
     const auto* selectedHarvest = unit.harvestAbility() ? unit.harvestAbility() : d.gatherAbility();
-    if (unit.hero) {
+    if (unit.progression().hero) {
         extra = L"Уровень " + std::to_wstring(unit.level()) + (unit.atMaxLevel() ? L"  ·  Максимум" :
             L"  ·  Опыт " + std::to_wstring(unit.experienceInLevel()) + L" / " + std::to_wstring(unit.experienceToLevel()));
     } else if (selectedHarvest && selectedHarvest->harvest()->credit == HarvestCredit::Direct) {
         const auto harvest = *selectedHarvest->harvest();
         extra = L"Добыча  " + amount(float(harvest.amount) * Simulation::ticksPerSecond / harvest.intervalTicks) + L" кр/с";
     } else if (d.carryCapacity > 0) {
-        extra = L"Кристаллы  " + std::to_wstring(unit.cargo) + L" / " + std::to_wstring(d.carryCapacity);
+        extra = L"Кристаллы  " + std::to_wstring(unit.gathering().cargo) + L" / " + std::to_wstring(d.carryCapacity);
     } else extra = L"Уровень " + std::to_wstring(unit.level()) + L"  ·  Лимит " + std::to_wstring(d.cost.supply);
-    const char* resourceIcon = unit.hero ? nullptr : d.canGather() ? "crystal" : "supply";
+    const char* resourceIcon = unit.progression().hero ? nullptr : d.canGather() ? "crystal" : "supply";
     if (resourceIcon) drawResourceIcon(resourceIcon, {b.x, b.y + 137, 22, 22});
     const float extraInset = resourceIcon ? 28.f : 0.f;
-    text(extra, rect(b.x + extraInset, b.y + 137, width - extraInset, 24), unit.hero ? 0xd6c38a : 0xe4d4a5);
+    text(extra, rect(b.x + extraInset, b.y + 137, width - extraInset, 24), unit.progression().hero ? 0xd6c38a : 0xe4d4a5);
 }
 
 void Renderer::selectionStatsTooltip(const Unit& unit, UiRect bounds, Vec2 mouse, const ArmorRules& rules,
@@ -114,7 +114,7 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
     unitHudPortrait(unit->definition.sprite, {p.x + 4, p.y + 4, p.width - 8, p.height - 8}, color);
     target_->PopAxisAlignedClip();
     buttonFrame(p);
-    portraitVitals(layout, unit->health, unit->maximumHealth(), 0x9dd7b0, unit->mana, unit->maximumMana());
+    portraitVitals(layout, unit->vitals().health, unit->maximumHealth(), 0x9dd7b0, unit->vitals().mana, unit->maximumMana());
     const SelectionCards cards(game, selection, info);
     if (cards.total <= 1) {
         drawUnitStats(*unit, layout.content);
@@ -123,7 +123,7 @@ void Renderer::drawUnitSelection(const Simulation& game, const Selection& select
     for (const auto& card : cards.cards) {
         const auto* member = game.unit(card.id);
         const auto b = card.bounds;
-        brush_->SetColor(D2D1::ColorF(card.active ? 0x465541 : member->hero ? 0x55492f : 0x244039));
+        brush_->SetColor(D2D1::ColorF(card.active ? 0x465541 : member->progression().hero ? 0x55492f : 0x244039));
         target_->FillRectangle(rect(b.x, b.y, b.width, b.height), brush_.Get());
         target_->PushAxisAlignedClip(rect(b.x, b.y, b.width, b.height), D2D1_ANTIALIAS_MODE_ALIASED);
         unitIcon(member->definition.sprite, b, teamColor_);

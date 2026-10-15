@@ -3,7 +3,7 @@
 namespace rts {
 using namespace render;
 void Renderer::drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border, bool beveled) {
-    drawHealthBar(unit.health, unit.maximumHealth(), unit.healthFeedback.remaining(tick), bounds, border, beveled);
+    drawHealthBar(unit.vitals().health, unit.maximumHealth(), unit.vitals().healthFeedback.remaining(tick), bounds, border, beveled);
 }
 
 void Renderer::drawHealthBar(Vital current, Vital maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled) {
@@ -12,8 +12,8 @@ void Renderer::drawHealthBar(Vital current, Vital maximum, float recentDamage, U
 }
 
 void Renderer::drawManaBar(const Unit& unit, UiRect bounds, bool beveled) {
-    if (unit.maximumMana() <= 0 || unit.health <= 0) return;
-    drawVitalBar(unit.mana, unit.maximumMana(), 0, bounds, 0x315595, beveled, true);
+    if (unit.maximumMana() <= 0 || unit.vitals().health <= 0) return;
+    drawVitalBar(unit.vitals().mana, unit.maximumMana(), 0, bounds, 0x315595, beveled, true);
 }
 
 void Renderer::drawVitalBar(Vital current, Vital maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled, bool mana) {

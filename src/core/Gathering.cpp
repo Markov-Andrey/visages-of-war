@@ -3,17 +3,17 @@
 
 namespace rts {
 void Simulation::harvest(Entity& u, const HarvestDefinition& effect, AbilityEffectState& state) {
-    auto& node = scenario_.crystals[static_cast<size_t>(u.targetCrystal)];
+    auto& node = scenario_.crystals[static_cast<size_t>(u.gathering().targetCrystal)];
     if (++state.ticks < effect.intervalTicks) return;
     state.ticks = 0;
     const bool direct = effect.credit == HarvestCredit::Direct;
     const int amount = std::min({effect.amount, node.remaining,
-        direct ? node.remaining : std::max(0, u.definition.carryCapacity - u.cargo)});
+        direct ? node.remaining : std::max(0, u.definition.carryCapacity - u.gathering().cargo)});
     node.remaining -= amount;
     if (direct) {
         mutableEconomy(u.owner).crystals += amount;
         if (amount > 0) events_.emplace_back(CrystalsHarvested{u.id, u.owner, u.position, unitHeight(u), amount, clock_.elapsedTicks()});
-    } else u.cargo += amount;
+    } else u.gathering().cargo += amount;
     if (node.remaining == 0)
         for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
             scenario_.map.release(node.cell + Cell{x, y});
@@ -24,11 +24,11 @@ bool Simulation::returnCargo(Unit& u) {
     EntityId depot{};
     for (const auto* candidate : entities()) {
         const auto& b = *candidate;
-        if (b.id == u.id || b.health <= 0 || !b.complete() || !b.definition.acceptsCargo || b.owner != u.owner) continue;
+        if (b.id == u.id || b.vitals().health <= 0 || !b.complete() || !b.definition.acceptsCargo || b.owner != u.owner) continue;
         if (abilityReach(u, delivery, b.id, u.position)) {
-            mutableEconomy(u.owner).crystals += u.cargo; u.cargo = 0;
-            u.route.clear(); u.next = 0; u.state = UnitState::Idle; u.targetBuilding = 0;
-            if (u.repeatGather) seekCrystal(u);
+            mutableEconomy(u.owner).crystals += u.gathering().cargo; u.gathering().cargo = 0;
+            u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::Idle; u.orders().targetBuilding = 0;
+            if (u.gathering().repeatGather) seekCrystal(u);
             return true;
         }
         if (!u.definition.mobile) continue;
@@ -37,16 +37,16 @@ bool Simulation::returnCargo(Unit& u) {
         if (!path) path = findUnitPath(map(), u.position, positions, {}, u.definition.collisionRadius, u.definition.movement);
         if (path && (!best || path->cost < best->cost)) { best = std::move(path); depot = b.id; }
     }
-    u.route.clear(); u.next = 0;
-    if (!best) { u.state = UnitState::Idle; setMessage(L"Нет пути к складу. Груз сохранён."); return false; }
-    u.targetBuilding = depot; u.chaseTicks = 15;
+    u.motion().route.clear(); u.motion().next = 0;
+    if (!best) { u.orders().state = UnitState::Idle; setMessage(L"Нет пути к складу. Груз сохранён."); return false; }
+    u.orders().targetBuilding = depot; u.combat().chaseTicks = 15;
     followPath(u, std::move(*best), UnitState::ToHall);
     return true;
 }
 bool Simulation::seekCrystal(Unit& u) {
-    u.route.clear(); u.next = 0; u.blockedTicks = 0;
-    if (!u.repeatGather || u.gatherOriginCrystal < 0) { u.state = UnitState::Idle; return false; }
-    const auto& origin = crystals()[u.gatherOriginCrystal];
+    u.motion().route.clear(); u.motion().next = 0; u.motion().blockedTicks = 0;
+    if (!u.gathering().repeatGather || u.gathering().gatherOriginCrystal < 0) { u.orders().state = UnitState::Idle; return false; }
+    const auto& origin = crystals()[u.gathering().gatherOriginCrystal];
     // Never move this search origin to a fallback deposit: repeated exhaustion must
     // not walk the worker from one resource field into a completely different one.
     constexpr int neighborRadius = 3;
@@ -65,21 +65,21 @@ bool Simulation::seekCrystal(Unit& u) {
     };
     std::vector<size_t> candidates;
     for (size_t i = 0; i < crystals().size(); ++i)
-        if (crystals()[i].remaining > 0 && (int(i) == u.gatherOriginCrystal ||
+        if (crystals()[i].remaining > 0 && (int(i) == u.gathering().gatherOriginCrystal ||
             (u.owner == player_.id ? knownCrystals_[i] > 0 : crystalVisibleTo(u.owner, crystals()[i]))) &&
             distance(i) <= neighborRadius * neighborRadius) candidates.push_back(i);
     std::sort(candidates.begin(), candidates.end(), [&](size_t a, size_t b) {
         return distance(a) != distance(b) ? distance(a) < distance(b) : a < b;
     });
     if (candidates.empty()) {
-        u.targetCrystal = -1; u.repeatGather = false; u.state = UnitState::Idle;
+        u.gathering().targetCrystal = -1; u.gathering().repeatGather = false; u.orders().state = UnitState::Idle;
         return false;
     }
     const auto held = occupied(u, true);
     std::optional<Path> waitingPath;
     int waitingTarget = -1;
     const auto follow = [&](size_t target, Path path) {
-        u.targetCrystal = static_cast<int>(target);
+        u.gathering().targetCrystal = static_cast<int>(target);
         followPath(u, std::move(path), UnitState::ToCrystal);
         return true;
     };
@@ -88,7 +88,7 @@ bool Simulation::seekCrystal(Unit& u) {
         const auto* ability = u.harvestAbility();
         if (!ability) return false;
         if (abilityReach(u, *ability, node.id, u.position)) {
-            u.targetCrystal = static_cast<int>(target); u.state = UnitState::Harvesting; u.harvestTicks = 0;
+            u.gathering().targetCrystal = static_cast<int>(target); u.orders().state = UnitState::Harvesting; u.gathering().harvestTicks = 0;
             return true;
         }
         if (!u.definition.mobile) continue;
@@ -107,8 +107,8 @@ bool Simulation::seekCrystal(Unit& u) {
     // All local slots are occupied: approach this field and wait, preserving the
     // command. If terrain prevents any approach, retry in place until it opens.
     if (waitingPath) return follow(static_cast<size_t>(waitingTarget), std::move(*waitingPath));
-    u.targetCrystal = static_cast<int>(candidates.front());
-    u.state = UnitState::WaitingForCrystal;
+    u.gathering().targetCrystal = static_cast<int>(candidates.front());
+    u.orders().state = UnitState::WaitingForCrystal;
     return true;
 }
 }

@@ -14,7 +14,7 @@ void ControlGroups::bind(size_t slot, const Simulation& game, const Selection& s
 void ControlGroups::prune(const Simulation& game) {
     for (auto& members : groups_) std::erase_if(members, [&](EntityId id) {
         const auto* unit = game.unit(id);
-        return !unit || unit->health <= 0 || unit->owner != game.player().id;
+        return !unit || unit->vitals().health <= 0 || unit->owner != game.player().id;
     });
 }
 

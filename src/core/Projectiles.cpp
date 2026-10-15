@@ -14,15 +14,15 @@ void Simulation::releaseAttack(Unit& u, CombatTarget target, std::vector<Hit>& h
     releaseProjectile(u, aim, height, homing ? target.id() : 0);
 }
 void Simulation::releaseGroundAttack(Unit& u) {
-    const auto aim = center(u.currentOrder.cell);
-    releaseProjectile(u, aim, map().surfaceHeight(u.currentOrder.cell, aim), 0);
+    const auto aim = center(u.orders().currentOrder.cell);
+    releaseProjectile(u, aim, map().surfaceHeight(u.orders().currentOrder.cell, aim), 0);
 }
 void Simulation::releaseProjectile(Unit& u, Vec2 aim, float aimHeight, EntityId target) {
     Projectile p;
     p.definition = *u.definition.projectile;
     p.targets = u.definition.attackTargets; p.owner = u.owner; p.sourceAir = airborne(u.definition.movement);
     p.target = target;
-    if (u.currentOrder.kind == OrderKind::Attack && u.currentOrder.forceAttack) p.forcedTarget = u.currentOrder.target;
+    if (u.orders().currentOrder.kind == OrderKind::Attack && u.orders().currentOrder.forceAttack) p.forcedTarget = u.orders().currentOrder.target;
     p.damage = u.attackDamage(); p.start = p.position = p.previousPosition = u.position; p.aim = aim;
     p.startHeight = p.height = p.previousHeight = unitHeight(u) + p.definition.launchHeight;
     if (const auto& sockets = u.definition.sprite.projectileOrigins) {
@@ -64,15 +64,15 @@ void Simulation::tickProjectiles(std::vector<Hit>& hits) {
                 (target.id() == p.forcedTarget || combat::hostile(p.owner, target.owner())) && combat::accepts(p.targets, p.sourceAir, target.air()))
                 hits.push_back({target.id(), p.damage, p.owner});
         } else {
-            for (const auto& target : units_) {
+            for (const auto& target : world_.circles()) {
                 if ((!p.definition.friendlyFire && target.id != p.forcedTarget && !combat::hostile(p.owner, target.owner)) ||
                     !combat::accepts(p.targets, p.sourceAir, airborne(target.definition.movement))) continue;
                 const Vec2 delta = target.position - p.aim;
                 if (groundLengthSquared(delta) <= p.definition.splashRadius * p.definition.splashRadius)
                     hits.push_back({target.id, p.damage, p.owner});
             }
-            if (combat::accepts(p.targets, p.sourceAir, false)) for (const auto& target : buildings_) {
-                if (target.health <= 0 || (!p.definition.friendlyFire && target.id != p.forcedTarget && !combat::hostile(p.owner, target.owner))) continue;
+            if (combat::accepts(p.targets, p.sourceAir, false)) for (const auto& target : world_.footprints()) {
+                if (target.vitals().health <= 0 || (!p.definition.friendlyFire && target.id != p.forcedTarget && !combat::hostile(p.owner, target.owner))) continue;
                 bool touched = false;
                 for (int y = 0; y < target.definition.height && !touched; ++y)
                     for (int x = 0; x < target.definition.width && !touched; ++x)

@@ -5,6 +5,7 @@ int wmain(int argc, wchar_t** argv) {
     const rts::tests::TestContext context(argv[1]);
     rts::tests::TestSuite suite;
     if (argc == 3) suite.filter = std::filesystem::path(argv[2]).string();
+    rts::tests::ecsTests(suite);
     rts::tests::navigationTests(suite, context);
     rts::tests::economyTests(suite, context);
     rts::tests::combatTests(suite, context);

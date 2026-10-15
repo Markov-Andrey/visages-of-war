@@ -739,7 +739,7 @@ void dataTests(TestSuite& test, const TestContext& context) {
             Simulation game(site, {}, worker, types, depot.id);
             const auto& building = game.buildings().front();
             require(building.definition.id == depot.id && building.origin == site.hall && building.complete() &&
-                building.health == 1234 && building.definition.width == 2 && building.definition.height == 2,
+                building.vitals().health == 1234 && building.definition.width == 2 && building.definition.height == 2,
                 "Starting building ignored authored type, position, health or footprint");
             require(game.map().occupancy(site.hall + Cell{1,1}) == 1 && game.map().occupancy(site.hall + Cell{2,0}) == 0,
                 "Starting building reserved a hardcoded footprint");

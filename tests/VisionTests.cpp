@@ -52,7 +52,7 @@ void visionTests(TestSuite& test, const TestContext& context) {
             bool enteredOffCadence=false, sawFromRamp=false;
             for (Cell goal : {cell(4),cell(-3)}) {
                 require(game.order(std::array{id},OrderKind::Move,goal), "Ramp order failed");
-                for (int tick=0;tick<300 && game.worker().state!=UnitState::Idle;++tick) {
+                for (int tick=0;tick<300 && game.worker().orders().state!=UnitState::Idle;++tick) {
                     const auto previous=game.worker().cell;
                     game.tick();
                     const auto current=game.worker().cell;

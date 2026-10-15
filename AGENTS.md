@@ -4,6 +4,7 @@
 - For team-color sprite masks, follow [ASSET_QUICKSTART.md](ASSET_QUICKSTART.md). Reuse `scripts/make-team-masks.ps1` and JSON profiles in `scripts/mask-profiles/`; keep hand corrections in profiles. These are offline maintenance tools, not game code.
 
 - Target Windows 10/11 x64 only; C++20, MSVC, CMake. Project name is RTS.
+- Actor state belongs to EnTT components, owned by `ecs::World`; use [docs/ECS.md](docs/ECS.md) for lifetime, tick phases and module extension contracts. `Simulation` coordinates gameplay and validates commands; never duplicate component state in UI or shape indexes.
 - Keep simulation in logical map coordinates, independent of render pixels and camera.
 - Measure movement, collisions, formations, combat and vision with the shared ground-plane metric in Types.hpp. It matches the screen plane up to a fixed scale; equal visible distances take equal time. Cell coordinates still author diamonds and static footprints. Never normalize a movement vector with the raw grid Euclidean norm or camera zoom.
 - Terrain uses logical square cells projected as 2:1 diamonds through WorldView. Normal authored maps use Map::rectangular with dimensions divisible by 32; the projected outer boundary stays rectangular and clipped cells are never playable, including for air. Keep picking, placement, camera and minimap consistent with this geometry. Map(width,height) is the uncropped logical-grid constructor for diagnostic fixtures.

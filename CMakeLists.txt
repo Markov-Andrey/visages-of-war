@@ -21,6 +21,11 @@ target_compile_definitions(rts_options INTERFACE UNICODE _UNICODE NOMINMAX WIN32
 add_subdirectory(libs)
 
 add_library(rts_core
+    src/ecs/World.cpp
+    src/ecs/Entity.cpp
+    src/ecs/Systems.cpp
+    src/ecs/AbilityTimers.cpp
+    src/ecs/Regeneration.cpp
     src/core/Map.cpp
     src/core/Definitions.cpp
     src/core/Tags.cpp
@@ -67,7 +72,7 @@ add_library(rts_core
 )
 target_include_directories(rts_core PUBLIC include)
 target_include_directories(rts_core PRIVATE src)
-target_link_libraries(rts_core PUBLIC rts_options PRIVATE nlohmann_json::nlohmann_json shell32 ole32)
+target_link_libraries(rts_core PUBLIC rts_options EnTT::EnTT PRIVATE nlohmann_json::nlohmann_json shell32 ole32)
 
 # The game consumes maps; only Forge and tests link the authoring model.
 add_library(rts_editor_core src/core/WorldEditor.cpp)
@@ -183,6 +188,7 @@ if(BUILD_TESTING)
     add_dependencies(rts_benchmarks rts_assets)
     add_executable(rts_tests
         tests/CoreTests.cpp
+        tests/EcsTests.cpp
         tests/NavigationTests.cpp
         tests/EconomyTests.cpp
         tests/CombatTests.cpp

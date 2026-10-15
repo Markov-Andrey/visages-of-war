@@ -10,7 +10,7 @@ void GameApplication::exerciseHarvestFeedback() {
     game_ = Simulation(std::move(scene), menu_.player, type, definitions_.entities(), definitions_.startingDepot(type.factionId).id, {}, definitions_.progression(), {}, definitions_.armorRules());
     ui_ = {}; ui_.selection.ids = {game_.worker().id};
     if (!game_.command({12, 12})) throw std::runtime_error("Harvest smoke: command rejected");
-    for (int i = 0; i < 180 && game_.worker().state != UnitState::Harvesting; ++i) { game_.tick(); processWorldEvents(); }
+    for (int i = 0; i < 180 && game_.worker().orders().state != UnitState::Harvesting; ++i) { game_.tick(); processWorldEvents(); }
     if (!harvestEffectTarget(game_, game_.worker())) throw std::runtime_error("Harvest smoke: no active channel");
     const WorldView closeup{{}, 1.8f};
     auto camera = closeup;

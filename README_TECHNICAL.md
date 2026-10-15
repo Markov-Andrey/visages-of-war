@@ -79,6 +79,7 @@ Debug-приложения: `out/build/windows-x64/bin/Debug/`. Упаковка
 CTest проверяет логику, ассеты, снимки, интерфейсы и переносимость путей.
 
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) — модули, координаты, навигация и рендер.
+- [ECS.md](docs/ECS.md) — компоненты, жизненный цикл сущностей и подключение механик.
 - [GAME_SYSTEMS.md](docs/GAME_SYSTEMS.md) — правила матча и будущие системы.
 - [DATA.md](docs/DATA.md) — определения сущностей, командиров и способностей.
 - [COMBAT.md](docs/COMBAT.md) — атаки, снаряды и останки.

@@ -64,7 +64,7 @@ void Renderer::buildingGroundSelection(const Simulation& game, const Building& b
 void Renderer::buildingSprite(const Simulation& game, const Building& b, const WorldView& view, bool selected, float preview) {
     const auto bounds = buildingBounds(game, b, view);
     const auto& type = b.definition;
-    const auto* stage = type.buildingSprite.stage(b.constructionProgress, type.constructionTicks);
+    const auto* stage = type.buildingSprite.stage(b.productionState().constructionProgress, type.constructionTicks);
     const auto color = b.owner == game.player().id ? teamColor_ : enemyColor_;
     const float z = view.zoom;
     const float h = float(game.map().at(b.origin).height);
@@ -73,7 +73,7 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
     bool visible = false;
     for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x)
         visible |= game.fog().visible(b.origin + Cell{x, y});
-    const float progress = preview >= 0 ? preview : float(b.constructionProgress) / type.constructionTicks;
+    const float progress = preview >= 0 ? preview : float(b.productionState().constructionProgress) / type.constructionTicks;
     if (type.buildingSprite.construction && progress < 1)
         constructionImage(game, b, view, bounds, color, visible, progress);
     else buildingImage(*stage, bounds, color, game.clock().elapsedTicks(), b.training(), visible);
@@ -86,7 +86,7 @@ void Renderer::buildingSprite(const Simulation& game, const Building& b, const W
     if (selected || !b.complete()) {
         const float y = bounds.y - 12;
         const float width = type.buildingSprite.healthBarWidth;
-        drawHealthBar(b.health, type.maximumHealth, 0, {p.x - width * .5f, y, width, 6},
+        drawHealthBar(b.vitals().health, type.maximumHealth, 0, {p.x - width * .5f, y, width, 6},
             selectionColor(b.owner, game.player().id), true);
     }
 }
@@ -97,7 +97,7 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
     const auto shadow = unitScreenAnchor(view, u.position, game.map().surfaceHeight(groundCell, u.position));
     brush_->SetColor(D2D1::ColorF(0, .35f));
     target_->FillEllipse(D2D1::Ellipse(point(shadow), 16 * view.zoom, 7 * view.zoom), brush_.Get());
-    if (u.hero) {
+    if (u.progression().hero) {
         if (!selected && !hovered) drawSelectionRing(p, 27, 13, view.zoom, 0xe0c276);
         text(L"" + std::to_wstring(u.level()), rect(p.x + 27 * view.zoom, p.y - 57 * view.zoom, 38, 24), 0xe0c276);
     }
@@ -108,20 +108,20 @@ void Renderer::unitSprite(const Simulation& game, const Unit& u, const WorldView
             brush_->SetColor(D2D1::ColorF(color));
             target_->FillEllipse(D2D1::Ellipse(point(shadow), 2.5f * view.zoom, 2.5f * view.zoom), brush_.Get());
         }
-        drawSelectionRing(p, u.hero ? 27 : 23, u.hero ? 13 : 11, view.zoom, color);
-    } else if (hovered) drawSelectionRing(p, u.hero ? 27 : 23, u.hero ? 13 : 11, view.zoom,
+        drawSelectionRing(p, u.progression().hero ? 27 : 23, u.progression().hero ? 13 : 11, view.zoom, color);
+    } else if (hovered) drawSelectionRing(p, u.progression().hero ? 27 : 23, u.progression().hero ? 13 : 11, view.zoom,
         selectionColor(u.owner, game.player().id), .5f);
-    drawCommandPulse(p, u.hero ? 27 : 23, u.hero ? 13 : 11, view.zoom, selectionColor(u.owner, game.player().id), commandAge);
+    drawCommandPulse(p, u.progression().hero ? 27 : 23, u.progression().hero ? 13 : 11, view.zoom, selectionColor(u.owner, game.player().id), commandAge);
     const auto frame = unitFrame(u);
     const float immersion = airborne(u.definition.movement) ? 0.0f :
         std::max(0.0f, game.map().surfaceHeight(groundCell, u.position) - game.unitHeight(u));
     wadingUnitImage(u.definition.sprite, frame.column, frame.row, p, shadow, immersion,
         view.zoom, u.owner == game.player().id ? teamColor_ : enemyColor_);
-    if (u.cargo > 0) {
+    if (u.gathering().cargo > 0) {
         brush_->SetColor(D2D1::ColorF(worldAssets_.crystalSprite().glowColor));
         target_->FillEllipse(D2D1::Ellipse(point(p + Vec2{16, -25} * view.zoom), 5 * view.zoom, 7 * view.zoom), brush_.Get());
     }
-    if (selected || u.hero || u.owner != game.player().id || u.health < u.maximumHealth() || u.mana < u.maximumMana()) {
+    if (selected || u.progression().hero || u.owner != game.player().id || u.vitals().health < u.maximumHealth() || u.vitals().mana < u.maximumMana()) {
         // Default to picking bounds; authored offsets account for transparent frame padding.
         const float barHeight = std::max(4.0f, 6 * view.zoom);
         const float barY = std::min(p.y - 59 * view.zoom, unitBounds(game, u, view).y - std::max(7 * view.zoom, barHeight * .5f + 2)) +

@@ -60,13 +60,13 @@ void GameApplication::exerciseUnitCommands() {
     onMessage(WM_KEYDOWN, 'A', 0);
     const auto enemyBounds = rts::unitBounds(game_, *game_.unit(enemy), view_);
     click({enemyBounds.x + enemyBounds.width * .5f, enemyBounds.y + enemyBounds.height * .5f});
-    if (game_.unit(soldier)->attackTarget != enemy) throw std::runtime_error("Commands: A plus enemy failed");
+    if (game_.unit(soldier)->combat().attackTarget != enemy) throw std::runtime_error("Commands: A plus enemy failed");
     ui_.selection.ids = {first}; onMessage(WM_KEYDOWN, 'G', 0);
     const auto crystalBounds = rts::crystalBounds(game_, game_.crystals().front(), view_);
     click({crystalBounds.x + crystalBounds.width * .5f, crystalBounds.y + crystalBounds.height * .5f});
-    if (game_.unit(first)->gatherOriginCrystal != 0) throw std::runtime_error("Commands: explicit gather failed");
+    if (game_.unit(first)->gathering().gatherOriginCrystal != 0) throw std::runtime_error("Commands: explicit gather failed");
     onMessage(WM_KEYDOWN, 'M', 0); onMessage(WM_RBUTTONDOWN, 0, at(view_.project(rts::center({17, 10}), 0)));
-    if (ui_.orderMode || game_.unit(first)->gatherOriginCrystal != 0) throw std::runtime_error("Commands: right click did not cancel target mode");
+    if (ui_.orderMode || game_.unit(first)->gathering().gatherOriginCrystal != 0) throw std::runtime_error("Commands: right click did not cancel target mode");
     onMessage(WM_KEYDOWN, 'S', 0); onMessage(WM_KEYDOWN, 'B', 0); onMessage(WM_KEYDOWN, 'H', 0);
     if (ui_.placement != "church.hall") throw std::runtime_error("Commands: build submenu failed");
     onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
@@ -99,15 +99,15 @@ void GameApplication::exerciseUnitCommands() {
     if (portraits.cards.front().id != hero || !portraits.cards.front().active)
         throw std::runtime_error("Commands: hero was not first in the portrait strip");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"active-hero-preview.png", nullptr, false, &ui_);
-    const auto manaBefore = game_.unit(hero)->mana;
+    const auto manaBefore = game_.unit(hero)->vitals().mana;
     const auto* ability = rts::abilityCommandAt(game_, ui_, rts::firstAbilitySlot);
     if (!ability) throw std::runtime_error("Abilities: hero button missing");
     onMessage(WM_KEYDOWN, rts::abilityKeys[0], 0);
-    if (ui_.orderMode || game_.unit(hero)->mana != manaBefore - ability->manaCost ||
+    if (ui_.orderMode || game_.unit(hero)->vitals().mana != manaBefore - ability->manaCost ||
         game_.unit(hero)->abilityCooldown(ability->id) != ability->cooldownTicks)
         throw std::runtime_error("Abilities: hotkey did not cast immediately");
     if (ability->animation) {
-        const auto* animation = game_.unit(hero)->abilityAnimation.current();
+        const auto* animation = game_.unit(hero)->casting().abilityAnimation.current();
         if (!animation || animation->abilityId != ability->id || animation->elapsedTicks != 0)
             throw std::runtime_error("Abilities: instant hotkey skipped shared animation playback");
         if (*ability->animation == rts::AbilityAnimation::Attack && !game_.unit(hero)->definition.sprite.windup.empty() &&
@@ -117,15 +117,15 @@ void GameApplication::exerciseUnitCommands() {
     }
     const auto abilityButton = layout.commands[rts::firstAbilitySlot];
     click({abilityButton.x + 10, abilityButton.y + 10});
-    if (game_.unit(hero)->mana != manaBefore - ability->manaCost || ui_.orderMode)
+    if (game_.unit(hero)->vitals().mana != manaBefore - ability->manaCost || ui_.orderMode)
         throw std::runtime_error("Abilities: cooldown button repeated the cast");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-ability-cooldown.png", nullptr, false, &ui_,
         rts::MenuPage::Main, 0, nullptr, nullptr, {800, 600});
-    const_cast<rts::Unit&>(*game_.unit(hero)).abilityCooldowns.clear();
+    const_cast<rts::Unit&>(*game_.unit(hero)).casting().abilityCooldowns.clear();
     click({abilityButton.x + 10, abilityButton.y + 10});
-    if (game_.unit(hero)->mana != manaBefore - 2 * ability->manaCost ||
-        (ability->animation && (!game_.unit(hero)->abilityAnimation.current() ||
-            game_.unit(hero)->abilityAnimation.current()->abilityId != ability->id)))
+    if (game_.unit(hero)->vitals().mana != manaBefore - 2 * ability->manaCost ||
+        (ability->animation && (!game_.unit(hero)->casting().abilityAnimation.current() ||
+            game_.unit(hero)->casting().abilityAnimation.current()->abilityId != ability->id)))
         throw std::runtime_error("Abilities: button click skipped the shared cast or animation");
     onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("church.peacemaker", 2);
     for (size_t slot = 5; slot < rts::commandSlots; ++slot) {
@@ -158,7 +158,7 @@ void GameApplication::exerciseUnitCommands() {
         throw std::runtime_error("Commands: ground fire changed another group's order");
     onMessage(WM_KEYDOWN, VK_TAB, 0); expectGroup("church.worker", 2);
     onMessage(WM_KEYDOWN, 'G', 0); click(mini.project(rts::center({12, 9})));
-    if (game_.unit(first)->gatherOriginCrystal != 0 || game_.unit(second)->gatherOriginCrystal != 0 ||
+    if (game_.unit(first)->gathering().gatherOriginCrystal != 0 || game_.unit(second)->gathering().gatherOriginCrystal != 0 ||
         rts::unitOrder(*game_.unit(soldier)) != rts::OrderKind::Hold)
         throw std::runtime_error("Commands: active workers did not gather separately");
     onMessage(WM_KEYDOWN, 'B', 0);
@@ -248,27 +248,27 @@ void GameApplication::exerciseUnitCommands() {
     if (rts::autocastState(game_, ui_, repairId) != rts::AutocastState::On) throw std::runtime_error("Repair: mixed toggle failed");
     onMessage(WM_RBUTTONDOWN, 0, at(buttonPoint));
     if (rts::autocastState(game_, ui_, repairId) != rts::AutocastState::Off) throw std::runtime_error("Repair: disabling group failed");
-    auto& hall = const_cast<rts::Building&>(game_.buildings().front()); hall.health -= 100;
+    auto& hall = const_cast<rts::Building&>(game_.buildings().front()); hall.vitals().health -= 100;
     onMessage(WM_KEYDOWN, 'Q', 0);
     if (ui_.pendingAbility != repairId || ui_.orderMode != rts::OrderKind::UseAbility) throw std::runtime_error("Repair: Q did not request target");
     onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
     if (ui_.orderMode || ui_.pendingAbility) throw std::runtime_error("Repair: Escape retained targeting");
     click(buttonPoint);
     click(mini.project(rts::center(hall.origin)));
-    for (auto id : ui_.selection.ids) if (game_.unit(id)->currentOrder.target != hall.id || game_.unit(id)->currentOrder.kind != rts::OrderKind::UseAbility)
+    for (auto id : ui_.selection.ids) if (game_.unit(id)->orders().currentOrder.target != hall.id || game_.unit(id)->orders().currentOrder.kind != rts::OrderKind::UseAbility)
         throw std::runtime_error("Repair: manual minimap target missed a worker");
     if (ui_.orderMode || ui_.pendingAbility) throw std::runtime_error("Repair: accepted target kept cursor mode");
     game_.stop(ui_.selection.ids);
     onMessage(WM_RBUTTONDOWN, 0, at(mini.project(rts::center(hall.origin))));
-    for (auto id : ui_.selection.ids) if (game_.unit(id)->currentOrder.kind != rts::OrderKind::UseAbility ||
-        game_.unit(id)->currentOrder.target != hall.id || game_.unit(id)->automaticAbility)
+    for (auto id : ui_.selection.ids) if (game_.unit(id)->orders().currentOrder.kind != rts::OrderKind::UseAbility ||
+        game_.unit(id)->orders().currentOrder.target != hall.id || game_.unit(id)->casting().automaticAbility)
         throw std::runtime_error("Repair: contextual right click missed an eligible worker or toggled autocast");
     game_.stop(ui_.selection.ids); focus(rts::center(hall.origin), true);
     const auto repairHallBounds = rts::buildingBounds(game_, hall, view_);
     mouse_ = {repairHallBounds.x + repairHallBounds.width * .5f, repairHallBounds.y + repairHallBounds.height * .65f};
     if (cursorKind() != rts::CursorKind::Target) throw std::runtime_error("Repair: world cursor ignored contextual ability");
     onMessage(WM_RBUTTONDOWN, 0, at(mouse_));
-    if (game_.unit(first)->currentOrder.target != hall.id || game_.unit(first)->currentOrder.kind != rts::OrderKind::UseAbility ||
+    if (game_.unit(first)->orders().currentOrder.target != hall.id || game_.unit(first)->orders().currentOrder.kind != rts::OrderKind::UseAbility ||
         ui_.commandFeedback.target != hall.id) throw std::runtime_error("Repair: world right click missed building");
 
     rts::Scenario forcedScene{rts::Map(32,32), {4,4}, {10,10}, {}};
@@ -292,20 +292,20 @@ void GameApplication::exerciseUnitCommands() {
         if (ui_.orderMode || ui_.commandFeedback.target != id) throw std::runtime_error("Forced attack: click did not select exact ally");
     };
     forceClickUnit(friendTarget);
-    for (auto id : {fighter, archer, friendHero}) if (game_.unit(id)->attackTarget != friendTarget)
+    for (auto id : {fighter, archer, friendHero}) if (game_.unit(id)->combat().attackTarget != friendTarget)
         throw std::runtime_error("Forced attack: capable selected member was skipped");
-    for (auto id : {repairer, friendTarget, flyer}) if (game_.unit(id)->attackTarget || game_.unit(id)->currentOrder.kind != rts::OrderKind::Stop)
+    for (auto id : {repairer, friendTarget, flyer}) if (game_.unit(id)->combat().attackTarget || game_.unit(id)->orders().currentOrder.kind != rts::OrderKind::Stop)
         throw std::runtime_error("Forced attack: worker, self or incompatible flyer received attack");
     forceClickUnit(friendHero);
-    if (game_.unit(friendHero)->attackTarget || game_.unit(fighter)->attackTarget != friendHero)
+    if (game_.unit(friendHero)->combat().attackTarget || game_.unit(fighter)->combat().attackTarget != friendHero)
         throw std::runtime_error("Forced attack: hero target or self filtering failed");
     game_.stop(ui_.selection.ids); focus({6,6}, true);
     onMessage(WM_KEYDOWN, 'A', 0);
     const auto& friendlyHall = game_.buildings().front();
     const auto hallBounds = rts::buildingBounds(game_, friendlyHall, view_);
     click({hallBounds.x + hallBounds.width * .5f, hallBounds.y + hallBounds.height * .65f});
-    if (ui_.orderMode || game_.unit(fighter)->attackTarget != friendlyHall.id || game_.unit(archer)->attackTarget != friendlyHall.id ||
-        game_.unit(repairer)->attackTarget || game_.unit(flyer)->attackTarget)
+    if (ui_.orderMode || game_.unit(fighter)->combat().attackTarget != friendlyHall.id || game_.unit(archer)->combat().attackTarget != friendlyHall.id ||
+        game_.unit(repairer)->combat().attackTarget || game_.unit(flyer)->combat().attackTarget)
         throw std::runtime_error("Forced attack: friendly building target failed");
     game_.stop(ui_.selection.ids); ui_.selection.ids = {friendTarget}; focus({18,10}, true);
     onMessage(WM_KEYDOWN, 'A', 0);
@@ -313,13 +313,13 @@ void GameApplication::exerciseUnitCommands() {
     mouse_ = {selfBounds.x + selfBounds.width * .5f, selfBounds.y + selfBounds.height * .4f};
     if (cursorKind() != rts::CursorKind::Blocked) throw std::runtime_error("Forced attack: self cursor is not blocked");
     click(mouse_);
-    if (!ui_.orderMode || game_.unit(friendTarget)->currentOrder.kind != rts::OrderKind::Stop)
+    if (!ui_.orderMode || game_.unit(friendTarget)->orders().currentOrder.kind != rts::OrderKind::Stop)
         throw std::runtime_error("Forced attack: invalid entity fell through to attack-move");
     onMessage(WM_KEYDOWN, VK_ESCAPE, 0);
     auto healing = *game_.unit(repairer)->ability(repairId);
     healing.id = 831; healing.targeting = rts::AbilityTargeting::Unit;
     const_cast<rts::Unit&>(*game_.unit(fighter)).definition.abilities = {healing};
-    const_cast<rts::Unit&>(*game_.unit(friendHero)).health -= 50;
+    const_cast<rts::Unit&>(*game_.unit(friendHero)).vitals().health -= 50;
     game_.stop(std::array{fighter, repairer}); ui_.selection.ids = {repairer, fighter};
     focus(game_.unit(friendHero)->position, true);
     const auto healBounds = rts::unitBounds(game_, *game_.unit(friendHero), view_);
@@ -327,18 +327,18 @@ void GameApplication::exerciseUnitCommands() {
     mouse_ = healPoint;
     if (cursorKind() != rts::CursorKind::Target) throw std::runtime_error("Repair: contextual unit cursor missing");
     onMessage(WM_RBUTTONDOWN, 0, at(healPoint));
-    if (game_.unit(fighter)->currentOrder.kind != rts::OrderKind::UseAbility || game_.unit(fighter)->currentOrder.target != friendHero ||
-        game_.unit(repairer)->currentOrder.kind != rts::OrderKind::Stop) throw std::runtime_error("Repair: unit right click is hardcoded to workers or buildings");
+    if (game_.unit(fighter)->orders().currentOrder.kind != rts::OrderKind::UseAbility || game_.unit(fighter)->orders().currentOrder.target != friendHero ||
+        game_.unit(repairer)->orders().currentOrder.kind != rts::OrderKind::Stop) throw std::runtime_error("Repair: unit right click is hardcoded to workers or buildings");
     game_.stop(std::array{fighter}); ui_.selection.ids = {fighter};
     onMessage(WM_KEYDOWN, 'Q', 0); click(healPoint);
-    if (ui_.orderMode || game_.unit(fighter)->currentOrder.target != friendHero)
+    if (ui_.orderMode || game_.unit(fighter)->orders().currentOrder.target != friendHero)
         throw std::runtime_error("Repair: manual unit targeting failed");
     auto& casterBuilding = const_cast<rts::Building&>(game_.buildings().front());
     casterBuilding.definition.abilities = {definitions_.ability(1), definitions_.ability(4)};
-    casterBuilding.definition.maximumMana = casterBuilding.mana = 50;
+    casterBuilding.definition.maximumMana = casterBuilding.vitals().mana = 50;
     ui_.selection.ids = {casterBuilding.id}; clearCommandMode();
     onMessage(WM_KEYDOWN, 'Q', 0);
-    if (casterBuilding.mana != 25 || casterBuilding.abilityCooldown(1) != 150)
+    if (casterBuilding.vitals().mana != 25 || casterBuilding.abilityCooldown(1) != 150)
         throw std::runtime_error("Building ability hotkey did not use shared mana and cooldown");
     const auto autocastButton = layout.commands[rts::firstAbilitySlot + 1];
     onMessage(WM_RBUTTONDOWN, 0, at({autocastButton.x + 10, autocastButton.y + 10}));
@@ -347,22 +347,22 @@ void GameApplication::exerciseUnitCommands() {
     if (ui_.orderMode != rts::OrderKind::UseAbility || ui_.pendingAbility != 4)
         throw std::runtime_error("Building targeted ability hotkey failed");
     onMessage(WM_KEYDOWN, 'S', 0);
-    if (ui_.orderMode || casterBuilding.currentOrder.kind != rts::OrderKind::Stop)
+    if (ui_.orderMode || casterBuilding.orders().currentOrder.kind != rts::OrderKind::Stop)
         throw std::runtime_error("Building stop failed");
-    casterBuilding.definition.abilities.clear(); casterBuilding.mana = 50;
+    casterBuilding.definition.abilities.clear(); casterBuilding.vitals().mana = 50;
     for (int i = 0; i < 8; ++i) {
         auto pageAbility = definitions_.ability(1); pageAbility.id = 2000 + i; pageAbility.manaCost = 1;
         casterBuilding.definition.abilities.push_back(pageAbility);
     }
     ui_.abilityPage = 0;
     onMessage(WM_KEYDOWN, 'F', 0); onMessage(WM_KEYDOWN, 'F', 0); onMessage(WM_KEYDOWN, 'Q', 0);
-    if (casterBuilding.abilityCooldown(2006) != 150 || casterBuilding.mana != 49)
+    if (casterBuilding.abilityCooldown(2006) != 150 || casterBuilding.vitals().mana != 49)
         throw std::runtime_error("Ability page hotkeys cannot reach the seventh ability");
     const auto pageButton = layout.commands[rts::abilityPageSlot];
     click({pageButton.x + 10, pageButton.y + 10});
     const auto pagedAbilityButton = layout.commands[rts::firstAbilitySlot];
     click({pagedAbilityButton.x + 10, pagedAbilityButton.y + 10});
-    if (casterBuilding.abilityCooldown(2000) != 150 || casterBuilding.mana != 48)
+    if (casterBuilding.abilityCooldown(2000) != 150 || casterBuilding.vitals().mana != 48)
         throw std::runtime_error("Ability page mouse controls failed to wrap");
     casterBuilding.definition.trainableUnits = {"church.worker", "church.peacemaker", "church.slinger", "church.catapult"};
     ui_.productionPage = 0;

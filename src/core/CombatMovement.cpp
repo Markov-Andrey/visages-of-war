@@ -5,16 +5,16 @@
 
 namespace rts {
 void Simulation::approachCombat(Unit& u, Vec2 aim, const CombatTarget* target) {
-    if (!u.definition.mobile) { u.route.clear(); u.next = 0; u.state = UnitState::Idle; return; }
+    if (!u.definition.mobile) { u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::Idle; return; }
     // Reconsider at staggered intervals, but retain a useful route and its progress.
-    u.chaseTicks = 12 + int(u.id % 7);
+    u.combat().chaseTicks = 12 + int(u.id % 7);
     const float radius = u.definition.collisionRadius, range = u.definition.attackRange;
     const auto movement = u.definition.movement;
     const auto bodies = unitObstacles(u);
     std::vector<Circle> claims;
-    for (const auto& other : units_) if (other.id != u.id && other.owner == u.owner &&
-        airborne(other.definition.movement) == airborne(movement) && other.state == UnitState::ToAttack &&
-        other.next < other.route.size()) claims.push_back({other.routeDestination, other.definition.collisionRadius + .025f});
+    for (const auto& other : world_.circles()) if (other.id != u.id && other.owner == u.owner &&
+        airborne(other.definition.movement) == airborne(movement) && other.orders().state == UnitState::ToAttack &&
+        other.motion().next < other.motion().route.size()) claims.push_back({other.motion().routeDestination, other.definition.collisionRadius + .025f});
     const auto clear = [&](Vec2 from, Vec2 to) {
         return std::none_of(bodies.begin(), bodies.end(), [&](Circle body) { return sweptCircleIntersects(from, to, radius, body); });
     };
@@ -26,8 +26,8 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const CombatTarget* target) {
     const auto reaches = [&](Vec2 p) {
         return target ? attackReach(u, *target, p) : groundLengthSquared(p - aim) <= range * range;
     };
-    if (u.state == UnitState::ToAttack && u.next < u.route.size() && u.blockedTicks < 12 &&
-        reaches(u.routeDestination) && free(u.routeDestination)) return;
+    if (u.orders().state == UnitState::ToAttack && u.motion().next < u.motion().route.size() && u.motion().blockedTicks < 12 &&
+        reaches(u.motion().routeDestination) && free(u.motion().routeDestination)) return;
 
     // Aim at continuous positions on the attack disk, not at terrain cell centres.
     // The radial direction gives the shortest approach; additional rings handle
@@ -74,16 +74,16 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const CombatTarget* target) {
     const bool staging = goals.empty();
     if (staging) for (int rank = 1; rank <= 3 && goals.empty(); ++rank) ring(outer + rank * (2 * radius + .12f), false);
     if (goals.empty()) {
-        u.route.clear(); u.next = 0; u.state = UnitState::ToAttack;
+        u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::ToAttack;
         return;
     }
     const auto score = [&](Vec2 p) {
-        const float retry = u.blockedTicks >= 12 && groundLengthSquared(p - u.routeDestination) < .49f ? 4.0f : 0.0f;
+        const float retry = u.motion().blockedTicks >= 12 && groundLengthSquared(p - u.motion().routeDestination) < .49f ? 4.0f : 0.0f;
         return groundLengthSquared(p - u.position) + retry;
     };
     std::stable_sort(goals.begin(), goals.end(), [&](Vec2 a, Vec2 b) { return score(a) < score(b); });
     if (staging && groundLengthSquared(goals.front() - u.position) < .04f) {
-        u.route.clear(); u.next = 0; u.state = UnitState::ToAttack;
+        u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::ToAttack;
         return;
     }
     for (Vec2 goal : goals) if (clear(u.position, goal) && map().canTraverse(u.position, goal, radius, movement)) {
@@ -93,7 +93,7 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const CombatTarget* target) {
     // Only obstructed approaches need graph search. Bound dynamic searches and
     // share a deterministic budget across the whole army, including click orders.
     // Deferred requests keep their current route and get another turn next tick.
-    if (combatSearchBudget_ <= 0) { u.chaseTicks = 1; u.state = UnitState::ToAttack; return; }
+    if (combatSearchBudget_ <= 0) { u.combat().chaseTicks = 1; u.orders().state = UnitState::ToAttack; return; }
     --combatSearchBudget_;
     const Vec2 goal = goals.front();
     if (auto path = findUnitPathTo(map(), u.position, goal, bodies, radius, movement, 192)) {
@@ -110,8 +110,8 @@ void Simulation::approachCombat(Unit& u, Vec2 aim, const CombatTarget* target) {
         followPath(u, std::move(*path), UnitState::ToAttack);
         return;
     }
-    u.route.clear(); u.next = 0; u.state = UnitState::ToAttack;
-    u.chaseTicks = 30 + int(u.id % 13);
-    if (target) { u.unreachableTarget = target->id(); u.targetRetryTicks = 90; }
+    u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::ToAttack;
+    u.combat().chaseTicks = 30 + int(u.id % 13);
+    if (target) { u.combat().unreachableTarget = target->id(); u.combat().targetRetryTicks = 90; }
 }
 }

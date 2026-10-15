@@ -10,10 +10,10 @@ inline bool accepts(AttackTargets targets, bool sourceAir, bool targetAir) {
 inline void recover(Unit& u) {
     if (u.definition.attackRecoveryTicks == 0 && u.definition.attackCooldownTicks == 0) {
         // The next preparation starts at this boundary, without a hidden extra tick.
-        u.attackPhase = AttackPhase::Windup; u.attackTicks = u.definition.attackWindupTicks;
+        u.combat().attackPhase = AttackPhase::Windup; u.combat().attackTicks = u.definition.attackWindupTicks;
         return;
     }
-    u.attackPhase = u.definition.attackRecoveryTicks > 0 ? AttackPhase::Recovery : AttackPhase::Cooldown;
-    u.attackTicks = u.definition.attackRecoveryTicks > 0 ? u.definition.attackRecoveryTicks : u.definition.attackCooldownTicks;
+    u.combat().attackPhase = u.definition.attackRecoveryTicks > 0 ? AttackPhase::Recovery : AttackPhase::Cooldown;
+    u.combat().attackTicks = u.definition.attackRecoveryTicks > 0 ? u.definition.attackRecoveryTicks : u.definition.attackCooldownTicks;
 }
 }

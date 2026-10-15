@@ -73,11 +73,11 @@ void selectionTests(TestSuite& test, const TestContext& context) {
                 !ui.selection.activeUnit(game) && ui.selection.groups(game).empty(), "Inspection mixed owners or hid foreign stats");
             for (size_t slot = 0; slot < rts::commandSlots; ++slot)
                 require(!rts::unitCommandVisible(game, ui, slot) && !rts::abilityCommandAt(game, ui, slot), "Foreign command or ability was exposed");
-            const auto state = foreign.state;
+            const auto state = foreign.orders().state;
             require(!game.activateAbility(foreign.id, 1) && !game.order(ui.selection.ids, rts::OrderKind::Move, {20, 20}),
                 "Inspected foreign unit accepted a command");
             game.stop(ui.selection.ids);
-            require(foreign.mana == 100 && foreign.state == state && foreign.abilityCooldown(1) == 0, "Inspection changed foreign runtime state");
+            require(foreign.vitals().mana == 100 && foreign.orders().state == state && foreign.abilityCooldown(1) == 0, "Inspection changed foreign runtime state");
             ui.controlGroups.bind(0, game, ui.selection);
             require(ui.controlGroups.members(0).empty(), "Inspection entered an army control group");
             require(!ui.selection.selectTypeInView(game, view, {0, 0, 2000, 2000}, point(foreign.id), true) &&
@@ -118,20 +118,20 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             const auto balance = game.storedCrystals();
             require(!game.train(building.id) && !game.setRally(building.id, {10, 10}) && !game.cancelTraining(building.id),
                 "Foreign building accepted production or rally control");
-            require(building.rally == rally && game.storedCrystals() == balance && building.production.empty(), "Foreign building command changed state");
-            building.constructionProgress = 0;
+            require(building.rally == rally && game.storedCrystals() == balance && building.productionState().production.empty(), "Foreign building command changed state");
+            building.productionState().constructionProgress = 0;
             require(!game.cancelConstruction(building.id), "Foreign construction could be cancelled");
             game.command(std::array{game.worker().id}, building.origin);
-            require(game.worker().state != rts::UnitState::ToBuild && game.worker().targetBuilding != building.id,
+            require(game.worker().orders().state != rts::UnitState::ToBuild && game.worker().orders().targetBuilding != building.id,
                 "Player worker tried to finish foreign construction");
-            building.constructionProgress = building.definition.constructionTicks;
+            building.productionState().constructionProgress = building.definition.constructionTicks;
         }
         fog.update(game.map(), {});
         require(!rts::selectableEntity(game, building.id) && rts::pickEntity(game, view, point) != building.id, "Hidden building stayed inspectable");
         selection.prune(game);
         require(selection.ids.empty(), "Building stayed selected after leaving vision");
         fog.update(game.map(), std::array{rts::VisionSource{edge, 0, true}});
-        building.health = 0;
+        building.vitals().health = 0;
         require(!rts::selectableEntity(game, building.id) && rts::pickEntity(game, view, point) != building.id, "Destroyed building stayed selectable");
     });
     test("Numbered groups share members, replace independently and recall the full selection", [] {
@@ -339,13 +339,13 @@ void selectionTests(TestSuite& test, const TestContext& context) {
             require(occlusionEligible(game, unit, buildingDepth(building)), "Visible rear unit has no mask");
             require(!occlusionEligible(game, unit, unitDrawDepth(unit.position)), "Unit masks an object behind itself");
         }
-        auto hidden = unit; hidden.cell = {game.map().width()-1, game.map().height()-1};
+        ecs::World fixtures; auto& hidden = fixtures.create(1, unit.definition); copyEntityState(hidden, unit); hidden.cell = {game.map().width()-1, game.map().height()-1};
         require(!game.fog().visible(hidden.cell), "Hidden-unit fixture is inside the sight radius");
         require(!occlusionEligible(game, hidden, 1000), "Hidden unit produces a mask");
-        auto dead = unit; dead.health = 0;
+        auto& dead = fixtures.create(2, unit.definition); copyEntityState(dead, unit); dead.vitals().health = 0;
         require(!occlusionEligible(game, dead, 1000), "Dead unit produces a mask");
         for (PlayerId owner : {game.player().id, PlayerId(1), neutralPlayer}) {
-            auto other = unit; other.owner = owner;
+            auto& other = fixtures.create(3 + owner, unit.definition); copyEntityState(other, unit); other.owner = owner;
             require(occlusionEligible(game, other, buildingDepth(building)), "Mask depends on allegiance");
         }
     });

@@ -16,8 +16,8 @@ bool buildingVisible(const Simulation& game, const Building& building) {
     return false;
 }
 bool selectableEntity(const Simulation& game, EntityId id) {
-    if (const auto* unit = game.unit(id)) return unit->health > 0 && game.fog().visible(unit->cell);
-    if (const auto* building = game.building(id)) return building->health > 0 && buildingVisible(game, *building);
+    if (const auto* unit = game.unit(id)) return unit->vitals().health > 0 && game.fog().visible(unit->cell);
+    if (const auto* building = game.building(id)) return building->vitals().health > 0 && buildingVisible(game, *building);
     const auto* crystal = game.crystal(id);
     return crystal && crystal->remaining > 0 && game.crystalVisible(*crystal);
 }
@@ -25,7 +25,7 @@ void Selection::army(const Simulation& game) {
     activeType_.clear();
     ids.clear();
     // Support units belong to the army even when they do not have a weapon.
-    for (const auto& u : game.units()) if (u.owner == game.player().id && u.health > 0 && !u.definition.isWorker()) ids.push_back(u.id);
+    for (const auto& u : game.units()) if (u.owner == game.player().id && u.vitals().health > 0 && !u.definition.isWorker()) ids.push_back(u.id);
 }
 bool Selection::hero(const Simulation& game) {
     if (const auto* u = game.hero()) { ids = {u->id}; activeType_.clear(); return true; }
@@ -40,7 +40,7 @@ UiRect unitBounds(const Simulation& game, const Unit& unit, const WorldView& vie
 UiRect buildingBounds(const Simulation& game, const Building& building, const WorldView& view) {
     const auto& type = building.definition;
     const auto p = view.project({building.origin.x + type.width * 0.5f, building.origin.y + type.height * 0.5f}, float(game.map().at(building.origin).height));
-    if (const auto* stage = type.buildingSprite.stage(building.constructionProgress, type.constructionTicks))
+    if (const auto* stage = type.buildingSprite.stage(building.productionState().constructionProgress, type.constructionTicks))
         return buildingStageBounds(*stage, type.buildingSprite.scale, p, view.zoom);
     return {};
 }
@@ -61,7 +61,7 @@ std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view
     }
     for (const auto& b : game.buildings()) {
         const float d = buildingDepth(b);
-        if (b.health > 0 && buildingVisible(game, b) && buildingBounds(game, b, view).contains(point) && d >= depth) { result = b.id; depth = d; }
+        if (b.vitals().health > 0 && buildingVisible(game, b) && buildingBounds(game, b, view).contains(point) && d >= depth) { result = b.id; depth = d; }
     }
     const auto* coveringBuilding = result ? game.building(*result) : nullptr;
     if (coveringBuilding) {
@@ -73,7 +73,7 @@ std::optional<EntityId> pickEntity(const Simulation& game, const WorldView& view
         const float d = unitDrawDepth(u.position) + (airborne(u.definition.movement) ? 1000.0f : 0);
         const bool throughWindow = coveringBuilding && occlusionEligible(game, u, buildingDepth(*coveringBuilding)) &&
             unitOcclusion(game, u, view).contains(point);
-        if (u.health > 0 && game.fog().visible(u.cell) && (unitBounds(game, u, view).contains(point) || throughWindow) && d >= depth) { result = u.id; depth = d; }
+        if (u.vitals().health > 0 && game.fog().visible(u.cell) && (unitBounds(game, u, view).contains(point) || throughWindow) && d >= depth) { result = u.id; depth = d; }
     }
     return result;
 }
@@ -99,11 +99,11 @@ bool Selection::selectTypeInView(const Simulation& game, const WorldView& view, 
     if (!viewport.contains(point)) return false;
     const auto id = pickEntity(game, view, point);
     const auto* clicked = id ? game.unit(*id) : nullptr;
-    if (!clicked || clicked->owner != game.player().id || clicked->health <= 0) return false;
+    if (!clicked || clicked->owner != game.player().id || clicked->vitals().health <= 0) return false;
     if (!additive || !onlyPlayerUnits(game, ids)) ids.clear();
     activeType_ = clicked->definition.id;
     for (const auto& unit : game.units()) {
-        if (unit.owner != game.player().id || unit.health <= 0 || unit.definition.id != clicked->definition.id ||
+        if (unit.owner != game.player().id || unit.vitals().health <= 0 || unit.definition.id != clicked->definition.id ||
             !game.fog().visible(unit.cell) || contains(unit.id)) continue;
         const auto bounds = unitBounds(game, unit, view);
         if (bounds.x < viewport.x + viewport.width && bounds.x + bounds.width > viewport.x &&
@@ -116,7 +116,7 @@ void Selection::box(const Simulation& game, const WorldView& view, UiRect bounds
     if (!additive || !onlyPlayerUnits(game, ids)) ids.clear();
     for (const auto& u : game.units()) {
         const auto p = unitScreenAnchor(view, u.position, game.unitHeight(u)) + Vec2{0, -20 * view.zoom};
-        if (u.owner == game.player().id && u.health > 0 && game.fog().visible(u.cell) && bounds.contains(p) && !contains(u.id)) ids.push_back(u.id);
+        if (u.owner == game.player().id && u.vitals().health > 0 && game.fog().visible(u.cell) && bounds.contains(p) && !contains(u.id)) ids.push_back(u.id);
     }
 }
 void Selection::prune(const Simulation& game) {

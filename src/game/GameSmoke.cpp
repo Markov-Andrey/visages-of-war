@@ -251,7 +251,7 @@ void GameApplication::exerciseInterface() {
         renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"crystal-preview.png", nullptr, false, &ui_);
         ui_.selection.ids = {game_.worker().id};
         onMessage(WM_RBUTTONDOWN, 0, at(p));
-        if (game_.worker().gatherOriginCrystal != static_cast<int>(i) || cursorKind() != rts::CursorKind::Gather)
+        if (game_.worker().gathering().gatherOriginCrystal != static_cast<int>(i) || cursorKind() != rts::CursorKind::Gather)
             throw std::runtime_error("Smoke: resource sprite gather order failed");
         game_.stop(ui_.selection.ids);
         selectedResource = true;
@@ -304,7 +304,7 @@ void GameApplication::exerciseInterface() {
     onMessage(WM_KEYDOWN, 'Y', 0);
     click({layout.commands[0].x + 20, layout.commands[0].y + 20});
     clearCommandMode();
-    if (game_.buildings().front().production.size() != 1) throw std::runtime_error("Smoke: production button failed");
+    if (game_.buildings().front().productionState().production.size() != 1) throw std::runtime_error("Smoke: production button failed");
     rts::Vec2 a{10000, 10000}, b{-10000, -10000};
     for (const auto& u : game_.units()) if (u.owner == game_.player().id && u.definition.canBuild) {
         const auto p = rts::unitScreenAnchor(view_, u.position, game_.unitHeight(u));
@@ -392,10 +392,10 @@ void GameApplication::exerciseInterface() {
     const auto enemy = game_.units().back().id;
     const auto enemyBounds = rts::unitBounds(game_, *game_.unit(enemy), view_);
     onMessage(WM_RBUTTONDOWN, 0, at({enemyBounds.x + enemyBounds.width * .5f, enemyBounds.y + enemyBounds.height * .4f}));
-    if (game_.unit(fighter)->attackTarget != enemy) throw std::runtime_error("Smoke: right click on enemy sprite did not attack");
+    if (game_.unit(fighter)->combat().attackTarget != enemy) throw std::runtime_error("Smoke: right click on enemy sprite did not attack");
     if (cursorKind() != rts::CursorKind::Attack) throw std::runtime_error("Smoke: attack cursor failed");
-    for (int tick = 0; tick < 180 && game_.unit(enemy)->health == game_.unit(enemy)->definition.maximumHealth; ++tick) game_.tick();
-    if (game_.unit(enemy)->health == game_.unit(enemy)->definition.maximumHealth) throw std::runtime_error("Smoke: ordered attack caused no damage");
+    for (int tick = 0; tick < 180 && game_.unit(enemy)->vitals().health == game_.unit(enemy)->definition.maximumHealth; ++tick) game_.tick();
+    if (game_.unit(enemy)->vitals().health == game_.unit(enemy)->definition.maximumHealth) throw std::runtime_error("Smoke: ordered attack caused no damage");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"combat-preview.png");
     const auto combatUnitCount = game_.units().size();
     const auto& fighterType = game_.unit(fighter)->definition;

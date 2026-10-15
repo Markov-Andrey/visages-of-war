@@ -1,5 +1,6 @@
 #pragma once
 #include "rts/Navigation.hpp"
+#include "rts/ecs/Systems.hpp"
 #include "rts/FogOfWar.hpp"
 #include "rts/WorldClock.hpp"
 #include "rts/Projectile.hpp"
@@ -13,108 +14,6 @@
 #include <memory>
 
 namespace rts {
-enum class EntityKind { Unit, Building };
-enum class UnitState { Idle, Moving, ToCrystal, Harvesting, ToHall, ToBuild, Building, WaitingForCrystal, ToAttack, Attacking, ToAbility, UsingAbility };
-enum class OrderKind { Move, Interact, Stop, Build, Gather, Attack, AttackMove, Hold, Patrol, AttackGround, UseAbility };
-struct Order { OrderKind kind; Cell cell{}; EntityId target{}; uint64_t moveGroup{}; std::optional<Vec2> position; int abilityId{}; bool forceAttack{}; };
-struct HeroProgression {
-    int level = 1; int experience{};
-    std::shared_ptr<const ProgressionRules> rules;
-};
-struct HeroLevelChanged { EntityId id; int level; };
-struct ProductionJob {
-    std::string definitionId;
-    int remainingTicks{}, totalTicks{}, paidCrystals{}, reservedSupply{};
-};
-struct AbilityEffectState { std::int64_t progress{}; int ticks{}; bool applied{}; };
-struct Entity {
-    EntityId id{};
-    PlayerId owner{};
-    std::string definitionId;
-    EntityDefinition definition;
-    Cell cell;
-    Vec2 position;
-    Vec2 tickPosition; // Start of the current fixed tick, for relative collision sweeps.
-    Vec2 velocity, tickVelocity; // Map units per second; prediction reads one common tick snapshot.
-    Cell facing{0, 1};
-    MotionFacing motionFacing;
-    float walkCycle{};
-    uint64_t moveGroup{};
-    Vec2 formationForward{0, 1};
-    float groupSpeed{};
-    Cell groupTarget{};
-    float groupRadius{};
-    UnitState state = UnitState::Idle;
-    Vital health{}, mana{};
-    int cargo{};
-    int regenerationTicks{};
-    std::vector<AbilityCooldown> abilityCooldowns;
-    std::vector<int> autocastAbilities;
-    bool automaticAbility{}, abilityWorking{}, abilityStarted{};
-    AbilityAnimationPlayer abilityAnimation;
-    std::vector<AbilityEffectState> abilityEffects;
-    std::int64_t repairCredit{}; // Prepaid restoration cost, retained across casters and orders.
-    HealthFeedback healthFeedback;
-    std::vector<Cell> route;
-    size_t next{};
-    Vec2 routeDestination;
-    int harvestTicks{}, blockedTicks{};
-    Vec2 progressPosition;
-    int progressTicks{}, stagnantTicks{};
-    bool replanQueued{};
-    std::uint64_t replanAfter{};
-    size_t relaxedAttempt{};
-    uint64_t yieldingTo{};
-    Vec2 yieldOrigin, yieldForward;
-    int targetCrystal = -1;
-    int gatherOriginCrystal = -1; // The clicked deposit remains the anchor across retries and deliveries.
-    EntityId targetBuilding{};
-    bool repeatGather{};
-    Order currentOrder{OrderKind::Stop};
-    Vec2 patrolOrigin;
-    EntityId attackTarget{};
-    AttackPhase attackPhase = AttackPhase::Ready;
-    int attackTicks{}, chaseTicks{};
-    EntityId unreachableTarget{};
-    int targetRetryTicks{};
-    std::optional<HeroProgression> hero;
-    static constexpr size_t productionQueueLimit = 10;
-    Cell origin, rally;
-    int constructionProgress{};
-    std::deque<ProductionJob> production;
-    bool complete() const { return !definition.constructible || constructionProgress >= definition.constructionTicks; }
-    bool training() const { return complete() && !production.empty() && production.front().remainingTicks > 0; }
-    bool contains(Cell c) const {
-        return c.x >= origin.x && c.y >= origin.y && c.x < origin.x + definition.width && c.y < origin.y + definition.height;
-    }
-    const AbilityDefinition* harvestAbility() const {
-        const auto* selected = ability(currentOrder.abilityId);
-        return selected && selected->harvest() ? selected : nullptr;
-    }
-    int level() const { return hero ? hero->level : definition.level; }
-    Vital maximumHealth() const { return definition.maximumHealth + (hero ? (level() - 1) * definition.hero->healthPerLevel : 0); }
-    Vital maximumMana() const { return definition.maximumMana; }
-    const AbilityDefinition* ability(int abilityId) const {
-        for (const auto& value : definition.abilities) if (value.id == abilityId) return &value;
-        return nullptr;
-    }
-    int abilityCooldown(int abilityId) const {
-        for (const auto& value : abilityCooldowns) if (value.abilityId == abilityId) return value.remainingTicks;
-        return 0;
-    }
-    bool autocastEnabled(int abilityId) const {
-        return std::find(autocastAbilities.begin(), autocastAbilities.end(), abilityId) != autocastAbilities.end();
-    }
-    int attackDamage() const { return definition.attackDamage + (hero ? (level() - 1) * definition.hero->damagePerLevel : 0); }
-    int armor() const { return definition.armor; }
-    bool atMaxLevel() const { return hero && level() == static_cast<int>(hero->rules->thresholds.size()); }
-    int experienceInLevel() const { return hero ? hero->experience - hero->rules->thresholds[level() - 1] : 0; }
-    int experienceToLevel() const { return hero && !atMaxLevel() ? hero->rules->thresholds[level()] - hero->rules->thresholds[level() - 1] : 0; }
-    float experienceFraction() const { return atMaxLevel() ? 1.0f : experienceToLevel() ? float(experienceInLevel()) / experienceToLevel() : 0.0f; }
-};
-// Spatial collections retain their names; both store exactly the same entity model.
-using Unit = Entity;
-using Building = Entity;
 enum class CorpsePhase { Body, Fading, Vanishing };
 struct Corpse {
     static constexpr int lifetimeTicks = 60 * simulationTicksPerSecond;
@@ -169,6 +68,8 @@ public:
     explicit Simulation(Scenario scenario, PlayerSettings player, EntityDefinition workerType,
         std::vector<EntityDefinition> entityTypes, std::string startingBuilding,
         std::string startingHero = {}, ProgressionRules progression = {}, ClockSettings clock = {}, ArmorRules armorRules = {});
+    void addSystem(std::string name, ecs::Phase phase, ecs::Systems::Function function, int priority = 0) { systems_.add(std::move(name), phase, std::move(function), priority); }
+    const ecs::World& world() const { return world_; }
     const ArmorRules& armorRules() const { return armorRules_; }
     Simulation(const Simulation&) = delete;
     Simulation& operator=(const Simulation&) = delete;
@@ -193,14 +94,14 @@ public:
     bool setEnvironmentHealth(EntityId id, int hitPoints);
     bool environmentVisible(size_t index) const;
     const Map& map() const { return scenario_.map; }
-    const std::vector<Unit>& units() const { return units_; }
+    ecs::EntityRange<const Entity> units() const { return world_.circles(); }
     const std::vector<Corpse>& corpses() const { return corpses_; }
     const std::vector<Bones>& bones() const { return bones_; }
     const Corpse* corpse(EntityId id) const;
     const Bones* bones(EntityId id) const;
     const std::vector<Projectile>& projectiles() const { return projectiles_; }
     const std::vector<ProjectileImpact>& projectileImpacts() const { return projectileImpacts_; }
-    const std::vector<Building>& buildings() const { return buildings_; }
+    ecs::EntityRange<const Entity> buildings() const { return world_.footprints(); }
     std::vector<const EntityDefinition*> buildingTypes(const EntityDefinition& builder) const;
     std::vector<const Entity*> entities() const;
     const Entity* entity(EntityId id) const;
@@ -216,7 +117,7 @@ public:
     const Building* buildingAt(Cell c) const;
     const EntityDefinition& entityType(const std::string& id) const;
     // Convenience accessors for the initial scenario; there is no singleton unit.
-    const Unit& worker() const { return units_.at(0); }
+    const Unit& worker() const { return world_.circles().at(0); }
     Cell hall() const { return scenario_.hall; }
     const std::vector<Crystal>& crystals() const { return scenario_.crystals; }
     const Crystal* crystal(EntityId id) const;
@@ -264,7 +165,7 @@ private:
     void setMessage(std::wstring message) { message_ = std::move(message); ++messageRevision_; }
     Entity* mutableEntity(EntityId id);
     std::vector<Entity*> mutableEntities();
-    Entity makeEntity(const EntityDefinition& type, Cell cell, PlayerId owner);
+    Entity& makeEntity(const EntityDefinition& type, Cell cell, PlayerId owner);
     Unit* mutableUnit(EntityId id);
     Building* mutableBuilding(EntityId id);
     EntityId spawn(const EntityDefinition& definition, Cell cell, bool reserved, PlayerId owner);
@@ -301,7 +202,7 @@ private:
     bool effectEligible(const Entity& caster, const AbilityEffect& effect, EntityId target, bool automatic) const;
     void applyInstantEffects(Entity& caster, const AbilityDefinition& ability, EntityId target, std::vector<AbilityEffectState>& states);
     void tickAbility(Entity& unit);
-    void prepareAbilityTick(Entity& unit);
+    void runSystems(ecs::Phase phase);
     void arrived(Unit& unit);
     void issue(Unit& unit, Order order);
     void applyOrder(Unit& unit, Order order, std::optional<Path> path = {});
@@ -320,7 +221,7 @@ private:
         const Entity& entity() const { return unit ? *unit : *building; }
         EntityId id() const { return entity().id; }
         PlayerId owner() const { return entity().owner; }
-        Vital health() const { return entity().health; }
+        Vital health() const { return entity().vitals().health; }
         bool air() const { return airborne(entity().definition.movement); }
         Vec2 position() const { return entity().position; }
     };
@@ -358,12 +259,12 @@ private:
     std::vector<int> knownCrystals_;
     std::vector<bool> knownEnvironment_;
     std::vector<WorldEvent> events_;
-    std::vector<Unit> units_;
+    ecs::World world_;
+    ecs::Systems systems_;
     std::vector<Corpse> corpses_;
     std::vector<Bones> bones_;
     std::vector<Projectile> projectiles_;
     std::vector<ProjectileImpact> projectileImpacts_;
-    std::vector<Building> buildings_;
     EntityId nextId_ = 10000;
     uint64_t nextMoveGroup_ = 1;
     int combatSearchBudget_ = 8;

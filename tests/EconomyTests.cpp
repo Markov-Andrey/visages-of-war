@@ -38,28 +38,28 @@ void economyTests(TestSuite& test, const TestContext& context) {
             scene.crystals = {{{16, 8}, 100}}; scene.map.occupy({16, 8});
             auto game = makeTestSimulation(scene, {}, worker); game.revealMap();
             const auto id = game.worker().id;
-            auto& recipient = const_cast<Entity&>(game.units()[1]); recipient.health -= 20;
+            auto& recipient = const_cast<Entity&>(game.units()[1]); recipient.vitals().health -= 20;
             const auto target = effect == 0 ? game.crystals()[0].id : recipient.id;
-            const auto health = recipient.health;
+            const auto health = recipient.vitals().health;
             const auto balance = game.storedCrystals();
             const auto assertPending = [&] {
-                require(!game.worker().abilityAnimation.current() && !game.worker().abilityStarted &&
-                    game.worker().mana == 50 && game.worker().abilityCooldown(ability.id) == 0 &&
-                    recipient.health == health && game.storedCrystals() == balance,
+                require(!game.worker().casting().abilityAnimation.current() && !game.worker().casting().abilityStarted &&
+                    game.worker().vitals().mana == 50 && game.worker().abilityCooldown(ability.id) == 0 &&
+                    recipient.vitals().health == health && game.storedCrystals() == balance,
                     "Approach started animation, effects or costs");
             };
             require(game.activateAbility(id, ability.id, target), "Distant order rejected");
             assertPending(); ticks(game, 5); assertPending();
             game.stop(); assertPending();
             require(game.activateAbility(id, ability.id, target), "Repeat approach rejected");
-            for (int tick = 0; tick < 1000 && !game.worker().abilityStarted; ++tick) {
+            for (int tick = 0; tick < 1000 && !game.worker().casting().abilityStarted; ++tick) {
                 assertPending(); game.tick();
             }
-            require(game.worker().abilityStarted && game.worker().abilityAnimation.current() &&
-                game.worker().mana == 45 && game.worker().abilityCooldown(ability.id) == 10000,
+            require(game.worker().casting().abilityStarted && game.worker().casting().abilityAnimation.current() &&
+                game.worker().vitals().mana == 45 && game.worker().abilityCooldown(ability.id) == 10000,
                 "Execution failed to start animation and charge once");
             ticks(game, 10);
-            require(game.worker().mana == 45, "Execution charged twice");
+            require(game.worker().vitals().mana == 45, "Execution charged twice");
         }
     });
     test("Pending ability rechecks mana and target before execution", [] {
@@ -72,13 +72,13 @@ void economyTests(TestSuite& test, const TestContext& context) {
         for (bool loseMana : {false, true}) {
             auto scene = repairScene(); scene.units = {{worker.id, 0, {16, 12}}};
             auto game = makeTestSimulation(scene, {}, worker); game.revealMap();
-            auto& target = const_cast<Entity&>(game.units()[1]); target.health -= 20;
+            auto& target = const_cast<Entity&>(game.units()[1]); target.vitals().health -= 20;
             require(game.activateAbility(game.worker().id, ability.id, target.id), "Pending cast rejected");
-            if (loseMana) const_cast<Entity&>(game.worker()).mana = 0;
-            else target.health = target.maximumHealth();
+            if (loseMana) const_cast<Entity&>(game.worker()).vitals().mana = 0;
+            else target.vitals().health = target.maximumHealth();
             ticks(game, 1000);
-            require(game.worker().currentOrder.kind == OrderKind::Stop && !game.worker().abilityAnimation.current() &&
-                game.worker().abilityCooldown(ability.id) == 0 && game.worker().mana == (loseMana ? 0 : 10),
+            require(game.worker().orders().currentOrder.kind == OrderKind::Stop && !game.worker().casting().abilityAnimation.current() &&
+                game.worker().abilityCooldown(ability.id) == 0 && game.worker().vitals().mana == (loseMana ? 0 : 10),
                 "Invalid pending cast executed or charged");
         }
     });
@@ -105,7 +105,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.train(id, product.id), "Mobile production rejected");
         require(game.order(std::array{id}, OrderKind::Move, {12, 9}), "Mobile producer cannot move");
         ticks(game, 5);
-        require(game.units().size() == initial + 1 && game.entity(id)->production.empty(), "Mobile production did not complete");
+        require(game.units().size() == initial + 1 && game.entity(id)->productionState().production.empty(), "Mobile production did not complete");
         require(game.train(id, product.id), "Second job rejected");
         const auto supply = game.armySupply().used();
         require(game.cancelTraining(id) && game.armySupply().used() == supply - 1, "Cancellation leaked reserved supply");
@@ -118,13 +118,13 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto scene = repairScene(); scene.units = {{depot.id, 0, {10, 8}}};
         auto game = makeTestSimulation(scene, {}, worker, {depot, hall}); game.revealMap();
         const_cast<Entity&>(game.buildings()[0]).definition.acceptsCargo = false;
-        auto& carrier = const_cast<Entity&>(game.worker()); carrier.cargo = 7;
+        auto& carrier = const_cast<Entity&>(game.worker()); carrier.gathering().cargo = 7;
         const auto id = carrier.id, depotId = game.units()[1].id; const auto balance = game.storedCrystals();
         require(game.command(std::array{id}, game.entity(depotId)->cell, depotId), "Mobile depot not found");
         require(game.order(std::array{depotId}, OrderKind::Move, {20, 17}), "Depot move rejected");
-        ticks(game, 5); require(game.storedCrystals() == balance && game.entity(id)->cargo == 7, "Cargo credited remotely");
+        ticks(game, 5); require(game.storedCrystals() == balance && game.entity(id)->gathering().cargo == 7, "Cargo credited remotely");
         ticks(game, 900);
-        require(game.entity(id)->cargo == 0 && game.storedCrystals() == balance + 7, "Carrier failed to follow mobile depot or lost cargo");
+        require(game.entity(id)->gathering().cargo == 0 && game.storedCrystals() == balance + 7, "Carrier failed to follow mobile depot or lost cargo");
     });
     test("Stage two ordered effects share one cost and skip ineligible effects", [] {
         auto worker = fixtureWorker(); worker.maximumMana = 100;
@@ -133,16 +133,16 @@ void economyTests(TestSuite& test, const TestContext& context) {
             AbilityEffect{RestoreDefinition{RestoredStat::Health, 3}, EffectRecipient::Caster}};
         worker.abilities = {cast};
         auto game = makeTestSimulation(repairScene(), {}, worker); const auto target = game.buildings()[0].id;
-        auto& recipient = const_cast<Entity&>(*game.entity(target)); recipient.health -= 9;
-        auto& caster = const_cast<Entity&>(game.worker()); caster.health -= 5;
+        auto& recipient = const_cast<Entity&>(*game.entity(target)); recipient.vitals().health -= 9;
+        auto& caster = const_cast<Entity&>(game.worker()); caster.vitals().health -= 5;
         require(game.activateAbility(caster.id, cast.id, target), "Combined cast rejected"); game.tick();
-        require(recipient.health == recipient.maximumHealth() - 2 && caster.health == caster.maximumHealth() - 2 &&
-            caster.mana == 90 && caster.abilityCooldown(cast.id) == 30, "Partial effects or common cost failed");
-        ticks(game, 30); recipient.health = recipient.maximumHealth(); caster.health = caster.maximumHealth();
-        require(!game.activateAbility(caster.id, cast.id, target) && caster.mana == 90, "Wholly ineligible cast spent mana");
+        require(recipient.vitals().health == recipient.maximumHealth() - 2 && caster.vitals().health == caster.maximumHealth() - 2 &&
+            caster.vitals().mana == 90 && caster.abilityCooldown(cast.id) == 30, "Partial effects or common cost failed");
+        ticks(game, 30); recipient.vitals().health = recipient.maximumHealth(); caster.vitals().health = caster.maximumHealth();
+        require(!game.activateAbility(caster.id, cast.id, target) && caster.vitals().mana == 90, "Wholly ineligible cast spent mana");
         // The first restoration fills the target; the second observes that updated state.
-        recipient.health -= 1; require(game.activateAbility(caster.id, cast.id, target), "Repeat cast rejected"); game.tick();
-        require(recipient.health == recipient.maximumHealth(), "Effects exceeded maximum health");
+        recipient.vitals().health -= 1; require(game.activateAbility(caster.id, cast.id, target), "Repeat cast rejected"); game.tick();
+        require(recipient.vitals().health == recipient.maximumHealth(), "Effects exceeded maximum health");
     });
     test("Stage two multiple harvest effects conserve reserves and charge once", [] {
         auto worker = fixtureWorker(); worker.maximumMana = 30; worker.carryCapacity = 3;
@@ -150,11 +150,11 @@ void economyTests(TestSuite& test, const TestContext& context) {
         ability.effects = {HarvestDefinition{HarvestCredit::Direct, 1, 2}, HarvestDefinition{HarvestCredit::Cargo, 1, 3},
             AbilityEffect{RestoreDefinition{RestoredStat::Health, 5}, EffectRecipient::Caster}};
         auto game = makeTestSimulation(flatScenario(17), {}, worker);
-        const_cast<Entity&>(game.worker()).health -= 10;
+        const_cast<Entity&>(game.worker()).vitals().health -= 10;
         require(game.activateAbility(game.worker().id, ability.id, game.crystals()[0].id), "Multiple harvest effects rejected");
         ticks(game, 1500);
-        require(game.storedCrystals() == 17 && game.worker().cargo == 0 && game.crystals()[0].remaining == 0 &&
-            game.worker().mana == 26 && game.worker().health == game.worker().maximumHealth() - 5,
+        require(game.storedCrystals() == 17 && game.worker().gathering().cargo == 0 && game.crystals()[0].remaining == 0 &&
+            game.worker().vitals().mana == 26 && game.worker().vitals().health == game.worker().maximumHealth() - 5,
             "Effects repeated activation, lost reserves or ignored selected effect");
     });
     test("Stage two repair effects keep independent progress and support caster recipients", [] {
@@ -163,10 +163,10 @@ void economyTests(TestSuite& test, const TestContext& context) {
         ability.effects = {RepairDefinition{75, 0}, AbilityEffect{RepairDefinition{75, 0}, EffectRecipient::Caster}};
         worker.abilities = {ability};
         auto game = makeTestSimulation(repairScene(), {}, worker);
-        auto& caster = const_cast<Entity&>(game.worker()); caster.health -= 20;
-        auto& target = const_cast<Entity&>(game.buildings()[0]); target.health -= 20;
+        auto& caster = const_cast<Entity&>(game.worker()); caster.vitals().health -= 20;
+        auto& target = const_cast<Entity&>(game.buildings()[0]); target.vitals().health -= 20;
         require(game.activateAbility(caster.id, ability.id, target.id), "Multiple repair effects rejected"); ticks(game, 100);
-        require(caster.health == caster.maximumHealth() && target.health == target.maximumHealth() && caster.mana == 45,
+        require(caster.vitals().health == caster.maximumHealth() && target.vitals().health == target.maximumHealth() && caster.vitals().mana == 45,
             "Repair channels did not finish independently");
     });
     test("Entity abilities share mana cooldown autocast and UI on buildings and units", [] {
@@ -180,15 +180,15 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(repairScene(), {}, worker, {worker, depot});
         const auto buildingId = game.buildings().front().id, unitId = game.worker().id;
         for (auto id : {buildingId, unitId}) {
-            require(game.entity(id)->mana == 60 && game.activateAbility(id, ability.id), "Common cast rejected");
-            require(game.entity(id)->mana == 53 && game.entity(id)->abilityCooldown(ability.id) == 5 &&
-                game.entity(id)->abilityAnimation.current(), "Common activation state missing");
+            require(game.entity(id)->vitals().mana == 60 && game.activateAbility(id, ability.id), "Common cast rejected");
+            require(game.entity(id)->vitals().mana == 53 && game.entity(id)->abilityCooldown(ability.id) == 5 &&
+                game.entity(id)->casting().abilityAnimation.current(), "Common activation state missing");
             require(!game.activateAbility(id, ability.id), "Cooldown bypassed");
             require(!game.activateAbilityFor(1, id, ability.id), "Foreign owner cast accepted");
             require(game.setAutocast(id, ability.id, true), "Non-repair autocast rejected");
         }
         ticks(game, 5);
-        require(game.entity(buildingId)->mana == 46 && game.entity(unitId)->mana == 46, "Building and unit clocks diverged");
+        require(game.entity(buildingId)->vitals().mana == 46 && game.entity(unitId)->vitals().mana == 46, "Building and unit clocks diverged");
         GameplayUi ui; ui.selection.ids = {buildingId};
         require(abilityCommandAt(game, ui, firstAbilitySlot) && unitCommandVisible(game, ui, firstAbilitySlot) &&
             autocastState(game, ui, ability.id) == AutocastState::On, "Building ability UI unavailable");
@@ -217,12 +217,12 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(!game.canTargetAbility(game.worker(), ability, own), "Self filter ignored");
         ability.targets.allowSelf = true; ability.targets.damagedOnly = true;
         require(!game.canTargetAbility(game.worker(), ability, own), "State filter ignored");
-        const_cast<Entity&>(game.worker()).health -= 1;
+        const_cast<Entity&>(game.worker()).vitals().health -= 1;
         require(game.canTargetAbility(game.worker(), ability, own), "Damaged target rejected");
         require(game.command(std::array{own}, game.worker().cell, own), "Generic right click requires repair");
         game.tick();
-        require(game.worker().mana == 47 && game.worker().currentOrder.kind == OrderKind::Stop &&
-            game.worker().abilityAnimation.current(), "Instant targeted lifecycle failed");
+        require(game.worker().vitals().mana == 47 && game.worker().orders().currentOrder.kind == OrderKind::Stop &&
+            game.worker().casting().abilityAnimation.current(), "Instant targeted lifecycle failed");
     });
     test("Buildings cast repair and harvest using the same lifecycle without moving", [] {
         auto worker = fixtureWorker(); worker.maximumHealth = 100;
@@ -235,17 +235,17 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(scene, {}, worker, {worker, depot});
         const auto id = game.buildings().front().id;
         const Vec2 original = game.entity(id)->position;
-        const_cast<Entity&>(game.worker()).health = 70;
+        const_cast<Entity&>(game.worker()).vitals().health = 70;
         require(game.activateAbility(id, repair.id, game.worker().id), "Building cannot restore unit");
         ticks(game, 5);
-        require(game.worker().health > 70 && game.entity(id)->mana == 37, "Building repair did not execute");
+        require(game.worker().vitals().health > 70 && game.entity(id)->vitals().mana == 37, "Building repair did not execute");
         game.stop(std::array{id});
-        require(game.entity(id)->currentOrder.kind == OrderKind::Stop, "Building cast cannot be cancelled");
+        require(game.entity(id)->orders().currentOrder.kind == OrderKind::Stop, "Building cast cannot be cancelled");
         const auto balance = game.storedCrystals();
         require(game.activateAbility(id, harvest.id, game.crystals().front().id), "Building harvest rejected");
         ticks(game, 5);
         require(game.storedCrystals() == balance + 7 && game.crystals().front().remaining == 0 &&
-            game.entity(id)->mana == 33 && game.entity(id)->position == original, "Building harvest lost resources or moved");
+            game.entity(id)->vitals().mana == 33 && game.entity(id)->position == original, "Building harvest lost resources or moved");
     });
     test("Several harvest abilities keep independent costs and the selected effect through deliveries", [] {
         auto worker = gatheringWorker(); worker.maximumMana = 50; worker.carryCapacity = 3;
@@ -257,15 +257,15 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto id = game.worker().id, node = game.crystals().front().id;
         require(game.activateAbility(id, cargo.id, node), "Cargo activation rejected");
         int approachTicks = 0;
-        while (!game.worker().abilityStarted && approachTicks < 1000) { game.tick(); ++approachTicks; }
-        require(game.worker().abilityStarted && game.worker().abilityCooldown(cargo.id) == 10000, "Cooldown began before execution");
+        while (!game.worker().casting().abilityStarted && approachTicks < 1000) { game.tick(); ++approachTicks; }
+        require(game.worker().casting().abilityStarted && game.worker().abilityCooldown(cargo.id) == 10000, "Cooldown began before execution");
         ticks(game, 1000);
-        require(game.storedCrystals() == 11 && game.worker().mana == 45 && game.worker().abilityCooldown(cargo.id) == 9000,
+        require(game.storedCrystals() == 11 && game.worker().vitals().mana == 45 && game.worker().abilityCooldown(cargo.id) == 9000,
             "Delivery loop charged activation again or lost cargo");
         auto other = makeTestSimulation(flatScenario(11), {}, worker);
         require(other.activateAbility(other.worker().id, direct.id, other.crystals().front().id), "Second harvest activation rejected");
         ticks(other, 300);
-        require(other.storedCrystals() == 11 && other.worker().cargo == 0 && other.worker().mana == 43 &&
+        require(other.storedCrystals() == 11 && other.worker().gathering().cargo == 0 && other.worker().vitals().mana == 43 &&
             other.worker().abilityCooldown(cargo.id) == 0, "Selected harvest effect or cooldown leaked across abilities");
     });
     test("Stationary circle entities retain unit targeting and reject out of range casts without charges", [] {
@@ -275,9 +275,9 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto scene = repairScene(); scene.worker = {20, 18};
         auto game = makeTestSimulation(scene, {}, worker);
         const auto id = game.worker().id, b = game.buildings().front().id;
-        const_cast<Building&>(game.buildings().front()).health -= 1;
+        const_cast<Building&>(game.buildings().front()).vitals().health -= 1;
         game.revealMap();
-        require(!game.activateAbility(id, repair.id, b) && game.worker().mana == 20 && game.worker().route.empty(),
+        require(!game.activateAbility(id, repair.id, b) && game.worker().vitals().mana == 20 && game.worker().motion().route.empty(),
             "Stationary caster moved or charged an unreachable cast");
         AbilityDefinition target; target.targeting = AbilityTargeting::Unit;
         require(game.canTargetAbility(game.worker(), target, id), "Mobility changed collision category");
@@ -290,14 +290,14 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(flatScenario(100), {}, worker);
         const auto id = game.worker().id;
         game.tick();
-        require(game.worker().automaticAbility && game.worker().currentOrder.abilityId == 967 && game.worker().mana == 40,
+        require(game.worker().casting().automaticAbility && game.worker().orders().currentOrder.abilityId == 967 && game.worker().vitals().mana == 40,
             "Harvest autocast did not use common activation");
-        require(game.setAutocast(id, 967, false) && game.worker().currentOrder.kind == OrderKind::Stop && !game.worker().repeatGather,
+        require(game.setAutocast(id, 967, false) && game.worker().orders().currentOrder.kind == OrderKind::Stop && !game.worker().gathering().repeatGather,
             "Disabling harvest autocast did not cancel its approach");
         ticks(game, 5);
         require(game.activateAbility(id, 967, game.crystals().front().id), "Manual harvest after autocast rejected");
         require(game.setAutocast(id, 967, true) && game.setAutocast(id, 967, false) &&
-            game.worker().currentOrder.kind == OrderKind::Gather && game.worker().mana == 40,
+            game.worker().orders().currentOrder.kind == OrderKind::Gather && game.worker().vitals().mana == 40,
             "Autocast toggle cancelled or charged a manual harvest");
     });
     test("Footprint contact abilities respect cliffs while authored ranged abilities use their range", [] {
@@ -306,7 +306,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto depot = fixtureDepot(worker); depot.abilities = {repair};
         auto scene = repairScene(); scene.map.at(scene.worker).height = -1;
         auto game = makeTestSimulation(scene, {}, worker, {worker, depot}); game.revealMap();
-        const_cast<Entity&>(game.worker()).health -= 1;
+        const_cast<Entity&>(game.worker()).vitals().health -= 1;
         const auto id = game.buildings().front().id;
         require(!game.activateAbility(id, repair.id, game.worker().id), "Contact effect crossed a shore cliff");
         const_cast<Entity&>(*game.entity(id)).definition.abilities.front().range = 2;
@@ -319,21 +319,21 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(std::move(scene), {}, type);
         const auto first = game.units()[0].id, second = game.units()[1].id, third = game.units()[2].id;
         auto& secondUnit = const_cast<Unit&>(*game.unit(second)); secondUnit.definition.abilities.clear();
-        auto& thirdUnit = const_cast<Unit&>(*game.unit(third)); thirdUnit.abilityCooldowns.push_back({317, 50});
+        auto& thirdUnit = const_cast<Unit&>(*game.unit(third)); thirdUnit.casting().abilityCooldowns.push_back({317, 50});
         const std::array ids{first, second, third, first};
         game.order(ids, OrderKind::Hold);
-        auto& target = const_cast<Building&>(game.buildings().front()); target.health = 500;
+        auto& target = const_cast<Building&>(game.buildings().front()); target.vitals().health = 500;
         require(game.command(ids, target.origin, target.id), "Contextual repair rejected non-worker ability holder");
-        require(game.unit(first)->currentOrder.kind == OrderKind::UseAbility && game.unit(first)->currentOrder.abilityId == 317 &&
-            !game.unit(first)->automaticAbility, "Context order depends on unit or ability ID or enables autocast");
-        require(game.unit(second)->currentOrder.kind == OrderKind::Hold && game.unit(third)->currentOrder.kind == OrderKind::Hold,
+        require(game.unit(first)->orders().currentOrder.kind == OrderKind::UseAbility && game.unit(first)->orders().currentOrder.abilityId == 317 &&
+            !game.unit(first)->casting().automaticAbility, "Context order depends on unit or ability ID or enables autocast");
+        require(game.unit(second)->orders().currentOrder.kind == OrderKind::Hold && game.unit(third)->orders().currentOrder.kind == OrderKind::Hold,
             "Ineligible mixed selection members lost their orders");
         auto& caster = const_cast<Unit&>(*game.unit(first));
         caster.definition.abilities[0].rightClick = false;
         require(!game.contextualAbility(caster, target.id), "Disabled right-click flag ignored");
-        caster.definition.abilities[0].rightClick = true; caster.definition.abilities[0].manaCost = 1; caster.mana = 0;
+        caster.definition.abilities[0].rightClick = true; caster.definition.abilities[0].manaCost = 1; caster.vitals().mana = 0;
         require(!game.contextualAbility(caster, target.id), "Context cast ignores mana");
-        caster.definition.abilities[0].manaCost = 0; target.health = target.definition.maximumHealth;
+        caster.definition.abilities[0].manaCost = 0; target.vitals().health = target.definition.maximumHealth;
         require(!game.contextualAbility(caster, target.id), "Full target accepts contextual restoration");
     });
     test("Unit restoration follows target filters, production cost and moving targets", [] {
@@ -342,39 +342,39 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto scene = repairScene(); scene.extraWorkers = {{9, 8}};
         auto game = makeTestSimulation(std::move(scene), {}, type);
         const auto caster = game.worker().id, recipient = game.units()[1].id;
-        auto& target = const_cast<Unit&>(*game.unit(recipient)); target.health = 50;
+        auto& target = const_cast<Unit&>(*game.unit(recipient)); target.vitals().health = 50;
         require(!game.canTargetAbility(game.worker(), type.abilities[0], game.buildings().front().id), "Unit filter accepts buildings");
         auto buildingOnly = type.abilities[0]; buildingOnly.targeting = AbilityTargeting::Building;
         require(!game.canTargetAbility(game.worker(), buildingOnly, recipient), "Building filter accepts units");
         target.owner = 1; require(!game.canTargetAbility(game.worker(), type.abilities[0], recipient), "Restoration accepts enemy unit"); target.owner = 0;
         require(game.command(std::array{caster}, target.cell, recipient), "Right click did not restore unit");
         game.order(std::array{recipient}, OrderKind::Move, {15, 8});
-        game.tick(); require(target.health == 50, "Restoration heals remotely");
-        for (int i = 0; i < 600 && target.health < target.maximumHealth(); ++i) {
+        game.tick(); require(target.vitals().health == 50, "Restoration heals remotely");
+        for (int i = 0; i < 600 && target.vitals().health < target.maximumHealth(); ++i) {
             game.tick(); require(separated(game.worker(), target), "Restoration passed through its target");
         }
-        require(target.health == 100 && game.storedCrystals() == 970, "Moving unit not restored at proportional training price");
-        game.stop(std::array{recipient}); target.health = 90;
+        require(target.vitals().health == 100 && game.storedCrystals() == 970, "Moving unit not restored at proportional training price");
+        game.stop(std::array{recipient}); target.vitals().health = 90;
         game.setAutocast(caster, 17, true); game.stop(std::array{caster});
         ticks(game, 150);
-        require(target.health == 100 && game.storedCrystals() == 964, "Autocast ignores unit targets");
-        target.health = 80;
+        require(target.vitals().health == 100 && game.storedCrystals() == 964, "Autocast ignores unit targets");
+        target.vitals().health = 80;
         require(game.activateAbility(caster, 17, recipient), "Manual unit restoration rejected");
-        target.health = 0; game.tick();
-        require(game.worker().currentOrder.kind == OrderKind::Stop, "Dead unit kept restoration active");
+        target.vitals().health = 0; game.tick();
+        require(game.worker().orders().currentOrder.kind == OrderKind::Stop, "Dead unit kept restoration active");
     });
     test("Repair time and proportional cost derive from ability and building data", [] {
         const auto worker = repairWorker(); auto depot = fixtureDepot(worker); depot.constructionTicks = 400;
         auto game = makeTestSimulation(repairScene(), {}, worker, {worker, depot});
-        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 600;
+        auto& building = const_cast<Building&>(game.buildings().front()); building.vitals().health = 600;
         const auto id = game.worker().id;
         require(game.activateAbility(id, 17, building.id), "Manual repair rejected");
         game.tick();
-        require(game.worker().state == UnitState::UsingAbility && unitFrame(game.worker()).column == 9, "Repair does not use work pose");
+        require(game.worker().orders().state == UnitState::UsingAbility && unitFrame(game.worker()).column == 9, "Repair does not use work pose");
         ticks(game, 118);
-        require(building.health == 996.66 && game.storedCrystals() == 960, "Repair speed or proportional price wrong");
+        require(building.vitals().health == 996.66 && game.storedCrystals() == 960, "Repair speed or proportional price wrong");
         game.tick();
-        require(building.health == 1000 && game.storedCrystals() == 960 && game.worker().currentOrder.kind == OrderKind::Stop,
+        require(building.vitals().health == 1000 && game.storedCrystals() == 960 && game.worker().orders().currentOrder.kind == OrderKind::Stop,
             "Repair did not finish at 75% construction time scaled by missing health");
         require(unitFrame(game.worker()).column != 9 && !game.activateAbility(id, 17, building.id), "Full building keeps work pose or accepts repair");
     });
@@ -382,11 +382,11 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto worker = repairWorker(); auto depot = fixtureDepot(worker);
         depot.maximumHealth = 1000.25;
         auto game = makeTestSimulation(repairScene(), {}, worker, {worker, depot});
-        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 1000.24;
+        auto& building = const_cast<Building&>(game.buildings().front()); building.vitals().health = 1000.24;
         const auto balance = game.storedCrystals();
         require(game.activateAbility(game.worker().id, 17, building.id), "Fractional damage rejected by repair");
         game.tick();
-        require(building.health == 1000.25 && game.storedCrystals() == balance - 1,
+        require(building.vitals().health == 1000.25 && game.storedCrystals() == balance - 1,
             "Repair truncated missing hundredth, maximum, or proportional cost");
     });
     test("Repair credit survives repeated cancellation and workers share one exact price", [] {
@@ -395,37 +395,37 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(std::move(scene), {}, worker, {worker, depot});
         auto& building = const_cast<Building&>(game.buildings().front());
         for (int i = 0; i < 100; ++i) {
-            building.health = 999;
+            building.vitals().health = 999;
             const auto id = game.units()[i % 2].id;
             require(game.activateAbility(id, 17, building.id), "Repeated repair rejected");
             game.tick(); game.stop(std::array{id});
-            require(building.health == 1000, "One health repair failed");
+            require(building.vitals().health == 1000, "One health repair failed");
         }
         require(game.storedCrystals() == 994, "Repair rounded each order separately or gave free healing");
-        building.health = 600;
+        building.vitals().health = 600;
         for (const auto& unit : game.units()) require(game.activateAbility(unit.id, 17, building.id), "Shared repair rejected");
         ticks(game, 45);
-        require(building.health == 1000 && game.storedCrystals() == 974, "Workers did not combine speed or share fractional cost");
+        require(building.vitals().health == 1000 && game.storedCrystals() == 974, "Workers did not combine speed or share fractional cost");
     });
     test("Repair pauses without resources and rejects invalid targets without changing orders", [] {
         auto scene = repairScene(); scene.slots[0].startingCrystals = 1;
         auto game = makeTestSimulation(std::move(scene), {}, repairWorker());
-        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 600;
+        auto& building = const_cast<Building&>(game.buildings().front()); building.vitals().health = 600;
         const auto id = game.worker().id;
         require(game.activateAbility(id, 17, building.id), "Repair rejected"); ticks(game, 30);
-        require(building.health == 610 && game.storedCrystals() == 0 && !game.worker().abilityWorking &&
+        require(building.vitals().health == 610 && game.storedCrystals() == 0 && !game.worker().casting().abilityWorking &&
             unitFrame(game.worker()).column != 9, "Insufficient balance healed freely or retained work pose");
         for (int invalid = 0; invalid < 4; ++invalid) {
             building.owner = invalid == 0 ? 1 : 0;
-            building.health = invalid == 1 ? 0 : invalid == 2 ? 1000 : 600;
-            building.constructionProgress = invalid == 3 ? 0 : building.definition.constructionTicks;
+            building.vitals().health = invalid == 1 ? 0 : invalid == 2 ? 1000 : 600;
+            building.productionState().constructionProgress = invalid == 3 ? 0 : building.definition.constructionTicks;
             require(!game.activateAbility(id, 17, building.id), "Invalid building accepted");
         }
         require(!game.activateAbilityFor(1, id, 17, building.id) && !game.setAutocastFor(1, id, 17, true) &&
             !game.activateAbility(id, 999, building.id) && !game.setAutocast(id, 999, true), "Ability bypassed ownership or catalog");
-        building.owner = 0; building.health = 600; building.constructionProgress = building.definition.constructionTicks;
+        building.owner = 0; building.vitals().health = 600; building.productionState().constructionProgress = building.definition.constructionTicks;
         game.order(std::array{id}, OrderKind::Hold);
-        require(!game.activateAbility(id, 17, 999999) && game.worker().currentOrder.kind == OrderKind::Hold,
+        require(!game.activateAbility(id, 17, 999999) && game.worker().orders().currentOrder.kind == OrderKind::Hold,
             "Rejected target interrupted current order");
     });
     test("Autocast respects Stop, radius and explicit orders; disabling cancels only automatic repair", [] {
@@ -433,49 +433,49 @@ void economyTests(TestSuite& test, const TestContext& context) {
         scene.map.occupy({14, 9});
         auto worker = repairWorker(); worker.abilities[0].autocast->radius = 2;
         auto game = makeTestSimulation(std::move(scene), {}, worker);
-        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 500;
+        auto& building = const_cast<Building&>(game.buildings().front()); building.vitals().health = 500;
         const auto id = game.worker().id;
         require(!game.worker().autocastEnabled(17) && game.setAutocast(id, 17, true), "Autocast default or toggle wrong");
-        ticks(game, 3); require(game.worker().currentOrder.kind == OrderKind::Stop, "Autocast ignored radius");
+        ticks(game, 3); require(game.worker().orders().currentOrder.kind == OrderKind::Stop, "Autocast ignored radius");
         auto& unit = const_cast<Unit&>(game.worker()); unit.definition.abilities[0].autocast->radius = 30;
         for (auto order : {OrderKind::Hold, OrderKind::Move, OrderKind::Gather}) {
             require(game.order(std::array{id}, order, order == OrderKind::Gather ? Cell{14, 9} : Cell{12, 6}), "Fixture order rejected");
-            ticks(game, 3); require(game.worker().currentOrder.kind == order && building.health == 500, "Autocast stole explicit order");
+            ticks(game, 3); require(game.worker().orders().currentOrder.kind == order && building.vitals().health == 500, "Autocast stole explicit order");
         }
         game.stop(std::array{id}); game.tick();
-        require(game.worker().automaticAbility && game.worker().state == UnitState::ToAbility && building.health == 500, "Idle autocast failed or healed remotely");
-        require(game.setAutocast(id, 17, false) && game.worker().currentOrder.kind == OrderKind::Stop, "Disabling left automatic approach running");
+        require(game.worker().casting().automaticAbility && game.worker().orders().state == UnitState::ToAbility && building.vitals().health == 500, "Idle autocast failed or healed remotely");
+        require(game.setAutocast(id, 17, false) && game.worker().orders().currentOrder.kind == OrderKind::Stop, "Disabling left automatic approach running");
         require(game.activateAbility(id, 17, building.id), "Manual approach failed");
         game.setAutocast(id, 17, true); game.setAutocast(id, 17, false);
-        require(game.worker().currentOrder.kind == OrderKind::UseAbility && !game.worker().automaticAbility, "Toggle cancelled manual repair");
-        ticks(game, 500); require(building.health == 1000, "Worker never reached and repaired target");
+        require(game.worker().orders().currentOrder.kind == OrderKind::UseAbility && !game.worker().casting().automaticAbility, "Toggle cancelled manual repair");
+        ticks(game, 500); require(building.vitals().health == 1000, "Worker never reached and repaired target");
     });
     test("Repair cannot cross cliffs or a solid surround and stops when target is destroyed", [] {
         auto scene = repairScene(); scene.worker = {7, 5};
         for (int y = 0; y < 24; ++y) for (int x = 0; x < 6; ++x) scene.map.at({x, y}).height = 1;
         auto game = makeTestSimulation(std::move(scene), {}, repairWorker());
-        auto& building = const_cast<Building&>(game.buildings().front()); building.health = 500;
+        auto& building = const_cast<Building&>(game.buildings().front()); building.vitals().health = 500;
         require(!game.activateAbility(game.worker().id, 17, building.id), "Repair crossed impassable cliff");
         game.setAutocast(game.worker().id, 17, true); ticks(game, 4);
-        require(building.health == 500 && game.worker().currentOrder.kind == OrderKind::Stop, "Autocast repairs unreachable cliff target");
+        require(building.vitals().health == 500 && game.worker().orders().currentOrder.kind == OrderKind::Stop, "Autocast repairs unreachable cliff target");
         auto surrounded = repairScene(); surrounded.worker = {12, 10};
         for (Cell delta : std::array<Cell, 8>{{{-1,-1},{0,-1},{1,-1},{-1,0},{1,0},{-1,1},{0,1},{1,1}}})
             surrounded.extraWorkers.push_back(surrounded.worker + delta);
         auto trapped = makeTestSimulation(std::move(surrounded), {}, repairWorker());
-        auto& target = const_cast<Building&>(trapped.buildings().front()); target.health = 500;
+        auto& target = const_cast<Building&>(trapped.buildings().front()); target.vitals().health = 500;
         const Vec2 position = trapped.worker().position;
         require(trapped.activateAbility(trapped.worker().id, 17, target.id), "Traffic should allow queued approach");
         for (int tick = 0; tick < 90; ++tick) {
             trapped.tick();
-            require(target.health == 500, "Surrounded worker healed remotely");
+            require(target.vitals().health == 500, "Surrounded worker healed remotely");
             require(groundLengthSquared(trapped.worker().position - position) < .5f, "Repair escaped solid surround");
             for (size_t i = 1; i < trapped.units().size(); ++i) {
                 require(separated(trapped.worker(), trapped.units()[i]), "Repair crossed a surrounding body");
                 require(trapped.units()[i].position == center(trapped.units()[i].cell), "Repair pushed a surrounding body");
             }
         }
-        target.health = 0; trapped.tick();
-        require(trapped.worker().currentOrder.kind == OrderKind::Stop, "Destroyed repair target kept order alive");
+        target.vitals().health = 0; trapped.tick();
+        require(trapped.worker().orders().currentOrder.kind == OrderKind::Stop, "Destroyed repair target kept order alive");
     });
     test("Autocast group controls expose mixed state and keep other active groups unchanged", [] {
         auto worker = repairWorker(); worker.abilities[0].autocast->enabledByDefault = true;
@@ -563,8 +563,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
             "Production changed owner or reserved supply twice");
         require(game.trainFor(1, *site) && game.trainFor(1, *site), "Cannot fill destruction queue");
         const auto balance = game.storedCrystals(1);
-        const_cast<Building*>(game.building(*site))->health = 0;
-        const_cast<Unit*>(game.unit(produced))->health = 0;
+        const_cast<Building*>(game.building(*site))->vitals().health = 0;
+        const_cast<Unit*>(game.unit(produced))->vitals().health = 0;
         game.tick();
         require(!game.building(*site) && !game.unit(produced) && game.armySupply(1).used() == 2 && game.storedCrystals(1) == balance,
             "Foreign destruction refunded crystals or retained supply");
@@ -584,8 +584,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         for (int y = 0; y < s.map.height(); ++y) s.map.at({4,y}).blocked = true;
         auto game = makeTestSimulation(std::move(s), {}, type);
         require(commandCapable(game.worker(), UnitCommand::Gather) && game.command({7,7}), "Zero-cargo worker cannot gather");
-        for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
-        require(game.worker().state == UnitState::Harvesting, "Novice did not reach the node");
+        for (int i = 0; i < 100 && game.worker().orders().state != UnitState::Harvesting; ++i) game.tick();
+        require(game.worker().orders().state == UnitState::Harvesting, "Novice did not reach the node");
         const auto position = game.worker().position;
         const int interval = type.harvesting().intervalTicks;
         require(interval > HarvestDefinition{}.intervalTicks, "Direct mining must be slower than default cargo mining");
@@ -595,15 +595,15 @@ void economyTests(TestSuite& test, const TestContext& context) {
                 "Harvest credited early or lost the work pose");
         }
         game.tick();
-        require(game.storedCrystals() == 7 && game.worker().cargo == 0 && game.worker().position == position,
+        require(game.storedCrystals() == 7 && game.worker().gathering().cargo == 0 && game.worker().position == position,
             "Direct harvest accumulated cargo or visited the depot");
         const auto events = game.takeEvents();
         const auto income = std::find_if(events.begin(), events.end(), [](const auto& event) { return std::holds_alternative<CrystalsHarvested>(event); });
         require(income != events.end() && std::get<CrystalsHarvested>(*income).amount == 7 &&
             std::get<CrystalsHarvested>(*income).owner == game.worker().owner, "Income event lost its amount or recipient");
         ticks(game, interval * 3);
-        require(game.storedCrystals() == 23 && game.crystals()[0].remaining == 0 && game.worker().cargo == 0 &&
-            game.worker().state == UnitState::Idle && game.map().walkable({7,7}), "Direct harvesting lost resources or failed to finish");
+        require(game.storedCrystals() == 23 && game.crystals()[0].remaining == 0 && game.worker().gathering().cargo == 0 &&
+            game.worker().orders().state == UnitState::Idle && game.map().walkable({7,7}), "Direct harvesting lost resources or failed to finish");
         const auto finalEvents = game.takeEvents();
         std::vector<int> amounts;
         for (const auto& event : finalEvents) if (const auto* credit = std::get_if<CrystalsHarvested>(&event)) amounts.push_back(credit->amount);
@@ -618,8 +618,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(std::move(s), {}, type);
         const auto start = [&] {
             require(game.command({7,7}), "Gather rejected");
-            for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
-            require(game.worker().state == UnitState::Harvesting, "Worker did not start harvesting");
+            for (int i = 0; i < 100 && game.worker().orders().state != UnitState::Harvesting; ++i) game.tick();
+            require(game.worker().orders().state == UnitState::Harvesting, "Worker did not start harvesting");
         };
         start(); ticks(game, 2); game.stop(); ticks(game, 12);
         require(game.storedCrystals() == 0 && game.crystals()[0].remaining == 7 &&
@@ -628,7 +628,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(game.storedCrystals() == 0, "New order retained cancelled harvest progress");
         game.tick(); require(game.storedCrystals() == 3, "Configured batch amount ignored");
         ticks(game, 4); require(game.storedCrystals() == 6, "Second batch failed");
-        ticks(game, 4); require(game.storedCrystals() == 7 && game.worker().cargo == 0 && game.map().walkable({7,7}),
+        ticks(game, 4); require(game.storedCrystals() == 7 && game.worker().gathering().cargo == 0 && game.map().walkable({7,7}),
             "Final partial batch duplicated or lost crystals");
     });
     test("Catalog cargo harvesting still fills capacity and credits only on delivery", [&] {
@@ -639,15 +639,15 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto s = flatScenario(); s.worker = {6,7};
         auto game = makeTestSimulation(std::move(s), {}, type);
         game.command({7,7});
-        for (int i = 0; i < 100 && game.worker().state != UnitState::Harvesting; ++i) game.tick();
+        for (int i = 0; i < 100 && game.worker().orders().state != UnitState::Harvesting; ++i) game.tick();
         const int interval = type.harvesting().intervalTicks;
         ticks(game, interval);
-        require(game.worker().cargo == 6 && game.storedCrystals() == 0, "Cargo harvest credited immediately");
+        require(game.worker().gathering().cargo == 6 && game.storedCrystals() == 0, "Cargo harvest credited immediately");
         ticks(game, interval);
-        require(game.worker().cargo == 10 && game.storedCrystals() == 0 && game.crystals()[0].remaining == 13,
+        require(game.worker().gathering().cargo == 10 && game.storedCrystals() == 0 && game.crystals()[0].remaining == 13,
             "Batch exceeded cargo capacity or lost surplus crystals");
         ticks(game, 3000);
-        require(game.storedCrystals() == 23 && game.worker().cargo == 0, "Catalog cargo mode lost its final partial delivery");
+        require(game.storedCrystals() == 23 && game.worker().gathering().cargo == 0, "Catalog cargo mode lost its final partial delivery");
     });
     test("Direct group gathering conserves resources and stays near the clicked deposit", [&] {
         const auto definitions = Definitions::load(assets / "data/catalog.json");
@@ -660,8 +660,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         for (int i = 0; i < 2200; ++i) {
             game.tick();
             auto total = game.storedCrystals(); for (const auto& node : game.crystals()) total += node.remaining;
-            for (const auto& u : game.units()) require(u.cargo == 0 && u.state != UnitState::ToHall &&
-                u.gatherOriginCrystal == 0 && u.targetCrystal != 1, "Direct gathering returned cargo or drifted to another field");
+            for (const auto& u : game.units()) require(u.gathering().cargo == 0 && u.orders().state != UnitState::ToHall &&
+                u.gathering().gatherOriginCrystal == 0 && u.gathering().targetCrystal != 1, "Direct gathering returned cargo or drifted to another field");
             require(total == 1016, "Concurrent harvesting lost or duplicated reserves");
         }
         require(game.storedCrystals() == 16 && game.crystals()[1].remaining == 1000, "Local direct gathering did not finish");
@@ -690,7 +690,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
             for (int y = 0; y < node.height; ++y) for (int x = 0; x < node.width; ++x)
                 require(game.command(node.cell + Cell{x, y}), "A crystal footprint cell rejected gathering");
             const auto slots = perimeter(game.map(), node.cell, node.width, node.height);
-            const Cell arrival = game.worker().route.empty() ? game.worker().cell : game.worker().route.back();
+            const Cell arrival = game.worker().motion().route.empty() ? game.worker().cell : game.worker().motion().route.back();
             require(std::find(slots.begin(), slots.end(), arrival) != slots.end(), "Worker did not approach the outer perimeter");
             ticks(game, 1800);
             require(game.crystals().front().remaining == 0 && game.storedCrystals() == 2 && game.crystals().front().id == id, "Depletion lost cargo or resource identity");
@@ -705,9 +705,9 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         const auto blocker = game.units()[1].id;
         require(game.command({15, 8}), "Gather command rejected");
-        require(game.worker().targetCrystal == 0, "Temporary traffic redirected gathering to another field");
+        require(game.worker().gathering().targetCrystal == 0, "Temporary traffic redirected gathering to another field");
         ticks(game, 210);
-        require(game.worker().targetCrystal == 0 && game.crystals()[1].remaining == 1000, "Waiting worker abandoned clicked deposit");
+        require(game.worker().gathering().targetCrystal == 0 && game.crystals()[1].remaining == 1000, "Waiting worker abandoned clicked deposit");
         game.command(std::span<const rts::EntityId>(&blocker, 1), {10, 11});
         ticks(game, 1600);
         require(game.crystals()[0].remaining < 1000 && game.storedCrystals() > 0, "Gathering did not resume after traffic cleared");
@@ -718,7 +718,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         s.extraWorkers = {{14, 8}, {16, 8}, {15, 7}, {15, 9}};
         auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         game.command({15, 8});
-        require(game.worker().targetCrystal == 2, "Chose worker-nearest crystal instead of target-nearest neighbor");
+        require(game.worker().gathering().targetCrystal == 2, "Chose worker-nearest crystal instead of target-nearest neighbor");
         ticks(game, 2200);
         require(game.storedCrystals() >= 20 && game.crystals()[2].remaining < 1000, "Neighbor gathering failed to repeat after depositing");
         require(game.crystals()[1].remaining == 1000, "Delivery lost the original gathering area");
@@ -729,7 +729,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         const auto blocker = game.units()[1].id;
         game.command({15, 8}); ticks(game, 450);
-        require(game.worker().targetCrystal == 0 && game.worker().repeatGather, "Full deposit lost its gather order");
+        require(game.worker().gathering().targetCrystal == 0 && game.worker().gathering().repeatGather, "Full deposit lost its gather order");
         require(game.crystals()[1].remaining == 1000, "Saturation sent worker to a remote deposit");
         game.command(std::span<const rts::EntityId>(&blocker, 1), {12, 6});
         ticks(game, 1500);
@@ -741,9 +741,9 @@ void economyTests(TestSuite& test, const TestContext& context) {
         s.crystals.push_back({{20, 8}, 1000}); s.map.occupy({20, 8});
         auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         game.command({15, 8}); ticks(game, 5000);
-        require(game.storedCrystals() == 7 && game.worker().cargo == 0, "Did not finish original local deposits exactly");
+        require(game.storedCrystals() == 7 && game.worker().gathering().cargo == 0, "Did not finish original local deposits exactly");
         require(game.crystals()[1].remaining == 1000 && game.crystals()[3].remaining == 1000, "Gathering drifted beyond the original area");
-        require(game.worker().state == rts::UnitState::Idle, "Exhausted area never finished");
+        require(game.worker().orders().state == rts::UnitState::Idle, "Exhausted area never finished");
     });
     test("Blocked gathering retains intent until terrain opens and Stop cancels retry", [] {
         auto s = gatheringScenario(false);
@@ -756,13 +756,13 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(std::move(s), {}, gatheringWorker());
         require(game.fog().visible({15, 8}), "Observer did not reveal the gathering target");
         game.command({15, 8}); ticks(game, 180);
-        require(game.worker().repeatGather && game.crystals()[1].remaining == 1000, "Static obstruction redirected gather order");
+        require(game.worker().gathering().repeatGather && game.crystals()[1].remaining == 1000, "Static obstruction redirected gather order");
         game.damageEnvironment(tree.id, tree.maximumHitPoints); ticks(game, 1500);
         require(game.crystals()[0].remaining < 1000 && game.crystals()[1].remaining == 1000, "Gather did not resume when terrain opened");
         game.stop(); ticks(game, 30);
         const int remaining = game.crystals()[0].remaining;
         ticks(game, 180);
-        require(game.worker().state == rts::UnitState::Idle && !game.worker().repeatGather && game.crystals()[0].remaining == remaining, "Stop did not cancel gather retry");
+        require(game.worker().orders().state == rts::UnitState::Idle && !game.worker().gathering().repeatGather && game.crystals()[0].remaining == remaining, "Stop did not cancel gather retry");
     });
     test("Gather ordered mid-step retains the clicked area when the crystal depletes", [] {
         auto s = gatheringScenario();
@@ -772,12 +772,12 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto other = game.units()[1].id;
         game.command(std::span<const rts::EntityId>(&other, 1), {15, 8});
         game.command({14, 9}); ticks(game, 1);
-        require(!game.worker().route.empty() && game.worker().position != rts::center(game.worker().cell), "Test did not begin a movement step");
+        require(!game.worker().motion().route.empty() && game.worker().position != rts::center(game.worker().cell), "Test did not begin a movement step");
         game.command({15, 8});
-        require(game.worker().gatherOriginCrystal == 0, "Gather did not retain the clicked origin");
+        require(game.worker().gathering().gatherOriginCrystal == 0, "Gather did not retain the clicked origin");
         ticks(game, 350);
         require(game.crystals()[0].remaining == 0, "Other worker did not deplete clicked deposit");
-        require(game.worker().gatherOriginCrystal == 0 && game.worker().targetCrystal == 2, "Replacement gather lost depleted target's area");
+        require(game.worker().gathering().gatherOriginCrystal == 0 && game.worker().gathering().targetCrystal == 2, "Replacement gather lost depleted target's area");
         require(game.crystals()[1].remaining == 1000 && game.crystals()[2].remaining < 1000, "Replacement gather selected wrong field");
     });
     test("Unreachable deposit preserves carried resources", [] {
@@ -786,8 +786,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation(std::move(scenario));
         game.command({7, 7});
         ticks(game, 1200);
-        require(game.storedCrystals() == 0 && game.worker().cargo == 4, "Cargo lost on failed return path");
-        require(game.worker().state == rts::UnitState::Idle, "Unreachable hall retry loop");
+        require(game.storedCrystals() == 0 && game.worker().gathering().cargo == 4, "Cargo lost on failed return path");
+        require(game.worker().orders().state == rts::UnitState::Idle, "Unreachable hall retry loop");
     });
     test("Construction validates site, charges once, resumes and releases only its footprint", [&] {
         auto definitions = rts::Definitions::load(assets / "data/catalog.json");
@@ -809,13 +809,13 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(building && !game.map().walkable({5, 3}) && game.storedCrystals() == 400, "Foundation/cost wrong");
         require(!game.train(*building), "Unfinished building produced unit");
         ticks(game, 30); game.stop(ids);
-        const int progress = game.building(*building)->constructionProgress;
+        const int progress = game.building(*building)->productionState().constructionProgress;
         ticks(game, 60);
-        require(progress > 0 && game.building(*building)->constructionProgress == progress, "Construction advanced without builder");
-        const_cast<Building&>(*game.building(*building)).health -= 10;
+        require(progress > 0 && game.building(*building)->productionState().constructionProgress == progress, "Construction advanced without builder");
+        const_cast<Building&>(*game.building(*building)).vitals().health -= 10;
         game.command(ids, {5, 3}); ticks(game, 300);
         require(game.building(*building)->complete(), "Resumed construction never finished");
-        require(game.building(*building)->health == definitions.entity("church.barracks").maximumHealth - 10,
+        require(game.building(*building)->vitals().health == definitions.entity("church.barracks").maximumHealth - 10,
             "Construction completion healed damage instead of preserving it");
         const auto extra = game.construct(ids, annex.id, {3, 5});
         require(extra && game.storedCrystals() == 325, "Extra construction placement failed");
@@ -831,31 +831,31 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto site = game.construct(ids, "church.barracks", {5, 3});
         require(site.has_value(), "Summoning site rejected");
         game.stop(ids); ticks(game, 200);
-        require(game.building(*site)->constructionProgress == 0 && game.building(*site)->health == 1,
+        require(game.building(*site)->productionState().constructionProgress == 0 && game.building(*site)->vitals().health == 1,
             "Summoning started before the worker reached the site");
         game.command(ids, {5, 3});
-        for (int i = 0; i < 100 && game.building(*site)->constructionProgress == 0; ++i) game.tick();
-        require(game.building(*site)->constructionProgress == 1, "Initiation skipped or advanced construction twice");
-        require(game.worker().state == UnitState::Idle && game.worker().targetBuilding == 0 &&
-            game.worker().currentOrder.kind == OrderKind::Stop, "Summoning retained the builder");
+        for (int i = 0; i < 100 && game.building(*site)->productionState().constructionProgress == 0; ++i) game.tick();
+        require(game.building(*site)->productionState().constructionProgress == 1, "Initiation skipped or advanced construction twice");
+        require(game.worker().orders().state == UnitState::Idle && game.worker().orders().targetBuilding == 0 &&
+            game.worker().orders().currentOrder.kind == OrderKind::Stop, "Summoning retained the builder");
         const auto start = game.worker().position;
         require(game.command(ids, {4, 8}), "Freed worker could not take a new order");
         ticks(game, 30);
-        require(groundLengthSquared(game.worker().position - start) > .1f && game.building(*site)->constructionProgress == 31,
+        require(groundLengthSquared(game.worker().position - start) > .1f && game.building(*site)->productionState().constructionProgress == 31,
             "Summoning depends on worker position or advances at the wrong rate");
-        const_cast<Building&>(*game.building(*site)).health -= 10;
+        const_cast<Building&>(*game.building(*site)).vitals().health -= 10;
         game.command(ids, {5, 3}); ticks(game, 1);
-        require(game.building(*site)->constructionProgress == 32 && game.worker().targetBuilding == 0,
+        require(game.building(*site)->productionState().constructionProgress == 32 && game.worker().orders().targetBuilding == 0,
             "Reassigning a worker restarted or accelerated summoning");
-        const_cast<Unit&>(game.worker()).health = 0;
+        const_cast<Unit&>(game.worker()).vitals().health = 0;
         game.tick();
         require(game.units().empty(), "Worker death fixture failed");
         const int duration = game.building(*site)->definition.constructionTicks;
         ticks(game, duration - 34);
-        require(!game.building(*site)->complete() && game.building(*site)->constructionProgress == duration - 1,
+        require(!game.building(*site)->complete() && game.building(*site)->productionState().constructionProgress == duration - 1,
             "Summoning finished early or stopped after worker death");
         game.tick();
-        require(game.building(*site)->complete() && game.building(*site)->health == definitions.entity("church.barracks").maximumHealth - 10,
+        require(game.building(*site)->complete() && game.building(*site)->vitals().health == definitions.entity("church.barracks").maximumHealth - 10,
             "Summoning did not finish exactly or healed combat damage");
         require(game.storedCrystals() == 400 && !game.cancelConstruction(*site), "Completion changed cost or allowed a refund");
         auto events = game.takeEvents();
@@ -878,8 +878,8 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto site = game.construct(ids, "church.barracks", {5, 3});
         require(site.has_value(), "Could not reuse cancelled site");
         ticks(game, 30);
-        require(game.building(*site)->constructionProgress > 0, "Destruction fixture did not start summoning");
-        const_cast<Building&>(*game.building(*site)).health = 0;
+        require(game.building(*site)->productionState().constructionProgress > 0, "Destruction fixture did not start summoning");
+        const_cast<Building&>(*game.building(*site)).vitals().health = 0;
         game.tick();
         require(!game.building(*site) && game.storedCrystals() == 350 && game.map().walkable({5, 3}),
             "Summoning revived a destroyed building or refunded its cost");
@@ -902,11 +902,11 @@ void economyTests(TestSuite& test, const TestContext& context) {
         require(extra && game.armySupply().used() == 100 && game.storedCrystals() == 425, "Building did not reserve its common cost");
         require(!game.construct(ids, annex.id, {4, 5}), "Construction exceeded supply cap");
         require(game.map().walkable({4, 5}) && game.storedCrystals() == 425 && game.buildings().size() == 2, "Rejected construction changed world or resources");
-        for (int i = 0; i < 300 && game.building(*extra)->constructionProgress < game.building(*extra)->definition.constructionTicks / 2; ++i) game.tick();
-        require(game.building(*extra)->constructionProgress > 0 && !game.building(*extra)->complete(), "Partial construction fixture did not advance");
+        for (int i = 0; i < 300 && game.building(*extra)->productionState().constructionProgress < game.building(*extra)->definition.constructionTicks / 2; ++i) game.tick();
+        require(game.building(*extra)->productionState().constructionProgress > 0 && !game.building(*extra)->complete(), "Partial construction fixture did not advance");
         game.command(ids, {4, 8});
         require(game.cancelConstruction(*extra), "Could not cancel supply-consuming construction");
-        require(game.worker().currentOrder.kind == OrderKind::Move, "Cancelling summoning stopped the freed worker's new order");
+        require(game.worker().orders().currentOrder.kind == OrderKind::Move, "Cancelling summoning stopped the freed worker's new order");
         require(game.map().walkable({3, 5}) && game.armySupply().used() == 1 && game.storedCrystals() == 462, "Cancellation did not release footprint/supply and refund half the crystals");
         require(!game.cancelConstruction(*extra) && game.storedCrystals() == 462, "Cancellation refunded twice");
     });
@@ -956,7 +956,7 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto hall = game.buildings()[0].id;
         require(game.train(hall), "Could not train");
         ticks(game, 150);
-        require(game.units().size() == 1 && game.building(hall)->production.front().remainingTicks == 0, "Spawn overlapped blocked exit");
+        require(game.units().size() == 1 && game.building(hall)->productionState().production.front().remainingTicks == 0, "Spawn overlapped blocked exit");
         require(!game.building(hall)->training(), "Finished job blocked at exit still counted as training");
         require(game.cancelTraining(hall) && game.armySupply().used() == 1 && game.storedCrystals() == 280, "Blocked job did not refund half");
         require(game.train(hall), "Could not retrain");
@@ -978,11 +978,11 @@ void economyTests(TestSuite& test, const TestContext& context) {
         const auto initialBalance = queued.storedCrystals(); const int initialSupply = queued.armySupply().used();
         for (int i = 0; i < 10; ++i) require(queued.train(depot), "Queue rejected available slot");
         const auto fullBalance = queued.storedCrystals(); const int fullSupply = queued.armySupply().used();
-        require(!queued.train(depot) && queued.building(depot)->production.size() == 10, "Queue exceeded ten slots");
+        require(!queued.train(depot) && queued.building(depot)->productionState().production.size() == 10, "Queue exceeded ten slots");
         require(queued.storedCrystals() == fullBalance && queued.armySupply().used() == fullSupply, "Full queue rejection consumed resources");
         require(queued.cancelTraining(depot) && queued.train(depot), "Tenth queue slot could not be reused");
         for (int i = 0; i < 10; ++i) require(queued.cancelTraining(depot), "Could not cancel the full queue");
-        require(queued.building(depot)->production.empty() && queued.storedCrystals() == initialBalance - 11 * 20 &&
+        require(queued.building(depot)->productionState().production.empty() && queued.storedCrystals() == initialBalance - 11 * 20 &&
             queued.armySupply().used() == initialSupply, "Full queue cancellation did not refund resources");
     });
     test("Indexed cancellation removes only the chosen job, refunds half and preserves other progress", [] {
@@ -996,23 +996,23 @@ void economyTests(TestSuite& test, const TestContext& context) {
         for (const auto& id : {worker.id, second.id, third.id, worker.id}) require(game.train(building.id, id), "Could not fill mixed queue");
         require(game.storedCrystals() == 750 && game.armySupply().used() == 8, "Orders did not charge up front");
         ticks(game, 10);
-        const int progress = building.production.front().remainingTicks;
-        require(!game.cancelTraining(building.id, 4) && game.storedCrystals() == 750 && building.production.size() == 4,
+        const int progress = building.productionState().production.front().remainingTicks;
+        require(!game.cancelTraining(building.id, 4) && game.storedCrystals() == 750 && building.productionState().production.size() == 4,
             "Out-of-range cancellation changed queue or balance");
         building.owner = 1;
         require(!game.cancelTraining(building.id, 1) && game.storedCrystals() == 750, "Foreign queue could be cancelled");
         building.owner = game.player().id;
-        require(game.cancelTraining(building.id, 1) && building.production.size() == 3 && game.storedCrystals() == 770 &&
+        require(game.cancelTraining(building.id, 1) && building.productionState().production.size() == 3 && game.storedCrystals() == 770 &&
             game.armySupply().used() == 6, "Middle cancellation refunded the wrong order");
-        require(building.production.front().remainingTicks == progress && building.production[1].definitionId == third.id &&
-            building.production[2].definitionId == worker.id, "Middle cancellation changed progress or queue order");
+        require(building.productionState().production.front().remainingTicks == progress && building.productionState().production[1].definitionId == third.id &&
+            building.productionState().production[2].definitionId == worker.id, "Middle cancellation changed progress or queue order");
         require(game.cancelTraining(building.id, 0) && game.storedCrystals() == 807 && game.armySupply().used() == 5 &&
-            building.production.front().remainingTicks == third.trainingTicks, "Active cancellation transferred progress or rounded refund up");
+            building.productionState().production.front().remainingTicks == third.trainingTicks, "Active cancellation transferred progress or rounded refund up");
         game.tick();
-        require(building.production.front().remainingTicks == third.trainingTicks - 1, "Next job did not start after cancelling the active job");
-        require(game.cancelTraining(building.id, 1) && game.storedCrystals() == 844 && building.production.front().definitionId == third.id,
+        require(building.productionState().production.front().remainingTicks == third.trainingTicks - 1, "Next job did not start after cancelling the active job");
+        require(game.cancelTraining(building.id, 1) && game.storedCrystals() == 844 && building.productionState().production.front().definitionId == third.id,
             "Last-slot cancellation removed the active job");
-        require(game.cancelTraining(building.id) && building.production.empty() && game.storedCrystals() == 874 && game.armySupply().used() == 1,
+        require(game.cancelTraining(building.id) && building.productionState().production.empty() && game.storedCrystals() == 874 && game.armySupply().used() == 1,
             "Default cancellation failed to release the last job");
         require(!game.cancelTraining(building.id, 0) && game.storedCrystals() == 874, "Empty queue refunded twice");
     });

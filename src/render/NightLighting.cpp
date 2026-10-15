@@ -39,8 +39,8 @@ float nightStrength(const WorldClock& clock) {
 std::vector<ProjectedLight> buildingLights(const Simulation& game, const WorldView& view) {
     std::vector<ProjectedLight> lights;
     for (const auto& b : game.buildings()) {
-        if (!b.complete() || b.health <= 0) continue;
-        const auto* stage = b.definition.buildingSprite.stage(b.constructionProgress, b.definition.constructionTicks);
+        if (!b.complete() || b.vitals().health <= 0) continue;
+        const auto* stage = b.definition.buildingSprite.stage(b.productionState().constructionProgress, b.definition.constructionTicks);
         if (!stage || stage->lights.empty()) continue;
         bool visible = false;
         for (int y = 0; y < b.definition.height; ++y) for (int x = 0; x < b.definition.width; ++x)

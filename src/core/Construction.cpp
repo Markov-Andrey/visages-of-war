@@ -47,7 +47,7 @@ bool Simulation::canPlaceFor(PlayerId actor, const std::string& typeId, Cell ori
     for (int y = 0; y < type.height; ++y) for (int x = 0; x < type.width; ++x) {
         const Cell c = origin + Cell{x, y};
         if (!map().walkable(c) || map().at(c).surface != Surface::Land || !visibleTo(actor, c) || map().at(c).height != level || map().at(c).ramp != Cell{}) return false;
-        for (const auto& u : units_) if (!airborne(u.definition.movement) &&
+        for (const auto& u : world_.circles()) if (!airborne(u.definition.movement) &&
             sweptCircleIntersectsCell(u.position, u.position, u.definition.collisionRadius, c)) return false;
     }
     return true;
@@ -63,7 +63,7 @@ std::optional<EntityId> Simulation::constructFor(PlayerId actor, std::span<const
     Unit* builder = nullptr;
     for (EntityId id : builders) {
         auto* u = mutableEntity(id);
-        if (!u || u->owner != actor || u->health <= 0 || !u->complete() || !u->definition.canConstruct(typeId)) continue;
+        if (!u || u->owner != actor || u->vitals().health <= 0 || !u->complete() || !u->definition.canConstruct(typeId)) continue;
         if (constructionReach(*u, type, origin)) { builder = u; break; }
         const Vec2 start = u->position;
         if (u->definition.mobile && findUnitPath(preview, start, perimeter(preview, origin, type.width, type.height, u->definition.movement), {}, u->definition.collisionRadius, u->definition.movement)) { builder = u; break; }
@@ -72,10 +72,9 @@ std::optional<EntityId> Simulation::constructFor(PlayerId actor, std::span<const
     if (!economy.supply.reserve(type.cost.supply)) { setMessage(L"Достигнут лимит армии: 100."); return std::nullopt; }
     const auto builderId = builder->id;
     scenario_.map = std::move(preview);
-    auto entity = makeEntity(type, origin, actor);
+    auto& entity = makeEntity(type, origin, actor);
     const EntityId id = entity.id;
-    entity.health = std::min(Vital{1}, entity.maximumHealth()); entity.constructionProgress = 0;
-    buildings_.push_back(std::move(entity));
+    entity.vitals().health = std::min(Vital{1}, entity.maximumHealth()); entity.productionState().constructionProgress = 0;
     economy.crystals -= type.cost.crystals;
     issue(*mutableEntity(builderId), {OrderKind::Build, {}, id});
     setMessage(L"Стройплощадка размещена.");
@@ -85,13 +84,13 @@ std::optional<EntityId> Simulation::constructFor(PlayerId actor, std::span<const
 bool Simulation::cancelConstructionFor(PlayerId actor, EntityId id) {
     if (!activePlayer(actor)) return false;
     auto& economy = mutableEconomy(actor);
-    auto it = std::find_if(buildings_.begin(), buildings_.end(), [&](const Building& b) { return b.id == id; });
-    if (it == buildings_.end() || it->complete() || it->owner != actor) return false;
+    auto it = std::find_if(world_.footprints().begin(), world_.footprints().end(), [&](const Building& b) { return b.id == id; });
+    if (it == world_.footprints().end() || it->complete() || it->owner != actor) return false;
     for (int y = 0; y < it->definition.height; ++y) for (int x = 0; x < it->definition.width; ++x)
         scenario_.map.release(it->origin + Cell{x, y});
     economy.crystals += cancellationRefund(it->definition.cost.crystals); economy.supply.release(it->definition.cost.supply);
-    for (auto* u : mutableEntities()) if (u->targetBuilding == id) issue(*u, {OrderKind::Stop});
-    buildings_.erase(it); updateVision();
+    for (auto* u : mutableEntities()) if (u->orders().targetBuilding == id) issue(*u, {OrderKind::Stop});
+    world_.destroy(id); updateVision();
     setMessage(L"Строительство отменено. Возвращено 50% стоимости.");
     return true;
 }
@@ -99,8 +98,8 @@ bool Simulation::trainFor(PlayerId actor, EntityId id, const std::string& defini
     if (!activePlayer(actor)) return false;
     auto& economy = mutableEconomy(actor);
     auto* b = mutableEntity(id);
-    if (!b || b->health <= 0 || b->owner != actor || !b->complete() || b->definition.trainableUnits.empty()) return false;
-    if (b->production.size() >= Building::productionQueueLimit) { setMessage(L"Очередь производства заполнена."); return false; }
+    if (!b || b->vitals().health <= 0 || b->owner != actor || !b->complete() || b->definition.trainableUnits.empty()) return false;
+    if (b->productionState().production.size() >= Building::productionQueueLimit) { setMessage(L"Очередь производства заполнена."); return false; }
     const auto& choices = b->definition.trainableUnits;
     const auto& selected = definitionId.empty() ? choices.front() : definitionId;
     if (std::find(choices.begin(), choices.end(), selected) == choices.end()) return false;
@@ -109,7 +108,7 @@ bool Simulation::trainFor(PlayerId actor, EntityId id, const std::string& defini
     if (economy.crystals < type.cost.crystals) { setMessage(L"Недостаточно кристаллов."); return false; }
     if (!economy.supply.reserve(type.cost.supply)) { setMessage(L"Достигнут лимит армии: 100."); return false; }
     economy.crystals -= type.cost.crystals;
-    b->production.push_back({type.id, type.trainingTicks, type.trainingTicks, type.cost.crystals, type.cost.supply});
+    b->productionState().production.push_back({type.id, type.trainingTicks, type.trainingTicks, type.cost.crystals, type.cost.supply});
     setMessage(L"Юнит добавлен в очередь.");
     return true;
 }
@@ -117,11 +116,11 @@ bool Simulation::cancelTrainingFor(PlayerId actor, EntityId id, std::optional<si
     if (!activePlayer(actor)) return false;
     auto& economy = mutableEconomy(actor);
     auto* b = mutableEntity(id);
-    if (!b || b->owner != actor || b->production.empty()) return false;
-    const size_t index = queueIndex.value_or(b->production.size() - 1);
-    if (index >= b->production.size()) return false;
-    const auto job = b->production[index];
-    b->production.erase(b->production.begin() + index);
+    if (!b || b->owner != actor || b->productionState().production.empty()) return false;
+    const size_t index = queueIndex.value_or(b->productionState().production.size() - 1);
+    if (index >= b->productionState().production.size()) return false;
+    const auto job = b->productionState().production[index];
+    b->productionState().production.erase(b->productionState().production.begin() + index);
     economy.crystals += cancellationRefund(job.paidCrystals); economy.supply.release(job.reservedSupply);
     setMessage(L"Заказ отменён. Возвращено 50% стоимости.");
     return true;
@@ -140,30 +139,30 @@ bool Simulation::setRally(EntityId id, Cell c) {
     b->rally = c; setMessage(L"Точка сбора установлена."); return true;
 }
 void Simulation::advanceConstruction(Building& b) {
-    if (b.health <= 0 || b.complete()) return;
+    if (b.vitals().health <= 0 || b.complete()) return;
     const auto builtHealth = [&] {
-        return std::min(b.definition.maximumHealth, std::max(Vital{1}, Vital::fromHundredths(b.definition.maximumHealth.hundredths() * b.constructionProgress / b.definition.constructionTicks)));
+        return std::min(b.definition.maximumHealth, std::max(Vital{1}, Vital::fromHundredths(b.definition.maximumHealth.hundredths() * b.productionState().constructionProgress / b.definition.constructionTicks)));
     };
     const auto previousHealth = builtHealth();
-    ++b.constructionProgress;
-    b.health = std::min(b.definition.maximumHealth, b.health + builtHealth() - previousHealth);
+    ++b.productionState().constructionProgress;
+    b.vitals().health = std::min(b.definition.maximumHealth, b.vitals().health + builtHealth() - previousHealth);
     if (b.complete()) {
         events_.emplace_back(ConstructionFinished{b.id});
         setMessage(L"Здание готово.");
     }
 }
 void Simulation::tickConstruction() {
-    for (auto& b : buildings_)
-        if (b.definition.constructionMode == ConstructionMode::Summoning && b.constructionProgress > 0)
+    for (auto& b : world_.footprints())
+        if (b.definition.constructionMode == ConstructionMode::Summoning && b.productionState().constructionProgress > 0)
             advanceConstruction(b);
 }
 void Simulation::tickProduction() {
-    // IDs survive vector reallocation when a mobile producer creates another entity.
+    // Snapshot producers so an actor created this tick cannot immediately produce again.
     std::vector<EntityId> producers;
-    for (const auto* e : entities()) if (e->health > 0 && e->complete() && !e->production.empty()) producers.push_back(e->id);
+    for (const auto* e : entities()) if (e->vitals().health > 0 && e->complete() && !e->productionState().production.empty()) producers.push_back(e->id);
     for (auto producerId : producers) {
         auto& b = *mutableEntity(producerId);
-        auto& job = b.production.front();
+        auto& job = b.productionState().production.front();
         if (job.remainingTicks > 0) --job.remainingTicks;
         if (job.remainingTicks != 0) continue;
         const auto& type = entityType(job.definitionId);
@@ -174,7 +173,7 @@ void Simulation::tickProduction() {
         }
         if (!spawnCell) continue; // Completed job waits for an exit; supply stays reserved.
         const auto owner = b.owner; const auto rally = b.rally;
-        b.production.pop_front();
+        b.productionState().production.pop_front();
         const EntityId id = spawn(type, *spawnCell, true, owner);
         events_.emplace_back(UnitProduced{producerId, id});
         const std::array<EntityId, 1> selected{id};

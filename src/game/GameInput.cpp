@@ -46,7 +46,7 @@ rts::CursorKind GameApplication::cursorKind() const {
     const bool minimap = layout.minimap.contains(mouse_);
     if (!mouseInWorld() && !minimap) {
         if (building && rts::ProductionQueueLayout(rts::SelectionPanelLayout(layout.info).content)
-            .pick(mouse_, building->production.size())) return CursorKind::Hand;
+            .pick(mouse_, building->productionState().production.size())) return CursorKind::Hand;
         for (const auto& card : rts::SelectionCards(game_, ui_.selection, layout.info).cards)
             if (card.bounds.contains(mouse_) || card.healthBar().contains(mouse_) ||
                 (game_.unit(card.id)->maximumMana() > 0 && card.manaBar().contains(mouse_))) return CursorKind::Hand;
@@ -211,7 +211,7 @@ LRESULT GameApplication::onMessage(UINT message, WPARAM wParam, LPARAM lParam) {
         for (size_t i = 0; i < layout.commandCount; ++i) if (layout.commands[i].contains(mouse_)) { action(i); return 0; }
         if (const auto* building = selectedStructureOrProducer()) {
             const rts::ProductionQueueLayout queue(rts::SelectionPanelLayout(layout.info).content);
-            if (const auto index = queue.pick(mouse_, building->production.size())) {
+            if (const auto index = queue.pick(mouse_, building->productionState().production.size())) {
                 game_.cancelTraining(building->id, *index);
                 return 0;
             }

@@ -4,14 +4,14 @@
 
 namespace rts {
 void Simulation::resumeOrder(Unit& u) {
-    u.attackTarget = 0;
+    u.combat().attackTarget = 0;
     cancelAttack(u);
-    if (u.currentOrder.kind == OrderKind::AttackMove || u.currentOrder.kind == OrderKind::Patrol) {
-        const Cell goal = u.currentOrder.cell;
+    if (u.orders().currentOrder.kind == OrderKind::AttackMove || u.orders().currentOrder.kind == OrderKind::Patrol) {
+        const Cell goal = u.orders().currentOrder.cell;
         setRoute(u, std::span<const Cell>(&goal, 1), UnitState::Moving);
     } else {
-        u.route.clear(); u.next = 0; u.state = UnitState::Idle;
-        if (u.currentOrder.kind != OrderKind::Hold) u.currentOrder = {OrderKind::Stop};
+        u.motion().route.clear(); u.motion().next = 0; u.orders().state = UnitState::Idle;
+        if (u.orders().currentOrder.kind != OrderKind::Hold) u.orders().currentOrder = {OrderKind::Stop};
     }
 }
 bool Simulation::groundAttackReach(const Unit& u, Cell target, std::optional<Cell> from) const {
@@ -20,9 +20,9 @@ bool Simulation::groundAttackReach(const Unit& u, Cell target, std::optional<Cel
     return groundLengthSquared(delta) <= u.definition.attackRange * u.definition.attackRange;
 }
 void Simulation::chaseGround(Unit& u) {
-    const auto target = u.currentOrder.cell;
+    const auto target = u.orders().currentOrder.cell;
     if (groundAttackReach(u, target)) {
-        u.route.clear(); u.next = 0; u.blockedTicks = 0; u.state = UnitState::Attacking;
+        u.motion().route.clear(); u.motion().next = 0; u.motion().blockedTicks = 0; u.orders().state = UnitState::Attacking;
         return;
     }
     approachCombat(u, center(target), nullptr);

@@ -19,13 +19,13 @@ void GameApplication::exerciseRangedCombat() {
             capturedRelease = true;
         }
     }
-    if (game_.projectiles().size() != 2 || game_.unit(enemy)->health != 10000)
+    if (game_.projectiles().size() != 2 || game_.unit(enemy)->vitals().health != 10000)
         throw std::runtime_error("Ranged smoke: expected two airborne shots before impact");
     renderer_.snapshot(game_,rts::Paths::executable().parent_path()/L"ranged-preview.png",nullptr,false,&ui_);
     int impactTicks = 0;
     for (const auto& shot : game_.projectiles()) impactTicks = std::max(impactTicks, shot.flightTicks - shot.elapsedTicks);
     for (int t = 0; t <= impactTicks; ++t) game_.tick();
-    if (game_.unit(enemy)->health >= 10000 - 45) throw std::runtime_error("Ranged smoke: no projectile damage");
+    if (game_.unit(enemy)->vitals().health >= 10000 - 45) throw std::runtime_error("Ranged smoke: no projectile damage");
     rts::Scenario training{rts::Map(32,32),{10,10},{12,14},{}};
     training.units = {{"church.flying_soldier",0,{12,17}}};
     training.slots[0].startingCrystals = 1000;
@@ -37,7 +37,7 @@ void GameApplication::exerciseRangedCombat() {
     for (int t = 0; t < 120; ++t) game_.tick();
     ui_ = {}; ui_.selection.ids = {*site};
     onMessage(WM_KEYDOWN,'Y',0); onMessage(WM_KEYDOWN,'E',0); onMessage(WM_KEYDOWN,'T',0);
-    const auto& jobs = game_.building(*site)->production;
+    const auto& jobs = game_.building(*site)->productionState().production;
     if (jobs.size() != 2 || jobs[0].definitionId != "church.slinger" || jobs[1].definitionId != "church.catapult")
         throw std::runtime_error("Ranged smoke: recruitment keys ignored roster");
     renderer_.snapshot(game_,rts::Paths::executable().parent_path()/L"ranged-training-preview.png",nullptr,false,&ui_);

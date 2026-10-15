@@ -5,12 +5,12 @@ namespace {
 void checkCombatMotion(const Simulation& game) {
     for (size_t i = 0; i < game.units().size(); ++i) {
         const auto& a = game.units()[i];
-        require(game.map().canTraverse(a.tickPosition, a.position, a.definition.collisionRadius, a.definition.movement), "Combat crossed terrain");
-        require(groundLengthSquared(a.position - a.tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f, 2), "Combat teleported a unit");
+        require(game.map().canTraverse(a.motion().tickPosition, a.position, a.definition.collisionRadius, a.definition.movement), "Combat crossed terrain");
+        require(groundLengthSquared(a.position - a.motion().tickPosition) <= std::pow(a.definition.movementPerSecond / Simulation::ticksPerSecond + .00001f, 2), "Combat teleported a unit");
         for (size_t j = i + 1; j < game.units().size(); ++j) {
             const auto& b = game.units()[j];
             if (airborne(a.definition.movement) == airborne(b.definition.movement))
-                require(!sweptCircleIntersects(a.tickPosition - b.tickPosition, a.position - b.position,
+                require(!sweptCircleIntersects(a.motion().tickPosition - b.motion().tickPosition, a.position - b.position,
                     a.definition.collisionRadius, {{}, b.definition.collisionRadius}), "Combat bodies crossed during a tick");
         }
     }
@@ -26,18 +26,18 @@ void combatTests(TestSuite& test, const TestContext& context) {
         auto game = makeTestSimulation({Map(12, 12), {1,1}, {8,8}, {}}, {}, worker);
         const auto id = game.worker().id;
         auto& entity = const_cast<Entity&>(*game.entity(id));
-        require(entity.health == 60.25 && entity.mana == 10.75, "Spawn truncated fractional maxima");
-        entity.health = 60.24; entity.mana = .25;
-        require(!game.activateAbility(id, heal.id) && entity.mana == .25, "Rounded mana admitted unaffordable cast");
-        entity.mana = .27;
-        require(game.activateAbility(id, heal.id) && entity.health == 60.25 && entity.mana == .01,
+        require(entity.vitals().health == 60.25 && entity.vitals().mana == 10.75, "Spawn truncated fractional maxima");
+        entity.vitals().health = 60.24; entity.vitals().mana = .25;
+        require(!game.activateAbility(id, heal.id) && entity.vitals().mana == .25, "Rounded mana admitted unaffordable cast");
+        entity.vitals().mana = .27;
+        require(game.activateAbility(id, heal.id) && entity.vitals().health == 60.25 && entity.vitals().mana == .01,
             "Fractional restoration or payment lost hundredths");
-        entity.health -= .01;
-        require(game.grantExperience(id, 100) && entity.maximumHealth() == 60.50 && entity.health == 60.49,
+        entity.vitals().health -= .01;
+        require(game.grantExperience(id, 100) && entity.maximumHealth() == 60.50 && entity.vitals().health == 60.49,
             "Level gain lost fractional maximum or existing damage");
         require(Vital{60.49}.rounded() == 60 && Vital{60.50}.rounded() == 61,
             "Display does not round to nearest whole point");
-        entity.health = .01; entity.definition.healthRegenHundredths = -1;
+        entity.vitals().health = .01; entity.definition.healthRegenHundredths = -1;
         ticks(game, 29); require(game.entity(id) != nullptr, "Positive fractional health treated as dead");
         game.tick(); require(!game.entity(id), "Fractional decay failed to kill at exact zero");
     });
@@ -51,14 +51,14 @@ void combatTests(TestSuite& test, const TestContext& context) {
             auto game = makeTestSimulation({Map(16, 16), {1,1}, {8,8}, {}}, {}, worker, {depot});
             const auto id = kind >= 2 ? game.buildings().front().id : game.worker().id;
             auto& entity = const_cast<Entity&>(*game.entity(id));
-            entity.health = 10; entity.mana = 10;
-            if (kind == 3) entity.constructionProgress = 0;
+            entity.vitals().health = 10; entity.vitals().mana = 10;
+            if (kind == 3) entity.productionState().constructionProgress = 0;
             ticks(game, 29);
-            require(game.entity(id)->health == 10 && game.entity(id)->mana == 10, "Regeneration ran before one second");
+            require(game.entity(id)->vitals().health == 10 && game.entity(id)->vitals().mana == 10, "Regeneration ran before one second");
             ticks(game, 1);
-            require(game.entity(id)->health == 11.25 && game.entity(id)->mana == 9.75, "First regeneration pulse is incorrect");
+            require(game.entity(id)->vitals().health == 11.25 && game.entity(id)->vitals().mana == 9.75, "First regeneration pulse is incorrect");
             ticks(game, 90);
-            require(game.entity(id)->health == 15 && game.entity(id)->mana == 9, "Fractional regeneration was lost or entity kind excluded");
+            require(game.entity(id)->vitals().health == 15 && game.entity(id)->vitals().mana == 9, "Fractional regeneration was lost or entity kind excluded");
         }
     });
     test("Regeneration preserves hundredths at resource boundaries without banking overflow", [] {
@@ -66,21 +66,21 @@ void combatTests(TestSuite& test, const TestContext& context) {
         worker.healthRegenHundredths = -1; worker.manaRegenHundredths = 1;
         auto game = makeTestSimulation({Map(12, 12), {1,1}, {8,8}, {}}, {}, worker);
         const auto id = game.worker().id;
-        auto& entity = const_cast<Entity&>(*game.entity(id)); entity.mana = 0;
+        auto& entity = const_cast<Entity&>(*game.entity(id)); entity.vitals().mana = 0;
         ticks(game, 99 * Simulation::ticksPerSecond);
-        require(game.entity(id)->health == worker.maximumHealth - .99 && game.entity(id)->mana == .99, "Hundredths were not applied each second");
+        require(game.entity(id)->vitals().health == worker.maximumHealth - .99 && game.entity(id)->vitals().mana == .99, "Hundredths were not applied each second");
         ticks(game, Simulation::ticksPerSecond);
-        require(game.entity(id)->health == worker.maximumHealth - 1 && game.entity(id)->mana == 1, "Hundredths vanished at full health or empty mana");
-        entity.definition.healthRegenHundredths = 125; entity.health = entity.maximumHealth();
-        entity.definition.manaRegenHundredths = -25; entity.mana = 0;
+        require(game.entity(id)->vitals().health == worker.maximumHealth - 1 && game.entity(id)->vitals().mana == 1, "Hundredths vanished at full health or empty mana");
+        entity.definition.healthRegenHundredths = 125; entity.vitals().health = entity.maximumHealth();
+        entity.definition.manaRegenHundredths = -25; entity.vitals().mana = 0;
         ticks(game, 10 * Simulation::ticksPerSecond);
-        entity.health -= 5; entity.mana = 5;
+        entity.vitals().health -= 5; entity.vitals().mana = 5;
         ticks(game, Simulation::ticksPerSecond);
-        require(entity.health == entity.maximumHealth() - 3.75 && entity.mana == 4.75, "Capped regeneration accumulated a hidden burst");
+        require(entity.vitals().health == entity.maximumHealth() - 3.75 && entity.vitals().mana == 4.75, "Capped regeneration accumulated a hidden burst");
         entity.definition.healthRegenHundredths = 100000000;
         entity.definition.manaRegenHundredths = -100000000;
         ticks(game, Simulation::ticksPerSecond);
-        require(entity.health == entity.maximumHealth() && entity.mana == 0, "Regeneration exceeded resource bounds");
+        require(entity.vitals().health == entity.maximumHealth() && entity.vitals().mana == 0, "Regeneration exceeded resource bounds");
     });
     test("Regeneration decay ignores armor and releases dead entities and reserved production supply", [] {
         auto worker = fixtureWorker(); worker.hero = HeroDefinition{}; worker.armor = 1000000;
@@ -111,9 +111,9 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.units().size() == 2, "Regeneration fixture failed to produce");
         const auto id = game.units().back().id;
         ticks(game, 29);
-        require(game.entity(id)->mana == 10, "Spawn inherited global regeneration phase");
+        require(game.entity(id)->vitals().mana == 10, "Spawn inherited global regeneration phase");
         ticks(game, 1);
-        require(game.entity(id)->mana == 9, "Spawn did not inherit catalog regeneration");
+        require(game.entity(id)->vitals().mana == 9, "Spawn did not inherit catalog regeneration");
     });
     test("Armor formula preserves damage and safely handles negative and extreme armor", [] {
         const ArmorRules rules{.06};
@@ -146,8 +146,8 @@ void combatTests(TestSuite& test, const TestContext& context) {
                 auto game = makeTestSimulation(scene, {}, attacker, {victim, depot}, {}, {}, {}, rules); game.revealMap();
                 const auto target = kind == 2 ? game.buildings()[0].id : game.units()[1].id;
                 require(game.attack(std::array{game.worker().id}, target, true), "Armored target rejected");
-                for (int tick = 0; tick < 120 && game.entity(target)->health == 1000; ++tick) game.tick();
-                require(game.entity(target)->health == 1000 - rules.damage(100, armor), "Hit skipped armor or applied it twice");
+                for (int tick = 0; tick < 120 && game.entity(target)->vitals().health == 1000; ++tick) game.tick();
+                require(game.entity(target)->vitals().health == 1000 - rules.damage(100, armor), "Hit skipped armor or applied it twice");
             }
     });
     test("Stage two footprint towers acquire targets and obey forced attack and stop", [] {
@@ -160,10 +160,10 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const auto towerId = game.buildings()[0].id, enemy = game.units()[1].id, own = game.worker().id;
         const auto position = game.entity(towerId)->position;
         ticks(game, 60);
-        require(game.entity(enemy)->health < worker.maximumHealth && game.entity(towerId)->position == position, "Tower did not fire or moved");
+        require(game.entity(enemy)->vitals().health < worker.maximumHealth && game.entity(towerId)->position == position, "Tower did not fire or moved");
         require(game.attack(std::array{towerId, own}, own, true), "Tower forced attack rejected");
-        ticks(game, 60); require(game.entity(own)->health < worker.maximumHealth, "Tower forced attack did not execute");
-        game.stop(std::array{towerId}); require(game.entity(towerId)->currentOrder.kind == OrderKind::Stop, "Tower stop failed");
+        ticks(game, 60); require(game.entity(own)->vitals().health < worker.maximumHealth, "Tower forced attack did not execute");
+        game.stop(std::array{towerId}); require(game.entity(towerId)->orders().currentOrder.kind == OrderKind::Stop, "Tower stop failed");
     });
     test("Forced friendly attacks filter the whole selection by weapon capabilities and reject self", [] {
         EntityDefinition fighter; fighter.id = "fighter"; fighter.attackDamage = 10; fighter.maximumHealth = 1000;
@@ -178,22 +178,22 @@ void combatTests(TestSuite& test, const TestContext& context) {
         std::vector<EntityId> ids; for (const auto& u : game.units()) ids.push_back(u.id);
         const auto target = ids[1];
         game.order(ids, OrderKind::Hold); ticks(game, 3);
-        require(game.unit(target)->health == 1000 && !game.attack(ids, target), "Automatic or ordinary attack harmed a friend");
+        require(game.unit(target)->vitals().health == 1000 && !game.attack(ids, target), "Automatic or ordinary attack harmed a friend");
         require(!game.attack(std::array{target}, target, true), "Unit accepted an attack against itself");
         require(game.attack(ids, target, true), "Forced friendly attack rejected");
-        require(game.unit(ids[0])->attackTarget == target && game.unit(ids[4])->attackTarget == target,
+        require(game.unit(ids[0])->combat().attackTarget == target && game.unit(ids[4])->combat().attackTarget == target,
             "Capable members did not receive attack or flight was hardcoded as incapable");
         for (size_t i : {size_t{1}, size_t{2}, size_t{3}})
-            require(!game.unit(ids[i])->attackTarget && game.unit(ids[i])->currentOrder.kind == OrderKind::Hold,
+            require(!game.unit(ids[i])->combat().attackTarget && game.unit(ids[i])->orders().currentOrder.kind == OrderKind::Hold,
                 "Self, zero damage worker or incompatible layer lost its old order");
         ticks(game, 2);
-        require(game.unit(target)->health == 980, "Explicit allied melee hits were filtered out");
+        require(game.unit(target)->vitals().health == 980, "Explicit allied melee hits were filtered out");
         game.stop(ids); ticks(game, 40);
-        require(game.unit(target)->health == 980, "Stop caused automatic friendly retaliation");
-        auto& victim = const_cast<Unit&>(*game.unit(target)); victim.health = 1;
+        require(game.unit(target)->vitals().health == 980, "Stop caused automatic friendly retaliation");
+        auto& victim = const_cast<Unit&>(*game.unit(target)); victim.vitals().health = 1;
         require(game.attack(std::array{ids[0]}, target, true), "Repeated forced attack rejected");
         ticks(game, 2);
-        require(!game.unit(target) && game.unit(ids[0])->hero->experience == 0 && !game.unit(ids[0])->attackTarget,
+        require(!game.unit(target) && game.unit(ids[0])->progression().hero->experience == 0 && !game.unit(ids[0])->combat().attackTarget,
             "Friendly kill awarded XP or retained a destroyed target");
     });
     test("Forced melee attacks approach square buildings and never strike through cliffs", [] {
@@ -204,11 +204,11 @@ void combatTests(TestSuite& test, const TestContext& context) {
             auto game = makeTestSimulation(std::move(scene), {}, fighter);
             const auto hall = game.buildings().front().id, attacker = game.worker().id;
             require(!game.attack(std::array{attacker}, hall) && game.attack(std::array{attacker}, hall, true), "Building ownership filter is wrong");
-            for (int tick = 0; tick < 240 && game.building(hall)->health == 1000; ++tick) { game.tick(); checkCombatMotion(game); }
-            require(game.building(hall)->health < 1000, "Melee never approached a building perimeter");
-            const_cast<Building&>(*game.building(hall)).health = 1;
+            for (int tick = 0; tick < 240 && game.building(hall)->vitals().health == 1000; ++tick) { game.tick(); checkCombatMotion(game); }
+            require(game.building(hall)->vitals().health < 1000, "Melee never approached a building perimeter");
+            const_cast<Building&>(*game.building(hall)).vitals().health = 1;
             ticks(game, 5);
-            require(!game.building(hall) && !game.worker().attackTarget && game.worker().currentOrder.kind == OrderKind::Stop,
+            require(!game.building(hall) && !game.worker().combat().attackTarget && game.worker().orders().currentOrder.kind == OrderKind::Stop,
                 "Building death left an attack or occupied footprint");
             require(game.map().walkable({4,4}), "Destroyed building kept its collision");
         }
@@ -220,7 +220,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const auto hall = game.buildings().front().id;
         require(game.attack(std::array{game.worker().id}, hall, true), "Visible cliff target order rejected");
         ticks(game, 90);
-        require(game.building(hall)->health == 1000, "Melee struck a building through a cliff");
+        require(game.building(hall)->vitals().health == 1000, "Melee struck a building through a cliff");
     });
     test("Melee reaches continuous attack positions when no free cell centre is in range", [] {
         for (float radius : {.1f, .35f, .5f}) for (float reach : {0.0f, .15f}) {
@@ -233,7 +233,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
             const auto enemy = game.units().back().id;
             require(game.attack(std::array{game.worker().id}, enemy), "Continuous attack rejected");
             for (int tick = 0; tick < 180; ++tick) { game.tick(); checkCombatMotion(game); }
-            require(game.unit(enemy)->health < 1000, "Melee waited for a cell-centred attack slot");
+            require(game.unit(enemy)->vitals().health < 1000, "Melee waited for a cell-centred attack slot");
             if (radius < .5f || reach > 0)
                 require(groundLengthSquared(game.worker().position - center(game.worker().cell)) > .001f, "Attack still snapped to a cell centre");
         }
@@ -249,9 +249,9 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.attack(std::array{game.worker().id}, enemy), "Screen attack rejected");
         for (int tick = 0; tick < 360; ++tick) {
             game.tick(); checkCombatMotion(game);
-            require(game.worker().attackTarget == enemy && game.worker().currentOrder.kind == OrderKind::Attack, "Explicit target was replaced");
+            require(game.worker().combat().attackTarget == enemy && game.worker().orders().currentOrder.kind == OrderKind::Attack, "Explicit target was replaced");
         }
-        require(game.unit(enemy)->health < 1000, "Attacker failed to go around a static screen");
+        require(game.unit(enemy)->vitals().health < 1000, "Attacker failed to go around a static screen");
         for (size_t i = 1; i < game.units().size(); ++i)
             require(game.units()[i].position == center(game.units()[i].cell), "Combat pushed a stationary body");
     });
@@ -264,7 +264,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         site.units = {{victim.id, 1, {8, 10}}, {victim.id, 1, {4, 14}}};
         auto game = makeTestSimulation(std::move(site), {}, fighter, {fighter, victim});
         for (int tick = 0; tick < 240; ++tick) { game.tick(); checkCombatMotion(game); }
-        require(game.units()[1].health == 1000 && game.units()[2].health < 1000, "Unreachable target pinned automatic combat");
+        require(game.units()[1].vitals().health == 1000 && game.units()[2].vitals().health < 1000, "Unreachable target pinned automatic combat");
     });
     test("Dense opposing squads keep fighting through casualties without losing focused orders", [] {
         for (bool focused : {false, true}) {
@@ -283,8 +283,8 @@ void combatTests(TestSuite& test, const TestContext& context) {
             if (focused) require(game.attack(own, target), "Dense focus rejected");
             for (int tick = 0; tick < 900; ++tick) { game.tick(); checkCombatMotion(game); }
             if (game.units().size() != 24) for (const auto& u : game.units())
-                std::cerr << "battle " << focused << " unit " << u.id << " owner=" << u.owner << " hp=" << double(u.health)
-                          << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.blockedTicks << " target=" << u.attackTarget << '\n';
+                std::cerr << "battle " << focused << " unit " << u.id << " owner=" << u.owner << " hp=" << double(u.vitals().health)
+                          << " pos=" << u.position.x << ',' << u.position.y << " blocked=" << u.motion().blockedTicks << " target=" << u.combat().attackTarget << '\n';
             require(game.units().size() == 24 && std::all_of(game.units().begin(), game.units().end(), [](const Unit& u) { return u.owner == 0; }),
                 "Dense squad stopped attacking surviving enemies");
         }
@@ -295,30 +295,30 @@ void combatTests(TestSuite& test, const TestContext& context) {
         site.heroSpawn = Cell{6, 6}; site.units = {{"church.hero", 1, {28, 28}}};
         Simulation game(std::move(site), {}, definitions.entity("church.worker"), definitions.entities(), definitions.startingDepot(definitions.entity("church.worker").factionId).id, "church.hero");
         const auto id = game.units().back().id, foreign = game.units()[1].id;
-        require(game.unit(id)->mana == 200 && game.worker().mana == 0, "Spawn did not initialize independent mana pools");
+        require(game.unit(id)->vitals().mana == 200 && game.worker().vitals().mana == 0, "Spawn did not initialize independent mana pools");
         require(game.order(std::array{id}, OrderKind::Move, {12, 6}), "Ability movement setup failed");
         const auto position = game.unit(id)->position;
         require(!game.activateAbility(game.worker().id, 1) && !game.activateAbility(foreign, 1) &&
             !game.activateAbility(id, 999) && !game.activateAbility(99999, 1), "Unknown or unauthorized caster accepted");
-        require(game.activateAbility(id, 1) && game.unit(id)->mana == 175 && game.unit(id)->abilityCooldown(1) == 150,
+        require(game.activateAbility(id, 1) && game.unit(id)->vitals().mana == 175 && game.unit(id)->abilityCooldown(1) == 150,
             "Ability failed to atomically spend mana and start cooldown");
-        require(game.unit(id)->currentOrder.kind == OrderKind::Move && game.unit(id)->position == position,
+        require(game.unit(id)->orders().currentOrder.kind == OrderKind::Move && game.unit(id)->position == position,
             "Untargeted ability changed movement or required a target");
-        require(!game.activateAbility(id, 1) && game.unit(id)->mana == 175 && game.unit(id)->abilityCooldown(1) == 150,
+        require(!game.activateAbility(id, 1) && game.unit(id)->vitals().mana == 175 && game.unit(id)->abilityCooldown(1) == 150,
             "Repeated click spent mana or restarted cooldown");
         ticks(game, 149);
         require(game.unit(id)->abilityCooldown(1) == 1 && !game.activateAbility(id, 1), "Cooldown ended before five seconds");
         game.tick();
         require(game.unit(id)->abilityCooldown(1) == 0 && game.activateAbility(id, 1), "Cooldown did not expire on its final tick");
-        while (game.unit(id)->mana > 0) {
+        while (game.unit(id)->vitals().mana > 0) {
             ticks(game, 150); require(game.activateAbility(id, 1), "Ready ability rejected sufficient mana");
         }
         ticks(game, 150);
-        require(!game.activateAbility(id, 1) && game.unit(id)->mana == 0 && game.unit(id)->abilityCooldown(1) == 0,
+        require(!game.activateAbility(id, 1) && game.unit(id)->vitals().mana == 0 && game.unit(id)->abilityCooldown(1) == 0,
             "Insufficient mana went negative or started cooldown");
-        require(game.unit(foreign)->mana == 200 && game.unit(foreign)->abilityCooldown(1) == 0, "Cooldown or mana leaked between units");
+        require(game.unit(foreign)->vitals().mana == 200 && game.unit(foreign)->abilityCooldown(1) == 0, "Cooldown or mana leaked between units");
         game.grantExperience(id, 100);
-        require(game.unit(id)->maximumMana() == 200 && game.unit(id)->mana == 0, "Level up unexpectedly refilled mana");
+        require(game.unit(id)->maximumMana() == 200 && game.unit(id)->vitals().mana == 0, "Level up unexpectedly refilled mana");
     });
     test("Attack move fights en route and resumes its destination while move ignores enemies", [] {
         for (const auto kind : {rts::OrderKind::Move, rts::OrderKind::AttackMove}) {
@@ -382,7 +382,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const std::array selection{friendly};
         require(game.attack(selection, enemy), "Visible enemy rejected");
         ticks(game, 6);
-        require(game.unit(enemy)->health == soldier.maximumHealth && game.unit(friendly)->health == soldier.maximumHealth, "Damage before impact frame");
+        require(game.unit(enemy)->vitals().health == soldier.maximumHealth && game.unit(friendly)->vitals().health == soldier.maximumHealth, "Damage before impact frame");
         require(rts::unitFrame(*game.unit(friendly)).column >= 4, "Attack animation missing");
         game.tick();
         require(game.units().empty() && game.armySupply().used() == 0, "Simultaneous kill favoured update order or leaked supply");
@@ -427,12 +427,12 @@ void combatTests(TestSuite& test, const TestContext& context) {
         require(game.hero()->experienceInLevel() == 0 && game.hero()->experienceToLevel() == 200, "XP bar uses wrong interval");
         require(game.hero()->definition.maximumHealth == 400 && game.hero()->definition.level == 1, "Base data mutated");
         game.grantExperience(id, std::numeric_limits<int>::max());
-        require(game.hero()->level() == 10 && game.hero()->hero->experience == 3200 && game.hero()->experienceFraction() == 1, "XP cap overflow");
+        require(game.hero()->level() == 10 && game.hero()->progression().hero->experience == 3200 && game.hero()->experienceFraction() == 1, "XP cap overflow");
         require(!game.grantExperience(id, 50), "XP accepted at cap");
         const auto events = game.takeEvents();
         require(std::count_if(events.begin(), events.end(), [](const auto& e) { return std::holds_alternative<rts::HeroLevelChanged>(e); }) == 9, "Missing level events");
         auto next = makeTestSimulation(flatScenario(), {}, hero);
-        require(next.hero()->level() == 1 && next.hero()->hero->experience == 0, "Progress leaked between matches");
+        require(next.hero()->level() == 1 && next.hero()->progression().hero->experience == 0, "Progress leaked between matches");
     });
     test("Kills grant static-level XP to nearby heroes, shared once and never to ordinary units", [] {
         auto scenario = flatScenario();
@@ -444,10 +444,10 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const auto enemy = game.units()[1].id, first = game.units()[2].id, second = game.units()[3].id;
         ticks(game, 7);
         require(!game.unit(enemy), "Enemy survived lethal hit");
-        require(game.unit(first)->hero->experience == 75 && game.unit(second)->hero->experience == 75, "Level-three bounty not divided equally");
-        require(!game.worker().hero && game.worker().level() == 1 && !game.grantExperience(game.worker().id, 100), "Ordinary unit leveled");
+        require(game.unit(first)->progression().hero->experience == 75 && game.unit(second)->progression().hero->experience == 75, "Level-three bounty not divided equally");
+        require(!game.worker().progression().hero && game.worker().level() == 1 && !game.grantExperience(game.worker().id, 100), "Ordinary unit leveled");
         ticks(game, 50);
-        require(game.unit(first)->hero->experience == 75, "Corpse granted XP twice");
+        require(game.unit(first)->progression().hero->experience == 75, "Corpse granted XP twice");
     });
     test("Hostile orders rejected and explicit move interrupts a swing", [] {
         auto scenario = flatScenario();
@@ -458,13 +458,13 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const std::array own{friendly}, hostile{enemy};
         require(!game.command(hostile, {9, 9}) && !game.attack(hostile, friendly), "Player controlled enemy");
         ticks(game, 3);
-        const auto target = game.unit(enemy)->attackTarget;
+        const auto target = game.unit(enemy)->combat().attackTarget;
         game.stop(hostile);
-        require(target == friendly && game.unit(enemy)->attackTarget == target, "Player stopped enemy");
+        require(target == friendly && game.unit(enemy)->combat().attackTarget == target, "Player stopped enemy");
         require(game.command(own, {3, 8}), "Move rejected");
-        require(game.unit(friendly)->attackTarget == 0 && game.unit(friendly)->attackPhase != rts::AttackPhase::Windup, "Move failed to cancel combat");
+        require(game.unit(friendly)->combat().attackTarget == 0 && game.unit(friendly)->combat().attackPhase != rts::AttackPhase::Windup, "Move failed to cancel combat");
         ticks(game, 8);
-        require(game.unit(enemy)->health == soldier.maximumHealth, "Cancelled swing still damaged enemy");
+        require(game.unit(enemy)->vitals().health == soldier.maximumHealth, "Cancelled swing still damaged enemy");
     });
     test("Melee respects cliffs and excludes ground versus air", [] {
         auto scenario = flatScenario();
@@ -475,7 +475,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const std::array own{game.worker().id};
         require(game.attack(own, game.units()[1].id), "High ground observer should see low target");
         ticks(game, 180);
-        for (const auto& u : game.units()) require(u.health == soldier.maximumHealth, "Melee hit through impassable cliff");
+        for (const auto& u : game.units()) require(u.vitals().health == soldier.maximumHealth, "Melee hit through impassable cliff");
         auto airScenario = flatScenario();
         auto flyer = soldier; flyer.id = "test.flyer"; flyer.movement = rts::MovementType::Flying;
         airScenario.units.push_back({flyer.id, 1, {5, 3}});
@@ -483,7 +483,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const std::array ground{airGame.worker().id};
         require(!airGame.attack(ground, airGame.units()[1].id), "Melee ordered against another movement layer");
         ticks(airGame, 180);
-        for (const auto& u : airGame.units()) require(u.health == soldier.maximumHealth, "Melee hit another movement layer");
+        for (const auto& u : airGame.units()) require(u.vitals().health == soldier.maximumHealth, "Melee hit another movement layer");
     });
     test("Units cannot attack unseen enemies or acquire targets through higher terrain", [] {
         auto scenario = flatScenario();
@@ -494,7 +494,7 @@ void combatTests(TestSuite& test, const TestContext& context) {
         const std::array own{game.worker().id};
         require(!game.attack(own, game.units()[1].id), "Unseen enemy accepted");
         ticks(game, 60);
-        for (const auto& u : game.units()) require(u.attackTarget == 0 && u.state == rts::UnitState::Idle, "Autoattack saw through high terrain");
+        for (const auto& u : game.units()) require(u.combat().attackTarget == 0 && u.orders().state == rts::UnitState::Idle, "Autoattack saw through high terrain");
     });
 }
 }

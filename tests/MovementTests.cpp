@@ -43,7 +43,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
                 const float step = type.movementPerSecond * WorldView::tileSize / std::sqrt(1.25f) * view.zoom / Simulation::ticksPerSecond;
                 const int expected = int(std::ceil(pixels / step - .0001f));
                 int elapsed = 0;
-                while (game.worker().state != UnitState::Idle && elapsed < 300) {
+                while (game.worker().orders().state != UnitState::Idle && elapsed < 300) {
                     const auto before = view.project(game.worker().position);
                     game.tick(); ++elapsed;
                     const auto travel = view.project(game.worker().position) - before;
@@ -108,7 +108,7 @@ void movementTests(TestSuite& test, const TestContext& context) {
         }
         game.stop();
         ticks(game, 20);
-        require(game.worker().state == rts::UnitState::Idle, "Stop ignored");
+        require(game.worker().orders().state == rts::UnitState::Idle, "Stop ignored");
     });
     test("Lowered water requires shore ramps and preserves movement types", [] {
         using M = rts::MovementType;

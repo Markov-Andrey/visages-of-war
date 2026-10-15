@@ -34,8 +34,8 @@ struct RendererLightingTest {
         const auto set = [&](int percent) {
             for (const auto& b : game.buildings()) {
                 auto& editable = const_cast<Building&>(b);
-                editable.constructionProgress = b.definition.constructionTicks * percent / 100;
-                editable.health = b.definition.maximumHealth;
+                editable.productionState().constructionProgress = b.definition.constructionTicks * percent / 100;
+                editable.vitals().health = b.definition.maximumHealth;
             }
         };
         for (int percent : {0, 10, 33, 66, 99, 100}) {
@@ -74,7 +74,7 @@ struct RendererLightingTest {
         const std::array nightBuilders{night.worker().id};
         require(night.construct(nightBuilders, "church.barracks", {17, 10}).has_value(), "Night construction fixture failed");
         for (const auto& building : night.buildings())
-            const_cast<Building&>(building).constructionProgress = building.definition.constructionTicks * 66 / 100;
+            const_cast<Building&>(building).productionState().constructionProgress = building.definition.constructionTicks * 66 / 100;
         view.zoom = 1; view.origin = {}; view.origin = Vec2{720, 345} - view.project({16, 14});
         renderer.draw(night, view, {}, ui, false, false);
         // draw() disables world lighting before drawing the HUD; the amount retains the scene setting.
