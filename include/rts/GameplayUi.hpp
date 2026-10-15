@@ -287,6 +287,16 @@ struct SelectionPanelLayout {
         content = {info.x + side + 16, info.y, info.width - side - 16, info.height};
     }
 };
+struct SelectionStatsLayout {
+    UiRect attack, armor, movement, tags;
+    explicit SelectionStatsLayout(UiRect content) {
+        const float half = (content.width - 8) * .5f;
+        attack = {content.x, content.y + 34, half, 28};
+        armor = {content.x + half + 8, content.y + 34, half, 28};
+        movement = {content.x, content.y + 68, content.width, 22};
+        tags = {content.x, content.y + 92, content.width, 22};
+    }
+};
 struct ProductionQueueLayout {
     std::array<UiRect, Building::productionQueueLimit> slots;
     std::optional<size_t> pick(Vec2 point, size_t count) const {
@@ -296,12 +306,12 @@ struct ProductionQueueLayout {
     }
     explicit ProductionQueueLayout(UiRect content) {
         constexpr float gap = 4;
-        const size_t columns = content.width >= 10 * 36 + 9 * gap ? 10 : 5;
+        const size_t columns = slots.size();
         const size_t rows = (slots.size() + columns - 1) / columns;
-        const float side = std::max(1.f, std::min({48.f, (content.width - (columns - 1) * gap) / columns,
-            (content.height - 96 - (rows - 1) * gap) / rows}));
+        const float side = std::max(1.f, std::min({28.f, (content.width - (columns - 1) * gap) / columns,
+            (content.height - 136 - (rows - 1) * gap) / rows}));
         for (size_t i = 0; i < slots.size(); ++i)
-            slots[i] = {content.x + (i % columns) * (side + gap), content.y + 96 + (i / columns) * (side + gap), side, side};
+            slots[i] = {content.x + (i % columns) * (side + gap), content.y + 136 + (i / columns) * (side + gap), side, side};
     }
 };
 struct SelectionCard {

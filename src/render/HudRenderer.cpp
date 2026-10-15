@@ -102,7 +102,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     wchar_t tooltipKey{};
     std::array<const EntityDefinition*, commandSlots> commandTypes{};
     std::array<const AbilityDefinition*, commandSlots> abilities{};
-    if (building && info.contains(ui.mouse)) tooltip = &building->definition;
+    if (building && SelectionPanelLayout(info).portrait.contains(ui.mouse)) tooltip = &building->definition;
     std::array<std::wstring, commandSlots> labels{}, details{};
     std::array<bool, commandSlots> enabled{}, active{};
     std::array<const char*, commandSlots> icons{};
@@ -125,17 +125,16 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
             portraitVitals(portrait, b.health, b.maximumHealth(), 0x9dd7b0, b.mana, b.maximumMana());
         }
         const auto content = portrait.content;
-        text(wide(b.definition.displayName), rect(content.x, content.y, content.width, 34), 0xe0eade, content.width >= 300);
-        text(std::wstring(b.definition.collision == CollisionShape::Footprint ? L"Здание" : L"Производитель") + L"  ·  Броня " + std::to_wstring(b.armor()), rect(content.x, content.y + 39, content.width, 25), 0x9dc1b6);
+        drawUnitStats(b, content, b.complete() && b.definition.trainableUnits.empty());
         if (!b.complete()) {
-            text(L"Строительство  " + std::to_wstring(b.constructionProgress * 100 / b.definition.constructionTicks) + L"%", rect(content.x, content.y + 70, content.width, 28), 0xe4c388);
+            text(L"Строительство  " + std::to_wstring(b.constructionProgress * 100 / b.definition.constructionTicks) + L"%", rect(content.x, content.y + 136, content.width, 28), 0xe4c388);
             labels[5] = L"Отменить строительство"; details[5] = L"Вернуть 50% стоимости в кристаллах и освободить лимит армии.";
             icons[5] = "cancel"; buttonKeys[5] = L'X';
         } else if (!b.definition.trainableUnits.empty()) {
             const bool blocked = !b.production.empty() && b.production.front().remainingTicks == 0;
             text(blocked ? L"Освободите выход из здания" : L"Очередь  " + std::to_wstring(b.production.size()) +
                 L" / " + std::to_wstring(Building::productionQueueLimit),
-                rect(content.x, content.y + 70, content.width, 24), blocked ? 0xe4c388 : 0x9eb6b7);
+                rect(content.x, content.y + 114, content.width, 22), blocked ? 0xe4c388 : 0x9eb6b7);
             const ProductionQueueLayout queue(content);
             for (size_t i = 0; i < b.production.size(); ++i) {
                 const auto& job = b.production[i];
@@ -162,7 +161,7 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
                     } else tooltip = &type;
                 }
             }
-        } else drawUnitStats(b, content);
+        }
     } else if (unit) {
         const SelectionCards portraits(game, ui.selection, info);
         const auto group = ui.selection.activeGroup(game);
@@ -356,11 +355,8 @@ void Renderer::hud(const Simulation& game, const GameplayUi& ui, bool paused, co
     }
     const auto* inspected = building ? building : unit;
     if (inspected && ui.selection.ids.size() == 1) {
-        const auto content = SelectionPanelLayout(info).content;
-        if (UiRect{content.x, content.y + 34, content.width, 30}.contains(ui.mouse)) {
-            actionTitle = L"Броня: " + std::to_wstring(inspected->armor());
-            actionDescription = wide(armorDescription(inspected->armor(), game.armorRules()));
-        }
+        selectionStatsTooltip(*inspected, SelectionPanelLayout(info).content, ui.mouse, game.armorRules(),
+            actionTitle, actionDescription);
     }
     if (!actionTitle.empty()) {
         const float width = std::min(420.0f, extent.x - 24);

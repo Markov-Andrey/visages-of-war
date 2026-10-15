@@ -123,7 +123,9 @@ private:
     void drawSelectionRing(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color, float opacity = 1, bool dashed = false);
     void drawCommandPulse(Vec2 center, int radiusX, int radiusY, float zoom, unsigned color, float age);
     void drawPortraitBackdrop(UiRect bounds, unsigned color);
-    void drawUnitStats(const Unit& unit, UiRect bounds);
+    void drawUnitStats(const Unit& unit, UiRect bounds, bool showExtra = true);
+    void selectionStatsTooltip(const Unit& unit, UiRect bounds, Vec2 mouse, const ArmorRules& rules,
+        std::wstring& title, std::wstring& description);
     void drawHealthBar(const Unit& unit, UiRect bounds, std::uint64_t tick, unsigned border = 0x080f14, bool beveled = false);
     void drawHealthBar(int current, int maximum, float recentDamage, UiRect bounds, unsigned border, bool beveled);
     void drawManaBar(const Unit& unit, UiRect bounds, bool beveled = false);

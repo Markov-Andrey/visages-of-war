@@ -4,6 +4,22 @@
 
 namespace rts::tests {
 void selectionTests(TestSuite& test, const TestContext& context) {
+    test("Selection stats leave every production order visible and independently clickable", [] {
+        for (const Vec2 extent : {Vec2{800, 600}, Vec2{1024, 768}, Vec2{1440, 900}, Vec2{1920, 1080}}) {
+            const auto content = SelectionPanelLayout(BattleLayout(extent).info).content;
+            const SelectionStatsLayout stats(content);
+            const ProductionQueueLayout queue(content);
+            require(stats.attack.x + stats.attack.width < stats.armor.x, "Attack and armor overlap");
+            for (size_t i = 0; i < queue.slots.size(); ++i) {
+                const auto slot = queue.slots[i];
+                require(slot.width >= 16 && slot.y >= stats.tags.y + stats.tags.height &&
+                    slot.x + slot.width <= content.x + content.width + .01f &&
+                    slot.y + slot.height <= content.y + content.height + .01f, "Production order is obscured or outside panel");
+                require(queue.pick({slot.x + slot.width * .5f, slot.y + slot.height * .5f}, queue.slots.size()) == i,
+                    "Production cancellation picks a different order");
+            }
+        }
+    });
     test("Floating notifications isolate recipients and never backlog events hidden by fog", [] {
         Map map(20, 20);
         FogOfWar fog(20, 20);

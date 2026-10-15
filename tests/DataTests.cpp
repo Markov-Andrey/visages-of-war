@@ -229,6 +229,14 @@ void dataTests(TestSuite& test, const TestContext& context) {
         fixture.abilities["abilities"][0]["cooldownTicks"] = 75;
         const auto definitions = fixture.load();
         const auto ranged = libraryDetails(definitions, definitions.entity("church.slinger"));
+        const auto attack = attackDescription(definitions.entity("church.slinger"), 137);
+        require(attack.find("Урон за удар: 137") != std::string::npos &&
+            attack.find("Дальность: 7.25") != std::string::npos &&
+            attack.find("Интервал атак: 2 с") != std::string::npos &&
+            attack.find("Цели: Воздушные") != std::string::npos,
+            "Attack tooltip ignores live damage or catalog attack parameters");
+        require(attackDescription(definitions.entity("church.worker"), 0) == "Не может атаковать.",
+            "Noncombat entity shows fabricated attack details");
         require(libraryValue(ranged, "Здоровье") == "481" && libraryValue(ranged, "Дальность атаки") == "7.25 клеток" &&
             libraryValue(ranged, "Темп атаки") == "0.5 атак/с" && libraryValue(ranged, "Полный цикл атаки") == "2 с" &&
             libraryValue(ranged, "Допустимые цели") == "Воздушные", "Library combat values diverged from definitions");

@@ -273,6 +273,14 @@ void GameApplication::exerciseInterface() {
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-preview.png");
     renderer_.snapshot(game_, rts::Paths::executable().parent_path() / L"hero-hud-compact.png",
         nullptr, false, &ui_, rts::MenuPage::BattleSetup, 0, nullptr, nullptr, {800, 600});
+    for (const bool armor : {false, true}) {
+        auto statsUi = ui_;
+        const rts::SelectionStatsLayout stats(rts::SelectionPanelLayout(rts::BattleLayout({1440, 900}).info).content);
+        const auto area = armor ? stats.armor : stats.attack;
+        statsUi.mouse = {area.x + 10, area.y + 10};
+        renderer_.snapshot(game_, rts::Paths::executable().parent_path() /
+            (armor ? L"armor-tooltip-preview.png" : L"attack-tooltip-preview.png"), nullptr, false, &statsUi);
+    }
     rts::GameplayUi tooltipUi;
     tooltipUi.selection.ids = {game_.worker().id};
     const auto command = rts::BattleLayout({1440, 900}).commands[1];

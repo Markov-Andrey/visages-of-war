@@ -41,6 +41,20 @@ std::string armorDescription(int armor, const ArmorRules& rules) {
     return std::string(armor >= 0 ? "Снижение получаемого урона: " : "Дополнительный получаемый урон: ") +
         amount(std::abs(percent)) + "%";
 }
+std::string attackDescription(const EntityDefinition& entity, int damage) {
+    if (damage <= 0) return "Не может атаковать.";
+    const int cycle = entity.attackWindupTicks + entity.attackRecoveryTicks + entity.attackCooldownTicks;
+    std::string result = "Урон за удар: " + std::to_string(damage) +
+        "\nДальность: " + amount(entity.attackRange) +
+        "\nИнтервал атак: " + seconds(cycle) +
+        "\nАтак в секунду: " + amount(double(simulationTicksPerSecond) / std::max(1, cycle)) +
+        "\nЦели: " + targetNames(entity) +
+        "\nСпособ атаки: " + (entity.projectile ? "снаряд" : "прямой удар");
+    if (entity.projectile && entity.projectile->splashRadius > 0)
+        result += "\nРадиус поражения: " + amount(entity.projectile->splashRadius) +
+            "\nУрон союзникам от взрыва: " + (entity.projectile->friendlyFire ? "да" : "нет");
+    return result;
+}
 std::string abilityTargetDetails(const AbilityDefinition& ability) {
     if (ability.targeting == AbilityTargeting::None) return "Без цели";
     std::string text;
